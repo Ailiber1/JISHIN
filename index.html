@@ -806,15 +806,43 @@ html, body {
 .multi-scroll {
   overflow-y: auto; padding: 16px 20px; flex: 1; -webkit-overflow-scrolling: touch;
 }
-.multi-choice { display: flex; flex-direction: column; gap: 12px; }
-.multi-choice-btn { font-size: 15px; }
-.multi-or {
-  text-align: center; color: var(--text-dim);
-  font-family: 'Share Tech Mono', monospace; font-size: 12px; letter-spacing: 2px;
+.multi-section-label {
+  font-family: 'Share Tech Mono', monospace; font-size: 13px;
+  color: var(--safety-orange); letter-spacing: 1px; margin-bottom: 8px;
 }
-.multi-join-row { display: flex; gap: 8px; }
-.multi-join-row .neon-input { flex: 1; }
-.multi-join-row .btn { flex-shrink: 0; padding: 10px 16px; }
+.multi-section-label::before { content: '● '; }
+.mode-cards { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+.mode-card {
+  border: 1px solid rgba(255,107,0,0.25); padding: 12px 16px;
+  cursor: pointer; transition: all 0.3s;
+}
+.mode-card:hover { border-color: rgba(255,107,0,0.5); background: rgba(255,107,0,0.05); }
+.mode-card.selected {
+  border-color: var(--safety-orange); background: rgba(255,107,0,0.1);
+  box-shadow: 0 0 12px rgba(255,107,0,0.2);
+}
+.mode-card-title {
+  font-family: 'Share Tech Mono', monospace; font-size: 15px;
+  color: #fff; margin-bottom: 4px; letter-spacing: 1px;
+}
+.mode-card.selected .mode-card-title { color: var(--safety-orange); }
+.mode-card-desc {
+  font-family: 'Noto Sans JP', sans-serif; font-size: 12px;
+  color: var(--text-dim); line-height: 1.4;
+}
+.mode-card.selected .mode-card-desc { color: var(--text-secondary); }
+.multi-room-input-row { margin: 8px 0; }
+.multi-room-note {
+  font-family: 'Noto Sans JP', sans-serif; font-size: 11px;
+  color: var(--text-dim); margin-bottom: 16px; line-height: 1.5;
+}
+.multi-error-msg {
+  font-family: 'Noto Sans JP', sans-serif; font-size: 12px;
+  color: var(--alert-red); margin-bottom: 8px;
+}
+.multi-action { margin-top: 4px; margin-bottom: 8px; }
+.multi-action .btn { width: 100%; padding: 12px; font-size: 16px; }
+.multi-lobby { margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,107,0,0.2); }
 .multi-room-id-box {
   text-align: center; padding: 12px;
   border: 1px solid rgba(255,107,0,0.3); margin-bottom: 14px;
@@ -1250,11 +1278,16 @@ html, body {
   /* 極小横: マルチプレイ */
   .multi-container { max-height: 98dvh; max-height: 98%; padding: 8px; }
   .multi-container h2 { font-size: 14px; margin-bottom: 4px; }
-  .multi-room-actions { gap: 4px; }
-  .multi-room-actions .btn { padding: 5px 8px; font-size: 10px; min-height: 28px; }
-  .neon-input { font-size: 10px; padding: 4px 8px; }
-  .multi-lobby { padding: 6px; }
-  .multi-lobby-players { max-height: 30vh; font-size: 10px; }
+  .mode-card { padding: 6px 10px; }
+  .mode-card-title { font-size: 12px; }
+  .mode-card-desc { font-size: 10px; }
+  .mode-cards { gap: 4px; margin-bottom: 10px; }
+  .multi-section-label { font-size: 11px; margin-bottom: 4px; }
+  .neon-input { font-size: 12px; padding: 4px 8px; }
+  .multi-room-note { font-size: 9px; margin-bottom: 8px; }
+  .multi-action .btn { padding: 6px; font-size: 12px; }
+  .multi-lobby { padding-top: 8px; }
+  .multi-players { max-height: 30vh; font-size: 10px; }
 }
 
 </style>
@@ -1579,24 +1612,40 @@ html, body {
       <button class="rules-close-btn" id="multi-close-btn">✕</button>
     </div>
     <div class="multi-scroll">
-      <!-- ルーム作成 or 参加の選択 -->
-      <div class="multi-choice" id="multi-choice">
-        <button class="btn btn-neon multi-choice-btn" id="multi-create-btn" data-i18n="MULTI_CREATE"></button>
-        <div class="multi-or" data-i18n="MULTI_OR"></div>
-        <div class="multi-join-row">
-          <input type="text" class="neon-input" id="multi-room-input" maxlength="6" placeholder="ROOM ID" autocomplete="off" spellcheck="false">
-          <button class="btn btn-neon" id="multi-join-btn" data-i18n="MULTI_JOIN"></button>
+      <!-- モード選択カード -->
+      <div class="multi-section-label" data-i18n="MULTI_MODE_LABEL"></div>
+      <div class="mode-cards">
+        <div class="mode-card selected" data-mode="coop">
+          <div class="mode-card-title" data-i18n="MULTI_COOP_TITLE"></div>
+          <div class="mode-card-desc" data-i18n="MULTI_COOP_DESC"></div>
+        </div>
+        <div class="mode-card" data-mode="vs">
+          <div class="mode-card-title" data-i18n="MULTI_VS_TITLE"></div>
+          <div class="mode-card-desc" data-i18n="MULTI_VS_DESC"></div>
         </div>
       </div>
 
-      <!-- ルームロビー（作成/参加後に表示） -->
+      <!-- ルームID入力 -->
+      <div class="multi-section-label" data-i18n="MULTI_ROOM_LABEL"></div>
+      <div class="multi-room-input-row">
+        <input type="text" class="neon-input" id="multi-room-input" maxlength="6" placeholder="ROOM ID" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="multi-room-note" data-i18n="MULTI_ROOM_NOTE"></div>
+      <div id="multi-error" class="multi-error-msg" style="display:none;"></div>
+
+      <!-- 参加ボタン -->
+      <div class="multi-action">
+        <button class="btn btn-neon" id="multi-join-btn" data-i18n="MULTI_JOIN"></button>
+      </div>
+
+      <!-- ルームロビー（参加後に表示） -->
       <div class="multi-lobby" id="multi-lobby" style="display:none;">
         <div class="multi-room-id-box">
           <span data-i18n="MULTI_ROOM_ID"></span>
           <span class="multi-room-id-val" id="multi-room-id-val">------</span>
         </div>
         <div class="multi-players" id="multi-players">
-          <div class="multi-player-slot"><span class="multi-player-name">---</span><span class="multi-player-status">---</span></div>
+          <div class="multi-player-slot"><span class="multi-player-name">---</span><span class="multi-player-status" data-i18n="MULTI_WAITING"></span></div>
         </div>
         <div class="training-field">
           <label data-i18n="MULTI_STAGE_LABEL"></label>
@@ -1607,13 +1656,6 @@ html, body {
             <option value="4" data-i18n="STAGE4_NAME"></option>
             <option value="5" data-i18n="STAGE5_NAME"></option>
           </select>
-        </div>
-        <div class="training-field">
-          <label data-i18n="MULTI_MODE_LABEL"></label>
-          <div class="training-toggle-row">
-            <button class="toggle-btn active" id="multi-mode-coop" data-i18n="MULTI_COOP"></button>
-            <button class="toggle-btn" id="multi-mode-vs" data-i18n="MULTI_VS"></button>
-          </div>
         </div>
         <button class="btn btn-neon" id="multi-ready-btn" data-i18n="MULTI_READY"></button>
       </div>
@@ -1781,14 +1823,17 @@ const I18N = {
     TRAINING_NOTE: '※ 訓練モードではランキングに記録されません',
     TRAINING_START: '訓練開始',
     MULTI_TITLE: 'マルチプレイ',
-    MULTI_CREATE: 'ルームを作成する',
-    MULTI_OR: '— または —',
-    MULTI_JOIN: '参加',
+    MULTI_MODE_LABEL: 'モード選択',
+    MULTI_COOP_TITLE: '協力避難（Co-op）',
+    MULTI_COOP_DESC: '全員で協力して避難完了を目指す。仲間を助けながら生存せよ。',
+    MULTI_VS_TITLE: '避難レース（VS）',
+    MULTI_VS_DESC: '誰が最も早く安全に避難できるか競い合う。スコアで順位決定。',
+    MULTI_ROOM_LABEL: 'ルームID',
+    MULTI_ROOM_NOTE: '同じIDを入力した人同士がマッチングします。存在しないIDは新規ルームが作成されます。',
+    MULTI_JOIN: 'ルームに参加',
     MULTI_ROOM_ID: 'ROOM ID:',
     MULTI_STAGE_LABEL: 'ステージ',
-    MULTI_MODE_LABEL: 'モード',
-    MULTI_COOP: '協力',
-    MULTI_VS: '競争',
+    MULTI_WAITING: '待機中...',
     MULTI_READY: 'READY',
     RULES_TITLE: 'ルール / 防災知識',
     TAB_RULES: 'ゲームルール',
@@ -1884,14 +1929,17 @@ const I18N = {
     TRAINING_NOTE: '※ Training mode scores are not recorded in rankings',
     TRAINING_START: 'START TRAINING',
     MULTI_TITLE: 'MULTIPLAYER',
-    MULTI_CREATE: 'CREATE ROOM',
-    MULTI_OR: '— or —',
-    MULTI_JOIN: 'JOIN',
+    MULTI_MODE_LABEL: 'Mode Select',
+    MULTI_COOP_TITLE: 'Co-op Evacuation',
+    MULTI_COOP_DESC: 'Work together to evacuate safely. Help each other survive.',
+    MULTI_VS_TITLE: 'Evacuation Race (VS)',
+    MULTI_VS_DESC: 'Compete for the fastest and safest evacuation. Scored by rank.',
+    MULTI_ROOM_LABEL: 'Room ID',
+    MULTI_ROOM_NOTE: 'Players with the same ID will be matched. A new room is created if the ID does not exist.',
+    MULTI_JOIN: 'JOIN ROOM',
     MULTI_ROOM_ID: 'ROOM ID:',
     MULTI_STAGE_LABEL: 'Stage',
-    MULTI_MODE_LABEL: 'Mode',
-    MULTI_COOP: 'COOP',
-    MULTI_VS: 'VS',
+    MULTI_WAITING: 'Waiting...',
     MULTI_READY: 'READY',
     RULES_TITLE: 'RULES / KNOWLEDGE',
     TAB_RULES: 'RULES',
@@ -2004,7 +2052,7 @@ function initUISounds() {
   document.querySelectorAll('.neon-select').forEach(el => {
     el.addEventListener('change', () => SoundManager.playSE('tab'));
   });
-  document.querySelectorAll('.briefing-start-btn, .briefing-back-btn, #result-retry-btn, #result-select-btn, #result-title-btn, #training-start-btn, #multi-create-btn, #multi-join-btn, #multi-ready-btn, .toggle-btn').forEach(el => {
+  document.querySelectorAll('.briefing-start-btn, .briefing-back-btn, #result-retry-btn, #result-select-btn, #result-title-btn, #training-start-btn, #multi-join-btn, #multi-ready-btn, .toggle-btn').forEach(el => {
     el.addEventListener('mouseenter', () => SoundManager.playSE('hover'));
     el.addEventListener('click', () => SoundManager.playSE('click'));
   });
@@ -2462,24 +2510,17 @@ function initEventListeners() {
     applyI18N();
   });
   document.getElementById('multi-close-btn').addEventListener('click', () => { showTitle(); });
-  document.getElementById('multi-create-btn').addEventListener('click', () => {
-    // TODO: Firebase ルーム作成（実装後に接続）
-    SoundManager.playSE('click');
+  // モードカード選択
+  document.querySelectorAll('.mode-card').forEach(card => {
+    card.addEventListener('click', function() {
+      document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
+      this.classList.add('selected');
+      SoundManager.playSE('tab');
+    });
   });
   document.getElementById('multi-join-btn').addEventListener('click', () => {
     // TODO: Firebase ルーム参加（実装後に接続）
     SoundManager.playSE('click');
-  });
-  // マルチ モード トグル
-  document.getElementById('multi-mode-coop').addEventListener('click', function() {
-    this.classList.add('active');
-    document.getElementById('multi-mode-vs').classList.remove('active');
-    SoundManager.playSE('tab');
-  });
-  document.getElementById('multi-mode-vs').addEventListener('click', function() {
-    this.classList.add('active');
-    document.getElementById('multi-mode-coop').classList.remove('active');
-    SoundManager.playSE('tab');
   });
 
   // ストーリーモード → ステージ選択
