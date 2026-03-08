@@ -974,35 +974,35 @@
 
 [格言リスト（日本語 / English）]
 
-1. 「備えあれば、憂いなし。」
-   "If you are prepared, you don't have to worry."
+1. 「備えが、命を守る。」
+   "Preparedness saves lives."
 
-2. 「天災は忘れた頃にやってくる。」— 寺田寅彦
-   "Natural disasters come when you have forgotten them." — Torahiko Terada
-
-3. 「その一秒の判断が、命を分ける。」
+2. 「その一秒の判断が、命を分ける。」
    "One second of judgment can save your life."
 
-4. 「知識は最強の防災グッズだ。」
+3. 「知識は最強の防災グッズだ。」
    "Knowledge is the ultimate survival tool."
 
-5. 「地震は止められない。でも、備えることはできる。」
+4. 「地震は止められない。でも、備えはできる。」
    "You can't stop an earthquake. But you can prepare."
 
-6. 「落ちてこない、倒れてこない、移動してこない場所へ。」
-   "Find a spot where nothing falls, topples, or slides toward you."
-
-7. 「慌てない者が、生き残る。」
+5. 「慌てない者が、生き残る。」
    "Those who stay calm, survive."
 
-8. 「訓練でできないことは、本番でもできない。」
+6. 「訓練でできないことは、本番でもできない。」
    "What you can't do in practice, you can't do in real life."
 
-9. 「自分の命は、自分で守る。」
-   "Protect your own life, by your own judgment."
+7. 「自分の命は、自分で守る。」
+   "Protect your own life by your own judgment."
 
-10. 「揺れが止まっても、危険は止まらない。」
-    "The shaking stops, but the danger doesn't."
+8. 「揺れが止まっても、危険は止まらない。」
+   "The shaking stops, but the danger doesn't."
+
+9. 「正しく恐れ、正しく備えよ。」
+   "Fear wisely. Prepare wisely."
+
+10. 「生き延びろ。それが全てだ。」
+    "Survive. That is everything."
 ```
 
 ---
