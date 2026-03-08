@@ -554,6 +554,13 @@ html, body {
   #btn-warning-ok { padding: 14px 40px; font-size: 16px; min-height: 48px; }
   #splash-quote { font-size: clamp(15px, 4.5vw, 20px); padding: 0 24px; max-width: 90vw; }
   #splash-sub { font-size: clamp(10px, 2.5vw, 13px); }
+  /* ルール画面: スマホ共通 */
+  .rules-container { width: 96%; max-height: 92dvh; max-height: 92%; }
+  .rules-header { padding: 12px 14px; }
+  .rules-header h2 { font-size: clamp(14px, 4vw, 18px); }
+  .rules-close-btn { width: 40px; height: 40px; font-size: 20px; }
+  .rules-scroll { padding: 0 14px 14px; }
+  .rules-tab { font-size: clamp(11px, 3vw, 13px); padding: 10px 2px; }
 }
 
 /* --- 縦向きスマホ --- */
@@ -585,7 +592,7 @@ html, body {
   .ui-panel {
     padding: 8px 12px; margin: 0;
     width: min(300px, 45vw);
-    max-height: calc(100vh - 16px);
+    max-height: calc(100dvh - 16px); max-height: calc(100% - 16px);
     overflow-y: auto;
   }
   .btn { padding: 7px 10px; font-size: 12px; min-height: 36px; }
@@ -601,11 +608,16 @@ html, body {
   #splash-skip { bottom: 10px; }
 
   /* 横向き: ルール画面 */
-  .rules-container { max-height: 92dvh; max-height: 92%; width: min(90%, 700px); }
-  .rules-header { padding: 10px 16px; }
-  .rules-scroll { padding: 0 16px 12px; }
-  .rules-tabs { padding-top: 8px; }
-  .rules-tab { padding: 8px 4px; font-size: clamp(10px, 2vw, 12px); }
+  .rules-container { max-height: 94dvh; max-height: 94%; width: min(90%, 700px); }
+  .rules-header { padding: 8px 12px; }
+  .rules-header h2 { font-size: clamp(13px, 3vw, 16px); }
+  .rules-close-btn { width: 36px; height: 36px; min-width: 36px; }
+  .rules-scroll { padding: 0 12px 10px; }
+  .rules-tabs { padding-top: 6px; margin-bottom: 10px; }
+  .rules-tab { padding: 7px 4px; font-size: clamp(10px, 2vw, 12px); }
+  .rules-tab-content h3 { margin: 12px 0 6px; font-size: clamp(12px, 2.5vw, 14px); }
+  .rules-step, .know-item, .dont-item { font-size: clamp(11px, 2.2vw, 13px); }
+  .rules-score-item { padding: 6px 10px; font-size: clamp(11px, 2.2vw, 13px); }
 }
 
 /* --- 小型スマホ縦向き（iPhone SE等 高さ600px以下） --- */
