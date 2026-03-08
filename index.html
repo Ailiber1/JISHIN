@@ -557,6 +557,116 @@ html, body {
 .briefing-back-btn { flex: 1; }
 
 /* ============================================================
+   SECTION: RESULT SCREEN
+   ============================================================ */
+#result-screen {
+  z-index: 270;
+  background: var(--bg-overlay);
+}
+.result-container {
+  width: min(520px, 92%);
+  max-height: 90dvh; max-height: 90%;
+  background: var(--bg-panel);
+  border: 1px solid var(--safety-orange);
+  box-shadow: 0 0 20px rgba(255,107,0,0.3), inset 0 0 10px rgba(255,107,0,0.03);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+@supports (max-height: 90dvh) { .result-container { max-height: 90dvh; } }
+.result-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255,107,0,0.3);
+  text-align: center; flex-shrink: 0;
+}
+.result-title {
+  font-family: 'Share Tech Mono', 'Noto Sans JP', monospace;
+  font-size: clamp(18px, 5vw, 26px);
+  color: var(--safety-orange); letter-spacing: 4px; font-weight: 700;
+}
+.result-stage {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: clamp(11px, 2.5vw, 13px);
+  color: var(--text-dim); margin-top: 4px; letter-spacing: 2px;
+}
+.result-scroll {
+  overflow-y: auto; overflow-x: hidden;
+  padding: 16px 20px; flex: 1;
+  -webkit-overflow-scrolling: touch;
+}
+.result-summary {
+  text-align: center;
+  padding: 16px;
+  border: 1px solid rgba(255,107,0,0.25);
+  background: rgba(255,107,0,0.04);
+  margin-bottom: 16px;
+}
+.result-rank {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: clamp(48px, 12vw, 72px);
+  font-weight: 700;
+  color: var(--safety-orange);
+  line-height: 1;
+  text-shadow: 0 0 20px rgba(255,107,0,0.6), 0 0 40px rgba(255,107,0,0.3);
+}
+.result-rank-name {
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: clamp(12px, 3vw, 15px);
+  color: var(--text-secondary);
+  margin: 4px 0 12px;
+}
+.result-score-row, .result-time-row {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: clamp(14px, 3.5vw, 18px);
+  color: var(--text-secondary);
+  margin: 4px 0;
+}
+.result-score-val {
+  color: #fff; font-weight: 700; font-size: clamp(20px, 5vw, 28px);
+  margin: 0 4px;
+}
+.result-score-max { color: var(--text-dim); }
+.result-section { margin-bottom: 16px; }
+.result-section h3 {
+  font-family: 'Share Tech Mono', 'Noto Sans JP', monospace;
+  font-size: clamp(12px, 2.8vw, 14px);
+  color: var(--safety-orange-light);
+  border-left: 3px solid var(--safety-orange);
+  padding-left: 10px; margin-bottom: 8px; letter-spacing: 1px;
+}
+.result-actions { display: flex; flex-direction: column; gap: 4px; }
+.result-action-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 10px;
+  border-bottom: 1px solid rgba(255,107,0,0.08);
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: clamp(12px, 2.8vw, 14px);
+  color: var(--text-secondary);
+}
+.result-action-item:last-child { border-bottom: none; }
+.action-good { color: var(--safe-green); }
+.action-bad { color: var(--alert-red); }
+.action-miss { color: var(--text-dim); }
+.action-pts {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: clamp(12px, 2.5vw, 14px);
+  flex-shrink: 0; margin-left: 8px;
+}
+.result-tip-box {
+  background: rgba(255,107,0,0.05);
+  border: 1px solid rgba(255,107,0,0.2);
+  padding: 12px 14px;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: clamp(12px, 2.8vw, 14px);
+  color: var(--text-secondary); line-height: 1.7;
+}
+.result-footer {
+  padding: 12px 20px;
+  border-top: 1px solid rgba(255,107,0,0.3);
+  display: flex; gap: 8px; flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.result-footer .btn { flex: 1; min-width: 0; }
+
+/* ============================================================
    SECTION: RULES / KNOWLEDGE SCREEN
    ============================================================ */
 #rules-screen {
@@ -751,6 +861,15 @@ html, body {
   .briefing-advisor p { font-size: clamp(11px, 2.8vw, 13px); }
   .briefing-footer { padding: 10px 14px; }
   .briefing-footer .btn { min-height: 44px; }
+  /* 結果画面: スマホ共通 */
+  .result-container { width: 96%; max-height: 92dvh; max-height: 92%; }
+  .result-header { padding: 12px 16px; }
+  .result-title { font-size: clamp(16px, 5vw, 22px); }
+  .result-scroll { padding: 12px 14px; }
+  .result-summary { padding: 12px; }
+  .result-rank { font-size: clamp(40px, 10vw, 56px); }
+  .result-footer { padding: 10px 14px; gap: 6px; }
+  .result-footer .btn { min-height: 44px; font-size: 13px; }
   /* ルール画面: スマホ共通 */
   .rules-container { width: 96%; max-height: 92dvh; max-height: 92%; }
   .rules-header { padding: 12px 14px; }
@@ -778,6 +897,8 @@ html, body {
   /* ブリーフィング */
   .briefing-container { max-height: 88dvh; max-height: 88%; }
   .briefing-advisor { padding: 10px 12px; gap: 10px; }
+  /* 結果画面 */
+  .result-container { max-height: 88dvh; max-height: 88%; }
 }
 
 /* --- 横向きスマホ（高さ500px以下） --- */
@@ -846,6 +967,22 @@ html, body {
   .briefing-footer { padding: 6px 12px; }
   .briefing-footer .btn { padding: 7px 10px; font-size: 12px; min-height: 34px; }
 
+  /* 横向き: 結果画面 */
+  .result-container { max-height: 96dvh; max-height: 96%; width: min(90%, 520px); }
+  .result-header { padding: 8px 14px; }
+  .result-title { font-size: clamp(14px, 3.5vw, 18px); letter-spacing: 3px; }
+  .result-stage { font-size: 10px; }
+  .result-scroll { padding: 8px 12px; }
+  .result-summary { padding: 10px; margin-bottom: 10px; }
+  .result-rank { font-size: clamp(32px, 8vw, 48px); }
+  .result-rank-name { font-size: clamp(10px, 2vw, 12px); margin: 2px 0 8px; }
+  .result-score-row, .result-time-row { font-size: clamp(12px, 2.5vw, 14px); }
+  .result-score-val { font-size: clamp(16px, 4vw, 22px); }
+  .result-section { margin-bottom: 10px; }
+  .result-action-item { padding: 4px 8px; font-size: clamp(11px, 2.2vw, 13px); }
+  .result-tip-box { padding: 8px 10px; font-size: clamp(11px, 2.2vw, 13px); }
+  .result-footer { padding: 6px 12px; gap: 6px; }
+  .result-footer .btn { padding: 7px 8px; font-size: 11px; min-height: 34px; }
   /* 横向き: ルール画面 */
   .rules-container { max-height: 96dvh; max-height: 96%; width: min(90%, 700px); }
   .rules-header { padding: 8px 12px; }
@@ -874,6 +1011,8 @@ html, body {
   .stage-desc { font-size: 11px; }
   /* 小型: ブリーフィング */
   .briefing-container { width: 98%; max-height: 90dvh; max-height: 90%; }
+  /* 小型: 結果 */
+  .result-container { width: 98%; max-height: 90dvh; max-height: 90%; }
   /* 小型: ルール */
   .rules-container { width: 98%; max-height: 90dvh; max-height: 90%; }
 }
@@ -900,6 +1039,9 @@ html, body {
   .briefing-scroll { padding: 6px 10px; }
   .briefing-footer { padding: 5px 10px; }
   .briefing-footer .btn { padding: 5px 8px; font-size: 11px; min-height: 30px; }
+  /* 極小横: 結果 */
+  .result-container { max-height: 98dvh; max-height: 98%; }
+  .result-footer .btn { padding: 5px 6px; font-size: 10px; min-height: 28px; }
   /* 極小横: ルール */
   .rules-container { max-height: 98dvh; max-height: 98%; }
 }
@@ -1096,6 +1238,53 @@ html, body {
 </div>
 
 <!-- ============================================================
+     SECTION: RESULT SCREEN
+     ============================================================ -->
+<div id="result-screen" class="screen">
+  <div class="result-container">
+    <div class="result-header">
+      <div class="result-title" id="result-title" data-i18n="RESULT_CLEAR"></div>
+      <div class="result-stage" id="result-stage-label"></div>
+    </div>
+    <div class="result-scroll">
+
+      <!-- スコアサマリー -->
+      <div class="result-summary">
+        <div class="result-rank" id="result-rank">A</div>
+        <div class="result-rank-name" id="result-rank-name"></div>
+        <div class="result-score-row">
+          <span data-i18n="RESULT_SCORE"></span>
+          <span class="result-score-val" id="result-score">82</span>
+          <span class="result-score-max">/ 100</span>
+        </div>
+        <div class="result-time-row">
+          <span data-i18n="RESULT_TIME"></span>
+          <span id="result-time">3:24</span>
+        </div>
+      </div>
+
+      <!-- 行動の振り返り -->
+      <div class="result-section">
+        <h3 data-i18n="RESULT_REVIEW"></h3>
+        <div class="result-actions" id="result-actions"></div>
+      </div>
+
+      <!-- 今回のポイント -->
+      <div class="result-section">
+        <h3 data-i18n="RESULT_TIPS"></h3>
+        <div class="result-tip-box" id="result-tip-box"></div>
+      </div>
+
+    </div>
+    <div class="result-footer">
+      <button class="btn btn-neon" id="result-retry-btn" data-i18n="RESULT_RETRY"></button>
+      <button class="btn btn-thin" id="result-select-btn" data-i18n="RESULT_TO_SELECT"></button>
+      <button class="btn btn-thin" id="result-title-btn" data-i18n="RESULT_TO_TITLE"></button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
      SECTION: RULES / DISASTER KNOWLEDGE SCREEN
      ============================================================ -->
 <div id="rules-screen" class="screen">
@@ -1231,6 +1420,20 @@ const I18N = {
     BRIEF_POINTS: 'このステージのポイント',
     BRIEF_START: '避難開始',
     BRIEF_BACK: '戻る',
+    RESULT_CLEAR: '避 難 完 了',
+    RESULT_FAILED: '避 難 失 敗',
+    RESULT_SCORE: 'スコア:',
+    RESULT_TIME: '避難時間:',
+    RESULT_REVIEW: '行動の振り返り',
+    RESULT_TIPS: '今回のポイント',
+    RESULT_RETRY: 'リトライ',
+    RESULT_TO_SELECT: 'ステージ選択',
+    RESULT_TO_TITLE: 'タイトル',
+    RANK_S: '防災マスター',
+    RANK_A: '冷静な判断力',
+    RANK_B: '基本は押さえている',
+    RANK_C: 'もう少し知識が必要',
+    RANK_D: '危険な行動が多い',
     RULES_TITLE: 'ルール / 防災知識',
     TAB_RULES: 'ゲームルール',
     TAB_KNOWLEDGE: '防災知識',
@@ -1301,6 +1504,20 @@ const I18N = {
     BRIEF_POINTS: 'Key Points',
     BRIEF_START: 'START EVACUATION',
     BRIEF_BACK: 'BACK',
+    RESULT_CLEAR: 'EVACUATION COMPLETE',
+    RESULT_FAILED: 'EVACUATION FAILED',
+    RESULT_SCORE: 'Score:',
+    RESULT_TIME: 'Time:',
+    RESULT_REVIEW: 'Action Review',
+    RESULT_TIPS: 'Key Takeaway',
+    RESULT_RETRY: 'RETRY',
+    RESULT_TO_SELECT: 'STAGES',
+    RESULT_TO_TITLE: 'TITLE',
+    RANK_S: 'Disaster Master',
+    RANK_A: 'Calm & Decisive',
+    RANK_B: 'Knows the Basics',
+    RANK_C: 'Needs More Knowledge',
+    RANK_D: 'Too Many Risky Actions',
     RULES_TITLE: 'RULES / KNOWLEDGE',
     TAB_RULES: 'RULES',
     TAB_KNOWLEDGE: 'KNOWLEDGE',
@@ -1409,7 +1626,7 @@ function initUISounds() {
   document.querySelectorAll('.rules-close-btn').forEach(el => {
     el.addEventListener('click', () => SoundManager.playSE('close'));
   });
-  document.querySelectorAll('.briefing-start-btn, .briefing-back-btn').forEach(el => {
+  document.querySelectorAll('.briefing-start-btn, .briefing-back-btn, #result-retry-btn, #result-select-btn, #result-title-btn').forEach(el => {
     el.addEventListener('mouseenter', () => SoundManager.playSE('hover'));
     el.addEventListener('click', () => SoundManager.playSE('click'));
   });
@@ -1634,6 +1851,64 @@ function createMatrixBg() {
 }
 
 // ============================================================
+// SECTION: RESULT SCREEN
+// ============================================================
+function getRank(score) {
+  if (score >= 90) return { rank: 'S', key: 'RANK_S' };
+  if (score >= 75) return { rank: 'A', key: 'RANK_A' };
+  if (score >= 60) return { rank: 'B', key: 'RANK_B' };
+  if (score >= 40) return { rank: 'C', key: 'RANK_C' };
+  return { rank: 'D', key: 'RANK_D' };
+}
+
+function showResult(stageNum, score, timeStr, actions, tip, failed) {
+  const lang = currentLang;
+  const rankInfo = getRank(score);
+
+  // ヘッダー
+  document.getElementById('result-title').setAttribute('data-i18n', failed ? 'RESULT_FAILED' : 'RESULT_CLEAR');
+  const nameKey = 'STAGE' + stageNum + '_NAME';
+  document.getElementById('result-stage-label').textContent = 'STAGE ' + stageNum + ' — ' + (I18N[lang][nameKey] || '');
+
+  // ランク・スコア
+  document.getElementById('result-rank').textContent = rankInfo.rank;
+  document.getElementById('result-rank-name').textContent = I18N[lang][rankInfo.key] || '';
+  document.getElementById('result-score').textContent = score;
+  document.getElementById('result-time').textContent = timeStr;
+
+  // ランクの色分け
+  const rankEl = document.getElementById('result-rank');
+  if (rankInfo.rank === 'S') rankEl.style.color = '#ffd700';
+  else if (rankInfo.rank === 'D') rankEl.style.color = 'var(--alert-red)';
+  else rankEl.style.color = 'var(--safety-orange)';
+
+  // 行動の振り返り
+  const actionsEl = document.getElementById('result-actions');
+  actionsEl.innerHTML = '';
+  actions.forEach(a => {
+    const div = document.createElement('div');
+    div.className = 'result-action-item';
+    const icon = a.pts > 0 ? '○' : (a.pts < 0 ? '×' : '△');
+    const cls = a.pts > 0 ? 'action-good' : (a.pts < 0 ? 'action-bad' : 'action-miss');
+    const ptsText = a.pts > 0 ? '+' + a.pts : (a.pts < 0 ? String(a.pts) : '+0');
+    div.innerHTML = '<span class="' + cls + '">' + icon + ' ' + escapeHTML(a.text) + '</span><span class="action-pts ' + cls + '">' + ptsText + '</span>';
+    actionsEl.appendChild(div);
+  });
+
+  // 今回のポイント
+  document.getElementById('result-tip-box').textContent = tip;
+
+  // ベストスコア保存
+  const prevBest = parseInt(localStorage.getItem('jishin_best_' + stageNum));
+  if (isNaN(prevBest) || score > prevBest) {
+    localStorage.setItem('jishin_best_' + stageNum, String(score));
+  }
+
+  showScreen('result-screen');
+  applyI18N();
+}
+
+// ============================================================
 // SECTION: STAGE SELECT
 // ============================================================
 function updateStageUnlocks() {
@@ -1759,6 +2034,19 @@ function initEventListeners() {
     btn.className = 'bgm-btn ' + (bgmEnabled ? 'bgm-on' : 'bgm-off');
   });
 
+  // 結果画面ボタン
+  document.getElementById('result-retry-btn').addEventListener('click', () => {
+    showBriefing(selectedStage);
+  });
+  document.getElementById('result-select-btn').addEventListener('click', () => {
+    showScreen('stage-select-screen');
+    applyI18N();
+    updateStageUnlocks();
+  });
+  document.getElementById('result-title-btn').addEventListener('click', () => {
+    showTitle();
+  });
+
   // ストーリーモード → ステージ選択
   document.getElementById('btn-story').addEventListener('click', () => {
     showScreen('stage-select-screen');
@@ -1852,6 +2140,7 @@ function initEventListeners() {
     if (e.target.closest('.rules-container')) return;
     if (e.target.closest('.stage-select-container')) return;
     if (e.target.closest('.briefing-container')) return;
+    if (e.target.closest('.result-container')) return;
     e.preventDefault();
   }, { passive: false });
   document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
