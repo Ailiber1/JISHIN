@@ -1007,8 +1007,8 @@ html, body {
           <div class="stage-difficulty"><span class="star-on">★★</span><span class="star-off">☆☆☆</span></div>
         </div>
         <div class="stage-card-body">
-          <div class="stage-name" data-i18n="STAGE2_NAME"></div>
-          <div class="stage-desc" data-i18n="STAGE2_DESC"></div>
+          <div class="stage-name stage-name-display">???</div>
+          <div class="stage-desc stage-desc-display"></div>
         </div>
         <div class="stage-card-foot">
           <div class="stage-best"><span data-i18n="STAGE_BEST"></span> <span class="stage-best-score" id="best-score-2">---</span></div>
@@ -1022,8 +1022,8 @@ html, body {
           <div class="stage-difficulty"><span class="star-on">★★★</span><span class="star-off">☆☆</span></div>
         </div>
         <div class="stage-card-body">
-          <div class="stage-name" data-i18n="STAGE3_NAME"></div>
-          <div class="stage-desc" data-i18n="STAGE3_DESC"></div>
+          <div class="stage-name stage-name-display">???</div>
+          <div class="stage-desc stage-desc-display"></div>
         </div>
         <div class="stage-card-foot">
           <div class="stage-best"><span data-i18n="STAGE_BEST"></span> <span class="stage-best-score" id="best-score-3">---</span></div>
@@ -1037,8 +1037,8 @@ html, body {
           <div class="stage-difficulty"><span class="star-on">★★★★</span><span class="star-off">☆</span></div>
         </div>
         <div class="stage-card-body">
-          <div class="stage-name" data-i18n="STAGE4_NAME"></div>
-          <div class="stage-desc" data-i18n="STAGE4_DESC"></div>
+          <div class="stage-name stage-name-display">???</div>
+          <div class="stage-desc stage-desc-display"></div>
         </div>
         <div class="stage-card-foot">
           <div class="stage-best"><span data-i18n="STAGE_BEST"></span> <span class="stage-best-score" id="best-score-4">---</span></div>
@@ -1052,8 +1052,8 @@ html, body {
           <div class="stage-difficulty"><span class="star-on">★★★★★</span><span class="star-off"></span></div>
         </div>
         <div class="stage-card-body">
-          <div class="stage-name" data-i18n="STAGE5_NAME"></div>
-          <div class="stage-desc" data-i18n="STAGE5_DESC"></div>
+          <div class="stage-name stage-name-display">???</div>
+          <div class="stage-desc stage-desc-display"></div>
         </div>
         <div class="stage-card-foot">
           <div class="stage-best"><span data-i18n="STAGE_BEST"></span> <span class="stage-best-score" id="best-score-5">---</span></div>
@@ -1637,15 +1637,15 @@ function createMatrixBg() {
 // SECTION: STAGE SELECT
 // ============================================================
 function updateStageUnlocks() {
-  // localStorageからクリア状況を確認
+  const lang = currentLang;
   for (let i = 1; i <= 5; i++) {
     const card = document.querySelector('.stage-card[data-stage="' + i + '"]');
     if (!card) continue;
     const bestScore = localStorage.getItem('jishin_best_' + i);
+    const cleared = bestScore !== null && parseInt(bestScore) >= 40;
 
     // ベストスコア表示
     const scoreEl = document.getElementById('best-score-' + i);
-    if (scoreEl) scoreEl.textContent = bestScore ? bestScore + 'pt' : '---';
 
     // 解放判定: Stage1は常に解放、Stage N は Stage N-1 をCランク(40点)以上でクリア
     let unlocked = (i === 1);
@@ -1654,15 +1654,41 @@ function updateStageUnlocks() {
       unlocked = !isNaN(prevBest) && prevBest >= 40;
     }
 
+    const nameEl = card.querySelector('.stage-name-display');
+    const descEl = card.querySelector('.stage-desc-display');
+    const statusEl = card.querySelector('.stage-status');
+    const diffEl = card.querySelector('.stage-difficulty');
+
     if (unlocked) {
+      // 解放済み — 名前と説明を表示
       card.classList.remove('stage-locked');
-      const statusEl = card.querySelector('.stage-status');
+      const nameKey = 'STAGE' + i + '_NAME';
+      const descKey = 'STAGE' + i + '_DESC';
+      if (nameEl) {
+        nameEl.textContent = (cleared ? '✓ ' : '') + (I18N[lang][nameKey] || '');
+      }
+      if (descEl) descEl.textContent = I18N[lang][descKey] || '';
+      if (scoreEl) scoreEl.textContent = bestScore ? bestScore + 'pt' : '---';
       if (statusEl) {
         statusEl.className = 'stage-status stage-unlocked';
+        statusEl.innerHTML = '';
         statusEl.setAttribute('data-i18n', 'STAGE_PLAY');
       }
+      if (diffEl) diffEl.style.opacity = '1';
     } else {
+      // ロック中 — ???表示
       card.classList.add('stage-locked');
+      if (nameEl) nameEl.textContent = '???';
+      if (descEl) descEl.textContent = '';
+      if (scoreEl) scoreEl.textContent = '---';
+      if (statusEl) {
+        statusEl.className = 'stage-status stage-lock-label';
+        statusEl.innerHTML = '🔒 ';
+        const span = document.createElement('span');
+        span.setAttribute('data-i18n', 'STAGE_LOCKED');
+        statusEl.appendChild(span);
+      }
+      if (diffEl) diffEl.style.opacity = '0.3';
     }
   }
   applyI18N();
