@@ -956,6 +956,28 @@ html, body {
   display: flex; align-items: center; justify-content: center;
   font-size: 13px; border-radius: 2px;
 }
+/* 操作説明 */
+.controls-section { margin-bottom: 8px; }
+.controls-label {
+  font-family: 'Share Tech Mono', monospace; font-size: 12px;
+  color: var(--safety-orange); letter-spacing: 1px;
+  margin: 10px 0 6px; padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255,107,0,0.2);
+}
+.controls-grid { display: flex; flex-direction: column; gap: 4px; }
+.ctrl-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 4px 8px; font-family: 'Noto Sans JP', sans-serif;
+  font-size: clamp(12px, 2.8vw, 14px); color: var(--text-secondary);
+}
+.ctrl-key {
+  font-family: 'Share Tech Mono', monospace; font-size: clamp(11px, 2.5vw, 13px);
+  color: var(--safety-orange); min-width: 110px; flex-shrink: 0;
+  background: rgba(255,107,0,0.06); padding: 2px 8px;
+  border: 1px solid rgba(255,107,0,0.2); text-align: center;
+}
+.ctrl-desc { flex: 1; }
+
 .rules-score-list { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
 .rules-score-item {
   display: flex; justify-content: space-between; align-items: center;
@@ -1901,6 +1923,26 @@ html, body {
           <div class="rules-step"><span class="step-num">5</span><span data-i18n="RULES_STEP5"></span></div>
           <div class="rules-step"><span class="step-num">6</span><span data-i18n="RULES_STEP6"></span></div>
         </div>
+        <h3 data-i18n="RULES_CONTROLS_TITLE"></h3>
+        <div class="controls-section">
+          <div class="controls-label" data-i18n="CONTROLS_PC_LABEL"></div>
+          <div class="controls-grid">
+            <div class="ctrl-row"><span class="ctrl-key">W A S D / ↑←↓→</span><span class="ctrl-desc" data-i18n="CTRL_MOVE"></span></div>
+            <div class="ctrl-row"><span class="ctrl-key">Shift</span><span class="ctrl-desc" data-i18n="CTRL_DASH"></span></div>
+            <div class="ctrl-row"><span class="ctrl-key">C</span><span class="ctrl-desc" data-i18n="CTRL_CROUCH"></span></div>
+            <div class="ctrl-row"><span class="ctrl-key">G</span><span class="ctrl-desc" data-i18n="CTRL_GUARD"></span></div>
+            <div class="ctrl-row"><span class="ctrl-key">Space</span><span class="ctrl-desc" data-i18n="CTRL_INTERACT"></span></div>
+            <div class="ctrl-row"><span class="ctrl-key" data-i18n="CTRL_MOUSE"></span><span class="ctrl-desc" data-i18n="CTRL_CAMERA"></span></div>
+            <div class="ctrl-row"><span class="ctrl-key">Esc</span><span class="ctrl-desc" data-i18n="CTRL_PAUSE"></span></div>
+          </div>
+          <div class="controls-label" data-i18n="CONTROLS_MOBILE_LABEL"></div>
+          <div class="controls-grid">
+            <div class="ctrl-row"><span class="ctrl-key" data-i18n="CTRL_JOYSTICK"></span><span class="ctrl-desc" data-i18n="CTRL_MOVE"></span></div>
+            <div class="ctrl-row"><span class="ctrl-key" data-i18n="CTRL_SWIPE"></span><span class="ctrl-desc" data-i18n="CTRL_CAMERA"></span></div>
+            <div class="ctrl-row"><span class="ctrl-key" data-i18n="CTRL_BTNS"></span><span class="ctrl-desc" data-i18n="CTRL_ACTIONS"></span></div>
+          </div>
+        </div>
+
         <h3 data-i18n="RULES_SCORING_TITLE"></h3>
         <div class="rules-score-list">
           <div class="rules-score-item"><span class="score-label" data-i18n="SCORE_INIT"></span><span class="score-pts">30pt</span></div>
@@ -2094,6 +2136,21 @@ const I18N = {
     RULES_STEP4: '揺れ収束後、火の始末・ブレーカー・靴など対処する',
     RULES_STEP5: '階段で避難し、避難場所を目指す',
     RULES_STEP6: '行動が採点され、防災知識の解説が表示される',
+    RULES_CONTROLS_TITLE: '操作方法',
+    CONTROLS_PC_LABEL: '▶ PC（キーボード＋マウス）',
+    CONTROLS_MOBILE_LABEL: '▶ スマートフォン',
+    CTRL_MOVE: '移動',
+    CTRL_DASH: 'ダッシュ',
+    CTRL_CROUCH: 'しゃがむ',
+    CTRL_GUARD: '頭を守る（ガード）',
+    CTRL_INTERACT: 'インタラクト（ドア・ブレーカー等）',
+    CTRL_MOUSE: 'マウス移動',
+    CTRL_CAMERA: '視点操作',
+    CTRL_PAUSE: 'ポーズ',
+    CTRL_JOYSTICK: '左ジョイスティック',
+    CTRL_SWIPE: '右画面スワイプ',
+    CTRL_BTNS: '右側ボタン',
+    CTRL_ACTIONS: 'しゃがむ / ガード / 操作 / 走る',
     RULES_SCORING_TITLE: '採点配分（100点満点）',
     SCORE_INIT: '初期行動（しゃがむ・頭を守る・安全場所）',
     SCORE_DURING: '揺れ中の行動（危険回避・冷静さ）',
@@ -2200,6 +2257,21 @@ const I18N = {
     RULES_STEP4: 'After shaking stops: turn off fire, breaker, put on shoes',
     RULES_STEP5: 'Evacuate using stairs and head to the evacuation point',
     RULES_STEP6: 'Your actions are scored with disaster prevention tips shown',
+    RULES_CONTROLS_TITLE: 'Controls',
+    CONTROLS_PC_LABEL: '▶ PC (Keyboard + Mouse)',
+    CONTROLS_MOBILE_LABEL: '▶ Smartphone',
+    CTRL_MOVE: 'Move',
+    CTRL_DASH: 'Sprint',
+    CTRL_CROUCH: 'Crouch',
+    CTRL_GUARD: 'Protect Head (Guard)',
+    CTRL_INTERACT: 'Interact (door, breaker, etc.)',
+    CTRL_MOUSE: 'Mouse Move',
+    CTRL_CAMERA: 'Camera Control',
+    CTRL_PAUSE: 'Pause',
+    CTRL_JOYSTICK: 'Left Joystick',
+    CTRL_SWIPE: 'Right Screen Swipe',
+    CTRL_BTNS: 'Right Side Buttons',
+    CTRL_ACTIONS: 'Crouch / Guard / Interact / Sprint',
     RULES_SCORING_TITLE: 'Scoring (100 points)',
     SCORE_INIT: 'Initial Response (drop, cover, safe spot)',
     SCORE_DURING: 'During Shaking (hazard avoidance, composure)',
