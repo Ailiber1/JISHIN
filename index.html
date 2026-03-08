@@ -667,6 +667,172 @@ html, body {
 .result-footer .btn { flex: 1; min-width: 0; }
 
 /* ============================================================
+   SECTION: SHARED COMPONENTS (select, input, toggle)
+   ============================================================ */
+.neon-select {
+  background: rgba(255,107,0,0.06); border: 1px solid rgba(255,107,0,0.4);
+  color: #fff; font-family: 'Noto Sans JP', sans-serif; font-size: 14px;
+  padding: 10px 12px; width: 100%; cursor: pointer;
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M0 0l6 8 6-8' fill='%23ff6b00'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center;
+}
+.neon-select:focus { outline: none; border-color: var(--safety-orange); box-shadow: 0 0 10px rgba(255,107,0,0.3); }
+.neon-input {
+  background: rgba(255,107,0,0.06); border: 1px solid rgba(255,107,0,0.4);
+  color: #fff; font-family: 'Share Tech Mono', monospace; font-size: 18px;
+  padding: 10px 12px; text-align: center; letter-spacing: 4px;
+  text-transform: uppercase; width: 100%;
+}
+.neon-input:focus { outline: none; border-color: var(--safety-orange); box-shadow: 0 0 10px rgba(255,107,0,0.3); }
+.neon-input::placeholder { color: var(--text-dim); letter-spacing: 2px; font-size: 14px; }
+.toggle-btn {
+  background: transparent; border: 1px solid rgba(255,107,0,0.3);
+  color: var(--text-dim); font-family: 'Share Tech Mono', monospace; font-size: 13px;
+  padding: 8px 16px; cursor: pointer; transition: all 0.3s; flex: 1;
+}
+.toggle-btn.active {
+  border-color: var(--safety-orange); color: var(--safety-orange);
+  background: rgba(255,107,0,0.1);
+}
+.training-toggle-row { display: flex; gap: 0; }
+.training-field { margin-bottom: 14px; }
+.training-field label {
+  display: block; font-family: 'Noto Sans JP', sans-serif;
+  font-size: clamp(12px, 2.8vw, 14px); color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+/* ============================================================
+   SECTION: RANKING SCREEN
+   ============================================================ */
+#ranking-screen { z-index: 280; background: var(--bg-overlay); }
+.ranking-container {
+  width: min(480px, 92%); max-height: 90dvh; max-height: 90%;
+  background: var(--bg-panel); border: 1px solid var(--safety-orange);
+  box-shadow: 0 0 20px rgba(255,107,0,0.3); display: flex; flex-direction: column; overflow: hidden;
+}
+@supports (max-height: 90dvh) { .ranking-container { max-height: 90dvh; } }
+.ranking-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; border-bottom: 1px solid rgba(255,107,0,0.3); flex-shrink: 0;
+}
+.ranking-header h2 {
+  font-family: 'Share Tech Mono', monospace; font-size: clamp(16px, 4vw, 22px);
+  color: var(--safety-orange); letter-spacing: 2px;
+}
+.ranking-filters {
+  padding: 12px 20px; border-bottom: 1px solid rgba(255,107,0,0.15); flex-shrink: 0;
+}
+.ranking-scroll {
+  overflow-y: auto; padding: 12px 20px 16px; flex: 1; -webkit-overflow-scrolling: touch;
+}
+.ranking-list { display: flex; flex-direction: column; gap: 4px; }
+.ranking-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; border-bottom: 1px solid rgba(255,107,0,0.08);
+  font-family: 'Noto Sans JP', sans-serif; font-size: clamp(12px, 2.8vw, 14px);
+}
+.ranking-row:last-child { border-bottom: none; }
+.ranking-pos {
+  width: 28px; font-family: 'Share Tech Mono', monospace; font-weight: 700;
+  text-align: center; flex-shrink: 0;
+}
+.ranking-pos-1 { color: #ffd700; font-size: 18px; }
+.ranking-pos-2 { color: #c0c0c0; font-size: 16px; }
+.ranking-pos-3 { color: #cd7f32; font-size: 16px; }
+.ranking-name { flex: 1; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ranking-score-val {
+  font-family: 'Share Tech Mono', monospace; color: var(--safety-orange);
+  font-weight: 700; flex-shrink: 0;
+}
+.ranking-empty {
+  text-align: center; color: var(--text-dim); padding: 30px 0;
+  font-family: 'Noto Sans JP', sans-serif; font-size: 14px;
+}
+
+/* ============================================================
+   SECTION: TRAINING MODE SCREEN
+   ============================================================ */
+#training-screen { z-index: 255; background: var(--bg-overlay); }
+.training-container {
+  width: min(480px, 92%); max-height: 90dvh; max-height: 90%;
+  background: var(--bg-panel); border: 1px solid var(--safety-orange);
+  box-shadow: 0 0 20px rgba(255,107,0,0.3); display: flex; flex-direction: column; overflow: hidden;
+}
+@supports (max-height: 90dvh) { .training-container { max-height: 90dvh; } }
+.training-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; border-bottom: 1px solid rgba(255,107,0,0.3); flex-shrink: 0;
+}
+.training-header h2 {
+  font-family: 'Share Tech Mono', monospace; font-size: clamp(16px, 4vw, 22px);
+  color: var(--safety-orange); letter-spacing: 2px;
+}
+.training-scroll {
+  overflow-y: auto; padding: 16px 20px; flex: 1; -webkit-overflow-scrolling: touch;
+}
+.training-desc {
+  font-family: 'Noto Sans JP', sans-serif; font-size: clamp(12px, 2.8vw, 14px);
+  color: var(--text-secondary); line-height: 1.7; margin-bottom: 16px;
+  padding: 10px 12px; background: rgba(255,107,0,0.04); border: 1px solid rgba(255,107,0,0.15);
+}
+.training-note {
+  font-family: 'Noto Sans JP', sans-serif; font-size: clamp(11px, 2.2vw, 12px);
+  color: var(--text-dim); line-height: 1.6; margin-top: 8px;
+}
+.training-footer {
+  padding: 12px 20px; border-top: 1px solid rgba(255,107,0,0.3); flex-shrink: 0;
+}
+
+/* ============================================================
+   SECTION: MULTIPLAYER SCREEN
+   ============================================================ */
+#multi-screen { z-index: 258; background: var(--bg-overlay); }
+.multi-container {
+  width: min(480px, 92%); max-height: 90dvh; max-height: 90%;
+  background: var(--bg-panel); border: 1px solid var(--safety-orange);
+  box-shadow: 0 0 20px rgba(255,107,0,0.3); display: flex; flex-direction: column; overflow: hidden;
+}
+@supports (max-height: 90dvh) { .multi-container { max-height: 90dvh; } }
+.multi-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; border-bottom: 1px solid rgba(255,107,0,0.3); flex-shrink: 0;
+}
+.multi-header h2 {
+  font-family: 'Share Tech Mono', monospace; font-size: clamp(16px, 4vw, 22px);
+  color: var(--safety-orange); letter-spacing: 2px;
+}
+.multi-scroll {
+  overflow-y: auto; padding: 16px 20px; flex: 1; -webkit-overflow-scrolling: touch;
+}
+.multi-choice { display: flex; flex-direction: column; gap: 12px; }
+.multi-choice-btn { font-size: 15px; }
+.multi-or {
+  text-align: center; color: var(--text-dim);
+  font-family: 'Share Tech Mono', monospace; font-size: 12px; letter-spacing: 2px;
+}
+.multi-join-row { display: flex; gap: 8px; }
+.multi-join-row .neon-input { flex: 1; }
+.multi-join-row .btn { flex-shrink: 0; padding: 10px 16px; }
+.multi-room-id-box {
+  text-align: center; padding: 12px;
+  border: 1px solid rgba(255,107,0,0.3); margin-bottom: 14px;
+  font-family: 'Share Tech Mono', monospace; font-size: 14px; color: var(--text-secondary);
+}
+.multi-room-id-val {
+  font-size: 24px; font-weight: 700; color: var(--safety-orange);
+  letter-spacing: 6px; margin-left: 8px;
+}
+.multi-players { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
+.multi-player-slot {
+  display: flex; justify-content: space-between; padding: 8px 12px;
+  border: 1px solid rgba(255,107,0,0.15); font-family: 'Noto Sans JP', sans-serif;
+  font-size: 14px; color: var(--text-secondary);
+}
+.multi-player-status { font-family: 'Share Tech Mono', monospace; font-size: 12px; }
+
+/* ============================================================
    SECTION: RULES / KNOWLEDGE SCREEN
    ============================================================ */
 #rules-screen {
@@ -863,6 +1029,15 @@ html, body {
   .briefing-footer .btn { min-height: 44px; }
   /* 結果画面: スマホ共通 */
   .result-container { width: 96%; max-height: 92dvh; max-height: 92%; }
+  /* ランキング・訓練・マルチ: スマホ共通 */
+  .ranking-container, .training-container, .multi-container { width: 96%; max-height: 92dvh; max-height: 92%; }
+  .ranking-header, .training-header, .multi-header { padding: 12px 14px; }
+  .ranking-filters { padding: 10px 14px; }
+  .ranking-scroll { padding: 10px 14px 14px; }
+  .training-scroll, .multi-scroll { padding: 12px 14px; }
+  .training-footer { padding: 10px 14px; }
+  .neon-select { font-size: 13px; padding: 10px 10px; }
+  .neon-input { font-size: 16px; padding: 10px 10px; }
   .result-header { padding: 12px 16px; }
   .result-title { font-size: clamp(16px, 5vw, 22px); }
   .result-scroll { padding: 12px 14px; }
@@ -899,6 +1074,8 @@ html, body {
   .briefing-advisor { padding: 10px 12px; gap: 10px; }
   /* 結果画面 */
   .result-container { max-height: 88dvh; max-height: 88%; }
+  /* ランキング・訓練・マルチ */
+  .ranking-container, .training-container, .multi-container { max-height: 88dvh; max-height: 88%; }
 }
 
 /* --- 横向きスマホ（高さ500px以下） --- */
@@ -969,6 +1146,17 @@ html, body {
 
   /* 横向き: 結果画面 */
   .result-container { max-height: 96dvh; max-height: 96%; width: min(90%, 520px); }
+  /* 横向き: ランキング・訓練・マルチ */
+  .ranking-container, .training-container, .multi-container { max-height: 96dvh; max-height: 96%; width: min(88%, 480px); }
+  .ranking-header, .training-header, .multi-header { padding: 8px 12px; }
+  .ranking-header h2, .training-header h2, .multi-header h2 { font-size: clamp(13px, 3vw, 16px); }
+  .training-scroll, .multi-scroll { padding: 10px 12px; }
+  .training-desc { font-size: clamp(11px, 2.2vw, 13px); padding: 8px 10px; margin-bottom: 10px; }
+  .training-field { margin-bottom: 10px; }
+  .training-footer { padding: 8px 12px; }
+  .training-footer .btn, .multi-scroll .btn { padding: 7px 10px; font-size: 12px; min-height: 34px; }
+  .neon-select { font-size: 12px; padding: 8px 10px; }
+  .neon-input { font-size: 14px; padding: 8px 10px; }
   .result-header { padding: 8px 14px; }
   .result-title { font-size: clamp(14px, 3.5vw, 18px); letter-spacing: 3px; }
   .result-stage { font-size: 10px; }
@@ -1011,8 +1199,8 @@ html, body {
   .stage-desc { font-size: 11px; }
   /* 小型: ブリーフィング */
   .briefing-container { width: 98%; max-height: 90dvh; max-height: 90%; }
-  /* 小型: 結果 */
-  .result-container { width: 98%; max-height: 90dvh; max-height: 90%; }
+  /* 小型: 結果・ランキング・訓練・マルチ */
+  .result-container, .ranking-container, .training-container, .multi-container { width: 98%; max-height: 90dvh; max-height: 90%; }
   /* 小型: ルール */
   .rules-container { width: 98%; max-height: 90dvh; max-height: 90%; }
 }
@@ -1044,6 +1232,29 @@ html, body {
   .result-footer .btn { padding: 5px 6px; font-size: 10px; min-height: 28px; }
   /* 極小横: ルール */
   .rules-container { max-height: 98dvh; max-height: 98%; }
+  /* 極小横: ランキング */
+  .ranking-container { max-height: 98dvh; max-height: 98%; padding: 8px; }
+  .ranking-container h2 { font-size: 14px; margin-bottom: 4px; }
+  .ranking-filter { gap: 4px; margin-bottom: 4px; }
+  .ranking-filter .neon-select { font-size: 10px; padding: 3px 6px; }
+  .ranking-list { max-height: 40vh; }
+  .ranking-row { padding: 3px 6px; font-size: 10px; }
+  /* 極小横: 訓練モード */
+  .training-container { max-height: 98dvh; max-height: 98%; padding: 8px; }
+  .training-container h2 { font-size: 14px; margin-bottom: 4px; }
+  .training-options { gap: 6px; }
+  .training-options label { font-size: 10px; }
+  .training-options .neon-select { font-size: 10px; padding: 3px 6px; }
+  .toggle-btn { font-size: 10px; padding: 3px 8px; min-height: 28px; }
+  .training-start-btn { padding: 5px 8px; font-size: 11px; min-height: 30px; }
+  /* 極小横: マルチプレイ */
+  .multi-container { max-height: 98dvh; max-height: 98%; padding: 8px; }
+  .multi-container h2 { font-size: 14px; margin-bottom: 4px; }
+  .multi-room-actions { gap: 4px; }
+  .multi-room-actions .btn { padding: 5px 8px; font-size: 10px; min-height: 28px; }
+  .neon-input { font-size: 10px; padding: 4px 8px; }
+  .multi-lobby { padding: 6px; }
+  .multi-lobby-players { max-height: 30vh; font-size: 10px; }
 }
 
 </style>
@@ -1098,11 +1309,11 @@ html, body {
     <div class="corner-br"></div>
     <div class="btn-group">
       <button class="btn btn-neon" id="btn-story" data-i18n="BTN_STORY"></button>
-      <button class="btn btn-neon" id="btn-multi" data-i18n="BTN_MULTI" disabled></button>
-      <button class="btn btn-neon" id="btn-training" data-i18n="BTN_TRAINING" disabled></button>
+      <button class="btn btn-neon" id="btn-multi" data-i18n="BTN_MULTI"></button>
+      <button class="btn btn-neon" id="btn-training" data-i18n="BTN_TRAINING"></button>
     </div>
     <div class="btn-group" style="margin-top:10px;">
-      <button class="btn btn-thin" id="btn-ranking" data-i18n="BTN_RANKING" disabled></button>
+      <button class="btn btn-thin" id="btn-ranking" data-i18n="BTN_RANKING"></button>
       <button class="btn btn-thin" id="btn-rules" data-i18n="BTN_RULES"></button>
     </div>
     <div class="panel-footer">
@@ -1285,6 +1496,132 @@ html, body {
 </div>
 
 <!-- ============================================================
+     SECTION: RANKING SCREEN
+     ============================================================ -->
+<div id="ranking-screen" class="screen">
+  <div class="ranking-container">
+    <div class="ranking-header">
+      <h2 data-i18n="RANKING_TITLE"></h2>
+      <button class="rules-close-btn" id="ranking-close-btn">✕</button>
+    </div>
+    <div class="ranking-filters">
+      <select class="neon-select" id="ranking-stage-filter">
+        <option value="1">Stage 1</option>
+        <option value="2">Stage 2</option>
+        <option value="3">Stage 3</option>
+        <option value="4">Stage 4</option>
+        <option value="5">Stage 5</option>
+      </select>
+    </div>
+    <div class="ranking-scroll">
+      <div class="ranking-list" id="ranking-list">
+        <div class="ranking-empty" data-i18n="RANKING_EMPTY"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SECTION: TRAINING MODE SCREEN
+     ============================================================ -->
+<div id="training-screen" class="screen">
+  <div class="training-container">
+    <div class="training-header">
+      <h2 data-i18n="TRAINING_TITLE"></h2>
+      <button class="rules-close-btn" id="training-close-btn">✕</button>
+    </div>
+    <div class="training-scroll">
+      <div class="training-desc" data-i18n="TRAINING_DESC"></div>
+
+      <!-- ステージ選択 -->
+      <div class="training-field">
+        <label data-i18n="TRAINING_STAGE_LABEL"></label>
+        <select class="neon-select" id="training-stage-select">
+          <option value="1" data-i18n="STAGE1_NAME"></option>
+          <option value="2" data-i18n="STAGE2_NAME"></option>
+          <option value="3" data-i18n="STAGE3_NAME"></option>
+          <option value="4" data-i18n="STAGE4_NAME"></option>
+          <option value="5" data-i18n="STAGE5_NAME"></option>
+        </select>
+      </div>
+
+      <!-- 設定 -->
+      <div class="training-field">
+        <label data-i18n="TRAINING_ZONE_LABEL"></label>
+        <div class="training-toggle-row">
+          <button class="toggle-btn active" id="training-zone-on">ON</button>
+          <button class="toggle-btn" id="training-zone-off">OFF</button>
+        </div>
+      </div>
+      <div class="training-field">
+        <label data-i18n="TRAINING_PAUSE_LABEL"></label>
+        <div class="training-toggle-row">
+          <button class="toggle-btn active" id="training-pause-on">ON</button>
+          <button class="toggle-btn" id="training-pause-off">OFF</button>
+        </div>
+      </div>
+
+      <div class="training-note" data-i18n="TRAINING_NOTE"></div>
+    </div>
+    <div class="training-footer">
+      <button class="btn btn-neon" id="training-start-btn" data-i18n="TRAINING_START"></button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SECTION: MULTIPLAYER SCREEN
+     ============================================================ -->
+<div id="multi-screen" class="screen">
+  <div class="multi-container">
+    <div class="multi-header">
+      <h2 data-i18n="MULTI_TITLE"></h2>
+      <button class="rules-close-btn" id="multi-close-btn">✕</button>
+    </div>
+    <div class="multi-scroll">
+      <!-- ルーム作成 or 参加の選択 -->
+      <div class="multi-choice" id="multi-choice">
+        <button class="btn btn-neon multi-choice-btn" id="multi-create-btn" data-i18n="MULTI_CREATE"></button>
+        <div class="multi-or" data-i18n="MULTI_OR"></div>
+        <div class="multi-join-row">
+          <input type="text" class="neon-input" id="multi-room-input" maxlength="6" placeholder="ROOM ID" autocomplete="off" spellcheck="false">
+          <button class="btn btn-neon" id="multi-join-btn" data-i18n="MULTI_JOIN"></button>
+        </div>
+      </div>
+
+      <!-- ルームロビー（作成/参加後に表示） -->
+      <div class="multi-lobby" id="multi-lobby" style="display:none;">
+        <div class="multi-room-id-box">
+          <span data-i18n="MULTI_ROOM_ID"></span>
+          <span class="multi-room-id-val" id="multi-room-id-val">------</span>
+        </div>
+        <div class="multi-players" id="multi-players">
+          <div class="multi-player-slot"><span class="multi-player-name">---</span><span class="multi-player-status">---</span></div>
+        </div>
+        <div class="training-field">
+          <label data-i18n="MULTI_STAGE_LABEL"></label>
+          <select class="neon-select" id="multi-stage-select">
+            <option value="1" data-i18n="STAGE1_NAME"></option>
+            <option value="2" data-i18n="STAGE2_NAME"></option>
+            <option value="3" data-i18n="STAGE3_NAME"></option>
+            <option value="4" data-i18n="STAGE4_NAME"></option>
+            <option value="5" data-i18n="STAGE5_NAME"></option>
+          </select>
+        </div>
+        <div class="training-field">
+          <label data-i18n="MULTI_MODE_LABEL"></label>
+          <div class="training-toggle-row">
+            <button class="toggle-btn active" id="multi-mode-coop" data-i18n="MULTI_COOP"></button>
+            <button class="toggle-btn" id="multi-mode-vs" data-i18n="MULTI_VS"></button>
+          </div>
+        </div>
+        <button class="btn btn-neon" id="multi-ready-btn" data-i18n="MULTI_READY"></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
      SECTION: RULES / DISASTER KNOWLEDGE SCREEN
      ============================================================ -->
 <div id="rules-screen" class="screen">
@@ -1434,6 +1771,25 @@ const I18N = {
     RANK_B: '基本は押さえている',
     RANK_C: 'もう少し知識が必要',
     RANK_D: '危険な行動が多い',
+    RANKING_TITLE: 'ランキング',
+    RANKING_EMPTY: 'まだ記録がありません',
+    TRAINING_TITLE: '訓練モード',
+    TRAINING_DESC: '教育現場での使用を想定したモードです。制限時間なし・スコア記録なしで、安全ゾーンの確認や避難手順の練習ができます。',
+    TRAINING_STAGE_LABEL: 'ステージ選択',
+    TRAINING_ZONE_LABEL: '安全ゾーン表示',
+    TRAINING_PAUSE_LABEL: 'フェーズ間一時停止',
+    TRAINING_NOTE: '※ 訓練モードではランキングに記録されません',
+    TRAINING_START: '訓練開始',
+    MULTI_TITLE: 'マルチプレイ',
+    MULTI_CREATE: 'ルームを作成する',
+    MULTI_OR: '— または —',
+    MULTI_JOIN: '参加',
+    MULTI_ROOM_ID: 'ROOM ID:',
+    MULTI_STAGE_LABEL: 'ステージ',
+    MULTI_MODE_LABEL: 'モード',
+    MULTI_COOP: '協力',
+    MULTI_VS: '競争',
+    MULTI_READY: 'READY',
     RULES_TITLE: 'ルール / 防災知識',
     TAB_RULES: 'ゲームルール',
     TAB_KNOWLEDGE: '防災知識',
@@ -1518,6 +1874,25 @@ const I18N = {
     RANK_B: 'Knows the Basics',
     RANK_C: 'Needs More Knowledge',
     RANK_D: 'Too Many Risky Actions',
+    RANKING_TITLE: 'RANKING',
+    RANKING_EMPTY: 'No records yet',
+    TRAINING_TITLE: 'TRAINING MODE',
+    TRAINING_DESC: 'Designed for educational settings. No time limit, no score recording. Practice evacuation procedures and check safe zones freely.',
+    TRAINING_STAGE_LABEL: 'Stage',
+    TRAINING_ZONE_LABEL: 'Safe Zone Display',
+    TRAINING_PAUSE_LABEL: 'Pause Between Phases',
+    TRAINING_NOTE: '※ Training mode scores are not recorded in rankings',
+    TRAINING_START: 'START TRAINING',
+    MULTI_TITLE: 'MULTIPLAYER',
+    MULTI_CREATE: 'CREATE ROOM',
+    MULTI_OR: '— or —',
+    MULTI_JOIN: 'JOIN',
+    MULTI_ROOM_ID: 'ROOM ID:',
+    MULTI_STAGE_LABEL: 'Stage',
+    MULTI_MODE_LABEL: 'Mode',
+    MULTI_COOP: 'COOP',
+    MULTI_VS: 'VS',
+    MULTI_READY: 'READY',
     RULES_TITLE: 'RULES / KNOWLEDGE',
     TAB_RULES: 'RULES',
     TAB_KNOWLEDGE: 'KNOWLEDGE',
@@ -1626,7 +2001,10 @@ function initUISounds() {
   document.querySelectorAll('.rules-close-btn').forEach(el => {
     el.addEventListener('click', () => SoundManager.playSE('close'));
   });
-  document.querySelectorAll('.briefing-start-btn, .briefing-back-btn, #result-retry-btn, #result-select-btn, #result-title-btn').forEach(el => {
+  document.querySelectorAll('.neon-select').forEach(el => {
+    el.addEventListener('change', () => SoundManager.playSE('tab'));
+  });
+  document.querySelectorAll('.briefing-start-btn, .briefing-back-btn, #result-retry-btn, #result-select-btn, #result-title-btn, #training-start-btn, #multi-create-btn, #multi-join-btn, #multi-ready-btn, .toggle-btn').forEach(el => {
     el.addEventListener('mouseenter', () => SoundManager.playSE('hover'));
     el.addEventListener('click', () => SoundManager.playSE('click'));
   });
@@ -2047,6 +2425,63 @@ function initEventListeners() {
     showTitle();
   });
 
+  // ランキング
+  document.getElementById('btn-ranking').addEventListener('click', () => {
+    showScreen('ranking-screen');
+    applyI18N();
+  });
+  document.getElementById('ranking-close-btn').addEventListener('click', () => { showTitle(); });
+
+  // 訓練モード
+  document.getElementById('btn-training').addEventListener('click', () => {
+    showScreen('training-screen');
+    applyI18N();
+  });
+  document.getElementById('training-close-btn').addEventListener('click', () => { showTitle(); });
+  document.getElementById('training-start-btn').addEventListener('click', () => {
+    // TODO: 訓練モード開始（3Dゲーム実装後に接続）
+    SoundManager.playSE('click');
+  });
+  // 訓練モード トグル
+  ['training-zone', 'training-pause'].forEach(prefix => {
+    document.getElementById(prefix + '-on').addEventListener('click', function() {
+      this.classList.add('active');
+      document.getElementById(prefix + '-off').classList.remove('active');
+      SoundManager.playSE('tab');
+    });
+    document.getElementById(prefix + '-off').addEventListener('click', function() {
+      this.classList.add('active');
+      document.getElementById(prefix + '-on').classList.remove('active');
+      SoundManager.playSE('tab');
+    });
+  });
+
+  // マルチプレイ
+  document.getElementById('btn-multi').addEventListener('click', () => {
+    showScreen('multi-screen');
+    applyI18N();
+  });
+  document.getElementById('multi-close-btn').addEventListener('click', () => { showTitle(); });
+  document.getElementById('multi-create-btn').addEventListener('click', () => {
+    // TODO: Firebase ルーム作成（実装後に接続）
+    SoundManager.playSE('click');
+  });
+  document.getElementById('multi-join-btn').addEventListener('click', () => {
+    // TODO: Firebase ルーム参加（実装後に接続）
+    SoundManager.playSE('click');
+  });
+  // マルチ モード トグル
+  document.getElementById('multi-mode-coop').addEventListener('click', function() {
+    this.classList.add('active');
+    document.getElementById('multi-mode-vs').classList.remove('active');
+    SoundManager.playSE('tab');
+  });
+  document.getElementById('multi-mode-vs').addEventListener('click', function() {
+    this.classList.add('active');
+    document.getElementById('multi-mode-coop').classList.remove('active');
+    SoundManager.playSE('tab');
+  });
+
   // ストーリーモード → ステージ選択
   document.getElementById('btn-story').addEventListener('click', () => {
     showScreen('stage-select-screen');
@@ -2141,6 +2576,9 @@ function initEventListeners() {
     if (e.target.closest('.stage-select-container')) return;
     if (e.target.closest('.briefing-container')) return;
     if (e.target.closest('.result-container')) return;
+    if (e.target.closest('.ranking-container')) return;
+    if (e.target.closest('.training-container')) return;
+    if (e.target.closest('.multi-container')) return;
     e.preventDefault();
   }, { passive: false });
   document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
