@@ -917,6 +917,75 @@ const I18N = {
 const MATRIX_CHARS = '地震避難防災安全震度津波警報揺火災備蓄救助消防庁訓練危険倒壊停電アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789';
 
 // ============================================================
+// SECTION: SOUND MANAGER
+// ============================================================
+const SoundManager = {
+  audioCtx: null,
+  seEnabled: true,
+
+  getCtx() {
+    if (!this.audioCtx) {
+      try {
+        this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      } catch (e) { return null; }
+    }
+    if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
+    return this.audioCtx;
+  },
+
+  playSE(type) {
+    if (!this.seEnabled) return;
+    try {
+      const ctx = this.getCtx();
+      if (!ctx) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      const now = ctx.currentTime;
+
+      const conf = {
+        hover:  { f: 1400, d: 0.06, t: 'sine',     g: 0.30, sweep: 1800 },
+        click:  { f: 600,  d: 0.10, t: 'sine',     g: 0.35, sweep: 1200 },
+        tab:    { f: 900,  d: 0.08, t: 'sine',     g: 0.25, sweep: 1500 },
+        close:  { f: 1200, d: 0.08, t: 'sine',     g: 0.25, sweep: 600 },
+        error:  { f: 400,  d: 0.20, t: 'sawtooth', g: 0.30, sweep: 150 }
+      }[type] || { f: 800, d: 0.1, t: 'sine', g: 0.30 };
+
+      gain.gain.setValueAtTime(conf.g, now);
+      osc.type = conf.t;
+      osc.frequency.setValueAtTime(conf.f, now);
+      if (conf.sweep) osc.frequency.linearRampToValueAtTime(conf.sweep, now + conf.d);
+      gain.gain.linearRampToValueAtTime(0, now + conf.d);
+      osc.start(now);
+      osc.stop(now + conf.d);
+    } catch (e) {}
+  }
+};
+
+function initUISounds() {
+  document.querySelectorAll('.btn, .lang-btn, .bgm-btn').forEach(el => {
+    el.addEventListener('mouseenter', () => SoundManager.playSE('hover'));
+    el.addEventListener('click', () => SoundManager.playSE('click'));
+  });
+  document.querySelectorAll('.rules-tab').forEach(el => {
+    el.addEventListener('click', () => SoundManager.playSE('tab'));
+  });
+  document.querySelectorAll('.rules-close-btn').forEach(el => {
+    el.addEventListener('click', () => SoundManager.playSE('close'));
+  });
+}
+
+// AudioContext resume on first user interaction (iOS対応)
+function resumeAudioContext() {
+  if (SoundManager.audioCtx && SoundManager.audioCtx.state === 'suspended') {
+    SoundManager.audioCtx.resume();
+  }
+}
+document.addEventListener('touchstart', resumeAudioContext, { once: true });
+document.addEventListener('click', resumeAudioContext, { once: true });
+
+// ============================================================
 // SECTION: GAME STATE
 // ============================================================
 let currentLang = 'ja';
@@ -1196,6 +1265,7 @@ function init() {
   }
 
   initEventListeners();
+  initUISounds();
   initWarning();
 }
 
