@@ -1340,29 +1340,56 @@ html, body {
 }
 #game-hud > * { pointer-events: auto; }
 
-/* HUD上部バー */
+/* HUD上部バー — KANKERI統一: position absolute + 各要素に背景ボックス */
 #hud-top-bar {
+  position: absolute; top: 12px; left: 12px; right: 12px;
   display: flex; justify-content: space-between; align-items: center;
-  padding: 8px 16px; font-family: 'Share Tech Mono', monospace;
+  font-family: 'Share Tech Mono', monospace;
 }
-#hud-seismic { font-size: 14px; color: var(--safety-orange); letter-spacing: 1px; }
-#hud-phase { font-size: 12px; color: var(--text-secondary); letter-spacing: 1px; }
-#hud-timer { font-size: 16px; color: #fff; letter-spacing: 2px; }
+#hud-seismic {
+  font-size: 14px; color: var(--safety-orange); letter-spacing: 1px;
+  background: rgba(0,0,0,0.5); padding: 4px 10px;
+  border: 1px solid rgba(255,107,0,0.4); border-radius: 4px;
+  text-shadow: 0 0 8px rgba(255,107,0,0.4);
+}
+#hud-phase {
+  font-size: 14px; color: rgba(255,255,255,0.6); letter-spacing: 1px;
+  background: rgba(0,0,0,0.4); padding: 4px 10px; border-radius: 4px;
+}
+#hud-timer {
+  font-size: 24px; color: #fff; letter-spacing: 2px;
+  background: rgba(0,0,0,0.5); padding: 4px 14px;
+  border: 1px solid rgba(255,107,0,0.4); border-radius: 4px;
+  text-shadow: 0 0 10px rgba(255,107,0,0.6);
+}
+#hud-timer.warning { color: #ff4444; animation: timerBlink 0.5s infinite alternate; }
+@keyframes timerBlink { to { opacity: 0.4; } }
 
 /* HUD下部: スコア + 安全インジケーター */
 #hud-bottom-bar {
-  position: absolute; bottom: 0; left: 0; width: 100%;
+  position: absolute; bottom: 12px; left: 12px; right: 12px;
   display: flex; justify-content: space-between; align-items: flex-end;
-  padding: 8px 16px 12px; font-family: 'Share Tech Mono', monospace;
+  font-family: 'Share Tech Mono', monospace;
 }
-#hud-score { font-size: 14px; color: #fff; }
+#hud-score {
+  font-size: 14px; color: #fff;
+  background: rgba(0,0,0,0.5); padding: 4px 10px;
+  border-radius: 4px;
+}
 #hud-safety-indicator {
-  font-size: 12px; padding: 4px 10px;
-  border: 1px solid; letter-spacing: 1px;
+  font-size: 12px; padding: 4px 10px; letter-spacing: 1px;
+  background: rgba(0,0,0,0.5); border-radius: 4px;
 }
-#hud-safety-indicator.safe { color: var(--safe-green); border-color: var(--safe-green); }
-#hud-safety-indicator.danger { color: var(--alert-red); border-color: var(--alert-red); }
-#hud-safety-indicator.caution { color: #ffcc00; border-color: #ffcc00; }
+#hud-safety-indicator.safe { color: var(--safe-green); border: 1px solid var(--safe-green); }
+#hud-safety-indicator.danger { color: var(--alert-red); border: 1px solid var(--alert-red); }
+#hud-safety-indicator.caution { color: #ffcc00; border: 1px solid #ffcc00; }
+
+/* 危険ビネット — KANKERI統一: 地震時の画面端赤グロー */
+#danger-vignette {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none; box-shadow: inset 0 0 80px rgba(255,0,64,0);
+  transition: box-shadow 0.3s; z-index: 4;
+}
 
 /* AIアドバイザー吹き出し */
 #advisor-box {
@@ -1406,33 +1433,40 @@ html, body {
   pointer-events: none;
 }
 
-/* モバイルアクションボタン */
+/* モバイルボタン — KANKERI統一: ダッシュ/しゃがむ/ガードは右下に横並び */
 #mobile-buttons {
   position: absolute;
-  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
-  right: calc(16px + env(safe-area-inset-right, 0px));
-  display: none; flex-direction: column; gap: 8px;
+  bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+  right: calc(12px + env(safe-area-inset-right, 0px));
+  display: none; flex-direction: row; gap: 10px;
 }
 .mob-btn {
-  width: 56px; height: 56px; border-radius: 50%;
-  background: rgba(255,107,0,0.15); border: 2px solid rgba(255,107,0,0.5);
-  color: rgba(255,255,255,0.7); font-family: 'Noto Sans JP', sans-serif;
-  font-size: 11px; font-weight: 700; display: flex; align-items: center;
+  width: 58px; height: 58px; border-radius: 50%;
+  background: rgba(0,0,0,0.45); border: 1.5px solid rgba(255,107,0,0.4);
+  color: #fff; font-family: 'Share Tech Mono', monospace;
+  font-size: 12px; display: flex; align-items: center;
   justify-content: center; touch-action: none; user-select: none;
-  -webkit-user-select: none;
+  -webkit-user-select: none; padding: 0;
 }
 .mob-btn:active, .mob-btn.active {
-  background: rgba(255,107,0,0.35); border-color: var(--safety-orange);
-  color: #fff; box-shadow: 0 0 12px rgba(255,107,0,0.4);
+  background: rgba(255,107,0,0.3); border-color: rgba(255,140,51,0.8);
+  box-shadow: 0 0 12px rgba(255,107,0,0.4);
 }
-.mob-btn.mob-interact {
-  background: rgba(0,200,65,0.15); border-color: rgba(0,255,65,0.5);
-  color: rgba(0,255,65,0.7);
+/* 操作ボタン — KANKERI統一: 独立配置、緑色、下中央右寄り */
+#mob-interact {
+  position: absolute;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  right: calc(42px + env(safe-area-inset-right, 0px));
+  width: 62px; height: 62px; border-radius: 50%;
+  background: rgba(0,200,65,0.3); border: 2px solid rgba(0,255,65,0.7);
+  color: #00ff41; font-weight: bold; font-size: 13px;
+  display: none; align-items: center; justify-content: center;
+  touch-action: none; font-family: 'Share Tech Mono', monospace;
+  box-shadow: 0 0 12px rgba(0,255,65,0.3);
 }
-.mob-btn.mob-interact:active, .mob-btn.mob-interact.active {
-  background: rgba(0,255,65,0.35); border-color: rgba(0,255,65,0.8);
-  color: #fff;
-}
+#mob-interact:active { background: rgba(0,255,65,0.4); box-shadow: 0 0 20px rgba(0,255,65,0.6); }
+/* ジョイスティックのactive状態 — KANKERI統一 */
+#joystick-knob.active { box-shadow: 0 0 18px rgba(255,107,0,0.6); border-color: rgba(255,160,80,0.9); }
 
 /* ヒットエフェクト */
 #hit-flash {
@@ -1443,25 +1477,27 @@ html, body {
 }
 #hit-flash.active { opacity: 1; }
 
-/* ポーズオーバーレイ */
+/* ポーズオーバーレイ — KANKERI統一: .ui-panelパネル使用 */
 #pause-overlay {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0,0,0,0.85); display: none;
-  flex-direction: column; align-items: center; justify-content: center;
-  gap: 12px; z-index: 20;
+  background: rgba(0,0,0,0.8); display: none;
+  align-items: center; justify-content: center; z-index: 50;
 }
 #pause-overlay.active { display: flex; }
-#pause-title {
-  font-family: 'Share Tech Mono', monospace; font-size: 28px;
-  color: var(--safety-orange); letter-spacing: 4px; margin-bottom: 16px;
+.pause-panel { max-width: 300px; width: 90%; padding: 30px; text-align: center; }
+.pause-panel h2 {
+  font-family: 'Share Tech Mono', monospace; font-size: 24px;
+  color: var(--safety-orange); letter-spacing: 4px; margin-bottom: 20px;
+  text-shadow: 0 0 12px rgba(255,107,0,0.4);
 }
 .pause-btn {
-  width: 200px; padding: 12px; font-family: 'Noto Sans JP', sans-serif;
-  font-size: 14px; background: transparent; border: 1px solid var(--safety-orange);
+  width: 100%; padding: 12px; margin-bottom: 8px;
+  font-family: 'Noto Sans JP', sans-serif; font-size: 14px;
+  background: transparent; border: 1px solid rgba(255,107,0,0.4);
   color: #fff; cursor: pointer; text-align: center;
   transition: all 0.2s;
 }
-.pause-btn:hover { background: rgba(255,107,0,0.15); }
+.pause-btn:hover { background: rgba(255,107,0,0.15); border-color: var(--safety-orange); }
 
 /* ローディング */
 #game-loading {
@@ -1483,28 +1519,36 @@ html, body {
 
 /* PC: モバイルUI非表示 */
 @media (hover: hover) and (pointer: fine) {
-  #mobile-joystick, #mobile-buttons { display: none !important; }
+  #mobile-joystick, #mobile-buttons, #mob-interact { display: none !important; }
 }
 
-/* スマホ横: HUD調整 */
+/* スマホ横: HUD調整 — KANKERI統一 */
 @media (orientation: landscape) and (max-height: 500px) {
-  #hud-top-bar { padding: 4px 12px; }
-  #hud-seismic { font-size: 12px; }
-  #hud-timer { font-size: 14px; }
-  #hud-bottom-bar { padding: 6px 12px 8px; }
+  #hud-top-bar { top: 6px; left: 6px; right: 6px; }
+  #hud-seismic { font-size: 11px; padding: 3px 8px; }
+  #hud-phase { font-size: 11px; padding: 3px 8px; }
+  #hud-timer { font-size: 20px; padding: 3px 10px; }
+  #hud-bottom-bar { bottom: 6px; left: 6px; right: 6px; }
+  #hud-score { font-size: 12px; padding: 3px 8px; }
+  #hud-safety-indicator { font-size: 10px; padding: 3px 8px; }
   #mobile-joystick { width: 100px; height: 100px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); left: calc(16px + env(safe-area-inset-left, 0px)); }
   #joystick-knob { width: 38px; height: 38px; margin: -19px 0 0 -19px; }
   .mob-btn { width: 48px; height: 48px; font-size: 10px; }
-  #mobile-buttons { gap: 6px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); right: calc(12px + env(safe-area-inset-right, 0px)); }
+  #mobile-buttons { gap: 8px; bottom: calc(70px + env(safe-area-inset-bottom, 0px)); right: calc(10px + env(safe-area-inset-right, 0px)); }
+  #mob-interact { width: 52px; height: 52px; font-size: 11px; right: calc(34px + env(safe-area-inset-right, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
   #advisor-box { bottom: 40px; max-width: 240px; }
   #advisor-text { font-size: 11px; padding: 6px 10px; }
   #advisor-icon { width: 32px; height: 32px; font-size: 14px; }
+  .pause-panel { padding: 16px; }
+  .pause-panel h2 { font-size: 18px; margin-bottom: 12px; }
+  .pause-btn { padding: 8px; font-size: 13px; }
 }
 
 /* スマホ縦: ジョイスティック位置 */
 @media (orientation: portrait) and (max-width: 500px) {
   #mobile-joystick { bottom: calc(24px + env(safe-area-inset-bottom, 0px)); left: calc(20px + env(safe-area-inset-left, 0px)); }
-  #mobile-buttons { bottom: calc(16px + env(safe-area-inset-bottom, 0px)); right: calc(12px + env(safe-area-inset-right, 0px)); }
+  #mobile-buttons { bottom: calc(80px + env(safe-area-inset-bottom, 0px)); right: calc(10px + env(safe-area-inset-right, 0px)); }
+  #mob-interact { right: calc(36px + env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
   #advisor-box { bottom: 50px; left: 8px; max-width: 220px; }
   #advisor-text { font-size: 12px; }
 }
@@ -1514,9 +1558,12 @@ html, body {
   #mobile-joystick { width: 80px; height: 80px; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
   #joystick-knob { width: 32px; height: 32px; margin: -16px 0 0 -16px; }
   .mob-btn { width: 40px; height: 40px; font-size: 9px; }
-  #mobile-buttons { gap: 4px; }
+  #mobile-buttons { gap: 6px; bottom: calc(54px + env(safe-area-inset-bottom, 0px)); }
+  #mob-interact { width: 44px; height: 44px; font-size: 10px; right: calc(28px + env(safe-area-inset-right, 0px)); bottom: calc(8px + env(safe-area-inset-bottom, 0px)); }
   #advisor-box { bottom: 30px; max-width: 200px; }
   #advisor-text { font-size: 10px; padding: 5px 8px; }
+  .pause-panel { padding: 12px; }
+  .pause-panel h2 { font-size: 16px; margin-bottom: 8px; }
 }
 
 </style>
@@ -2023,18 +2070,21 @@ html, body {
       <div id="advisor-text"></div>
     </div>
     <div id="hit-flash"></div>
+    <div id="danger-vignette"></div>
   </div>
   <div id="mobile-joystick"><div id="joystick-knob"></div></div>
   <div id="mobile-buttons">
-    <button class="mob-btn mob-crouch" id="mob-crouch">しゃがむ</button>
-    <button class="mob-btn mob-guard" id="mob-guard">ガード</button>
-    <button class="mob-btn mob-interact" id="mob-interact">操作</button>
-    <button class="mob-btn mob-dash" id="mob-dash">走る</button>
+    <button class="mob-btn" id="mob-dash">走る</button>
+    <button class="mob-btn" id="mob-crouch">しゃがむ</button>
+    <button class="mob-btn" id="mob-guard">ガード</button>
   </div>
+  <button id="mob-interact">操作</button>
   <div id="pause-overlay">
-    <div id="pause-title">PAUSED</div>
-    <button class="pause-btn" id="btn-resume">再開</button>
-    <button class="pause-btn" id="btn-quit-game">タイトルに戻る</button>
+    <div class="pause-panel ui-panel">
+      <h2>PAUSED</h2>
+      <button class="pause-btn" id="btn-resume">再開</button>
+      <button class="pause-btn" id="btn-quit-game">タイトルに戻る</button>
+    </div>
   </div>
   <div id="game-loading">
     <div id="loading-text">LOADING...</div>
@@ -3040,6 +3090,7 @@ function initGame(stageNum) {
   if (GAME.isMobile) {
     document.getElementById('mobile-joystick').style.display = 'block';
     document.getElementById('mobile-buttons').style.display = 'flex';
+    document.getElementById('mob-interact').style.display = 'flex';
   }
 
   document.getElementById('hud-score').textContent = 'SCORE: 0';
@@ -3291,6 +3342,7 @@ function cleanupGame() {
 
   document.getElementById('mobile-joystick').style.display = 'none';
   document.getElementById('mobile-buttons').style.display = 'none';
+  document.getElementById('mob-interact').style.display = 'none';
   document.getElementById('game-loading').style.display = 'flex';
 
   if (document.pointerLockElement) {
