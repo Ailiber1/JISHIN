@@ -911,15 +911,15 @@ html, body {
   position: sticky; top: 0;
   background: var(--bg-panel);
   z-index: 5; padding-top: 12px;
-  flex-wrap: wrap;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
 }
 .rules-tab {
-  flex: 1; min-width: 0;
+  flex: 1 0 auto; min-width: 0;
   background: transparent; border: none; border-bottom: 2px solid transparent;
   color: var(--text-dim); font-family: 'Noto Sans JP', sans-serif;
-  font-size: clamp(11px, 2.5vw, 13px); padding: 10px 4px;
+  font-size: clamp(10px, 2.2vw, 13px); padding: 10px 6px;
   cursor: pointer; transition: all 0.3s; text-align: center;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .rules-tab.active { color: var(--safety-orange); border-bottom-color: var(--safety-orange); }
 .rules-tab:hover { color: var(--safety-orange-light); }
@@ -1106,7 +1106,7 @@ html, body {
   .rules-header h2 { font-size: clamp(14px, 4vw, 18px); }
   .rules-close-btn { width: 40px; height: 40px; font-size: 20px; }
   .rules-scroll { padding: 0 14px 14px; }
-  .rules-tab { font-size: clamp(11px, 3vw, 13px); padding: 10px 2px; }
+  .rules-tab { font-size: clamp(10px, 2.5vw, 12px); padding: 8px 3px; }
 }
 
 /* --- 縦向きスマホ --- */
@@ -1240,7 +1240,7 @@ html, body {
   .rules-close-btn { width: 34px; height: 34px; min-width: 34px; }
   .rules-scroll { padding: 0 12px 10px; }
   .rules-tabs { padding-top: 6px; margin-bottom: 10px; }
-  .rules-tab { padding: 7px 4px; font-size: clamp(10px, 2vw, 12px); }
+  .rules-tab { padding: 6px 2px; font-size: clamp(9px, 1.8vw, 11px); }
   .rules-tab-content h3 { margin: 12px 0 6px; font-size: clamp(12px, 2.5vw, 14px); }
   .rules-step, .know-item, .dont-item { font-size: clamp(11px, 2.2vw, 13px); }
   .rules-score-item { padding: 6px 10px; font-size: clamp(11px, 2.2vw, 13px); }
@@ -1954,6 +1954,7 @@ html, body {
       <!-- タブ切替 -->
       <div class="rules-tabs">
         <button class="rules-tab active" data-tab="tab-rules" data-i18n="TAB_RULES"></button>
+        <button class="rules-tab" data-tab="tab-controls" data-i18n="TAB_CONTROLS"></button>
         <button class="rules-tab" data-tab="tab-knowledge" data-i18n="TAB_KNOWLEDGE"></button>
         <button class="rules-tab" data-tab="tab-dont" data-i18n="TAB_DONT"></button>
         <button class="rules-tab" data-tab="tab-sources" data-i18n="TAB_SOURCES"></button>
@@ -1970,7 +1971,17 @@ html, body {
           <div class="rules-step"><span class="step-num">5</span><span data-i18n="RULES_STEP5"></span></div>
           <div class="rules-step"><span class="step-num">6</span><span data-i18n="RULES_STEP6"></span></div>
         </div>
-        <h3 data-i18n="RULES_CONTROLS_TITLE"></h3>
+        <h3 data-i18n="RULES_SCORING_TITLE"></h3>
+        <div class="rules-score-list">
+          <div class="rules-score-item"><span class="score-label" data-i18n="SCORE_INIT"></span><span class="score-pts">30pt</span></div>
+          <div class="rules-score-item"><span class="score-label" data-i18n="SCORE_DURING"></span><span class="score-pts">20pt</span></div>
+          <div class="rules-score-item"><span class="score-label" data-i18n="SCORE_AFTER"></span><span class="score-pts">30pt</span></div>
+          <div class="rules-score-item"><span class="score-label" data-i18n="SCORE_EVAC"></span><span class="score-pts">20pt</span></div>
+        </div>
+      </div>
+
+      <!-- タブ2: 操作方法 -->
+      <div class="rules-tab-content" id="tab-controls">
         <div class="controls-section">
           <div class="controls-label" data-i18n="CONTROLS_PC_LABEL"></div>
           <div class="controls-grid">
@@ -1989,17 +2000,9 @@ html, body {
             <div class="ctrl-row"><span class="ctrl-key" data-i18n="CTRL_BTNS"></span><span class="ctrl-desc" data-i18n="CTRL_ACTIONS"></span></div>
           </div>
         </div>
-
-        <h3 data-i18n="RULES_SCORING_TITLE"></h3>
-        <div class="rules-score-list">
-          <div class="rules-score-item"><span class="score-label" data-i18n="SCORE_INIT"></span><span class="score-pts">30pt</span></div>
-          <div class="rules-score-item"><span class="score-label" data-i18n="SCORE_DURING"></span><span class="score-pts">20pt</span></div>
-          <div class="rules-score-item"><span class="score-label" data-i18n="SCORE_AFTER"></span><span class="score-pts">30pt</span></div>
-          <div class="rules-score-item"><span class="score-label" data-i18n="SCORE_EVAC"></span><span class="score-pts">20pt</span></div>
-        </div>
       </div>
 
-      <!-- タブ2: 防災知識 -->
+      <!-- タブ3: 防災知識 -->
       <div class="rules-tab-content" id="tab-knowledge">
         <h3 data-i18n="KNOW_SHAKEOUT_TITLE"></h3>
         <div class="rules-card">
@@ -2176,6 +2179,7 @@ const I18N = {
     MULTI_READY: 'READY',
     RULES_TITLE: 'ルール / 防災知識',
     TAB_RULES: 'ゲームルール',
+    TAB_CONTROLS: '操作方法',
     TAB_KNOWLEDGE: '防災知識',
     TAB_DONT: '禁止行動',
     TAB_SOURCES: '出典',
@@ -2297,6 +2301,7 @@ const I18N = {
     MULTI_READY: 'READY',
     RULES_TITLE: 'RULES / KNOWLEDGE',
     TAB_RULES: 'RULES',
+    TAB_CONTROLS: 'CONTROLS',
     TAB_KNOWLEDGE: 'KNOWLEDGE',
     TAB_DONT: 'DON\'T DO',
     TAB_SOURCES: 'SOURCES',
