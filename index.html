@@ -169,7 +169,7 @@ html, body {
   pointer-events: none;
 }
 .matrix-col {
-  position: absolute; top: -100%;
+  position: absolute; top: 0;
   width: 22px; font-size: 16px; line-height: 1.2;
   white-space: pre;
   color: var(--safety-orange);
@@ -179,8 +179,8 @@ html, body {
   writing-mode: vertical-rl;
 }
 @keyframes matrixFall {
-  0%   { transform: translateY(0); }
-  100% { transform: translateY(200%); }
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
 }
 .matrix-col-pulse { animation: matrixFall linear infinite, orangePulse 2s ease-in-out infinite alternate; }
 .matrix-col-flash { animation: matrixFall linear infinite, orangeFlash 4s ease-in-out infinite; }
@@ -662,8 +662,8 @@ function createMatrixBg() {
       col.className = 'matrix-col matrix-col-pulse';
     }
 
-    // 文字列生成（防災関連漢字を含む）
-    const len = 15 + Math.floor(Math.random() * 15);
+    // 文字列生成（防災関連漢字を含む — 画面高さを十分カバーする文字数）
+    const len = 30 + Math.floor(Math.random() * 25);
     let text = '';
     for (let j = 0; j < len; j++) {
       text += MATRIX_CHARS[Math.floor(Math.random() * MATRIX_CHARS.length)];
