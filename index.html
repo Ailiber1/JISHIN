@@ -735,14 +735,22 @@ html, body {
   #btn-warning-ok { padding: 14px 40px; font-size: 16px; min-height: 48px; }
   #splash-quote { font-size: clamp(15px, 4.5vw, 20px); padding: 0 24px; max-width: 90vw; }
   #splash-sub { font-size: clamp(10px, 2.5vw, 13px); }
-  /* ステージ選択・ブリーフィング: スマホ共通 */
-  .stage-select-container { width: 96%; }
+  /* ステージ選択: スマホ共通 */
+  .stage-select-container { width: 96%; max-height: 92dvh; max-height: 92%; }
   .stage-select-header { padding: 12px 14px; }
-  .stage-select-scroll { padding: 10px 12px 14px; }
-  .briefing-container { width: 96%; }
+  .stage-select-header h2 { font-size: clamp(14px, 4vw, 18px); }
+  .stage-select-scroll { padding: 10px 12px 14px; gap: 8px; }
+  .stage-name { font-size: clamp(13px, 3.5vw, 16px); }
+  .stage-desc { font-size: clamp(11px, 2.5vw, 12px); }
+  /* ブリーフィング: スマホ共通 */
+  .briefing-container { width: 96%; max-height: 92dvh; max-height: 92%; }
   .briefing-header { padding: 12px 16px; }
-  .briefing-scroll { padding: 12px 16px; }
-  .briefing-footer { padding: 10px 16px; }
+  .briefing-stage-name { font-size: clamp(16px, 5vw, 20px); }
+  .briefing-scroll { padding: 12px 14px; }
+  .briefing-section p, .briefing-point { font-size: clamp(12px, 3vw, 14px); }
+  .briefing-advisor p { font-size: clamp(11px, 2.8vw, 13px); }
+  .briefing-footer { padding: 10px 14px; }
+  .briefing-footer .btn { min-height: 44px; }
   /* ルール画面: スマホ共通 */
   .rules-container { width: 96%; max-height: 92dvh; max-height: 92%; }
   .rules-header { padding: 12px 14px; }
@@ -754,6 +762,7 @@ html, body {
 
 /* --- 縦向きスマホ --- */
 @media (max-width: 500px) and (orientation: portrait) {
+  /* タイトル */
   #title-screen { padding: 10px 0; }
   #title-logo { margin-top: 10px; padding: 12px 20px; }
   #title-logo h1 { font-size: clamp(40px, 12vw, 64px); letter-spacing: 4px; }
@@ -763,10 +772,17 @@ html, body {
   .btn-group { gap: 8px; margin-top: 10px; }
   .panel-footer { margin-top: 10px; padding-top: 10px; gap: 8px; }
   .copyright { margin-top: 6px; font-size: 10px; }
+  /* ステージ選択 */
+  .stage-select-container { max-height: 88dvh; max-height: 88%; }
+  .stage-card-body { padding: 8px 12px; }
+  /* ブリーフィング */
+  .briefing-container { max-height: 88dvh; max-height: 88%; }
+  .briefing-advisor { padding: 10px 12px; gap: 10px; }
 }
 
 /* --- 横向きスマホ（高さ500px以下） --- */
 @media (orientation: landscape) and (max-height: 500px) {
+  /* タイトル: ロゴとパネルを横並び */
   #title-screen {
     flex-direction: row;
     justify-content: center;
@@ -789,30 +805,52 @@ html, body {
   .panel-footer { margin-top: 6px; padding-top: 6px; gap: 6px; }
   .copyright { margin-top: 2px; font-size: 9px; }
 
-  /* 横向き: 警告・格言もコンパクトに */
+  /* 横向き: 警告・格言 */
   #warning-box { padding: 20px 24px; max-width: 80vw; }
   #warning-box p { font-size: clamp(12px, 2vw, 14px); line-height: 1.6; margin-bottom: 8px; }
-  #btn-warning-ok { padding: 10px 32px; }
+  #btn-warning-ok { padding: 10px 32px; min-height: 36px; }
   #splash-quote { font-size: clamp(14px, 3vw, 18px); }
   #splash-skip { bottom: 10px; }
 
-  /* 横向き: ステージ選択・ブリーフィング */
-  .stage-select-container { max-height: 94dvh; max-height: 94%; width: min(90%, 600px); }
+  /* 横向き: ステージ選択 — 2カラムレイアウト */
+  .stage-select-container { max-height: 96dvh; max-height: 96%; width: min(94%, 720px); }
   .stage-select-header { padding: 8px 12px; }
-  .stage-select-scroll { padding: 8px 10px 10px; gap: 6px; }
-  .stage-card-top { padding: 6px 10px 4px; }
-  .stage-card-body { padding: 6px 10px; }
-  .stage-card-foot { padding: 6px 10px; }
-  .briefing-container { max-height: 94dvh; max-height: 94%; width: min(90%, 560px); }
-  .briefing-header { padding: 10px 14px; }
-  .briefing-scroll { padding: 10px 14px; }
-  .briefing-footer { padding: 8px 14px; }
-  .briefing-footer .btn { padding: 8px 10px; font-size: 12px; min-height: 36px; }
+  .stage-select-header h2 { font-size: clamp(13px, 3vw, 16px); }
+  .stage-select-scroll {
+    padding: 8px 10px 10px; gap: 6px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .stage-card-top { padding: 5px 8px 3px; }
+  .stage-num { font-size: clamp(10px, 2vw, 12px); }
+  .stage-difficulty { font-size: clamp(10px, 2vw, 12px); }
+  .stage-card-body { padding: 4px 8px; }
+  .stage-name { font-size: clamp(11px, 2.5vw, 14px); margin-bottom: 2px; }
+  .stage-desc { font-size: clamp(9px, 1.8vw, 11px); line-height: 1.4; }
+  .stage-card-foot { padding: 4px 8px; }
+  .stage-best { font-size: clamp(9px, 1.8vw, 11px); }
+  .stage-status { font-size: clamp(9px, 1.8vw, 11px); }
+
+  /* 横向き: ブリーフィング */
+  .briefing-container { max-height: 96dvh; max-height: 96%; width: min(90%, 560px); }
+  .briefing-header { padding: 8px 14px; }
+  .briefing-stage-num { font-size: 11px; margin-bottom: 2px; }
+  .briefing-stage-name { font-size: clamp(15px, 4vw, 18px); }
+  .briefing-scroll { padding: 8px 12px; }
+  .briefing-section { margin-bottom: 10px; }
+  .briefing-section h3 { font-size: clamp(11px, 2.2vw, 13px); margin-bottom: 5px; }
+  .briefing-section p, .briefing-point { font-size: clamp(11px, 2.2vw, 13px); }
+  .briefing-advisor { padding: 8px 10px; gap: 8px; }
+  .advisor-icon { width: 28px; height: 28px; font-size: 11px; }
+  .briefing-advisor p { font-size: clamp(10px, 2vw, 12px); }
+  .briefing-footer { padding: 6px 12px; }
+  .briefing-footer .btn { padding: 7px 10px; font-size: 12px; min-height: 34px; }
+
   /* 横向き: ルール画面 */
-  .rules-container { max-height: 94dvh; max-height: 94%; width: min(90%, 700px); }
+  .rules-container { max-height: 96dvh; max-height: 96%; width: min(90%, 700px); }
   .rules-header { padding: 8px 12px; }
   .rules-header h2 { font-size: clamp(13px, 3vw, 16px); }
-  .rules-close-btn { width: 36px; height: 36px; min-width: 36px; }
+  .rules-close-btn { width: 34px; height: 34px; min-width: 34px; }
   .rules-scroll { padding: 0 12px 10px; }
   .rules-tabs { padding-top: 6px; margin-bottom: 10px; }
   .rules-tab { padding: 7px 4px; font-size: clamp(10px, 2vw, 12px); }
@@ -821,13 +859,23 @@ html, body {
   .rules-score-item { padding: 6px 10px; font-size: clamp(11px, 2.2vw, 13px); }
 }
 
-/* --- 小型スマホ縦向き（iPhone SE等 高さ600px以下） --- */
+/* --- 小型スマホ縦向き（iPhone SE等） --- */
 @media (max-width: 400px) and (max-height: 700px) and (orientation: portrait) {
   #title-logo h1 { font-size: clamp(36px, 11vw, 52px); }
   #title-logo .subtitle { font-size: 10px; }
   .ui-panel { padding: 12px 10px; width: min(340px, 90%); }
   .btn { padding: 10px 12px; font-size: 13px; }
   .btn-group { gap: 6px; }
+  /* 小型: ステージ選択 */
+  .stage-select-container { width: 98%; max-height: 90dvh; max-height: 90%; }
+  .stage-card-top { padding: 6px 10px 4px; }
+  .stage-card-body { padding: 6px 10px; }
+  .stage-name { font-size: 13px; }
+  .stage-desc { font-size: 11px; }
+  /* 小型: ブリーフィング */
+  .briefing-container { width: 98%; max-height: 90dvh; max-height: 90%; }
+  /* 小型: ルール */
+  .rules-container { width: 98%; max-height: 90dvh; max-height: 90%; }
 }
 
 /* --- 極端に高さが低い横向き（max-height: 380px） --- */
@@ -837,6 +885,23 @@ html, body {
   .btn { padding: 5px 8px; font-size: 11px; min-height: 30px; }
   .btn-group { gap: 4px; margin-top: 4px; }
   .panel-footer { margin-top: 4px; padding-top: 4px; }
+  /* 極小横: ステージ選択 */
+  .stage-select-container { max-height: 98dvh; max-height: 98%; }
+  .stage-select-header { padding: 6px 10px; }
+  .stage-card-top { padding: 4px 8px 2px; }
+  .stage-card-body { padding: 3px 8px; }
+  .stage-card-foot { padding: 3px 8px; }
+  .stage-name { font-size: 11px; }
+  .stage-desc { font-size: 9px; }
+  /* 極小横: ブリーフィング */
+  .briefing-container { max-height: 98dvh; max-height: 98%; }
+  .briefing-header { padding: 6px 10px; }
+  .briefing-stage-name { font-size: 14px; }
+  .briefing-scroll { padding: 6px 10px; }
+  .briefing-footer { padding: 5px 10px; }
+  .briefing-footer .btn { padding: 5px 8px; font-size: 11px; min-height: 30px; }
+  /* 極小横: ルール */
+  .rules-container { max-height: 98dvh; max-height: 98%; }
 }
 
 </style>
