@@ -1931,7 +1931,7 @@ html, body {
             <div class="ctrl-row"><span class="ctrl-key">Shift</span><span class="ctrl-desc" data-i18n="CTRL_DASH"></span></div>
             <div class="ctrl-row"><span class="ctrl-key">C</span><span class="ctrl-desc" data-i18n="CTRL_CROUCH"></span></div>
             <div class="ctrl-row"><span class="ctrl-key">G</span><span class="ctrl-desc" data-i18n="CTRL_GUARD"></span></div>
-            <div class="ctrl-row"><span class="ctrl-key">Space</span><span class="ctrl-desc" data-i18n="CTRL_INTERACT"></span></div>
+            <div class="ctrl-row"><span class="ctrl-key">F / Space</span><span class="ctrl-desc" data-i18n="CTRL_INTERACT"></span></div>
             <div class="ctrl-row"><span class="ctrl-key" data-i18n="CTRL_MOUSE"></span><span class="ctrl-desc" data-i18n="CTRL_CAMERA"></span></div>
             <div class="ctrl-row"><span class="ctrl-key">Esc</span><span class="ctrl-desc" data-i18n="CTRL_PAUSE"></span></div>
           </div>
@@ -2141,7 +2141,7 @@ const I18N = {
     CONTROLS_MOBILE_LABEL: '▶ スマートフォン',
     CTRL_MOVE: '移動',
     CTRL_DASH: 'ダッシュ',
-    CTRL_CROUCH: 'しゃがむ',
+    CTRL_CROUCH: 'しゃがむ（トグル）',
     CTRL_GUARD: '頭を守る（ガード）',
     CTRL_INTERACT: 'インタラクト（ドア・ブレーカー等）',
     CTRL_MOUSE: 'マウス移動',
@@ -2262,7 +2262,7 @@ const I18N = {
     CONTROLS_MOBILE_LABEL: '▶ Smartphone',
     CTRL_MOVE: 'Move',
     CTRL_DASH: 'Sprint',
-    CTRL_CROUCH: 'Crouch',
+    CTRL_CROUCH: 'Crouch (Toggle)',
     CTRL_GUARD: 'Protect Head (Guard)',
     CTRL_INTERACT: 'Interact (door, breaker, etc.)',
     CTRL_MOUSE: 'Mouse Move',
@@ -3314,14 +3314,19 @@ document.addEventListener('keydown', function(e) {
     }
   }
 
-  if (e.code === 'KeyC') GAME.player.isCrouching = true;
+  // しゃがむ: Cトグル（KANKERIと同じ方式）
+  if (e.code === 'KeyC' && !GAME._cPrev) {
+    GAME.player.isCrouching = !GAME.player.isCrouching;
+  }
+  GAME._cPrev = true;
+  // ガード: G（ホールド）
   if (e.code === 'KeyG') GAME.player.isGuarding = true;
 });
 
 document.addEventListener('keyup', function(e) {
   if (!GAME.running) return;
   GAME.keys[e.code] = false;
-  if (e.code === 'KeyC') GAME.player.isCrouching = false;
+  if (e.code === 'KeyC') GAME._cPrev = false;
   if (e.code === 'KeyG') GAME.player.isGuarding = false;
 });
 
@@ -3432,15 +3437,16 @@ function initGameControls() {
     const guardBtn = document.getElementById('mob-guard');
     const dashBtn = document.getElementById('mob-dash');
 
+    // しゃがむ: トグル方式（KANKERIと同じ）
     crouchBtn.addEventListener('touchstart', function(e) {
       e.preventDefault();
-      GAME.player.isCrouching = true;
-      this.classList.add('active');
+      GAME.player.isCrouching = !GAME.player.isCrouching;
+      if (GAME.player.isCrouching) {
+        this.classList.add('active');
+      } else {
+        this.classList.remove('active');
+      }
     }, { passive: false });
-    crouchBtn.addEventListener('touchend', function() {
-      GAME.player.isCrouching = false;
-      this.classList.remove('active');
-    });
 
     guardBtn.addEventListener('touchstart', function(e) {
       e.preventDefault();
