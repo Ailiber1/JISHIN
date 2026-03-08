@@ -376,6 +376,187 @@ html, body {
 }
 
 /* ============================================================
+   SECTION: STAGE SELECT SCREEN
+   ============================================================ */
+#stage-select-screen {
+  z-index: 250;
+  background: var(--bg-overlay);
+}
+.stage-select-container {
+  width: min(560px, 92%);
+  max-height: 90dvh; max-height: 90%;
+  background: var(--bg-panel);
+  border: 1px solid var(--safety-orange);
+  box-shadow: 0 0 20px rgba(255,107,0,0.3), inset 0 0 10px rgba(255,107,0,0.03);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+@supports (max-height: 90dvh) { .stage-select-container { max-height: 90dvh; } }
+.stage-select-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255,107,0,0.3);
+  flex-shrink: 0;
+}
+.stage-select-header h2 {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: clamp(16px, 4vw, 22px);
+  color: var(--safety-orange); letter-spacing: 2px;
+}
+.stage-select-scroll {
+  overflow-y: auto; overflow-x: hidden;
+  padding: 12px 16px 16px; flex: 1;
+  -webkit-overflow-scrolling: touch;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.stage-card {
+  border: 1px solid rgba(255,107,0,0.4);
+  background: rgba(255,107,0,0.03);
+  padding: 0; cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative; overflow: hidden;
+}
+.stage-card:hover:not(.stage-locked) {
+  border-color: var(--safety-orange);
+  box-shadow: 0 0 16px rgba(255,107,0,0.4);
+  transform: translateY(-1px);
+}
+.stage-card:active:not(.stage-locked) { transform: translateY(0); }
+.stage-locked {
+  opacity: 0.45; cursor: not-allowed;
+  filter: grayscale(0.3);
+}
+.stage-card-top {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 14px 6px;
+  border-bottom: 1px solid rgba(255,107,0,0.1);
+}
+.stage-num {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: clamp(12px, 2.5vw, 14px);
+  color: var(--safety-orange); letter-spacing: 2px; font-weight: 700;
+}
+.stage-difficulty { font-size: clamp(12px, 2.5vw, 14px); }
+.star-on { color: var(--safety-orange); }
+.star-off { color: var(--text-dim); }
+.stage-card-body { padding: 8px 14px; }
+.stage-name {
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: clamp(14px, 3.5vw, 17px);
+  color: #fff; font-weight: 700; margin-bottom: 4px;
+}
+.stage-desc {
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: clamp(11px, 2.5vw, 13px);
+  color: var(--text-dim); line-height: 1.5;
+}
+.stage-card-foot {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 14px;
+  border-top: 1px solid rgba(255,107,0,0.1);
+}
+.stage-best {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: clamp(11px, 2.2vw, 12px);
+  color: var(--text-dim);
+}
+.stage-best-score { color: var(--safety-orange-light); }
+.stage-status {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: clamp(11px, 2.2vw, 12px);
+  letter-spacing: 1px;
+}
+.stage-unlocked { color: var(--safe-green); }
+.stage-lock-label { color: var(--text-dim); }
+
+/* ============================================================
+   SECTION: BRIEFING SCREEN
+   ============================================================ */
+#briefing-screen {
+  z-index: 260;
+  background: var(--bg-overlay);
+}
+.briefing-container {
+  width: min(520px, 92%);
+  max-height: 90dvh; max-height: 90%;
+  background: var(--bg-panel);
+  border: 1px solid var(--safety-orange);
+  box-shadow: 0 0 20px rgba(255,107,0,0.3), inset 0 0 10px rgba(255,107,0,0.03);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+@supports (max-height: 90dvh) { .briefing-container { max-height: 90dvh; } }
+.briefing-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255,107,0,0.3);
+  flex-shrink: 0; text-align: center;
+}
+.briefing-stage-num {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: clamp(12px, 2.5vw, 14px);
+  color: var(--safety-orange); letter-spacing: 3px; margin-bottom: 4px;
+}
+.briefing-stage-name {
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: clamp(18px, 5vw, 24px);
+  color: #fff; font-weight: 700;
+}
+.briefing-scroll {
+  overflow-y: auto; overflow-x: hidden;
+  padding: 16px 20px; flex: 1;
+  -webkit-overflow-scrolling: touch;
+}
+.briefing-section { margin-bottom: 16px; }
+.briefing-section h3 {
+  font-family: 'Share Tech Mono', 'Noto Sans JP', monospace;
+  font-size: clamp(12px, 2.8vw, 14px);
+  color: var(--safety-orange-light);
+  border-left: 3px solid var(--safety-orange);
+  padding-left: 10px; margin-bottom: 8px; letter-spacing: 1px;
+}
+.briefing-section p {
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: clamp(12px, 2.8vw, 14px);
+  color: var(--text-secondary); line-height: 1.7;
+}
+.briefing-points { display: flex; flex-direction: column; gap: 6px; }
+.briefing-point {
+  display: flex; align-items: flex-start; gap: 8px;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: clamp(12px, 2.8vw, 14px);
+  color: var(--text-secondary); line-height: 1.6;
+}
+.briefing-point-num {
+  flex-shrink: 0; width: 20px; height: 20px;
+  border: 1px solid var(--safety-orange);
+  color: var(--safety-orange); font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.briefing-advisor {
+  display: flex; align-items: flex-start; gap: 12px;
+  background: rgba(255,107,0,0.05);
+  border: 1px solid rgba(255,107,0,0.2);
+  padding: 12px 14px; margin-top: 8px;
+}
+.advisor-icon {
+  flex-shrink: 0; width: 36px; height: 36px;
+  background: var(--safety-orange); color: #000;
+  font-family: 'Share Tech Mono', monospace; font-weight: 700; font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 2px;
+}
+.briefing-advisor p {
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: clamp(12px, 2.8vw, 13px);
+  color: var(--text-secondary); line-height: 1.6; font-style: italic;
+}
+.briefing-footer {
+  padding: 12px 20px;
+  border-top: 1px solid rgba(255,107,0,0.3);
+  display: flex; gap: 10px; flex-shrink: 0;
+}
+.briefing-start-btn { flex: 2; }
+.briefing-back-btn { flex: 1; }
+
+/* ============================================================
    SECTION: RULES / KNOWLEDGE SCREEN
    ============================================================ */
 #rules-screen {
@@ -554,6 +735,14 @@ html, body {
   #btn-warning-ok { padding: 14px 40px; font-size: 16px; min-height: 48px; }
   #splash-quote { font-size: clamp(15px, 4.5vw, 20px); padding: 0 24px; max-width: 90vw; }
   #splash-sub { font-size: clamp(10px, 2.5vw, 13px); }
+  /* ステージ選択・ブリーフィング: スマホ共通 */
+  .stage-select-container { width: 96%; }
+  .stage-select-header { padding: 12px 14px; }
+  .stage-select-scroll { padding: 10px 12px 14px; }
+  .briefing-container { width: 96%; }
+  .briefing-header { padding: 12px 16px; }
+  .briefing-scroll { padding: 12px 16px; }
+  .briefing-footer { padding: 10px 16px; }
   /* ルール画面: スマホ共通 */
   .rules-container { width: 96%; max-height: 92dvh; max-height: 92%; }
   .rules-header { padding: 12px 14px; }
@@ -607,6 +796,18 @@ html, body {
   #splash-quote { font-size: clamp(14px, 3vw, 18px); }
   #splash-skip { bottom: 10px; }
 
+  /* 横向き: ステージ選択・ブリーフィング */
+  .stage-select-container { max-height: 94dvh; max-height: 94%; width: min(90%, 600px); }
+  .stage-select-header { padding: 8px 12px; }
+  .stage-select-scroll { padding: 8px 10px 10px; gap: 6px; }
+  .stage-card-top { padding: 6px 10px 4px; }
+  .stage-card-body { padding: 6px 10px; }
+  .stage-card-foot { padding: 6px 10px; }
+  .briefing-container { max-height: 94dvh; max-height: 94%; width: min(90%, 560px); }
+  .briefing-header { padding: 10px 14px; }
+  .briefing-scroll { padding: 10px 14px; }
+  .briefing-footer { padding: 8px 14px; }
+  .briefing-footer .btn { padding: 8px 10px; font-size: 12px; min-height: 36px; }
   /* 横向き: ルール画面 */
   .rules-container { max-height: 94dvh; max-height: 94%; width: min(90%, 700px); }
   .rules-header { padding: 8px 12px; }
@@ -689,7 +890,7 @@ html, body {
     <div class="corner-bl"></div>
     <div class="corner-br"></div>
     <div class="btn-group">
-      <button class="btn btn-neon" id="btn-story" data-i18n="BTN_STORY" disabled></button>
+      <button class="btn btn-neon" id="btn-story" data-i18n="BTN_STORY"></button>
       <button class="btn btn-neon" id="btn-multi" data-i18n="BTN_MULTI" disabled></button>
       <button class="btn btn-neon" id="btn-training" data-i18n="BTN_TRAINING" disabled></button>
     </div>
@@ -706,6 +907,127 @@ html, body {
     </div>
   </div>
   <div class="copyright">© PLAY GATE_</div>
+</div>
+
+<!-- ============================================================
+     SECTION: STAGE SELECT SCREEN
+     ============================================================ -->
+<div id="stage-select-screen" class="screen">
+  <div class="stage-select-container">
+    <div class="stage-select-header">
+      <h2 data-i18n="STAGE_SELECT_TITLE"></h2>
+      <button class="rules-close-btn" id="stage-back-btn">✕</button>
+    </div>
+    <div class="stage-select-scroll">
+
+      <!-- Stage Cards -->
+      <div class="stage-card" data-stage="1">
+        <div class="stage-card-top">
+          <div class="stage-num">STAGE 1</div>
+          <div class="stage-difficulty"><span class="star-on">★</span><span class="star-off">☆☆☆☆</span></div>
+        </div>
+        <div class="stage-card-body">
+          <div class="stage-name" data-i18n="STAGE1_NAME"></div>
+          <div class="stage-desc" data-i18n="STAGE1_DESC"></div>
+        </div>
+        <div class="stage-card-foot">
+          <div class="stage-best"><span data-i18n="STAGE_BEST"></span> <span class="stage-best-score" id="best-score-1">---</span></div>
+          <div class="stage-status stage-unlocked" data-i18n="STAGE_PLAY"></div>
+        </div>
+      </div>
+
+      <div class="stage-card stage-locked" data-stage="2">
+        <div class="stage-card-top">
+          <div class="stage-num">STAGE 2</div>
+          <div class="stage-difficulty"><span class="star-on">★★</span><span class="star-off">☆☆☆</span></div>
+        </div>
+        <div class="stage-card-body">
+          <div class="stage-name" data-i18n="STAGE2_NAME"></div>
+          <div class="stage-desc" data-i18n="STAGE2_DESC"></div>
+        </div>
+        <div class="stage-card-foot">
+          <div class="stage-best"><span data-i18n="STAGE_BEST"></span> <span class="stage-best-score" id="best-score-2">---</span></div>
+          <div class="stage-status stage-lock-label">🔒 <span data-i18n="STAGE_LOCKED"></span></div>
+        </div>
+      </div>
+
+      <div class="stage-card stage-locked" data-stage="3">
+        <div class="stage-card-top">
+          <div class="stage-num">STAGE 3</div>
+          <div class="stage-difficulty"><span class="star-on">★★★</span><span class="star-off">☆☆</span></div>
+        </div>
+        <div class="stage-card-body">
+          <div class="stage-name" data-i18n="STAGE3_NAME"></div>
+          <div class="stage-desc" data-i18n="STAGE3_DESC"></div>
+        </div>
+        <div class="stage-card-foot">
+          <div class="stage-best"><span data-i18n="STAGE_BEST"></span> <span class="stage-best-score" id="best-score-3">---</span></div>
+          <div class="stage-status stage-lock-label">🔒 <span data-i18n="STAGE_LOCKED"></span></div>
+        </div>
+      </div>
+
+      <div class="stage-card stage-locked" data-stage="4">
+        <div class="stage-card-top">
+          <div class="stage-num">STAGE 4</div>
+          <div class="stage-difficulty"><span class="star-on">★★★★</span><span class="star-off">☆</span></div>
+        </div>
+        <div class="stage-card-body">
+          <div class="stage-name" data-i18n="STAGE4_NAME"></div>
+          <div class="stage-desc" data-i18n="STAGE4_DESC"></div>
+        </div>
+        <div class="stage-card-foot">
+          <div class="stage-best"><span data-i18n="STAGE_BEST"></span> <span class="stage-best-score" id="best-score-4">---</span></div>
+          <div class="stage-status stage-lock-label">🔒 <span data-i18n="STAGE_LOCKED"></span></div>
+        </div>
+      </div>
+
+      <div class="stage-card stage-locked" data-stage="5">
+        <div class="stage-card-top">
+          <div class="stage-num">STAGE 5</div>
+          <div class="stage-difficulty"><span class="star-on">★★★★★</span><span class="star-off"></span></div>
+        </div>
+        <div class="stage-card-body">
+          <div class="stage-name" data-i18n="STAGE5_NAME"></div>
+          <div class="stage-desc" data-i18n="STAGE5_DESC"></div>
+        </div>
+        <div class="stage-card-foot">
+          <div class="stage-best"><span data-i18n="STAGE_BEST"></span> <span class="stage-best-score" id="best-score-5">---</span></div>
+          <div class="stage-status stage-lock-label">🔒 <span data-i18n="STAGE_LOCKED"></span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SECTION: BRIEFING SCREEN
+     ============================================================ -->
+<div id="briefing-screen" class="screen">
+  <div class="briefing-container">
+    <div class="briefing-header">
+      <div class="briefing-stage-num" id="briefing-stage-num">STAGE 1</div>
+      <div class="briefing-stage-name" id="briefing-stage-name"></div>
+    </div>
+    <div class="briefing-scroll">
+      <div class="briefing-section">
+        <h3 data-i18n="BRIEF_SETTING"></h3>
+        <p id="briefing-setting"></p>
+      </div>
+      <div class="briefing-section">
+        <h3 data-i18n="BRIEF_POINTS"></h3>
+        <div class="briefing-points" id="briefing-points"></div>
+      </div>
+      <div class="briefing-advisor">
+        <div class="advisor-icon">AI</div>
+        <p id="briefing-advisor-msg"></p>
+      </div>
+    </div>
+    <div class="briefing-footer">
+      <button class="btn btn-neon briefing-start-btn" id="briefing-start-btn" data-i18n="BRIEF_START"></button>
+      <button class="btn btn-thin briefing-back-btn" id="briefing-back-btn" data-i18n="BRIEF_BACK"></button>
+    </div>
+  </div>
 </div>
 
 <!-- ============================================================
@@ -826,6 +1148,24 @@ const I18N = {
     BTN_TRAINING: '訓練モード',
     BTN_RANKING: 'ランキング',
     BTN_RULES: 'ルール / 防災知識',
+    STAGE_SELECT_TITLE: 'ステージ選択',
+    STAGE1_NAME: '学校（教室）',
+    STAGE1_DESC: '3階の教室。机の下に隠れ、先生の指示で校庭へ避難',
+    STAGE2_NAME: 'オフィスビル（高層階）',
+    STAGE2_DESC: '12階のオフィス。非常階段で1階まで避難',
+    STAGE3_NAME: '一軒家（木造2階建て）',
+    STAGE3_DESC: '木造住宅。火の始末やブレーカーの対処が重要',
+    STAGE4_NAME: 'マンション（高層・10階）',
+    STAGE4_DESC: '10階のマンション。エレベーター不使用で避難',
+    STAGE5_NAME: '地下街・商業施設',
+    STAGE5_DESC: '地下街。停電・煙の中で地上への脱出を目指す',
+    STAGE_BEST: 'BEST:',
+    STAGE_PLAY: '▶ PLAY',
+    STAGE_LOCKED: 'LOCKED',
+    BRIEF_SETTING: '舞台設定',
+    BRIEF_POINTS: 'このステージのポイント',
+    BRIEF_START: '避難開始',
+    BRIEF_BACK: '戻る',
     RULES_TITLE: 'ルール / 防災知識',
     TAB_RULES: 'ゲームルール',
     TAB_KNOWLEDGE: '防災知識',
@@ -878,6 +1218,24 @@ const I18N = {
     BTN_TRAINING: 'TRAINING MODE',
     BTN_RANKING: 'RANKING',
     BTN_RULES: 'RULES / KNOWLEDGE',
+    STAGE_SELECT_TITLE: 'STAGE SELECT',
+    STAGE1_NAME: 'School (Classroom)',
+    STAGE1_DESC: '3rd floor classroom. Hide under a desk, follow the teacher to the schoolyard',
+    STAGE2_NAME: 'Office Building (High Floor)',
+    STAGE2_DESC: '12th floor office. Evacuate via emergency stairs to ground level',
+    STAGE3_NAME: 'Wooden House (2-Story)',
+    STAGE3_DESC: 'Wooden house. Handling fire and breakers is critical',
+    STAGE4_NAME: 'Apartment (High-Rise, 10F)',
+    STAGE4_DESC: '10th floor apartment. Evacuate without using the elevator',
+    STAGE5_NAME: 'Underground Mall',
+    STAGE5_DESC: 'Underground area. Escape to the surface through darkness and smoke',
+    STAGE_BEST: 'BEST:',
+    STAGE_PLAY: '▶ PLAY',
+    STAGE_LOCKED: 'LOCKED',
+    BRIEF_SETTING: 'Setting',
+    BRIEF_POINTS: 'Key Points',
+    BRIEF_START: 'START EVACUATION',
+    BRIEF_BACK: 'BACK',
     RULES_TITLE: 'RULES / KNOWLEDGE',
     TAB_RULES: 'RULES',
     TAB_KNOWLEDGE: 'KNOWLEDGE',
@@ -986,6 +1344,10 @@ function initUISounds() {
   document.querySelectorAll('.rules-close-btn').forEach(el => {
     el.addEventListener('click', () => SoundManager.playSE('close'));
   });
+  document.querySelectorAll('.briefing-start-btn, .briefing-back-btn').forEach(el => {
+    el.addEventListener('mouseenter', () => SoundManager.playSE('hover'));
+    el.addEventListener('click', () => SoundManager.playSE('click'));
+  });
 }
 
 // AudioContext resume on first user interaction (iOS対応)
@@ -998,11 +1360,58 @@ document.addEventListener('touchstart', resumeAudioContext, { once: true });
 document.addEventListener('click', resumeAudioContext, { once: true });
 
 // ============================================================
+// SECTION: BRIEFING DATA
+// ============================================================
+const BRIEFING_DATA = {
+  1: {
+    setting: { ja: '日本の一般的な小中学校の教室（3階）。昼間の授業中に地震が発生。先生と生徒たちがいる。', en: 'A typical Japanese school classroom on the 3rd floor. An earthquake strikes during class with a teacher and students present.' },
+    points: {
+      ja: ['机の下に入り、脚を持って頭を守る', '先生（NPC）の指示に従って行動する', '「おはしも」を守って避難（押さない・走らない・しゃべらない・戻らない）'],
+      en: ['Get under a desk and hold its legs to protect your head', 'Follow the teacher (NPC) instructions', 'Follow "O-HA-SHI-MO" rules (don\'t push, run, talk, or go back)']
+    },
+    advisor: { ja: '「学校では先生の指示が一番大事。まずは机の下に入って揺れが収まるのを待とう。」', en: '"In school, following the teacher is key. Get under a desk first and wait for the shaking to stop."' }
+  },
+  2: {
+    setting: { ja: '都市部のオフィスビル12階。午後の業務中に大きな揺れが発生。同僚たちがパニックに。', en: 'A 12th floor office in an urban building. Strong shaking occurs during afternoon work hours. Colleagues are panicking.' },
+    points: {
+      ja: ['コピー機・キャビネットなど重い備品から離れる', 'エレベーターは絶対に使わない（非常階段で避難）', '12階から1階まで落ち着いて階段を降りる'],
+      en: ['Stay away from heavy equipment like copiers and cabinets', 'Never use elevators (use emergency stairs)', 'Calmly descend 12 floors via stairs']
+    },
+    advisor: { ja: '「高層ビルの揺れは長く続く。焦らず、まずデスクの下に。階段は混雑するから冷静に。」', en: '"Shaking lasts longer in tall buildings. Stay calm, get under your desk first. Stairs will be crowded."' }
+  },
+  3: {
+    setting: { ja: '日本の一般的な木造2階建て住宅。家族がいる自宅での地震。台所にはコンロの火。', en: 'A typical 2-story wooden Japanese house. Earthquake at home with family. The kitchen stove is on.' },
+    points: {
+      ja: ['揺れが収まったら火の始末（コンロ・ストーブ）', 'ブレーカーを落として通電火災を防ぐ', '靴を履いてガラス片から足を守る'],
+      en: ['Turn off fire sources after shaking stops (stove, heater)', 'Turn off breaker to prevent electrical fires', 'Put on shoes to protect from broken glass']
+    },
+    advisor: { ja: '「木造住宅は倒壊の危険がある。まず身を守り、揺れが収まったら火の確認を最優先で。」', en: '"Wooden houses risk collapse. Protect yourself first, then check fire sources immediately after shaking stops."' }
+  },
+  4: {
+    setting: { ja: '都市部の高層マンション10階。一人暮らしの自室で地震発生。エレベーターが停止。', en: 'A 10th floor apartment in a high-rise building. Earthquake while home alone. Elevators are stopped.' },
+    points: {
+      ja: ['家具の転倒から身を守る', 'エレベーターに乗らず階段で避難する', '玄関ドアを開けて避難経路を確保する'],
+      en: ['Protect yourself from falling furniture', 'Use stairs, never the elevator', 'Open the front door to secure escape route']
+    },
+    advisor: { ja: '「マンションの高層階は揺れが大きい。エレベーターは閉じ込めの危険があるから絶対にダメだ。」', en: '"Upper floors of apartments shake more. Elevators can trap you — never use them."' }
+  },
+  5: {
+    setting: { ja: '都市部の地下街（地下1〜2階の商業エリア）。買い物中に大地震が発生。停電で暗闇に。', en: 'An underground shopping area (B1-B2). A major earthquake hits while shopping. Power goes out.' },
+    points: {
+      ja: ['非常口の表示灯に従って地上を目指す', '停電時はスマホのライトを活用する', 'パニックの群衆に巻き込まれないように注意'],
+      en: ['Follow emergency exit signs toward the surface', 'Use your phone light during blackouts', 'Avoid being swept up in panicking crowds']
+    },
+    advisor: { ja: '「地下は意外と揺れが小さいことがある。パニックにならず、非常口の緑の光を目指そう。」', en: '"Underground areas may shake less. Stay calm and follow the green emergency exit lights."' }
+  }
+};
+
+// ============================================================
 // SECTION: GAME STATE
 // ============================================================
 let currentLang = 'ja';
 let bgmEnabled = true;
 let warningShown = false;
+let selectedStage = 1;
 
 // ============================================================
 // SECTION: UTILITY
@@ -1160,6 +1569,68 @@ function createMatrixBg() {
 }
 
 // ============================================================
+// SECTION: STAGE SELECT
+// ============================================================
+function updateStageUnlocks() {
+  // localStorageからクリア状況を確認
+  for (let i = 1; i <= 5; i++) {
+    const card = document.querySelector('.stage-card[data-stage="' + i + '"]');
+    if (!card) continue;
+    const bestScore = localStorage.getItem('jishin_best_' + i);
+
+    // ベストスコア表示
+    const scoreEl = document.getElementById('best-score-' + i);
+    if (scoreEl) scoreEl.textContent = bestScore ? bestScore + 'pt' : '---';
+
+    // 解放判定: Stage1は常に解放、Stage N は Stage N-1 をCランク(40点)以上でクリア
+    let unlocked = (i === 1);
+    if (i > 1) {
+      const prevBest = parseInt(localStorage.getItem('jishin_best_' + (i - 1)));
+      unlocked = !isNaN(prevBest) && prevBest >= 40;
+    }
+
+    if (unlocked) {
+      card.classList.remove('stage-locked');
+      const statusEl = card.querySelector('.stage-status');
+      if (statusEl) {
+        statusEl.className = 'stage-status stage-unlocked';
+        statusEl.setAttribute('data-i18n', 'STAGE_PLAY');
+      }
+    } else {
+      card.classList.add('stage-locked');
+    }
+  }
+  applyI18N();
+}
+
+function showBriefing(stageNum) {
+  const data = BRIEFING_DATA[stageNum];
+  if (!data) return;
+  const lang = currentLang;
+
+  document.getElementById('briefing-stage-num').textContent = 'STAGE ' + stageNum;
+  const nameKey = 'STAGE' + stageNum + '_NAME';
+  document.getElementById('briefing-stage-name').textContent = I18N[lang][nameKey] || '';
+  document.getElementById('briefing-setting').textContent = data.setting[lang];
+
+  // ポイント
+  const pointsEl = document.getElementById('briefing-points');
+  pointsEl.innerHTML = '';
+  data.points[lang].forEach((p, idx) => {
+    const div = document.createElement('div');
+    div.className = 'briefing-point';
+    div.innerHTML = '<span class="briefing-point-num">' + (idx + 1) + '</span><span>' + escapeHTML(p) + '</span>';
+    pointsEl.appendChild(div);
+  });
+
+  // アドバイザーメッセージ
+  document.getElementById('briefing-advisor-msg').textContent = data.advisor[lang];
+
+  showScreen('briefing-screen');
+  applyI18N();
+}
+
+// ============================================================
 // SECTION: TITLE SCREEN
 // ============================================================
 function showTitle() {
@@ -1195,6 +1666,43 @@ function initEventListeners() {
     const btn = document.getElementById('bgm-toggle');
     btn.textContent = 'BGM: ' + (bgmEnabled ? 'ON' : 'OFF');
     btn.className = 'bgm-btn ' + (bgmEnabled ? 'bgm-on' : 'bgm-off');
+  });
+
+  // ストーリーモード → ステージ選択
+  document.getElementById('btn-story').addEventListener('click', () => {
+    showScreen('stage-select-screen');
+    applyI18N();
+    updateStageUnlocks();
+  });
+  document.getElementById('stage-back-btn').addEventListener('click', () => {
+    showTitle();
+  });
+
+  // ステージカード クリック
+  document.querySelectorAll('.stage-card').forEach(card => {
+    card.addEventListener('click', function() {
+      if (this.classList.contains('stage-locked')) {
+        SoundManager.playSE('error');
+        return;
+      }
+      SoundManager.playSE('click');
+      selectedStage = parseInt(this.getAttribute('data-stage'));
+      showBriefing(selectedStage);
+    });
+    card.addEventListener('mouseenter', function() {
+      if (!this.classList.contains('stage-locked')) SoundManager.playSE('hover');
+    });
+  });
+
+  // ブリーフィング画面
+  document.getElementById('briefing-back-btn').addEventListener('click', () => {
+    showScreen('stage-select-screen');
+    applyI18N();
+    updateStageUnlocks();
+  });
+  document.getElementById('briefing-start-btn').addEventListener('click', () => {
+    // TODO: ゲーム開始処理（Stage実装後に接続）
+    SoundManager.playSE('click');
   });
 
   // ルール / 防災知識画面
@@ -1251,6 +1759,8 @@ function initEventListeners() {
     if (e.target.closest('.ui-panel') || e.target.closest('.modal-box')) return;
     if (e.target.closest('#title-screen')) return;
     if (e.target.closest('.rules-container')) return;
+    if (e.target.closest('.stage-select-container')) return;
+    if (e.target.closest('.briefing-container')) return;
     e.preventDefault();
   }, { passive: false });
   document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
