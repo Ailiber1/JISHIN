@@ -4513,11 +4513,12 @@ function updateSingleNPC(npc, dtSec) {
       // 日常: 椅子に座っている（scaleは変えない、Y位置で椅子の高さに合わせる）
       npc.phase += dtSec;
       if (npc.role === 'student') {
-        // 椅子座面y=0.38に合わせ、脚部分を下に隠す
         mesh.position.y = -0.35 + Math.sin(npc.phase * 2) * 0.003;
+        mesh.rotation.y = Math.PI; // 黒板方向（-Z）を向く
       } else {
-        // 先生は立っている
+        // 先生は生徒側（+Z）を向いて立っている
         mesh.position.y = Math.sin(npc.phase * 2) * 0.005;
+        mesh.rotation.y = 0;
       }
       break;
 
