@@ -3011,11 +3011,51 @@ const GAME = {
   renderer: null, scene: null, camera: null,
   animId: null, lastFrameTime: 0,
   running: false, paused: false,
-  stageNum: 1, phase: 'idle',
+  stageNum: 1,
+  // フェーズ: idle → daily → earthquake → shaking → aftershake → evacuation → result
+  phase: 'idle',
+  phaseTimer: 0,       // 現在フェーズの経過時間（秒）
+  totalTimer: 0,       // ゲーム開始からの合計時間（秒）
+  timeLimit: 300,      // 制限時間（秒）— Stage1: 5分
   score: 0, hitCount: 0,
+  // 採点フラグ — 各行動を1回だけ採点
+  scoring: {
+    crouchedIn3s: false,       // 3秒以内にしゃがんだ
+    guardedHead: false,        // 頭を守った
+    movedToSafe: false,        // 安全な場所に移動
+    awayFromHazard: false,     // 危険物から離れた
+    didNotRunOutside: true,    // 外に飛び出さなかった（初期true）
+    noElevator: true,          // エレベーター未使用（初期true）
+    noHitByFalling: true,      // 落下物に当たらなかった（初期true）
+    turnedOffFire: false,      // 火の始末
+    openedDoor: false,         // ドアを開けた
+    turnedOffBreaker: false,   // ブレーカーを落とした
+    putOnShoes: false,         // 靴を履いた
+    checkedSafety: false,      // 安否確認
+    usedStairs: false,         // 階段で避難
+    avoidedBlockWall: true,    // ブロック塀回避（初期true）
+    reachedEvacPoint: false,   // 避難場所到達
+    withinTimeLimit: false,    // 制限時間内
+  },
+  // 地震パラメータ（震度5強 デフォルト）
+  quake: {
+    intensity: '5強',
+    amplitude: 0.05,       // 揺れ幅(m)
+    speed: 12,             // 揺れ速度
+    duration: 20,          // 揺れ持続時間(秒)
+    elapsed: 0,            // 揺れ経過時間
+    shaking: false,        // 現在揺れ中か
+    origCamPos: null,      // カメラ元位置（揺れ用）
+  },
+  // 日常パート設定
+  dailyDuration: 15,       // 日常パートの時間（秒）— 周囲確認の猶予
+  // フェーズ遷移タイムスタンプ
+  earthquakeStartTime: 0,  // 地震発生時刻
   player: { x: 0, y: 0.9, z: 0, yaw: 0, pitch: 0, speed: 0.06, sprintMult: 1.5, isSprinting: false, isCrouching: false, isGuarding: false },
   walls: [],
   cameraMeshes: [],
+  fallingObjects: [],      // 落下物配列
+  interactables: [],       // インタラクト可能オブジェクト配列
   keys: {}, isMobile: false,
   joystickAngle: 0, joystickMag: 0,
   cameraDistance: 3.5, cameraPitch: 0.3,
@@ -3028,11 +3068,30 @@ function initGame(stageNum) {
   GAME.score = 0;
   GAME.hitCount = 0;
   GAME.phase = 'daily';
+  GAME.phaseTimer = 0;
+  GAME.totalTimer = 0;
   GAME.paused = false;
   GAME.running = true;
   GAME.keys = {};
   GAME.walls = [];
   GAME.cameraMeshes = [];
+  GAME.fallingObjects = [];
+  GAME.interactables = [];
+  GAME.earthquakeStartTime = 0;
+  GAME.quake.elapsed = 0;
+  GAME.quake.shaking = false;
+  GAME._quakeOffsetX = 0;
+  GAME._quakeOffsetY = 0;
+  GAME._quakeOffsetZ = 0;
+  GAME._advisorTimeout = null;
+  // 採点フラグリセット
+  var s = GAME.scoring;
+  s.crouchedIn3s = false; s.guardedHead = false; s.movedToSafe = false;
+  s.awayFromHazard = false; s.didNotRunOutside = true; s.noElevator = true;
+  s.noHitByFalling = true; s.turnedOffFire = false; s.openedDoor = false;
+  s.turnedOffBreaker = false; s.putOnShoes = false; s.checkedSafety = false;
+  s.usedStairs = false; s.avoidedBlockWall = true;
+  s.reachedEvacPoint = false; s.withinTimeLimit = false;
   GAME.player.x = 0;
   GAME.player.y = 0.9;
   GAME.player.z = 5;
@@ -3245,9 +3304,303 @@ function gameLoop(timestamp) {
 
   if (GAME.paused) return;
 
+  // 時間更新（秒単位）
+  const dtSec = rawDt / 1000;
+  GAME.phaseTimer += dtSec;
+  GAME.totalTimer += dtSec;
+
+  // フェーズ管理
+  updatePhase(dtSec);
+
+  // 地震エフェクト
+  if (GAME.quake.shaking) {
+    updateQuake(dtSec);
+  }
+
   updatePlayer(dt);
   updateCamera();
+
+  // HUD更新
+  updateHUD();
+
   GAME.renderer.render(GAME.scene, GAME.camera);
+}
+
+// ============================================================
+// SECTION: フェーズ管理
+// ============================================================
+function updatePhase(dtSec) {
+  switch (GAME.phase) {
+    case 'daily':
+      // 日常パート：周囲確認の猶予時間
+      if (GAME.phaseTimer >= GAME.dailyDuration) {
+        transitionPhase('earthquake');
+      }
+      break;
+
+    case 'earthquake':
+      // 地震発生演出（P波：小さな初期微動 1.5秒）
+      if (GAME.phaseTimer >= 1.5) {
+        transitionPhase('shaking');
+      }
+      break;
+
+    case 'shaking':
+      // 本震（S波）— 揺れ持続
+      GAME.quake.elapsed += dtSec;
+      if (GAME.quake.elapsed >= GAME.quake.duration) {
+        GAME.quake.shaking = false;
+        transitionPhase('aftershake');
+      }
+      break;
+
+    case 'aftershake':
+      // 揺れ収束 → 避難判断フェーズ（30秒の猶予）
+      if (GAME.phaseTimer >= 30) {
+        transitionPhase('evacuation');
+      }
+      break;
+
+    case 'evacuation':
+      // 避難フェーズ — 制限時間チェック
+      if (GAME.totalTimer >= GAME.timeLimit) {
+        GAME.scoring.withinTimeLimit = false;
+        transitionPhase('result');
+      }
+      break;
+
+    case 'result':
+      // 結果画面へ（1回だけ）
+      break;
+  }
+}
+
+function transitionPhase(newPhase) {
+  var oldPhase = GAME.phase;
+  GAME.phase = newPhase;
+  GAME.phaseTimer = 0;
+
+  switch (newPhase) {
+    case 'earthquake':
+      // 地震発生！P波（初期微動）開始
+      GAME.earthquakeStartTime = GAME.totalTimer;
+      SoundManager.playSE('error'); // 緊急音代わり
+      // AIアドバイザー: 「地震です！」（Phase 5で実装）
+      showAdvisor('地震だ！低い姿勢を取って！', 'warning');
+      break;
+
+    case 'shaking':
+      // S波（本震）開始
+      GAME.quake.shaking = true;
+      GAME.quake.elapsed = 0;
+      // danger-vignette を有効化
+      var vig = document.getElementById('danger-vignette');
+      if (vig) vig.style.boxShadow = 'inset 0 0 80px rgba(255,0,64,0.4)';
+      break;
+
+    case 'aftershake':
+      // 揺れ収束
+      GAME.quake.shaking = false;
+      var vig2 = document.getElementById('danger-vignette');
+      if (vig2) vig2.style.boxShadow = 'inset 0 0 80px rgba(255,0,64,0)';
+      showAdvisor('揺れが収まった。まず火の元を確認しよう。', 'normal');
+      break;
+
+    case 'evacuation':
+      showAdvisor('避難しよう！階段を使って校庭へ！', 'normal');
+      break;
+
+    case 'result':
+      // スコア計算して結果画面へ
+      GAME.running = false;
+      calculateScore();
+      showResult();
+      break;
+  }
+
+  // HUDフェーズ表示を即時更新
+  updatePhaseDisplay();
+}
+
+function updatePhaseDisplay() {
+  var phaseEl = document.getElementById('hud-phase');
+  var safetyEl = document.getElementById('hud-safety-indicator');
+  var phaseNames = {
+    daily: '日常パート', earthquake: '地震発生！',
+    shaking: '揺れ中！', aftershake: '揺れ収束',
+    evacuation: '避難中', result: '結果'
+  };
+  if (phaseEl) phaseEl.textContent = phaseNames[GAME.phase] || '';
+
+  if (safetyEl) {
+    if (GAME.phase === 'shaking' || GAME.phase === 'earthquake') {
+      safetyEl.className = 'danger';
+      safetyEl.textContent = 'DANGER';
+    } else if (GAME.phase === 'aftershake' || GAME.phase === 'evacuation') {
+      safetyEl.className = 'caution';
+      safetyEl.textContent = 'CAUTION';
+    } else {
+      safetyEl.className = 'safe';
+      safetyEl.textContent = 'SAFE';
+    }
+  }
+}
+
+function updateHUD() {
+  // タイマー表示（残り時間）
+  var remaining = Math.max(0, GAME.timeLimit - GAME.totalTimer);
+  var min = Math.floor(remaining / 60);
+  var sec = Math.floor(remaining % 60);
+  var timerEl = document.getElementById('hud-timer');
+  if (timerEl) {
+    timerEl.textContent = min + ':' + (sec < 10 ? '0' : '') + sec;
+    // 残り30秒で警告
+    if (remaining <= 30 && remaining > 0) {
+      timerEl.classList.add('warning');
+    } else {
+      timerEl.classList.remove('warning');
+    }
+  }
+
+  // スコア表示
+  var scoreEl = document.getElementById('hud-score');
+  if (scoreEl) scoreEl.textContent = 'SCORE: ' + GAME.score;
+
+  // 震度表示
+  var seismicEl = document.getElementById('hud-seismic');
+  if (seismicEl) seismicEl.textContent = '震度' + GAME.quake.intensity;
+}
+
+// ============================================================
+// SECTION: 地震エフェクト
+// ============================================================
+function updateQuake(dtSec) {
+  // カメラ振動: sin波 + ランダムノイズ
+  var t = GAME.quake.elapsed;
+  var amp = GAME.quake.amplitude;
+  var spd = GAME.quake.speed;
+
+  // 揺れの減衰（最後の3秒で徐々に収束）
+  var remaining = GAME.quake.duration - t;
+  var decay = remaining < 3 ? remaining / 3 : 1;
+
+  GAME._quakeOffsetX = (Math.sin(t * spd) * 0.7 + Math.sin(t * spd * 2.3) * 0.3 + (Math.random() - 0.5) * 0.4) * amp * decay;
+  GAME._quakeOffsetY = (Math.cos(t * spd * 1.1) * 0.5 + (Math.random() - 0.5) * 0.3) * amp * decay * 0.5;
+  GAME._quakeOffsetZ = (Math.sin(t * spd * 0.8 + 1) * 0.6 + (Math.random() - 0.5) * 0.3) * amp * decay;
+
+  // danger-vignette の強度を揺れに合わせる
+  var vigIntensity = 0.2 + decay * 0.3;
+  var vig = document.getElementById('danger-vignette');
+  if (vig) vig.style.boxShadow = 'inset 0 0 80px rgba(255,0,64,' + vigIntensity + ')';
+}
+
+// ============================================================
+// SECTION: AIアドバイザー表示
+// ============================================================
+function showAdvisor(text, type) {
+  var box = document.getElementById('advisor-box');
+  var textEl = document.getElementById('advisor-text');
+  if (!box || !textEl) return;
+
+  textEl.textContent = text;
+  textEl.className = type === 'warning' ? 'warning' : type === 'praise' ? 'praise' : '';
+  box.classList.add('visible');
+
+  // 4秒後に非表示
+  if (GAME._advisorTimeout) clearTimeout(GAME._advisorTimeout);
+  GAME._advisorTimeout = setTimeout(function() {
+    box.classList.remove('visible');
+  }, 4000);
+}
+
+// ============================================================
+// SECTION: 採点計算
+// ============================================================
+function calculateScore() {
+  var s = GAME.scoring;
+  var score = 0;
+
+  // 初期行動（30点）
+  if (s.crouchedIn3s) score += 10;
+  if (s.guardedHead) score += 10;
+  if (s.movedToSafe) score += 10;
+
+  // 揺れ中の行動（20点）
+  if (s.awayFromHazard) score += 5;
+  if (s.didNotRunOutside) score += 5;
+  if (s.noElevator) score += 5;
+  if (s.noHitByFalling) score += 5;
+
+  // 揺れ後の行動（30点）
+  if (s.turnedOffFire) score += 6;
+  if (s.openedDoor) score += 6;
+  if (s.turnedOffBreaker) score += 6;
+  if (s.putOnShoes) score += 6;
+  if (s.checkedSafety) score += 6;
+
+  // 避難行動（20点）
+  if (s.usedStairs) score += 5;
+  if (s.avoidedBlockWall) score += 5;
+  if (s.reachedEvacPoint) score += 5;
+  if (s.withinTimeLimit) score += 5;
+
+  // 減点
+  score -= GAME.hitCount * 5; // 落下物被弾
+
+  GAME.score = Math.max(0, Math.min(100, score));
+}
+
+function getRank(score) {
+  if (score >= 90) return { rank: 'S', title: '防災マスター' };
+  if (score >= 75) return { rank: 'A', title: '冷静な判断力' };
+  if (score >= 60) return { rank: 'B', title: '基本は押さえている' };
+  if (score >= 40) return { rank: 'C', title: 'もう少し知識が必要' };
+  return { rank: 'D', title: '危険な行動が多い' };
+}
+
+function showResult() {
+  // TODO: Phase 7で結果画面UIを実装
+  // 暫定: アラートで表示
+  var r = getRank(GAME.score);
+  setTimeout(function() {
+    cleanupGame();
+    showScreen('result-screen');
+    applyI18N();
+    // 結果画面にスコアを反映（結果画面HTMLが実装されたら接続）
+    var rankEl = document.getElementById('result-rank');
+    var scoreEl = document.getElementById('result-score');
+    var titleEl = document.getElementById('result-rank-title');
+    if (rankEl) rankEl.textContent = r.rank;
+    if (scoreEl) scoreEl.textContent = GAME.score + ' / 100';
+    if (titleEl) titleEl.textContent = '「' + r.title + '」';
+  }, 500);
+}
+
+// ============================================================
+// SECTION: 採点トリガー（しゃがみ・ガード検出）
+// ============================================================
+function checkScoringTriggers() {
+  var s = GAME.scoring;
+  var p = GAME.player;
+
+  // 地震発生後の行動を検出
+  if (GAME.phase === 'shaking' || GAME.phase === 'earthquake') {
+    var timeSinceQuake = GAME.totalTimer - GAME.earthquakeStartTime;
+
+    // 3秒以内にしゃがんだ
+    if (!s.crouchedIn3s && p.isCrouching && timeSinceQuake <= 3) {
+      s.crouchedIn3s = true;
+      GAME.score += 10;
+      showAdvisor('すごい！素早く姿勢を低くできたね！', 'praise');
+    }
+
+    // 頭を守った（ガード）
+    if (!s.guardedHead && p.isGuarding) {
+      s.guardedHead = true;
+      GAME.score += 10;
+      showAdvisor('頭を守る行動、完璧！', 'praise');
+    }
+  }
 }
 
 function updatePlayer(dt) {
@@ -3298,6 +3651,9 @@ function updatePlayer(dt) {
     }
   }
   if (!blocked) p.z = newZ;
+
+  // 採点トリガーチェック
+  checkScoringTriggers();
 }
 
 function updateCamera() {
@@ -3305,9 +3661,16 @@ function updateCamera() {
   const dist = GAME.cameraDistance;
   const pitch = GAME.cameraPitch;
 
-  const camX = p.x - Math.sin(p.yaw) * dist * Math.cos(pitch);
-  const camY = p.y + dist * Math.sin(pitch) + 0.5;
-  const camZ = p.z - Math.cos(p.yaw) * dist * Math.cos(pitch);
+  var camX = p.x - Math.sin(p.yaw) * dist * Math.cos(pitch);
+  var camY = p.y + dist * Math.sin(pitch) + 0.5;
+  var camZ = p.z - Math.cos(p.yaw) * dist * Math.cos(pitch);
+
+  // 地震揺れオフセット
+  if (GAME.quake.shaking && GAME._quakeOffsetX !== undefined) {
+    camX += GAME._quakeOffsetX;
+    camY += GAME._quakeOffsetY;
+    camZ += GAME._quakeOffsetZ;
+  }
 
   GAME.camera.position.set(camX, camY, camZ);
   GAME.camera.lookAt(p.x, p.y + 0.5, p.z);
