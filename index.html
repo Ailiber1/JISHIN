@@ -4231,9 +4231,21 @@ function updatePlayerModel() {
   var p = GAME.player;
   var j = mesh.userData.joints;
 
-  // 位置・回転
+  // 位置
   mesh.position.set(p.x, 0, p.z);
-  mesh.rotation.y = p.yaw; // プレイヤーはカメラと反対方向（前方）を向く
+
+  // 回転: 移動方向に体を向ける（後退時に振り向いて顔が見える）
+  if (p.moveYaw !== undefined) {
+    // 現在の向きから移動方向へスムーズに補間
+    var targetYaw = p.moveYaw;
+    var diff = targetYaw - mesh.rotation.y;
+    // -PI〜PIの範囲に正規化
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    mesh.rotation.y += diff * 0.15; // スムーズ補間
+  } else {
+    mesh.rotation.y = p.yaw;
+  }
 
   // しゃがみ（KANKERI方式: 関節を曲げて低姿勢）
   if (p.isCrouching) {
@@ -4498,11 +4510,11 @@ function updateSingleNPC(npc, dtSec) {
 
   switch (GAME.phase) {
     case 'daily':
-      // 日常: 椅子に座っている状態（上半身のみ見える）
+      // 日常: 椅子に座っている（scaleは変えない、Y位置で椅子の高さに合わせる）
       npc.phase += dtSec;
       if (npc.role === 'student') {
-        mesh.scale.y = 0.6;
-        mesh.position.y = -0.15 + Math.sin(npc.phase * 2) * 0.003;
+        // 椅子座面y=0.38に合わせ、脚部分を下に隠す
+        mesh.position.y = -0.35 + Math.sin(npc.phase * 2) * 0.003;
       } else {
         // 先生は立っている
         mesh.position.y = Math.sin(npc.phase * 2) * 0.005;
@@ -5612,6 +5624,11 @@ function updatePlayer(dt) {
     const fmx = mx * cos + mz * sin;
     const fmz = -mx * sin + mz * cos;
     mx = fmx; mz = fmz;
+  }
+
+  // 移動方向を保存（プレイヤーモデルの向きに使用）
+  if (mx !== 0 || mz !== 0) {
+    p.moveYaw = Math.atan2(mx, mz);
   }
 
   const R = 0.25;
