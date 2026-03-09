@@ -5575,8 +5575,14 @@ document.addEventListener('keydown', function(e) {
     const pauseEl = document.getElementById('pause-overlay');
     if (GAME.paused) {
       pauseEl.classList.add('active');
+      // PCポインターロック解除（カーソル表示）
+      if (document.pointerLockElement) document.exitPointerLock();
     } else {
       pauseEl.classList.remove('active');
+      // PCポインターロック再取得
+      if (!GAME.isMobile && GAME.renderer && GAME.renderer.domElement) {
+        GAME.renderer.domElement.requestPointerLock();
+      }
     }
     return;
   }
