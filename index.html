@@ -5589,6 +5589,7 @@ function showResult() {
     cleanupGame();
     showScreen('result-screen');
     applyI18N();
+    SoundManager.playBGM('BGM/JISHIN_result.mp3', 0.25, true);
 
     // スコアサマリー
     var rankEl = document.getElementById('result-rank');
