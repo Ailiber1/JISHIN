@@ -633,15 +633,17 @@ html, body {
   padding-left: 10px; margin-bottom: 8px; letter-spacing: 1px;
 }
 .result-actions { display: flex; flex-direction: column; gap: 4px; }
-.result-action-item {
-  display: flex; justify-content: space-between; align-items: center;
+.result-action-row {
+  display: flex; align-items: center; gap: 8px;
   padding: 6px 10px;
   border-bottom: 1px solid rgba(255,107,0,0.08);
   font-family: 'Noto Sans JP', sans-serif;
   font-size: clamp(12px, 2.8vw, 14px);
   color: var(--text-secondary);
 }
-.result-action-item:last-child { border-bottom: none; }
+.result-action-row:last-child { border-bottom: none; }
+.action-icon { width: 20px; text-align: center; flex-shrink: 0; font-weight: bold; }
+.action-text { flex: 1; }
 .action-good { color: var(--safe-green); }
 .action-bad { color: var(--alert-red); }
 .action-miss { color: var(--text-dim); }
@@ -4127,20 +4129,89 @@ function getRank(score) {
 }
 
 function showResult() {
-  // TODO: Phase 7で結果画面UIを実装
-  // 暫定: アラートで表示
   var r = getRank(GAME.score);
+  var totalSec = Math.floor(GAME.totalTimer);
+  var min = Math.floor(totalSec / 60);
+  var sec = totalSec % 60;
+
   setTimeout(function() {
     cleanupGame();
     showScreen('result-screen');
     applyI18N();
-    // 結果画面にスコアを反映（結果画面HTMLが実装されたら接続）
+
+    // スコアサマリー
     var rankEl = document.getElementById('result-rank');
+    var rankNameEl = document.getElementById('result-rank-name');
     var scoreEl = document.getElementById('result-score');
-    var titleEl = document.getElementById('result-rank-title');
+    var timeEl = document.getElementById('result-time');
+    var stageLabel = document.getElementById('result-stage-label');
+    var titleEl = document.getElementById('result-title');
     if (rankEl) rankEl.textContent = r.rank;
-    if (scoreEl) scoreEl.textContent = GAME.score + ' / 100';
-    if (titleEl) titleEl.textContent = '「' + r.title + '」';
+    if (rankNameEl) rankNameEl.textContent = '「' + r.title + '」';
+    if (scoreEl) scoreEl.textContent = GAME.score;
+    if (timeEl) timeEl.textContent = min + ':' + (sec < 10 ? '0' : '') + sec;
+    if (stageLabel) stageLabel.textContent = 'Stage ' + GAME.stageNum + ': 学校（教室）';
+    if (titleEl) titleEl.textContent = GAME.hitCount >= 3 ? '避難失敗' : '避難完了';
+
+    // ランク色
+    if (rankEl) {
+      var rankColors = { S: '#ffdd00', A: '#00ff41', B: '#5599ff', C: '#ff8844', D: '#ff3333' };
+      rankEl.style.color = rankColors[r.rank] || '#fff';
+    }
+
+    // 行動の振り返り
+    var actionsEl = document.getElementById('result-actions');
+    if (actionsEl) {
+      var s = GAME.scoring;
+      var actions = [
+        { done: s.crouchedIn3s, text: '地震発生後すぐにしゃがんだ', pts: '+10' },
+        { done: s.guardedHead, text: '頭を守る行動を取った', pts: '+10' },
+        { done: s.movedToSafe, text: '安全な場所に移動した', pts: '+10' },
+        { done: s.awayFromHazard, text: '危険物から離れた', pts: '+5' },
+        { done: s.didNotRunOutside, text: '揺れ中に外に飛び出さなかった', pts: '+5' },
+        { done: s.noElevator, text: 'エレベーターを使用しなかった', pts: '+5' },
+        { done: s.noHitByFalling, text: '落下物に当たらなかった', pts: '+5' },
+        { done: s.openedDoor, text: 'ドアを開けて避難経路を確保した', pts: '+6' },
+        { done: s.turnedOffBreaker, text: 'ブレーカーを落とした', pts: '+6' },
+        { done: s.putOnShoes, text: '靴を履いた', pts: '+6' },
+        { done: s.checkedSafety, text: '周囲の安否確認を行った', pts: '+6' },
+      ];
+
+      var html = '';
+      for (var i = 0; i < actions.length; i++) {
+        var a = actions[i];
+        var icon = a.done ? '○' : '×';
+        var cls = a.done ? 'action-good' : 'action-bad';
+        var ptsText = a.done ? a.pts : '—';
+        html += '<div class="result-action-row ' + cls + '">'
+          + '<span class="action-icon">' + icon + '</span>'
+          + '<span class="action-text">' + escapeHTML(a.text) + '</span>'
+          + '<span class="action-pts">' + ptsText + '</span>'
+          + '</div>';
+      }
+      if (GAME.hitCount > 0) {
+        html += '<div class="result-action-row action-bad">'
+          + '<span class="action-icon">×</span>'
+          + '<span class="action-text">落下物に' + GAME.hitCount + '回被弾</span>'
+          + '<span class="action-pts">-' + (GAME.hitCount * 5) + '</span>'
+          + '</div>';
+      }
+      actionsEl.innerHTML = html;
+    }
+
+    // 今回のポイント（防災知識）
+    var tipBox = document.getElementById('result-tip-box');
+    if (tipBox) {
+      var tips = [];
+      if (!GAME.scoring.crouchedIn3s) tips.push('地震が来たらまず「低く！頭を守って！動かないで！」（シェイクアウト）が基本です。');
+      if (!GAME.scoring.guardedHead) tips.push('頭を守ることが最も重要です。クッションや本で頭を覆いましょう。');
+      if (!GAME.scoring.openedDoor) tips.push('揺れが収まったらドアを開けて避難経路を確保しましょう。地震で建物が歪むとドアが開かなくなることがあります。');
+      if (!GAME.scoring.turnedOffBreaker) tips.push('避難前にブレーカーを落としましょう。通電火災（電気が復旧した際に発生する火災）を防げます。');
+      if (!GAME.scoring.putOnShoes) tips.push('ガラスの破片が散乱している可能性があります。必ず靴を履いてから避難しましょう。');
+      if (!GAME.scoring.noHitByFalling) tips.push('「落ちてこない・倒れてこない・移動してこない」場所に身を寄せましょう。');
+      if (tips.length === 0) tips.push('素晴らしい避難行動でした！この知識を周りの人にも伝えましょう。');
+      tipBox.textContent = tips[0]; // メインのアドバイス1つ
+    }
   }, 500);
 }
 
