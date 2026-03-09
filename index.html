@@ -3198,10 +3198,20 @@ function initEventListeners() {
   // BGMトグル
   document.getElementById('bgm-toggle').addEventListener('click', () => {
     bgmEnabled = !bgmEnabled;
+    SoundManager.bgmEnabled = bgmEnabled;
     localStorage.setItem('jishin_bgm', bgmEnabled ? 'on' : 'off');
     const btn = document.getElementById('bgm-toggle');
     btn.textContent = 'BGM: ' + (bgmEnabled ? 'ON' : 'OFF');
     btn.className = 'bgm-btn ' + (bgmEnabled ? 'bgm-on' : 'bgm-off');
+    if (bgmEnabled) {
+      // ONにしたらタイトル画面ならOP BGM再生
+      if (document.getElementById('title-screen').classList.contains('active')) {
+        SoundManager.playBGM('BGM/JISHIN_OP.mp3', 0.25, true);
+      }
+    } else {
+      // OFFにしたら即停止
+      SoundManager.stopBGM();
+    }
   });
 
   // 結果画面ボタン
@@ -6173,6 +6183,7 @@ function init() {
   const savedBgm = localStorage.getItem('jishin_bgm');
   if (savedBgm === 'off') {
     bgmEnabled = false;
+    SoundManager.bgmEnabled = false;
     const btn = document.getElementById('bgm-toggle');
     btn.textContent = 'BGM: OFF';
     btn.className = 'bgm-btn bgm-off';
