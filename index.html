@@ -5025,6 +5025,31 @@ function showResult() {
 // ============================================================
 // SECTION: 採点トリガー（しゃがみ・ガード検出）
 // ============================================================
+// 安全ゾーン定義（机の下 = 各デスクの位置）
+function isUnderDesk(px, pz) {
+  var startX = -3.2, startZ = 1.0, gapX = 1.2, gapZ = 1.5;
+  var deskW = 0.6, deskD = 0.45;
+  for (var col = 0; col < 6; col++) {
+    for (var row = 0; row < 5; row++) {
+      var dx = startX + col * gapX;
+      var dz = startZ + row * gapZ;
+      if (Math.abs(px - dx) < deskW * 0.8 && Math.abs(pz - dz) < deskD * 1.2) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+// 危険ゾーン定義（窓際・ロッカー付近）
+function isNearHazard(px, pz) {
+  // 窓際（左壁付近 X < -3.5）
+  if (px < -3.5) return true;
+  // ロッカー付近（後方左 X=-2, Z≈8.5）
+  if (Math.abs(px - (-2)) < 1.8 && pz > 7.5) return true;
+  return false;
+}
+
 function checkScoringTriggers() {
   var s = GAME.scoring;
   var p = GAME.player;
@@ -5045,6 +5070,24 @@ function checkScoringTriggers() {
       s.guardedHead = true;
       GAME.score += 10;
       showAdvisor('頭を守る行動、完璧！', 'praise');
+    }
+
+    // 安全な場所（机の下）に移動した
+    if (!s.movedToSafe && p.isCrouching && isUnderDesk(p.x, p.z)) {
+      s.movedToSafe = true;
+      GAME.score += 10;
+      showAdvisor('机の下に入れた！脚をしっかり持って！', 'praise');
+    }
+
+    // 危険物から離れた（窓際・ロッカーの近くにいない）
+    if (!s.awayFromHazard && !isNearHazard(p.x, p.z) && timeSinceQuake > 2) {
+      s.awayFromHazard = true;
+    }
+
+    // 揺れ中に教室の外（Z > 9）に出た場合
+    if (s.didNotRunOutside && p.z > 9.5) {
+      s.didNotRunOutside = false;
+      showAdvisor('揺れている最中に外に出るのは危険！落下物に注意！', 'warning');
     }
   }
 }
