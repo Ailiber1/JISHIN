@@ -3638,6 +3638,26 @@ function buildClassroom() {
     phases: ['aftershake', 'evacuation'],
   });
 
+  // ストーブ（教室後方の暖房器具 — 火元確認の対象）
+  var stoveMat = new THREE.MeshStandardMaterial({ color: 0x882222, roughness: 0.5, metalness: 0.3, emissive: 0x331111, emissiveIntensity: 0.2 });
+  var stove = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.35), stoveMat);
+  stove.position.set(-3.5, 0.3, D - 1 - 0.3);
+  scene.add(stove);
+  // ストーブ上部の排気筒
+  var pipeMat = new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.4, metalness: 0.5 });
+  var pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.5, 8), pipeMat);
+  pipe.position.set(-3.5, 1.35, D - 1 - 0.3);
+  scene.add(pipe);
+  GAME.interactables.push({
+    id: 'stove', mesh: stove,
+    x: -3.5, z: D - 1 - 0.3,
+    radius: 1.2,
+    action: 'turnOffFire',
+    label: 'ストーブの火を消す',
+    used: false,
+    phases: ['aftershake'],
+  });
+
   // ============================================================
   // 蛍光灯（天井の長い照明器具）
   // ============================================================
@@ -4540,6 +4560,19 @@ function performInteract() {
       // 靴箱を非表示に
       if (target.mesh) target.mesh.visible = false;
       break;
+
+    case 'turnOffFire':
+      GAME.scoring.turnedOffFire = true;
+      GAME.score += 6;
+      showAdvisor('ストーブの火を消した！火災を防げるよ。', 'praise');
+      // ストーブの色を暗くする（消火状態）
+      if (target.mesh) {
+        target.mesh.material = new THREE.MeshStandardMaterial({
+          color: 0x444444, roughness: 0.6, metalness: 0.3,
+          emissive: 0x000000, emissiveIntensity: 0
+        });
+      }
+      break;
   }
 }
 
@@ -5160,10 +5193,9 @@ function calculateScore() {
   if (s.guardedHead) score += 10;
   if (s.movedToSafe) score += 10;
 
-  // 揺れ中の行動（20点）
+  // 揺れ中の行動（15点）— noElevatorはステージ1にエレベーター無いため除外
   if (s.awayFromHazard) score += 5;
   if (s.didNotRunOutside) score += 5;
-  if (s.noElevator) score += 5;
   if (s.noHitByFalling) score += 5;
 
   // 揺れ後の行動（30点）
@@ -5173,10 +5205,10 @@ function calculateScore() {
   if (s.putOnShoes) score += 6;
   if (s.checkedSafety) score += 6;
 
-  // 避難行動（20点）
+  // 避難行動（25点）
   if (s.usedStairs) score += 5;
   if (s.avoidedBlockWall) score += 5;
-  if (s.reachedEvacPoint) score += 5;
+  if (s.reachedEvacPoint) score += 10;
   if (s.withinTimeLimit) score += 5;
 
   // 減点
@@ -5234,15 +5266,15 @@ function showResult() {
         { done: s.movedToSafe, text: '安全な場所に移動した', pts: '+10' },
         { done: s.awayFromHazard, text: '危険物から離れた', pts: '+5' },
         { done: s.didNotRunOutside, text: '揺れ中に外に飛び出さなかった', pts: '+5' },
-        { done: s.noElevator, text: 'エレベーターを使用しなかった', pts: '+5' },
         { done: s.noHitByFalling, text: '落下物に当たらなかった', pts: '+5' },
+        { done: s.turnedOffFire, text: 'ストーブの火を消した', pts: '+6' },
         { done: s.openedDoor, text: 'ドアを開けて避難経路を確保した', pts: '+6' },
         { done: s.turnedOffBreaker, text: 'ブレーカーを落とした', pts: '+6' },
         { done: s.putOnShoes, text: '靴を履いた', pts: '+6' },
         { done: s.checkedSafety, text: '周囲の安否確認を行った', pts: '+6' },
         { done: s.usedStairs, text: '階段で避難した', pts: '+5' },
         { done: s.avoidedBlockWall, text: 'ブロック塀から離れて移動した', pts: '+5' },
-        { done: s.reachedEvacPoint, text: '避難場所に到達した', pts: '+5' },
+        { done: s.reachedEvacPoint, text: '避難場所に到達した', pts: '+10' },
         { done: s.withinTimeLimit, text: '制限時間内に避難完了', pts: '+5' },
       ];
 
@@ -5274,6 +5306,7 @@ function showResult() {
       var tips = [];
       if (!GAME.scoring.crouchedIn3s) tips.push('地震が来たらまず「低く！頭を守って！動かないで！」（シェイクアウト）が基本です。');
       if (!GAME.scoring.guardedHead) tips.push('頭を守ることが最も重要です。クッションや本で頭を覆いましょう。');
+      if (!GAME.scoring.turnedOffFire) tips.push('揺れが収まったらまず火の元を確認！ストーブやガスコンロの火を消しましょう。火災防止の第一歩です。');
       if (!GAME.scoring.openedDoor) tips.push('揺れが収まったらドアを開けて避難経路を確保しましょう。地震で建物が歪むとドアが開かなくなることがあります。');
       if (!GAME.scoring.turnedOffBreaker) tips.push('避難前にブレーカーを落としましょう。通電火災（電気が復旧した際に発生する火災）を防げます。');
       if (!GAME.scoring.putOnShoes) tips.push('ガラスの破片が散乱している可能性があります。必ず靴を履いてから避難しましょう。');
