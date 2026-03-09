@@ -4059,75 +4059,129 @@ function checkBlockWallProximity() {
 }
 
 // ============================================================
-// SECTION: プレイヤーモデル（棒人間・TPS視点用）
+// SECTION: プレイヤーモデル（KANKERI方式 — 関節ベース棒人間）
 // ============================================================
 function createPlayerModel() {
-  var group = new THREE.Group();
-  var h = 1.6; // プレイヤー身長
-  var bodyH = h * 0.4;
-  var legH = h * 0.35;
-  var headR = h * 0.1;
-  var armH = h * 0.35;
+  var figure = new THREE.Group();
 
-  // 体（紺色の制服）
-  var bodyMat = new THREE.MeshStandardMaterial({ color: 0x223355, roughness: 0.7, emissive: 0x111122, emissiveIntensity: 0.15 });
-  var body = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.11, bodyH, 8), bodyMat);
-  body.position.y = legH + bodyH / 2;
-  group.add(body);
+  // --- パラメータ（学生キャラ） ---
+  var headRadius = 0.15;
+  var torsoLength = 0.40;
+  var torsoRadius = 0.09;
+  var upperArmLength = 0.22;
+  var lowerArmLength = 0.20;
+  var armRadius = 0.038;
+  var upperLegLength = 0.26;
+  var lowerLegLength = 0.26;
+  var legRadius = 0.048;
 
-  // 頭
-  var headMat = new THREE.MeshStandardMaterial({ color: 0xf5c6a0, roughness: 0.6, emissive: 0x111108, emissiveIntensity: 0.15 });
-  var head = new THREE.Mesh(new THREE.SphereGeometry(headR, 8, 6), headMat);
-  head.position.y = legH + bodyH + headR;
-  group.add(head);
+  // --- マテリアル ---
+  var bodyMat = new THREE.MeshStandardMaterial({ color: 0x223355, emissive: 0x223355, emissiveIntensity: 0.2, roughness: 0.7 });
+  var skinMat = new THREE.MeshStandardMaterial({ color: 0xf5c6a0, emissive: 0xf5c6a0, emissiveIntensity: 0.1, roughness: 0.6 });
+  var pantsMat = new THREE.MeshStandardMaterial({ color: 0x1a1a33, emissive: 0x1a1a33, emissiveIntensity: 0.15, roughness: 0.7 });
+  var hairMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8, emissive: 0x111111, emissiveIntensity: 0.1 });
 
-  // 髪（黒）
-  var hairMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8, emissive: 0x050505, emissiveIntensity: 0.1 });
-  var hair = new THREE.Mesh(new THREE.SphereGeometry(headR * 1.05, 8, 4, 0, Math.PI * 2, 0, Math.PI * 0.6), hairMat);
-  hair.position.y = legH + bodyH + headR + 0.01;
-  group.add(hair);
+  // --- 頭 ---
+  var head = new THREE.Mesh(new THREE.SphereGeometry(headRadius, 16, 16), skinMat);
+  head.castShadow = true;
 
-  // 脚（2本・紺色ズボン）
-  var legMat = new THREE.MeshStandardMaterial({ color: 0x1a1a33, roughness: 0.7, emissive: 0x080808, emissiveIntensity: 0.1 });
-  var leftLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, legH, 4), legMat);
-  leftLeg.position.set(-0.06, legH / 2, 0);
-  group.add(leftLeg);
-  var rightLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, legH, 4), legMat);
-  rightLeg.position.set(0.06, legH / 2, 0);
-  group.add(rightLeg);
+  // 髪
+  var hair = new THREE.Mesh(new THREE.SphereGeometry(headRadius * 1.06, 12, 6, 0, Math.PI * 2, 0, Math.PI * 0.6), hairMat);
+  hair.position.y = 0.01;
+  head.add(hair);
 
-  // 腕（2本）
-  var armMat = new THREE.MeshStandardMaterial({ color: 0x223355, roughness: 0.7, emissive: 0x111122, emissiveIntensity: 0.15 });
-  var leftArm = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, armH, 4), armMat);
-  leftArm.position.set(-0.18, legH + bodyH * 0.7, 0);
-  group.add(leftArm);
-  var rightArm = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, armH, 4), armMat);
-  rightArm.position.set(0.18, legH + bodyH * 0.7, 0);
-  group.add(rightArm);
+  // 目（白目 — KANKERI方式: headに直接add）
+  var eyeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  var pupilMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+  var leftEyeWhite = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 8), eyeMat);
+  leftEyeWhite.position.set(-0.05, 0.02, headRadius * 0.85);
+  head.add(leftEyeWhite);
+  var leftPupil = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 8), pupilMat);
+  leftPupil.position.set(0, 0, 0.02);
+  leftEyeWhite.add(leftPupil);
+  var rightEyeWhite = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 8), eyeMat);
+  rightEyeWhite.position.set(0.05, 0.02, headRadius * 0.85);
+  head.add(rightEyeWhite);
+  var rightPupil = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 8), pupilMat);
+  rightPupil.position.set(0, 0, 0.02);
+  rightEyeWhite.add(rightPupil);
 
-  // 目（白目）— TPS視点から見えるサイズ
-  var eyeWhiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, emissive: 0xffffff, emissiveIntensity: 0.15 });
-  var leftEye = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 6), eyeWhiteMat);
-  leftEye.position.set(-0.05, legH + bodyH + headR * 0.05, -headR * 0.78);
-  group.add(leftEye);
-  var rightEye = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 6), eyeWhiteMat);
-  rightEye.position.set(0.05, legH + bodyH + headR * 0.05, -headR * 0.78);
-  group.add(rightEye);
+  // 口
+  var mouthMat = new THREE.MeshBasicMaterial({ color: 0x994444 });
+  var mouth = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.008, 0.01), mouthMat);
+  mouth.position.set(0, -0.04, headRadius * 0.9);
+  head.add(mouth);
 
-  // 瞳（大きめ・目立つ）
-  var pupilMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2, emissive: 0x000000 });
-  var leftPupil = new THREE.Mesh(new THREE.SphereGeometry(0.022, 6, 4), pupilMat);
-  leftPupil.position.set(-0.05, legH + bodyH + headR * 0.05, -headR * 0.88);
-  group.add(leftPupil);
-  var rightPupil = new THREE.Mesh(new THREE.SphereGeometry(0.022, 6, 4), pupilMat);
-  rightPupil.position.set(0.05, legH + bodyH + headR * 0.05, -headR * 0.88);
-  group.add(rightPupil);
+  // --- 首ピボット ---
+  var neckPivot = new THREE.Object3D();
+  neckPivot.position.y = torsoLength / 2;
+  head.position.y = headRadius * 0.8;
+  neckPivot.add(head);
 
-  // 口（小さいライン）
-  var mouthMat = new THREE.MeshStandardMaterial({ color: 0x994444, roughness: 0.5 });
-  var mouth = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.008, 0.01), mouthMat);
-  mouth.position.set(0, legH + bodyH + headR * -0.25, -headR * 0.9);
-  group.add(mouth);
+  // --- 胴体 ---
+  var torso = new THREE.Mesh(new THREE.CylinderGeometry(torsoRadius, torsoRadius * 0.9, torsoLength, 12), bodyMat);
+  torso.castShadow = true;
+  torso.add(neckPivot);
+
+  // --- 腕（関節式: 肩→上腕→肘→前腕→手） ---
+  function createArm(side) {
+    var shoulderPivot = new THREE.Object3D();
+    shoulderPivot.position.set(side * (torsoRadius + armRadius + 0.01), torsoLength / 2 - 0.04, 0);
+    var upperArm = new THREE.Mesh(new THREE.CylinderGeometry(armRadius, armRadius * 0.88, upperArmLength, 10), bodyMat);
+    upperArm.position.y = -upperArmLength / 2;
+    upperArm.castShadow = true;
+    shoulderPivot.add(upperArm);
+    var elbowPivot = new THREE.Object3D();
+    elbowPivot.position.y = -upperArmLength / 2;
+    upperArm.add(elbowPivot);
+    var lowerArm = new THREE.Mesh(new THREE.CylinderGeometry(armRadius * 0.88, armRadius * 0.75, lowerArmLength, 10), skinMat);
+    lowerArm.position.y = -lowerArmLength / 2;
+    lowerArm.castShadow = true;
+    elbowPivot.add(lowerArm);
+    // 手
+    var hand = new THREE.Mesh(new THREE.SphereGeometry(armRadius * 1.2, 8, 8), skinMat);
+    hand.position.y = -lowerArmLength / 2;
+    lowerArm.add(hand);
+    return { shoulderPivot: shoulderPivot, elbowPivot: elbowPivot };
+  }
+
+  var leftArm = createArm(-1);
+  var rightArm = createArm(1);
+  torso.add(leftArm.shoulderPivot);
+  torso.add(rightArm.shoulderPivot);
+
+  // --- 脚（関節式: 股→太腿→膝→脛→足） ---
+  function createLeg(side) {
+    var hipPivot = new THREE.Object3D();
+    hipPivot.position.set(side * (torsoRadius * 0.5), -torsoLength / 2, 0);
+    var upperLeg = new THREE.Mesh(new THREE.CylinderGeometry(legRadius * 1.1, legRadius * 0.9, upperLegLength, 10), pantsMat);
+    upperLeg.position.y = -upperLegLength / 2;
+    upperLeg.castShadow = true;
+    hipPivot.add(upperLeg);
+    var kneePivot = new THREE.Object3D();
+    kneePivot.position.y = -upperLegLength / 2;
+    upperLeg.add(kneePivot);
+    var lowerLeg = new THREE.Mesh(new THREE.CylinderGeometry(legRadius * 0.9, legRadius * 0.7, lowerLegLength, 10), pantsMat);
+    lowerLeg.position.y = -lowerLegLength / 2;
+    lowerLeg.castShadow = true;
+    kneePivot.add(lowerLeg);
+    // 足
+    var foot = new THREE.Mesh(new THREE.BoxGeometry(legRadius * 2.5, 0.04, 0.1), pantsMat);
+    foot.position.set(0, -lowerLegLength / 2, 0.03);
+    foot.castShadow = true;
+    lowerLeg.add(foot);
+    return { hipPivot: hipPivot, kneePivot: kneePivot };
+  }
+
+  var leftLeg = createLeg(-1);
+  var rightLeg = createLeg(1);
+  torso.add(leftLeg.hipPivot);
+  torso.add(rightLeg.hipPivot);
+
+  // --- 高さ調整 ---
+  var totalHeight = torsoLength + upperLegLength + lowerLegLength + 0.04;
+  torso.position.y = totalHeight - torsoLength / 2 + 0.02;
+  figure.add(torso);
 
   // 足元の影
   var shadowCanvas = document.createElement('canvas');
@@ -4139,79 +4193,137 @@ function createPlayerModel() {
   sctx.fillStyle = grad;
   sctx.fillRect(0, 0, 32, 32);
   var shadowTex = new THREE.CanvasTexture(shadowCanvas);
-  var shadowMat = new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false });
-  var shadowPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.5), shadowMat);
+  var shadowPlaneMat = new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false });
+  var shadowPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.6), shadowPlaneMat);
   shadowPlane.rotation.x = -Math.PI / 2;
   shadowPlane.position.y = 0.01;
-  group.add(shadowPlane);
+  figure.add(shadowPlane);
 
-  // ユーザーデータにパーツ参照を保存（アニメーション用）
-  group.userData = {
-    leftLeg: leftLeg, rightLeg: rightLeg,
-    leftArm: leftArm, rightArm: rightArm,
-    body: body, head: head, standY: 0
+  // 関節参照を保存（KANKERI方式）
+  figure.userData = {
+    joints: {
+      torso: torso,
+      neckPivot: neckPivot,
+      head: head,
+      leftShoulder: leftArm.shoulderPivot,
+      leftElbow: leftArm.elbowPivot,
+      rightShoulder: rightArm.shoulderPivot,
+      rightElbow: rightArm.elbowPivot,
+      leftHip: leftLeg.hipPivot,
+      leftKnee: leftLeg.kneePivot,
+      rightHip: rightLeg.hipPivot,
+      rightKnee: rightLeg.kneePivot
+    },
+    baseY: torso.position.y
   };
 
-  group.position.set(GAME.player.x, 0, GAME.player.z);
-  group.castShadow = true;
-  GAME.scene.add(group);
-  GAME.playerMesh = group;
+  figure.position.set(GAME.player.x, 0, GAME.player.z);
+  figure.castShadow = true;
+  GAME.scene.add(figure);
+  GAME.playerMesh = figure;
 }
 
 function updatePlayerModel() {
   var mesh = GAME.playerMesh;
-  if (!mesh) return;
+  if (!mesh || !mesh.userData.joints) return;
   var p = GAME.player;
+  var j = mesh.userData.joints;
 
   // 位置・回転
-  mesh.position.set(p.x, p.isCrouching ? -0.3 : 0, p.z);
-  mesh.rotation.y = p.yaw + Math.PI; // カメラの後ろから見ているので反転
+  mesh.position.set(p.x, 0, p.z);
+  mesh.rotation.y = p.yaw + Math.PI;
 
-  // しゃがみ: 体を縮める
+  // しゃがみ（KANKERI方式: 関節を曲げて低姿勢）
   if (p.isCrouching) {
-    mesh.scale.set(1, 0.65, 1);
-  } else {
-    mesh.scale.set(1, 1, 1);
+    j.leftHip.rotation.x = -0.8;
+    j.rightHip.rotation.x = -0.8;
+    j.leftKnee.rotation.x = 1.4;
+    j.rightKnee.rotation.x = 1.4;
+    j.torso.position.y = mesh.userData.baseY - 0.30;
+    j.torso.rotation.x = 0.2;
+    j.leftShoulder.rotation.x = -0.3;
+    j.leftShoulder.rotation.z = 0.2;
+    j.rightShoulder.rotation.x = -0.3;
+    j.rightShoulder.rotation.z = -0.2;
+    j.leftElbow.rotation.x = -0.6;
+    j.rightElbow.rotation.x = -0.6;
+    return;
   }
 
-  // ガード: 腕を頭の上に
-  if (p.isGuarding && mesh.userData.leftArm) {
-    mesh.userData.leftArm.rotation.z = 1.2;
-    mesh.userData.leftArm.position.set(-0.1, 1.35, 0.05);
-    mesh.userData.rightArm.rotation.z = -1.2;
-    mesh.userData.rightArm.position.set(0.1, 1.35, 0.05);
-  } else if (mesh.userData.leftArm) {
-    mesh.userData.leftArm.rotation.z = 0;
-    mesh.userData.leftArm.position.set(-0.18, 0.84, 0);
-    mesh.userData.rightArm.rotation.z = 0;
-    mesh.userData.rightArm.position.set(0.18, 0.84, 0);
+  // ガード（腕を頭上に）
+  if (p.isGuarding) {
+    j.leftShoulder.rotation.x = -2.8;
+    j.leftShoulder.rotation.z = 0.3;
+    j.leftElbow.rotation.x = -0.8;
+    j.rightShoulder.rotation.x = -2.8;
+    j.rightShoulder.rotation.z = -0.3;
+    j.rightElbow.rotation.x = -0.8;
+    j.neckPivot.rotation.x = 0.2;
+    j.torso.position.y = mesh.userData.baseY;
+    j.torso.rotation.x = 0;
+    j.leftHip.rotation.x = 0;
+    j.rightHip.rotation.x = 0;
+    j.leftKnee.rotation.x = 0;
+    j.rightKnee.rotation.x = 0;
+    return;
   }
+
+  // 通常姿勢リセット
+  j.torso.position.y = mesh.userData.baseY;
+  j.torso.rotation.x = 0;
+  j.neckPivot.rotation.x = 0;
+  j.neckPivot.rotation.z = 0;
 
   // 歩行アニメーション
   var isMoving = (GAME.keys['KeyW'] || GAME.keys['KeyS'] || GAME.keys['KeyA'] || GAME.keys['KeyD'] ||
                   GAME.keys['ArrowUp'] || GAME.keys['ArrowDown'] || GAME.keys['ArrowLeft'] || GAME.keys['ArrowRight'] ||
                   (GAME.isMobile && GAME.joystickMag > 0.1));
-  if (isMoving && !p.isCrouching) {
-    var walkSpeed = p.isSprinting ? 12 : 8;
+
+  if (isMoving) {
+    var walkSpeed = p.isSprinting ? 14 : 8;
     GAME._walkPhase += 0.016 * walkSpeed;
-    if (mesh.userData.leftLeg) {
-      mesh.userData.leftLeg.rotation.x = Math.sin(GAME._walkPhase) * 0.4;
-      mesh.userData.rightLeg.rotation.x = -Math.sin(GAME._walkPhase) * 0.4;
+    var cycle = GAME._walkPhase;
+    var legSwing = p.isSprinting ? 0.55 : 0.35;
+    var armSwing = p.isSprinting ? 0.45 : 0.26;
+
+    // 前傾（走行時）
+    if (p.isSprinting) j.torso.rotation.x = 0.15;
+
+    // 脚（KANKERI方式: 股関節 + 膝）
+    j.leftHip.rotation.x = Math.sin(cycle) * legSwing;
+    j.rightHip.rotation.x = Math.sin(cycle + Math.PI) * legSwing;
+    j.leftKnee.rotation.x = Math.max(0, -Math.sin(cycle)) * 0.6;
+    j.rightKnee.rotation.x = Math.max(0, -Math.sin(cycle + Math.PI)) * 0.6;
+
+    // 腕（脚と逆位相）
+    j.leftShoulder.rotation.x = Math.sin(cycle + Math.PI) * armSwing;
+    j.rightShoulder.rotation.x = Math.sin(cycle) * armSwing;
+    j.leftShoulder.rotation.z = 0;
+    j.rightShoulder.rotation.z = 0;
+    if (p.isSprinting) {
+      j.leftElbow.rotation.x = -0.8;
+      j.rightElbow.rotation.x = -0.8;
+    } else {
+      j.leftElbow.rotation.x = 0;
+      j.rightElbow.rotation.x = 0;
     }
-    if (!p.isGuarding && mesh.userData.leftArm) {
-      mesh.userData.leftArm.rotation.x = -Math.sin(GAME._walkPhase) * 0.3;
-      mesh.userData.rightArm.rotation.x = Math.sin(GAME._walkPhase) * 0.3;
-    }
+
+    // バウンス
+    j.torso.position.y = mesh.userData.baseY + Math.abs(Math.sin(cycle)) * (p.isSprinting ? 0.03 : 0.015);
   } else {
-    // 停止時: 脚・腕をリセット
-    if (mesh.userData.leftLeg) {
-      mesh.userData.leftLeg.rotation.x = 0;
-      mesh.userData.rightLeg.rotation.x = 0;
-    }
-    if (!p.isGuarding && mesh.userData.leftArm) {
-      mesh.userData.leftArm.rotation.x = 0;
-      mesh.userData.rightArm.rotation.x = 0;
-    }
+    // 待機アニメーション（微妙な呼吸）
+    var t = GAME.totalTimer || 0;
+    j.torso.position.y = mesh.userData.baseY + Math.sin(t * Math.PI) * 0.01;
+    j.leftShoulder.rotation.x = Math.sin(t * Math.PI * 0.7) * 0.04;
+    j.leftShoulder.rotation.z = 0;
+    j.rightShoulder.rotation.x = Math.sin(t * Math.PI * 0.7 + 0.5) * 0.04;
+    j.rightShoulder.rotation.z = 0;
+    j.leftElbow.rotation.x = 0;
+    j.rightElbow.rotation.x = 0;
+    j.leftHip.rotation.x = 0;
+    j.rightHip.rotation.x = 0;
+    j.leftKnee.rotation.x = 0;
+    j.rightKnee.rotation.x = 0;
   }
 }
 
