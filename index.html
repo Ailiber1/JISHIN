@@ -2777,25 +2777,17 @@ function showScreen(id) {
 // SECTION: TRAUMA WARNING
 // ============================================================
 function initWarning() {
-  // 初回のみ表示（OKを押すとlocalStorageに保存）
-  const seen = localStorage.getItem('jishin_warning_seen');
-  if (seen === 'true') {
-    warningShown = true;
-    showSplash();
-    return;
-  }
+  // 毎回表示（地震コンテンツのため毎回注意喚起）
   showScreen('warning-screen');
   const btn = document.getElementById('btn-warning-ok');
   btn.addEventListener('click', function handler() {
     btn.removeEventListener('click', handler);
-    localStorage.setItem('jishin_warning_seen', 'true');
     warningShown = true;
     showSplash();
   });
   btn.addEventListener('touchstart', function handler(e) {
     e.preventDefault();
     btn.removeEventListener('touchstart', handler);
-    localStorage.setItem('jishin_warning_seen', 'true');
     warningShown = true;
     showSplash();
   });
@@ -4113,23 +4105,29 @@ function createPlayerModel() {
   rightArm.position.set(0.18, legH + bodyH * 0.7, 0);
   group.add(rightArm);
 
-  // 目（白目）
-  var eyeWhiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
-  var leftEye = new THREE.Mesh(new THREE.SphereGeometry(0.022, 6, 4), eyeWhiteMat);
-  leftEye.position.set(-0.04, legH + bodyH + headR, -headR * 0.85);
+  // 目（白目）— TPS視点から見えるサイズ
+  var eyeWhiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, emissive: 0xffffff, emissiveIntensity: 0.15 });
+  var leftEye = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 6), eyeWhiteMat);
+  leftEye.position.set(-0.05, legH + bodyH + headR * 0.05, -headR * 0.78);
   group.add(leftEye);
-  var rightEye = new THREE.Mesh(new THREE.SphereGeometry(0.022, 6, 4), eyeWhiteMat);
-  rightEye.position.set(0.04, legH + bodyH + headR, -headR * 0.85);
+  var rightEye = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 6), eyeWhiteMat);
+  rightEye.position.set(0.05, legH + bodyH + headR * 0.05, -headR * 0.78);
   group.add(rightEye);
 
-  // 瞳
-  var pupilMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.2 });
-  var leftPupil = new THREE.Mesh(new THREE.SphereGeometry(0.012, 4, 3), pupilMat);
-  leftPupil.position.set(-0.04, legH + bodyH + headR, -headR * 0.93);
+  // 瞳（大きめ・目立つ）
+  var pupilMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2, emissive: 0x000000 });
+  var leftPupil = new THREE.Mesh(new THREE.SphereGeometry(0.022, 6, 4), pupilMat);
+  leftPupil.position.set(-0.05, legH + bodyH + headR * 0.05, -headR * 0.88);
   group.add(leftPupil);
-  var rightPupil = new THREE.Mesh(new THREE.SphereGeometry(0.012, 4, 3), pupilMat);
-  rightPupil.position.set(0.04, legH + bodyH + headR, -headR * 0.93);
+  var rightPupil = new THREE.Mesh(new THREE.SphereGeometry(0.022, 6, 4), pupilMat);
+  rightPupil.position.set(0.05, legH + bodyH + headR * 0.05, -headR * 0.88);
   group.add(rightPupil);
+
+  // 口（小さいライン）
+  var mouthMat = new THREE.MeshStandardMaterial({ color: 0x994444, roughness: 0.5 });
+  var mouth = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.008, 0.01), mouthMat);
+  mouth.position.set(0, legH + bodyH + headR * -0.25, -headR * 0.9);
+  group.add(mouth);
 
   // 足元の影
   var shadowCanvas = document.createElement('canvas');
@@ -5401,16 +5399,16 @@ function updatePlayer(dt) {
   const speed = p.speed * (p.isSprinting ? p.sprintMult : 1) * (p.isCrouching ? 0.5 : 1) * dt;
 
   if (!GAME.isMobile) {
-    if (GAME.keys['KeyW'] || GAME.keys['ArrowUp']) mz -= 1;
-    if (GAME.keys['KeyS'] || GAME.keys['ArrowDown']) mz += 1;
-    if (GAME.keys['KeyA'] || GAME.keys['ArrowLeft']) mx -= 1;
-    if (GAME.keys['KeyD'] || GAME.keys['ArrowRight']) mx += 1;
+    if (GAME.keys['KeyW'] || GAME.keys['ArrowUp']) mz += 1;
+    if (GAME.keys['KeyS'] || GAME.keys['ArrowDown']) mz -= 1;
+    if (GAME.keys['KeyA'] || GAME.keys['ArrowLeft']) mx += 1;
+    if (GAME.keys['KeyD'] || GAME.keys['ArrowRight']) mx -= 1;
     p.isSprinting = !!GAME.keys['ShiftLeft'] || !!GAME.keys['ShiftRight'];
   }
 
   if (GAME.isMobile && GAME.joystickMag > 0.1) {
-    mx = Math.sin(GAME.joystickAngle + p.yaw) * GAME.joystickMag;
-    mz = -Math.cos(GAME.joystickAngle + p.yaw) * GAME.joystickMag;
+    mx = -Math.sin(GAME.joystickAngle + p.yaw) * GAME.joystickMag;
+    mz = Math.cos(GAME.joystickAngle + p.yaw) * GAME.joystickMag;
   }
 
   if (!GAME.isMobile && (mx !== 0 || mz !== 0)) {
