@@ -1507,6 +1507,7 @@ html, body {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
   background: rgba(0,0,0,0.8); display: none;
   align-items: center; justify-content: center; z-index: 50;
+  pointer-events: auto;
 }
 #pause-overlay.active { display: flex; }
 .pause-panel { max-width: 300px; width: 90%; padding: 30px; text-align: center; }
@@ -2117,8 +2118,8 @@ html, body {
   <div id="pause-overlay">
     <div class="pause-panel ui-panel">
       <h2>PAUSED</h2>
-      <button class="pause-btn" id="btn-resume">再開</button>
-      <button class="pause-btn" id="btn-quit-game">タイトルに戻る</button>
+      <div class="pause-btn" id="btn-resume">再開</div>
+      <div class="pause-btn" id="btn-quit-game">タイトルに戻る</div>
     </div>
   </div>
   <div id="game-loading">
@@ -5009,6 +5010,7 @@ document.addEventListener('keydown', function(e) {
   if (!GAME.running) return;
   GAME.keys[e.code] = true;
 
+  // Escapeはポーズ中でも処理（ポーズ解除用）
   if (e.code === 'Escape') {
     e.preventDefault();
     GAME.paused = !GAME.paused;
@@ -5018,7 +5020,11 @@ document.addEventListener('keydown', function(e) {
     } else {
       pauseEl.classList.remove('active');
     }
+    return;
   }
+
+  // ポーズ中はEscape以外のキー入力を無視
+  if (GAME.paused) return;
 
   // しゃがむ: Cトグル（KANKERIと同じ方式）
   if (e.code === 'KeyC' && !GAME._cPrev) {
@@ -5037,6 +5043,7 @@ document.addEventListener('keydown', function(e) {
 document.addEventListener('keyup', function(e) {
   if (!GAME.running) return;
   GAME.keys[e.code] = false;
+  // キー解除はポーズ中でも処理する（早期returnの前に配置 — KANKERI教訓）
   if (e.code === 'KeyC') GAME._cPrev = false;
   if (e.code === 'KeyG') GAME.player.isGuarding = false;
 });
@@ -5197,13 +5204,36 @@ function initGameControls() {
     GAME.renderer.setSize(window.innerWidth, window.innerHeight);
   });
 
-  // --- ポーズボタン ---
-  document.getElementById('btn-resume').addEventListener('click', function() {
+  // --- ポーズボタン（click + touchstart 両対応 — KANKERI教訓）---
+  var _resumeTouched = false;
+  var resumeBtn = document.getElementById('btn-resume');
+  resumeBtn.addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    _resumeTouched = true;
+    GAME.paused = false;
+    document.getElementById('pause-overlay').classList.remove('active');
+    SoundManager.playSE('click');
+  }, { passive: false });
+  resumeBtn.addEventListener('click', function() {
+    if (_resumeTouched) { _resumeTouched = false; return; }
     GAME.paused = false;
     document.getElementById('pause-overlay').classList.remove('active');
     SoundManager.playSE('click');
   });
-  document.getElementById('btn-quit-game').addEventListener('click', function() {
+
+  var _quitTouched = false;
+  var quitBtn = document.getElementById('btn-quit-game');
+  quitBtn.addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    _quitTouched = true;
+    GAME.paused = false;
+    document.getElementById('pause-overlay').classList.remove('active');
+    cleanupGame();
+    showTitle();
+    SoundManager.playSE('click');
+  }, { passive: false });
+  quitBtn.addEventListener('click', function() {
+    if (_quitTouched) { _quitTouched = false; return; }
     GAME.paused = false;
     document.getElementById('pause-overlay').classList.remove('active');
     cleanupGame();
