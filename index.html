@@ -341,6 +341,29 @@ html, body {
   box-shadow: 0 0 12px rgba(255,107,0,0.5);
 }
 
+/* Name Input Row */
+.name-input-row {
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px; margin-top: 12px;
+}
+.neon-input {
+  background: rgba(0,0,0,0.6); border: 1px solid rgba(255,107,0,0.4);
+  color: var(--text-primary); font-family: 'Share Tech Mono', monospace;
+  font-size: 14px; padding: 6px 12px; border-radius: 4px;
+  outline: none; width: 140px; text-align: center;
+}
+.neon-input:focus { border-color: var(--safety-orange); box-shadow: 0 0 8px var(--safety-orange-glow); }
+.neon-input::placeholder { color: var(--text-dim); }
+.btn-small {
+  font-size: 12px; padding: 6px 12px;
+  background: rgba(255,107,0,0.15); border: 1px solid rgba(255,107,0,0.4);
+  color: var(--safety-orange); cursor: pointer; font-family: 'Share Tech Mono', monospace;
+  transition: all 0.2s;
+}
+.btn-small:hover { background: rgba(255,107,0,0.3); }
+.name-status {
+  font-size: 11px; color: var(--safe-green); min-width: 40px;
+}
 /* Panel Footer */
 .panel-footer {
   display: flex; align-items: center; justify-content: center;
@@ -1570,6 +1593,8 @@ html, body {
 
 </style>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body>
 
@@ -1627,6 +1652,11 @@ html, body {
     <div class="btn-group" style="margin-top:10px;">
       <button class="btn btn-thin" id="btn-ranking" data-i18n="BTN_RANKING"></button>
       <button class="btn btn-thin" id="btn-rules" data-i18n="BTN_RULES"></button>
+    </div>
+    <div class="name-input-row">
+      <input type="text" id="player-name-input" class="neon-input" maxlength="12" placeholder="名前を入力">
+      <button class="btn btn-small" id="btn-name-save" data-i18n="NAME_SAVE">登録</button>
+      <span class="name-status" id="name-status"></span>
     </div>
     <div class="panel-footer">
       <button class="lang-btn active" id="lang-ja">日本語</button>
@@ -2159,6 +2189,10 @@ const I18N = {
     RANK_D: '危険な行動が多い',
     RANKING_TITLE: 'ランキング',
     RANKING_EMPTY: 'まだ記録がありません',
+    NAME_SAVE: '登録',
+    NAME_SAVED: '登録済み',
+    NAME_GUEST: 'ゲスト',
+    NAME_PLACEHOLDER: '名前を入力',
     TRAINING_TITLE: '訓練モード',
     TRAINING_DESC: '教育現場での使用を想定したモードです。制限時間なし・スコア記録なしで、安全ゾーンの確認や避難手順の練習ができます。',
     TRAINING_STAGE_LABEL: 'ステージ選択',
@@ -2281,6 +2315,10 @@ const I18N = {
     RANK_D: 'Too Many Risky Actions',
     RANKING_TITLE: 'RANKING',
     RANKING_EMPTY: 'No records yet',
+    NAME_SAVE: 'SAVE',
+    NAME_SAVED: 'Saved',
+    NAME_GUEST: 'Guest',
+    NAME_PLACEHOLDER: 'Enter name',
     TRAINING_TITLE: 'TRAINING MODE',
     TRAINING_DESC: 'Designed for educational settings. No time limit, no score recording. Practice evacuation procedures and check safe zones freely.',
     TRAINING_STAGE_LABEL: 'Stage',
@@ -2488,6 +2526,138 @@ const BRIEFING_DATA = {
     advisor: { ja: '「地下は意外と揺れが小さいことがある。パニックにならず、非常口の緑の光を目指そう。」', en: '"Underground areas may shake less. Stay calm and follow the green emergency exit lights."' }
   }
 };
+
+// ============================================================
+// SECTION: FIREBASE INITIALIZATION
+// ============================================================
+let firebaseReady = false;
+let database = null;
+(function initFirebase() {
+  try {
+    const firebaseConfig = {
+      apiKey: "AIzaSyCK2imRK90-DsdAn9p29F2LvEmB0NP2-cI",
+      authDomain: "jishin-6db7a.firebaseapp.com",
+      databaseURL: "https://jishin-6db7a-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "jishin-6db7a",
+      storageBucket: "jishin-6db7a.firebasestorage.app",
+      messagingSenderId: "259713054558",
+      appId: "1:259713054558:web:369a4afff22fb6b2db01cf"
+    };
+    firebase.initializeApp(firebaseConfig);
+    database = firebase.database();
+    firebaseReady = true;
+  } catch (e) {
+    console.warn('Firebase init failed:', e);
+  }
+})();
+
+// ============================================================
+// SECTION: DEVICE ID & USER MANAGEMENT
+// ============================================================
+function getDeviceId() {
+  var key = 'jishin_device_id';
+  var id = localStorage.getItem(key);
+  if (!id) {
+    id = 'dev_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem(key, id);
+  }
+  return id;
+}
+
+function getUsername() {
+  return localStorage.getItem('jishin_username') || '';
+}
+
+function isGuest() {
+  return !getUsername();
+}
+
+// ============================================================
+// SECTION: RANKING SYSTEM
+// ============================================================
+function saveRanking(stageNum, score) {
+  if (!firebaseReady || !database) return;
+  if (isGuest()) return;
+  var deviceId = getDeviceId();
+  var username = getUsername();
+  var path = 'rankings/stage' + stageNum + '/' + deviceId;
+  var ref = database.ref(path);
+  ref.transaction(function(current) {
+    if (!current) {
+      return { username: username, score: score, timestamp: Date.now() };
+    }
+    current.username = username;
+    if (score > (current.score || 0)) {
+      current.score = score;
+    }
+    current.timestamp = Date.now();
+    return current;
+  });
+}
+
+function loadRankings(stageNum) {
+  var listEl = document.getElementById('ranking-list');
+  if (!listEl) return;
+  var lang = currentLang === 'ja';
+  var noData = lang ? 'まだ記録がありません' : 'No records yet';
+
+  if (!firebaseReady || !database) {
+    listEl.innerHTML = '<div class="ranking-empty">' + escapeHTML(noData) + '</div>';
+    return;
+  }
+
+  listEl.innerHTML = '<div class="ranking-empty" style="color:var(--text-dim);">' + (lang ? '読み込み中...' : 'Loading...') + '</div>';
+
+  var path = 'rankings/stage' + stageNum;
+  database.ref(path)
+    .orderByChild('score')
+    .limitToLast(10)
+    .once('value')
+    .then(function(snap) {
+      var entries = [];
+      snap.forEach(function(child) {
+        var d = child.val();
+        if (d && d.username) entries.push(d);
+      });
+      entries.sort(function(a, b) { return (b.score || 0) - (a.score || 0); });
+      entries.splice(10);
+      renderRankingList(entries);
+    })
+    .catch(function() {
+      listEl.innerHTML = '<div class="ranking-empty">' + escapeHTML(noData) + '</div>';
+    });
+}
+
+function renderRankingList(entries) {
+  var listEl = document.getElementById('ranking-list');
+  if (!listEl) return;
+  var lang = currentLang === 'ja';
+  var noData = lang ? 'まだ記録がありません' : 'No records yet';
+
+  if (!entries || entries.length === 0) {
+    listEl.innerHTML = '<div class="ranking-empty">' + escapeHTML(noData) + '</div>';
+    return;
+  }
+
+  var html = '';
+  var currentRank = 1;
+  entries.forEach(function(entry, i) {
+    if (i > 0 && entry.score < entries[i - 1].score) {
+      currentRank = i + 1;
+    }
+    var posClass = '';
+    if (currentRank === 1) posClass = ' ranking-pos-1';
+    else if (currentRank === 2) posClass = ' ranking-pos-2';
+    else if (currentRank === 3) posClass = ' ranking-pos-3';
+
+    html += '<div class="ranking-row">';
+    html += '<span class="ranking-pos' + posClass + '">' + currentRank + '</span>';
+    html += '<span class="ranking-name">' + escapeHTML(entry.username) + '</span>';
+    html += '<span class="ranking-score-val">' + (entry.score || 0) + ' pts</span>';
+    html += '</div>';
+  });
+  listEl.innerHTML = html;
+}
 
 // ============================================================
 // SECTION: GAME STATE
@@ -2853,8 +3023,31 @@ function initEventListeners() {
   document.getElementById('btn-ranking').addEventListener('click', () => {
     showScreen('ranking-screen');
     applyI18N();
+    var filter = document.getElementById('ranking-stage-filter');
+    loadRankings(parseInt(filter.value) || 1);
   });
   document.getElementById('ranking-close-btn').addEventListener('click', () => { showTitle(); });
+  document.getElementById('ranking-stage-filter').addEventListener('change', function() {
+    loadRankings(parseInt(this.value) || 1);
+  });
+
+  // 名前登録
+  var nameInput = document.getElementById('player-name-input');
+  var savedName = getUsername();
+  if (savedName) {
+    nameInput.value = savedName;
+    document.getElementById('name-status').textContent = currentLang === 'ja' ? '登録済み' : 'Saved';
+  }
+  document.getElementById('btn-name-save').addEventListener('click', function() {
+    var name = nameInput.value.trim();
+    if (name.length > 0) {
+      localStorage.setItem('jishin_username', name);
+      var status = document.getElementById('name-status');
+      status.textContent = currentLang === 'ja' ? '✓ 登録済み' : '✓ Saved';
+      status.style.color = 'var(--safe-green)';
+      SoundManager.playSE('click');
+    }
+  });
 
   // 訓練モード
   document.getElementById('btn-training').addEventListener('click', () => {
@@ -4211,6 +4404,11 @@ function showResult() {
       if (!GAME.scoring.noHitByFalling) tips.push('「落ちてこない・倒れてこない・移動してこない」場所に身を寄せましょう。');
       if (tips.length === 0) tips.push('素晴らしい避難行動でした！この知識を周りの人にも伝えましょう。');
       tipBox.textContent = tips[0]; // メインのアドバイス1つ
+    }
+
+    // ランキング保存（ゲスト除外、ゲームオーバーでなく完了した場合のみ）
+    if (GAME.hitCount < 3) {
+      saveRanking(GAME.stageNum, GAME.score);
     }
   }, 500);
 }
