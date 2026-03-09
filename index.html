@@ -2488,184 +2488,87 @@ const SoundManager = {
     this._currentBGM = null;
   },
 
-  // === 環境音システム（Web Audio API生成） ===
+  // === 環境音システム（mp3ファイル再生） ===
+  _ambientAudio: null,
 
-  // 教室のざわめき（フィルタードノイズ + ランダムな声のような音）
+  // 環境音を再生（ループ対応）
+  _playAmbientFile(filename, volume, loop) {
+    this.stopAmbient();
+    try {
+      var audio = new Audio(filename);
+      audio.loop = (loop !== false);
+      audio.volume = volume || 0.3;
+      audio.play().catch(function(){});
+      this._ambientAudio = audio;
+    } catch(e) {}
+  },
+
+  // 教室のざわめき（日常パート）
   startClassroomAmbient() {
-    try {
-      var ctx = this.getCtx();
-      if (!ctx) return;
-      this.stopAmbient();
-
-      // ブラウンノイズ生成（ざわめきのベース）
-      var bufferSize = ctx.sampleRate * 2;
-      var noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-      var data = noiseBuffer.getChannelData(0);
-      var lastOut = 0;
-      for (var i = 0; i < bufferSize; i++) {
-        var white = Math.random() * 2 - 1;
-        data[i] = (lastOut + (0.02 * white)) / 1.02;
-        lastOut = data[i];
-        data[i] *= 3.5;
-      }
-      var noise = ctx.createBufferSource();
-      noise.buffer = noiseBuffer;
-      noise.loop = true;
-
-      // バンドパスフィルタ（人の声帯域 300-3000Hz）
-      var filter = ctx.createBiquadFilter();
-      filter.type = 'bandpass';
-      filter.frequency.value = 800;
-      filter.Q.value = 0.5;
-
-      // ボリューム（控えめ）
-      var gain = ctx.createGain();
-      gain.gain.value = 0;
-      gain.gain.linearRampToValueAtTime(0.06, ctx.currentTime + 2);
-
-      noise.connect(filter);
-      filter.connect(gain);
-      gain.connect(ctx.destination);
-      noise.start();
-
-      // 時計のカチカチ音（定期的なクリック）
-      var clockGain = ctx.createGain();
-      clockGain.gain.value = 0.03;
-      clockGain.connect(ctx.destination);
-      var clockInterval = setInterval(function() {
-        try {
-          if (!SoundManager._ambientNodes) { clearInterval(clockInterval); return; }
-          var osc = ctx.createOscillator();
-          var g = ctx.createGain();
-          osc.type = 'sine';
-          osc.frequency.value = 3200;
-          g.gain.setValueAtTime(0.02, ctx.currentTime);
-          g.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.02);
-          osc.connect(g);
-          g.connect(ctx.destination);
-          osc.start();
-          osc.stop(ctx.currentTime + 0.025);
-        } catch(e) { clearInterval(clockInterval); }
-      }, 1000);
-
-      this._ambientNodes = { noise: noise, filter: filter, gain: gain, clockInterval: clockInterval };
-    } catch(e) {}
+    this._playAmbientFile('sounds/classroom-ambient.mp3', 0.25, true);
   },
 
-  // 非常ベル（避難フェーズ用 — 断続的なサイレン）
+  // 非常ベル + 校庭環境音（避難フェーズ）
   startEvacAlarm() {
-    try {
-      var ctx = this.getCtx();
-      if (!ctx) return;
-      this.stopAmbient();
-
-      var osc = ctx.createOscillator();
-      var gain = ctx.createGain();
-      osc.type = 'square';
-      osc.frequency.value = 800;
-      gain.gain.value = 0.08;
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-
-      // サイレンの上下（800Hz↔1200Hz）
-      var alarmInterval = setInterval(function() {
-        try {
-          if (!SoundManager._ambientNodes) { clearInterval(alarmInterval); return; }
-          var t = ctx.currentTime;
-          osc.frequency.setValueAtTime(800, t);
-          osc.frequency.linearRampToValueAtTime(1200, t + 0.3);
-          osc.frequency.linearRampToValueAtTime(800, t + 0.6);
-          // 断続（鳴る→止まる→鳴る）
-          gain.gain.setValueAtTime(0.08, t);
-          gain.gain.setValueAtTime(0, t + 0.7);
-          gain.gain.setValueAtTime(0.08, t + 1.0);
-        } catch(e) { clearInterval(alarmInterval); }
-      }, 1400);
-
-      this._ambientNodes = { osc: osc, gain: gain, alarmInterval: alarmInterval };
-    } catch(e) {}
+    this._playAmbientFile('sounds/emergency-alert.mp3', 0.20, true);
   },
 
-  // 揺れ後の静寂（微かなきしみ音）
+  // 揺れ後の静寂（きしみ — 静かな教室）
   startAftershakeAmbient() {
+    this._playAmbientFile('sounds/classroom-quiet.mp3', 0.15, true);
+  },
+
+  // 校庭の環境音（避難完了後）
+  startSchoolyardAmbient() {
+    this._playAmbientFile('sounds/schoolyard.mp3', 0.20, true);
+  },
+
+  // ガラス破砕音（1回再生）
+  playGlassBreak() {
     try {
-      var ctx = this.getCtx();
-      if (!ctx) return;
-      this.stopAmbient();
-
-      // 微かなきしみ・余韻ノイズ
-      var bufferSize = ctx.sampleRate * 2;
-      var noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-      var data = noiseBuffer.getChannelData(0);
-      var lastOut = 0;
-      for (var i = 0; i < bufferSize; i++) {
-        var white = Math.random() * 2 - 1;
-        data[i] = (lastOut + (0.02 * white)) / 1.02;
-        lastOut = data[i];
-      }
-      var noise = ctx.createBufferSource();
-      noise.buffer = noiseBuffer;
-      noise.loop = true;
-
-      var filter = ctx.createBiquadFilter();
-      filter.type = 'lowpass';
-      filter.frequency.value = 200;
-
-      var gain = ctx.createGain();
-      gain.gain.value = 0.03;
-
-      noise.connect(filter);
-      filter.connect(gain);
-      gain.connect(ctx.destination);
-      noise.start();
-
-      // 時折きしみ音
-      var creakInterval = setInterval(function() {
-        try {
-          if (!SoundManager._ambientNodes) { clearInterval(creakInterval); return; }
-          if (Math.random() < 0.3) {
-            var osc = ctx.createOscillator();
-            var g = ctx.createGain();
-            osc.type = 'sawtooth';
-            osc.frequency.value = 80 + Math.random() * 60;
-            g.gain.setValueAtTime(0.02, ctx.currentTime);
-            g.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.3);
-            osc.connect(g);
-            g.connect(ctx.destination);
-            osc.start();
-            osc.stop(ctx.currentTime + 0.35);
-          }
-        } catch(e) { clearInterval(creakInterval); }
-      }, 2000);
-
-      this._ambientNodes = { noise: noise, gain: gain, creakInterval: creakInterval };
+      var audio = new Audio('sounds/glass-break.mp3');
+      audio.volume = 0.35;
+      audio.play().catch(function(){});
     } catch(e) {}
   },
 
-  // 環境音停止（共通）
-  stopAmbient(fadeMs) {
-    if (!this._ambientNodes) return;
-    var nodes = this._ambientNodes;
-    this._ambientNodes = null;
+  // 建物崩壊音（地震中の演出）
+  playBuildingCollapse() {
     try {
-      if (nodes.clockInterval) clearInterval(nodes.clockInterval);
-      if (nodes.alarmInterval) clearInterval(nodes.alarmInterval);
-      if (nodes.creakInterval) clearInterval(nodes.creakInterval);
-      if (nodes.gain) {
-        var ctx = this.getCtx();
-        if (ctx && fadeMs) {
-          nodes.gain.gain.linearRampToValueAtTime(0, ctx.currentTime + fadeMs / 1000);
-          setTimeout(function() {
-            try { if (nodes.noise) nodes.noise.stop(); } catch(e) {}
-            try { if (nodes.osc) nodes.osc.stop(); } catch(e) {}
-          }, fadeMs + 100);
-        } else {
-          try { if (nodes.noise) nodes.noise.stop(); } catch(e) {}
-          try { if (nodes.osc) nodes.osc.stop(); } catch(e) {}
-        }
-      }
+      var audio = new Audio('sounds/building-collapse.mp3');
+      audio.volume = 0.30;
+      audio.play().catch(function(){});
     } catch(e) {}
+  },
+
+  // 走る足音（廊下）
+  playDashSound() {
+    try {
+      var audio = new Audio('sounds/dash-school.mp3');
+      audio.volume = 0.20;
+      audio.play().catch(function(){});
+    } catch(e) {}
+  },
+
+  // 環境音停止
+  stopAmbient(fadeMs) {
+    if (!this._ambientAudio) return;
+    var audio = this._ambientAudio;
+    this._ambientAudio = null;
+    if (fadeMs && fadeMs > 0) {
+      var steps = 20;
+      var interval = fadeMs / steps;
+      var volStep = audio.volume / steps;
+      var fadeTimer = setInterval(function() {
+        audio.volume = Math.max(0, audio.volume - volStep);
+        if (audio.volume <= 0.01) {
+          clearInterval(fadeTimer);
+          audio.pause(); audio.currentTime = 0;
+        }
+      }, interval);
+    } else {
+      audio.pause(); audio.currentTime = 0;
+    }
   },
 
   // 全音声停止
@@ -4225,6 +4128,9 @@ function startStairCutscene() {
 
 function teleportToSchoolyard() {
   GAME._inSchoolyard = true;
+  // 環境音: 非常ベル→校庭の環境音に切替
+  SoundManager.stopAmbient(500);
+  setTimeout(function() { SoundManager.startSchoolyardAmbient(); }, 600);
   GAME.player.x = SCHOOLYARD_SPAWN.x;
   GAME.player.y = GROUND_Y + 0.9;
   GAME.player.z = SCHOOLYARD_SPAWN.z;
@@ -5281,8 +5187,9 @@ function transitionPhase(newPhase) {
       // S波（本震）開始
       GAME.quake.shaking = true;
       GAME.quake.elapsed = 0;
-      // 地鳴り効果音開始
+      // 地鳴り効果音 + 建物崩壊音（実ファイル）
       SoundManager.startQuakeSound();
+      SoundManager.playBuildingCollapse();
       scheduleFallingObjects();
       createDustParticles();
       var vig = document.getElementById('danger-vignette');
@@ -5293,8 +5200,8 @@ function transitionPhase(newPhase) {
       // 揺れ収束
       GAME.quake.shaking = false;
       SoundManager.stopQuakeSound();
-      SoundManager.stopBGM(2000); // 地震BGMフェードアウト
-      SoundManager.playSE('glass');
+      SoundManager.stopBGM(2000);
+      SoundManager.playGlassBreak(); // ガラス破砕音（実ファイル）
       // 環境音: 揺れ後の静寂（きしみ音）
       SoundManager.startAftershakeAmbient();
       var vig2 = document.getElementById('danger-vignette');
