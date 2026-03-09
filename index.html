@@ -2423,6 +2423,46 @@ const SoundManager = {
     return this.audioCtx;
   },
 
+  _quakeLoop: null,
+
+  startQuakeSound() {
+    try {
+      var ctx = this.getCtx();
+      if (!ctx) return;
+      // 低周波の地鳴り音（ノイズ＋低周波オシレータ）
+      var osc1 = ctx.createOscillator();
+      var osc2 = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc1.type = 'sawtooth';
+      osc1.frequency.value = 35;
+      osc2.type = 'sine';
+      osc2.frequency.value = 55;
+      osc1.connect(gain);
+      osc2.connect(gain);
+      gain.connect(ctx.destination);
+      gain.gain.value = 0;
+      gain.gain.linearRampToValueAtTime(0.15, ctx.currentTime + 0.5);
+      osc1.start();
+      osc2.start();
+      this._quakeLoop = { osc1: osc1, osc2: osc2, gain: gain };
+    } catch (e) {}
+  },
+
+  stopQuakeSound() {
+    if (!this._quakeLoop) return;
+    try {
+      var ctx = this.getCtx();
+      if (ctx) {
+        this._quakeLoop.gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 1);
+        var l = this._quakeLoop;
+        setTimeout(function() {
+          try { l.osc1.stop(); l.osc2.stop(); } catch(e) {}
+        }, 1200);
+      }
+    } catch(e) {}
+    this._quakeLoop = null;
+  },
+
   playSE(type) {
     if (!this.seEnabled) return;
     try {
@@ -2435,11 +2475,19 @@ const SoundManager = {
       const now = ctx.currentTime;
 
       const conf = {
-        hover:  { f: 1400, d: 0.06, t: 'sine',     g: 0.30, sweep: 1800 },
-        click:  { f: 600,  d: 0.10, t: 'sine',     g: 0.35, sweep: 1200 },
-        tab:    { f: 900,  d: 0.08, t: 'sine',     g: 0.25, sweep: 1500 },
-        close:  { f: 1200, d: 0.08, t: 'sine',     g: 0.25, sweep: 600 },
-        error:  { f: 400,  d: 0.20, t: 'sawtooth', g: 0.30, sweep: 150 }
+        hover:    { f: 1400, d: 0.06, t: 'sine',     g: 0.30, sweep: 1800 },
+        click:    { f: 600,  d: 0.10, t: 'sine',     g: 0.35, sweep: 1200 },
+        tab:      { f: 900,  d: 0.08, t: 'sine',     g: 0.25, sweep: 1500 },
+        close:    { f: 1200, d: 0.08, t: 'sine',     g: 0.25, sweep: 600 },
+        error:    { f: 400,  d: 0.20, t: 'sawtooth', g: 0.30, sweep: 150 },
+        correct:  { f: 800,  d: 0.15, t: 'sine',     g: 0.35, sweep: 1600 },
+        hit:      { f: 200,  d: 0.15, t: 'sawtooth', g: 0.40, sweep: 80 },
+        alarm:    { f: 600,  d: 0.40, t: 'square',   g: 0.25, sweep: 1200 },
+        glass:    { f: 3000, d: 0.12, t: 'sawtooth', g: 0.20, sweep: 800 },
+        footstep: { f: 120,  d: 0.05, t: 'sine',     g: 0.15, sweep: 60 },
+        door:     { f: 300,  d: 0.20, t: 'sine',     g: 0.30, sweep: 150 },
+        breaker:  { f: 100,  d: 0.25, t: 'square',   g: 0.30, sweep: 50 },
+        rescue:   { f: 700,  d: 0.20, t: 'sine',     g: 0.35, sweep: 1400 }
       }[type] || { f: 800, d: 0.1, t: 'sine', g: 0.30 };
 
       gain.gain.setValueAtTime(conf.g, now);
@@ -3347,9 +3395,12 @@ function initGame(stageNum) {
   GAME._inSchoolyard = false;
   GAME._evacMarker = null;
   GAME._blockWallZone = null;
+  GAME.playerMesh = null;
+  GAME._walkPhase = 0;
   buildClassroom();
   buildHallway();
   buildSchoolyard();
+  createPlayerModel();
   spawnNPCs();
 
   document.getElementById('game-loading').style.display = 'none';
@@ -3902,6 +3953,123 @@ function checkBlockWallProximity() {
 }
 
 // ============================================================
+// SECTION: プレイヤーモデル（棒人間・TPS視点用）
+// ============================================================
+function createPlayerModel() {
+  var group = new THREE.Group();
+  var h = 1.6; // プレイヤー身長
+  var bodyH = h * 0.4;
+  var legH = h * 0.35;
+  var headR = h * 0.1;
+  var armH = h * 0.35;
+
+  // 体（紺色の制服）
+  var bodyMat = new THREE.MeshStandardMaterial({ color: 0x223355, roughness: 0.7, emissive: 0x111122, emissiveIntensity: 0.15 });
+  var body = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.11, bodyH, 8), bodyMat);
+  body.position.y = legH + bodyH / 2;
+  group.add(body);
+
+  // 頭
+  var headMat = new THREE.MeshStandardMaterial({ color: 0xf5c6a0, roughness: 0.6, emissive: 0x111108, emissiveIntensity: 0.15 });
+  var head = new THREE.Mesh(new THREE.SphereGeometry(headR, 8, 6), headMat);
+  head.position.y = legH + bodyH + headR;
+  group.add(head);
+
+  // 髪（黒）
+  var hairMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8, emissive: 0x050505, emissiveIntensity: 0.1 });
+  var hair = new THREE.Mesh(new THREE.SphereGeometry(headR * 1.05, 8, 4, 0, Math.PI * 2, 0, Math.PI * 0.6), hairMat);
+  hair.position.y = legH + bodyH + headR + 0.01;
+  group.add(hair);
+
+  // 脚（2本・紺色ズボン）
+  var legMat = new THREE.MeshStandardMaterial({ color: 0x1a1a33, roughness: 0.7, emissive: 0x080808, emissiveIntensity: 0.1 });
+  var leftLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, legH, 4), legMat);
+  leftLeg.position.set(-0.06, legH / 2, 0);
+  group.add(leftLeg);
+  var rightLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, legH, 4), legMat);
+  rightLeg.position.set(0.06, legH / 2, 0);
+  group.add(rightLeg);
+
+  // 腕（2本）
+  var armMat = new THREE.MeshStandardMaterial({ color: 0x223355, roughness: 0.7, emissive: 0x111122, emissiveIntensity: 0.15 });
+  var leftArm = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, armH, 4), armMat);
+  leftArm.position.set(-0.18, legH + bodyH * 0.7, 0);
+  group.add(leftArm);
+  var rightArm = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, armH, 4), armMat);
+  rightArm.position.set(0.18, legH + bodyH * 0.7, 0);
+  group.add(rightArm);
+
+  // ユーザーデータにパーツ参照を保存（アニメーション用）
+  group.userData = {
+    leftLeg: leftLeg, rightLeg: rightLeg,
+    leftArm: leftArm, rightArm: rightArm,
+    body: body, head: head, standY: 0
+  };
+
+  group.position.set(GAME.player.x, 0, GAME.player.z);
+  group.castShadow = true;
+  GAME.scene.add(group);
+  GAME.playerMesh = group;
+}
+
+function updatePlayerModel() {
+  var mesh = GAME.playerMesh;
+  if (!mesh) return;
+  var p = GAME.player;
+
+  // 位置・回転
+  mesh.position.set(p.x, p.isCrouching ? -0.3 : 0, p.z);
+  mesh.rotation.y = p.yaw + Math.PI; // カメラの後ろから見ているので反転
+
+  // しゃがみ: 体を縮める
+  if (p.isCrouching) {
+    mesh.scale.set(1, 0.65, 1);
+  } else {
+    mesh.scale.set(1, 1, 1);
+  }
+
+  // ガード: 腕を頭の上に
+  if (p.isGuarding && mesh.userData.leftArm) {
+    mesh.userData.leftArm.rotation.z = 1.2;
+    mesh.userData.leftArm.position.set(-0.1, 1.35, 0.05);
+    mesh.userData.rightArm.rotation.z = -1.2;
+    mesh.userData.rightArm.position.set(0.1, 1.35, 0.05);
+  } else if (mesh.userData.leftArm) {
+    mesh.userData.leftArm.rotation.z = 0;
+    mesh.userData.leftArm.position.set(-0.18, 0.84, 0);
+    mesh.userData.rightArm.rotation.z = 0;
+    mesh.userData.rightArm.position.set(0.18, 0.84, 0);
+  }
+
+  // 歩行アニメーション
+  var isMoving = (GAME.keys['KeyW'] || GAME.keys['KeyS'] || GAME.keys['KeyA'] || GAME.keys['KeyD'] ||
+                  GAME.keys['ArrowUp'] || GAME.keys['ArrowDown'] || GAME.keys['ArrowLeft'] || GAME.keys['ArrowRight'] ||
+                  (GAME.isMobile && GAME.joystickMag > 0.1));
+  if (isMoving && !p.isCrouching) {
+    var walkSpeed = p.isSprinting ? 12 : 8;
+    GAME._walkPhase += 0.016 * walkSpeed;
+    if (mesh.userData.leftLeg) {
+      mesh.userData.leftLeg.rotation.x = Math.sin(GAME._walkPhase) * 0.4;
+      mesh.userData.rightLeg.rotation.x = -Math.sin(GAME._walkPhase) * 0.4;
+    }
+    if (!p.isGuarding && mesh.userData.leftArm) {
+      mesh.userData.leftArm.rotation.x = -Math.sin(GAME._walkPhase) * 0.3;
+      mesh.userData.rightArm.rotation.x = Math.sin(GAME._walkPhase) * 0.3;
+    }
+  } else {
+    // 停止時: 脚・腕をリセット
+    if (mesh.userData.leftLeg) {
+      mesh.userData.leftLeg.rotation.x = 0;
+      mesh.userData.rightLeg.rotation.x = 0;
+    }
+    if (!p.isGuarding && mesh.userData.leftArm) {
+      mesh.userData.leftArm.rotation.x = 0;
+      mesh.userData.rightArm.rotation.x = 0;
+    }
+  }
+}
+
+// ============================================================
 // SECTION: NPCシステム（Stage 1: 先生+生徒）
 // ============================================================
 GAME.npcs = [];
@@ -4157,6 +4325,7 @@ function tryHelpInjuredNPC() {
       npc.helped = true;
       GAME.scoring.checkedSafety = true;
       GAME.score += 6;
+      SoundManager.playSE('rescue');
       showAdvisor('動けない生徒を助けた！素晴らしい！', 'praise');
       SoundManager.playSE('click');
       return true;
@@ -4203,6 +4372,7 @@ function performInteract() {
     case 'openDoor':
       GAME.scoring.openedDoor = true;
       GAME.score += 6;
+      SoundManager.playSE('door');
       showAdvisor('ドアを開けて避難経路を確保した！廊下へ出よう！', 'praise');
       // ドアを開く演出（90度回転）
       if (target.mesh) {
@@ -4224,6 +4394,7 @@ function performInteract() {
     case 'turnOffBreaker':
       GAME.scoring.turnedOffBreaker = true;
       GAME.score += 6;
+      SoundManager.playSE('breaker');
       showAdvisor('ブレーカーを落とした！通電火災を防げるよ。', 'praise');
       // ブレーカーの色を変える（OFF状態）
       if (target.mesh) {
@@ -4289,6 +4460,7 @@ function gameLoop(timestamp) {
   }
 
   updatePlayer(dt);
+  updatePlayerModel();
   updateNPCs(dtSec);
   updateCamera();
 
@@ -4367,7 +4539,7 @@ function transitionPhase(newPhase) {
     case 'earthquake':
       // 地震発生！P波（初期微動）開始
       GAME.earthquakeStartTime = GAME.totalTimer;
-      SoundManager.playSE('error'); // 緊急音代わり
+      SoundManager.playSE('alarm'); // 緊急地震速報的な警報音
       // AIアドバイザー: 「地震です！」（Phase 5で実装）
       showAdvisor('地震だ！低い姿勢を取って！', 'warning');
       break;
@@ -4376,6 +4548,8 @@ function transitionPhase(newPhase) {
       // S波（本震）開始
       GAME.quake.shaking = true;
       GAME.quake.elapsed = 0;
+      // 地鳴り効果音開始
+      SoundManager.startQuakeSound();
       // 落下物スケジュール開始
       scheduleFallingObjects();
       // danger-vignette を有効化
@@ -4386,6 +4560,9 @@ function transitionPhase(newPhase) {
     case 'aftershake':
       // 揺れ収束
       GAME.quake.shaking = false;
+      // 地鳴り効果音停止
+      SoundManager.stopQuakeSound();
+      SoundManager.playSE('glass'); // ガラス破砕音
       var vig2 = document.getElementById('danger-vignette');
       if (vig2) vig2.style.boxShadow = 'inset 0 0 80px rgba(255,0,64,0)';
       showAdvisor('揺れが収まった。まず火の元を確認しよう。', 'normal');
@@ -4599,6 +4776,7 @@ function spawnFallingObject(type, x, z) {
 function onPlayerHit(type) {
   GAME.hitCount++;
   GAME.scoring.noHitByFalling = false;
+  SoundManager.playSE('hit');
 
   // ヒットフラッシュ
   var flash = document.getElementById('hit-flash');
@@ -4984,6 +5162,8 @@ function cleanupGame() {
   GAME._inSchoolyard = false;
   GAME._evacMarker = null;
   GAME._blockWallZone = null;
+  GAME.playerMesh = null;
+  SoundManager.stopQuakeSound();
   if (GAME._advisorTimeout) { clearTimeout(GAME._advisorTimeout); GAME._advisorTimeout = null; }
   // 階段カットシーンオーバーレイの残骸除去
   var stairOverlay = document.getElementById('stair-fade-overlay');
