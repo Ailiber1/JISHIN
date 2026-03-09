@@ -4231,7 +4231,7 @@ function updatePlayerModel() {
 
   // 位置・回転
   mesh.position.set(p.x, 0, p.z);
-  mesh.rotation.y = p.yaw + Math.PI;
+  mesh.rotation.y = p.yaw; // プレイヤーはカメラと反対方向（前方）を向く
 
   // しゃがみ（KANKERI方式: 関節を曲げて低姿勢）
   if (p.isCrouching) {
