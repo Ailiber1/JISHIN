@@ -4473,7 +4473,7 @@ function spawnNPCs() {
     for (var row = 0; row < 5; row++) {
       if (studentCount >= 26) break;
       var sx = deskStartX + col * gapX;
-      var sz = deskStartZ + row * gapZ + 0.4; // 椅子の位置
+      var sz = deskStartZ + row * gapZ + 0.15; // 机と椅子の間（椅子貫通回避）
 
       // 行動パターン: 冷静70%, パニック20%, 負傷10%
       var rand = Math.random();
