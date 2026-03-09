@@ -3148,6 +3148,7 @@ function initGame(stageNum) {
   }
 
   buildClassroom();
+  spawnNPCs();
 
   document.getElementById('game-loading').style.display = 'none';
 
@@ -3346,6 +3347,270 @@ function buildClassroom() {
 }
 
 // ============================================================
+// SECTION: NPCシステム（Stage 1: 先生+生徒）
+// ============================================================
+GAME.npcs = [];
+
+function createNPCModel(color, height, headColor) {
+  var group = new THREE.Group();
+  var bodyH = height * 0.45;
+  var legH = height * 0.35;
+  var headR = height * 0.1;
+
+  // 体
+  var bodyMat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.7, emissive: 0x111111, emissiveIntensity: 0.15 });
+  var body = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.1, bodyH, 6), bodyMat);
+  body.position.y = legH + bodyH / 2;
+  group.add(body);
+
+  // 頭
+  var headMat = new THREE.MeshStandardMaterial({ color: headColor || 0xf5c6a0, roughness: 0.6, emissive: 0x111108, emissiveIntensity: 0.15 });
+  var head = new THREE.Mesh(new THREE.SphereGeometry(headR, 8, 6), headMat);
+  head.position.y = legH + bodyH + headR;
+  group.add(head);
+
+  // 脚（2本）
+  var legMat = new THREE.MeshStandardMaterial({ color: 0x333355, roughness: 0.7, emissive: 0x080808, emissiveIntensity: 0.1 });
+  var leftLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, legH, 4), legMat);
+  leftLeg.position.set(-0.06, legH / 2, 0);
+  group.add(leftLeg);
+  var rightLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, legH, 4), legMat);
+  rightLeg.position.set(0.06, legH / 2, 0);
+  group.add(rightLeg);
+
+  // アニメーション用参照
+  group.userData = { body: body, head: head, leftLeg: leftLeg, rightLeg: rightLeg };
+  return group;
+}
+
+function spawnNPCs() {
+  GAME.npcs = [];
+
+  // 先生NPC（教卓付近・白シャツ）
+  var teacher = createNPCModel(0xf0f0f0, 1.7, 0xf5c6a0);
+  teacher.position.set(0.8, 0, -0.5);
+  GAME.scene.add(teacher);
+  GAME.npcs.push({
+    mesh: teacher, role: 'teacher',
+    x: 0.8, z: -0.5, targetX: 0.8, targetZ: -0.5,
+    behavior: 'calm', state: 'idle',
+    speed: 0.015, phase: 0,
+  });
+
+  // 生徒NPC（26名 — 各机に1人ずつ配置）
+  var deskStartX = -3.2, deskStartZ = 1.0, gapX = 1.2, gapZ = 1.5;
+  var studentColors = [0x4488cc, 0xcc4466, 0x44aa66, 0xcc8844, 0x8866cc, 0x44cccc, 0xcccc44, 0xaa4488];
+  var studentCount = 0;
+
+  for (var col = 0; col < 6; col++) {
+    for (var row = 0; row < 5; row++) {
+      if (studentCount >= 26) break;
+      var sx = deskStartX + col * gapX;
+      var sz = deskStartZ + row * gapZ + 0.4; // 椅子の位置
+
+      // 行動パターン: 冷静70%, パニック20%, 負傷10%
+      var rand = Math.random();
+      var behavior = rand < 0.7 ? 'calm' : rand < 0.9 ? 'panic' : 'injured';
+
+      var bodyColor = behavior === 'panic' ? 0xcccc00 : studentColors[studentCount % studentColors.length];
+      var npcHeight = 1.2 + Math.random() * 0.3; // 子どもサイズ
+      var studentModel = createNPCModel(bodyColor, npcHeight, 0xf5c6a0);
+      studentModel.position.set(sx, 0, sz);
+      GAME.scene.add(studentModel);
+
+      GAME.npcs.push({
+        mesh: studentModel, role: 'student',
+        x: sx, z: sz, targetX: sx, targetZ: sz,
+        behavior: behavior, state: 'idle',
+        speed: 0.008 + Math.random() * 0.006,
+        phase: 0, deskX: sx, deskZ: deskStartZ + row * gapZ,
+        helped: false, // 負傷NPCを助けたかフラグ
+      });
+      studentCount++;
+    }
+  }
+}
+
+function updateNPCs(dtSec) {
+  for (var i = 0; i < GAME.npcs.length; i++) {
+    var npc = GAME.npcs[i];
+    updateSingleNPC(npc, dtSec);
+  }
+}
+
+function updateSingleNPC(npc, dtSec) {
+  var mesh = npc.mesh;
+
+  switch (GAME.phase) {
+    case 'daily':
+      // 日常: その場で待機（微小な揺れアニメ）
+      npc.phase += dtSec;
+      mesh.position.y = Math.sin(npc.phase * 2) * 0.005;
+      break;
+
+    case 'earthquake':
+    case 'shaking':
+      // 地震中の行動
+      if (npc.behavior === 'calm') {
+        // 冷静: 机の下にしゃがむ（Y座標を下げる）
+        if (npc.state !== 'crouching') {
+          npc.state = 'crouching';
+          mesh.scale.y = 0.5;
+          mesh.position.y = -0.2;
+          // 机の下に移動（自分のデスク位置へ）
+          if (npc.deskX !== undefined) {
+            mesh.position.x = npc.deskX;
+            mesh.position.z = npc.deskZ;
+            npc.x = npc.deskX;
+            npc.z = npc.deskZ;
+          }
+        }
+        // 揺れに合わせて微振動
+        if (GAME.quake.shaking) {
+          mesh.position.x = npc.x + (Math.random() - 0.5) * 0.02;
+          mesh.position.z = npc.z + (Math.random() - 0.5) * 0.02;
+        }
+      } else if (npc.behavior === 'panic') {
+        // パニック: ランダムに動き回る
+        if (npc.state !== 'panicking') {
+          npc.state = 'panicking';
+          npc.targetX = npc.x + (Math.random() - 0.5) * 4;
+          npc.targetZ = npc.z + (Math.random() - 0.5) * 4;
+        }
+        // ターゲットに向かって移動
+        var dx = npc.targetX - npc.x;
+        var dz = npc.targetZ - npc.z;
+        var dist = Math.sqrt(dx * dx + dz * dz);
+        if (dist > 0.1) {
+          npc.x += (dx / dist) * npc.speed * 2;
+          npc.z += (dz / dist) * npc.speed * 2;
+          mesh.position.x = npc.x;
+          mesh.position.z = npc.z;
+          mesh.rotation.y = Math.atan2(dx, dz);
+          // 歩行アニメ
+          npc.phase += dtSec * 8;
+          if (mesh.userData.leftLeg) {
+            mesh.userData.leftLeg.rotation.x = Math.sin(npc.phase) * 0.4;
+            mesh.userData.rightLeg.rotation.x = -Math.sin(npc.phase) * 0.4;
+          }
+        } else {
+          // 新しいランダム目標
+          npc.targetX = npc.deskX + (Math.random() - 0.5) * 6;
+          npc.targetZ = npc.deskZ + (Math.random() - 0.5) * 4;
+          // マップ境界クランプ
+          npc.targetX = Math.max(-4, Math.min(4, npc.targetX));
+          npc.targetZ = Math.max(0, Math.min(8, npc.targetZ));
+        }
+      } else if (npc.behavior === 'injured') {
+        // 負傷: その場で倒れる
+        if (npc.state !== 'fallen') {
+          npc.state = 'fallen';
+          mesh.rotation.z = Math.PI / 2; // 横倒し
+          mesh.position.y = 0.15;
+        }
+      }
+
+      // 先生の行動
+      if (npc.role === 'teacher') {
+        if (npc.state !== 'commanding') {
+          npc.state = 'commanding';
+        }
+        // 手を上げる演出（体を少し大きく）
+        mesh.scale.set(1, 1.05, 1);
+      }
+      break;
+
+    case 'aftershake':
+    case 'evacuation':
+      // 避難行動
+      if (npc.behavior === 'calm' || npc.role === 'teacher') {
+        if (npc.state !== 'evacuating') {
+          npc.state = 'evacuating';
+          mesh.scale.y = 1; // 立ち上がる
+          mesh.position.y = 0;
+          mesh.rotation.z = 0;
+          // ドア方向へ向かう
+          npc.targetX = 4.2; // 教室右端のドア付近
+          npc.targetZ = 8.5;
+        }
+        // ターゲットに向かって移動
+        var edx = npc.targetX - npc.x;
+        var edz = npc.targetZ - npc.z;
+        var edist = Math.sqrt(edx * edx + edz * edz);
+        if (edist > 0.3) {
+          var espeed = npc.role === 'teacher' ? npc.speed * 1.5 : npc.speed;
+          npc.x += (edx / edist) * espeed;
+          npc.z += (edz / edist) * espeed;
+          mesh.position.x = npc.x;
+          mesh.position.z = npc.z;
+          mesh.rotation.y = Math.atan2(edx, edz);
+          npc.phase += dtSec * 6;
+          if (mesh.userData.leftLeg) {
+            mesh.userData.leftLeg.rotation.x = Math.sin(npc.phase) * 0.3;
+            mesh.userData.rightLeg.rotation.x = -Math.sin(npc.phase) * 0.3;
+          }
+        }
+      } else if (npc.behavior === 'panic') {
+        // パニックNPCも徐々にドアへ
+        if (npc.state !== 'evacuating') {
+          npc.state = 'evacuating';
+          npc.targetX = 4.2;
+          npc.targetZ = 8.5;
+        }
+        var pdx = npc.targetX - npc.x;
+        var pdz = npc.targetZ - npc.z;
+        var pdist = Math.sqrt(pdx * pdx + pdz * pdz);
+        if (pdist > 0.3) {
+          npc.x += (pdx / pdist) * npc.speed * 1.2;
+          npc.z += (pdz / pdist) * npc.speed * 1.2;
+          mesh.position.x = npc.x;
+          mesh.position.z = npc.z;
+        }
+      }
+      // 負傷NPC: インタラクトで助けたらゆっくり避難開始
+      if (npc.behavior === 'injured' && npc.helped) {
+        if (npc.state !== 'evacuating') {
+          npc.state = 'evacuating';
+          mesh.rotation.z = 0;
+          mesh.position.y = 0;
+          npc.targetX = 4.2;
+          npc.targetZ = 8.5;
+        }
+        var idx = npc.targetX - npc.x;
+        var idz = npc.targetZ - npc.z;
+        var idist = Math.sqrt(idx * idx + idz * idz);
+        if (idist > 0.3) {
+          npc.x += (idx / idist) * npc.speed * 0.5;
+          npc.z += (idz / idist) * npc.speed * 0.5;
+          mesh.position.x = npc.x;
+          mesh.position.z = npc.z;
+        }
+      }
+      break;
+  }
+}
+
+// 負傷NPCとのインタラクト（近くの負傷NPCを助ける）
+function tryHelpInjuredNPC() {
+  var px = GAME.player.x, pz = GAME.player.z;
+  for (var i = 0; i < GAME.npcs.length; i++) {
+    var npc = GAME.npcs[i];
+    if (npc.behavior !== 'injured' || npc.helped) continue;
+    var dx = px - npc.x;
+    var dz = pz - npc.z;
+    if (Math.sqrt(dx * dx + dz * dz) < 1.5) {
+      npc.helped = true;
+      GAME.scoring.checkedSafety = true;
+      GAME.score += 6;
+      showAdvisor('動けない生徒を助けた！素晴らしい！', 'praise');
+      SoundManager.playSE('click');
+      return true;
+    }
+  }
+  return false;
+}
+
+// ============================================================
 // SECTION: インタラクトシステム
 // ============================================================
 function getNearestInteractable() {
@@ -3370,6 +3635,9 @@ function getNearestInteractable() {
 }
 
 function performInteract() {
+  // まず負傷NPCを助けられるかチェック
+  if (tryHelpInjuredNPC()) return;
+
   var target = getNearestInteractable();
   if (!target) return;
 
@@ -3456,6 +3724,7 @@ function gameLoop(timestamp) {
   }
 
   updatePlayer(dt);
+  updateNPCs(dtSec);
   updateCamera();
 
   // HUD更新 + インタラクトプロンプト
@@ -4008,6 +4277,7 @@ function cleanupGame() {
   GAME.cameraMeshes = [];
   GAME.fallingObjects = [];
   GAME.interactables = [];
+  GAME.npcs = [];
   GAME._fallingSchedule = null;
   GAME._fallingSpawned = {};
   if (GAME._advisorTimeout) { clearTimeout(GAME._advisorTimeout); GAME._advisorTimeout = null; }
