@@ -582,9 +582,38 @@ html, body {
 /* ============================================================
    SECTION: RESULT SCREEN
    ============================================================ */
+@keyframes resultFadeIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes rankPopIn {
+  0% { opacity: 0; transform: scale(0.3); }
+  60% { transform: scale(1.2); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes scoreCountUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes actionSlideIn {
+  from { opacity: 0; transform: translateX(-15px); }
+  to { opacity: 1; transform: translateX(0); }
+}
 #result-screen {
   z-index: 270;
   background: var(--bg-overlay);
+}
+#result-screen.active .result-container {
+  animation: resultFadeIn 0.5s ease-out;
+}
+#result-screen.active .result-rank {
+  animation: rankPopIn 0.6s ease-out 0.3s both;
+}
+#result-screen.active .result-score-val {
+  animation: scoreCountUp 0.4s ease-out 0.6s both;
+}
+.result-action-item {
+  animation: actionSlideIn 0.3s ease-out both;
 }
 .result-container {
   width: min(520px, 92%);
@@ -2906,9 +2935,10 @@ function showResult(stageNum, score, timeStr, actions, tip, failed) {
   // 行動の振り返り
   const actionsEl = document.getElementById('result-actions');
   actionsEl.innerHTML = '';
-  actions.forEach(a => {
+  actions.forEach(function(a, idx) {
     const div = document.createElement('div');
     div.className = 'result-action-item';
+    div.style.animationDelay = (0.8 + idx * 0.08) + 's';
     const icon = a.pts > 0 ? '○' : (a.pts < 0 ? '×' : '△');
     const cls = a.pts > 0 ? 'action-good' : (a.pts < 0 ? 'action-bad' : 'action-miss');
     const ptsText = a.pts > 0 ? '+' + a.pts : (a.pts < 0 ? String(a.pts) : '+0');
@@ -3367,10 +3397,13 @@ function initGame(stageNum) {
   GAME.scene = new THREE.Scene();
   GAME.scene.fog = new THREE.FogExp2(0x1a1a2e, 0.015);
 
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-  GAME.scene.add(ambientLight);
+  // HemisphereLight（天空色＋地面色で自然な間接光）
+  const hemiLight = new THREE.HemisphereLight(0x8899bb, 0x443322, 0.45);
+  GAME.scene.add(hemiLight);
+  GAME._hemiLight = hemiLight;
 
-  const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+  // メインDirectionalLight
+  const dirLight = new THREE.DirectionalLight(0xfff5e0, 0.65);
   dirLight.position.set(5, 10, 5);
   dirLight.castShadow = true;
   dirLight.shadow.mapSize.width = 2048;
@@ -3397,11 +3430,15 @@ function initGame(stageNum) {
   GAME._blockWallZone = null;
   GAME.playerMesh = null;
   GAME._walkPhase = 0;
+  GAME._dustParticles = null;
+  GAME._minimap = null;
+  GAME._furnitureShifted = false;
   buildClassroom();
   buildHallway();
   buildSchoolyard();
   createPlayerModel();
   spawnNPCs();
+  createMinimap();
 
   document.getElementById('game-loading').style.display = 'none';
 
@@ -3513,14 +3550,17 @@ function buildClassroom() {
       const top = new THREE.Mesh(new THREE.BoxGeometry(deskW, 0.03, deskD), deskMat);
       top.position.set(dx, deskH, dz);
       top.castShadow = true;
+      top.userData.isClassroomFurniture = true;
       scene.add(top);
 
       const leg = new THREE.Mesh(new THREE.BoxGeometry(deskW - 0.1, deskH, 0.03), deskLegMat);
       leg.position.set(dx, deskH / 2, dz);
+      leg.userData.isClassroomFurniture = true;
       scene.add(leg);
 
       const chair = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.03, 0.35), deskMat);
       chair.position.set(dx, 0.38, dz + 0.4);
+      chair.userData.isClassroomFurniture = true;
       scene.add(chair);
 
       GAME.walls.push({
@@ -3626,6 +3666,60 @@ function buildClassroom() {
   scene.add(broomBox);
   GAME.cameraMeshes.push(broomBox);
   GAME.walls.push({ minX: 1.7, maxX: 2.3, minZ: D - 1 - 0.5, maxZ: D - 1 - 0.1, minY: 0, maxY: 1.8 });
+
+  // ====== 環境ディテール追加（品質向上） ======
+
+  // 壁掛け時計（後壁上部）
+  var clockMat = new THREE.MeshStandardMaterial({ color: 0xf0f0f0, roughness: 0.3, metalness: 0.1 });
+  var clockFace = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.03, 16), clockMat);
+  clockFace.rotation.x = Math.PI / 2;
+  clockFace.position.set(0, 2.6, D - 1 - 0.01);
+  scene.add(clockFace);
+  var clockRimMat = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.4, metalness: 0.5 });
+  var clockRim = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.015, 8, 16), clockRimMat);
+  clockRim.rotation.x = Math.PI / 2;
+  clockRim.position.set(0, 2.6, D - 1 - 0.02);
+  scene.add(clockRim);
+
+  // ポスター（壁の装飾）3枚
+  var posterColors = [0x3388cc, 0xcc4444, 0x44aa44];
+  for (var pi = 0; pi < 3; pi++) {
+    var pMat = new THREE.MeshStandardMaterial({ color: posterColors[pi], roughness: 0.8, emissive: posterColors[pi], emissiveIntensity: 0.05 });
+    var poster = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.7), pMat);
+    poster.position.set(-3 + pi * 1.5, 1.8, D - 1 - 0.01);
+    scene.add(poster);
+  }
+
+  // カーテン（窓側 — 左壁の窓に）
+  var curtainMat = new THREE.MeshStandardMaterial({ color: 0x334466, roughness: 0.9, side: THREE.DoubleSide, transparent: true, opacity: 0.85 });
+  var windowZPositions = [1.5, 3.5, 5.5, 7.5];
+  windowZPositions.forEach(function(wz) {
+    // 左カーテン
+    var cL = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 1.6), curtainMat);
+    cL.position.set(-W / 2 + 0.02, 1.6, wz - 0.4);
+    scene.add(cL);
+    // 右カーテン
+    var cR = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 1.6), curtainMat);
+    cR.position.set(-W / 2 + 0.02, 1.6, wz + 0.4);
+    scene.add(cR);
+  });
+
+  // 教卓の上の花瓶
+  var vaseMat = new THREE.MeshStandardMaterial({ color: 0x6688bb, roughness: 0.3, metalness: 0.1 });
+  var vase = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.06, 0.15, 8), vaseMat);
+  vase.position.set(-2.1, 1.05, 0.2);
+  scene.add(vase);
+  // 花（緑の葉）
+  var flowerMat = new THREE.MeshStandardMaterial({ color: 0x33aa33, roughness: 0.8 });
+  var flower = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 4), flowerMat);
+  flower.position.set(-2.1, 1.2, 0.2);
+  scene.add(flower);
+
+  // 黒板下のチョーク受け
+  var chalkTrayMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.5, metalness: 0.3 });
+  var chalkTray = new THREE.Mesh(new THREE.BoxGeometry(3, 0.04, 0.08), chalkTrayMat);
+  chalkTray.position.set(-0.5, 1.05, -0.88);
+  scene.add(chalkTray);
 }
 
 // ============================================================
@@ -3998,6 +4092,40 @@ function createPlayerModel() {
   var rightArm = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, armH, 4), armMat);
   rightArm.position.set(0.18, legH + bodyH * 0.7, 0);
   group.add(rightArm);
+
+  // 目（白目）
+  var eyeWhiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+  var leftEye = new THREE.Mesh(new THREE.SphereGeometry(0.022, 6, 4), eyeWhiteMat);
+  leftEye.position.set(-0.04, legH + bodyH + headR, -headR * 0.85);
+  group.add(leftEye);
+  var rightEye = new THREE.Mesh(new THREE.SphereGeometry(0.022, 6, 4), eyeWhiteMat);
+  rightEye.position.set(0.04, legH + bodyH + headR, -headR * 0.85);
+  group.add(rightEye);
+
+  // 瞳
+  var pupilMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.2 });
+  var leftPupil = new THREE.Mesh(new THREE.SphereGeometry(0.012, 4, 3), pupilMat);
+  leftPupil.position.set(-0.04, legH + bodyH + headR, -headR * 0.93);
+  group.add(leftPupil);
+  var rightPupil = new THREE.Mesh(new THREE.SphereGeometry(0.012, 4, 3), pupilMat);
+  rightPupil.position.set(0.04, legH + bodyH + headR, -headR * 0.93);
+  group.add(rightPupil);
+
+  // 足元の影
+  var shadowCanvas = document.createElement('canvas');
+  shadowCanvas.width = 32; shadowCanvas.height = 32;
+  var sctx = shadowCanvas.getContext('2d');
+  var grad = sctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+  grad.addColorStop(0, 'rgba(0,0,0,0.35)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  sctx.fillStyle = grad;
+  sctx.fillRect(0, 0, 32, 32);
+  var shadowTex = new THREE.CanvasTexture(shadowCanvas);
+  var shadowMat = new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false });
+  var shadowPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.5), shadowMat);
+  shadowPlane.rotation.x = -Math.PI / 2;
+  shadowPlane.position.y = 0.01;
+  group.add(shadowPlane);
 
   // ユーザーデータにパーツ参照を保存（アニメーション用）
   group.userData = {
@@ -4434,6 +4562,140 @@ function updateInteractPrompt() {
   }
 }
 
+// ============================================================
+// SECTION: ダストパーティクル（地震時の埃エフェクト）
+// ============================================================
+function createDustParticles() {
+  var count = 300;
+  var geom = new THREE.BufferGeometry();
+  var positions = new Float32Array(count * 3);
+  var velocities = new Float32Array(count * 3);
+  for (var i = 0; i < count; i++) {
+    positions[i * 3] = (Math.random() - 0.5) * 12;
+    positions[i * 3 + 1] = Math.random() * 3;
+    positions[i * 3 + 2] = Math.random() * 12 - 1;
+    velocities[i * 3] = (Math.random() - 0.5) * 0.3;
+    velocities[i * 3 + 1] = -Math.random() * 0.15 - 0.02;
+    velocities[i * 3 + 2] = (Math.random() - 0.5) * 0.3;
+  }
+  geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  var mat = new THREE.PointsMaterial({
+    color: 0xccbbaa, size: 0.04, transparent: true,
+    opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false
+  });
+  var pts = new THREE.Points(geom, mat);
+  GAME.scene.add(pts);
+  GAME._dustParticles = { mesh: pts, velocities: velocities };
+}
+
+function updateDustParticles(dtSec) {
+  var dust = GAME._dustParticles;
+  if (!dust) return;
+  var pos = dust.mesh.geometry.attributes.position;
+  var v = dust.velocities;
+  var intensity = GAME._inSchoolyard ? 0 : 1;
+  dust.mesh.material.opacity = 0.6 * intensity;
+  if (intensity === 0) return;
+  for (var i = 0; i < pos.count; i++) {
+    pos.array[i * 3] += v[i * 3] * dtSec + (Math.random() - 0.5) * 0.02;
+    pos.array[i * 3 + 1] += v[i * 3 + 1] * dtSec;
+    pos.array[i * 3 + 2] += v[i * 3 + 2] * dtSec + (Math.random() - 0.5) * 0.02;
+    if (pos.array[i * 3 + 1] < 0) {
+      pos.array[i * 3 + 1] = 2.8 + Math.random() * 0.2;
+      pos.array[i * 3] = (Math.random() - 0.5) * 12;
+      pos.array[i * 3 + 2] = Math.random() * 12 - 1;
+    }
+  }
+  pos.needsUpdate = true;
+}
+
+// ============================================================
+// SECTION: ミニマップ（避難フェーズ用）
+// ============================================================
+function createMinimap() {
+  var canvas = document.createElement('canvas');
+  canvas.id = 'minimap-canvas';
+  canvas.width = 120; canvas.height = 120;
+  canvas.style.cssText = 'position:fixed;bottom:12px;right:12px;width:100px;height:100px;z-index:50;border:2px solid rgba(255,107,0,0.6);border-radius:6px;background:rgba(0,0,0,0.7);display:none;pointer-events:none;';
+  document.getElementById('game-screen').appendChild(canvas);
+  GAME._minimap = canvas;
+}
+
+function updateMinimap() {
+  var canvas = GAME._minimap;
+  if (!canvas) return;
+  var show = (GAME.phase === 'evacuation' || GAME._inSchoolyard) && GAME.running && !GAME.paused;
+  canvas.style.display = show ? 'block' : 'none';
+  if (!show) return;
+
+  var ctx = canvas.getContext('2d');
+  var w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+
+  // マップ範囲: X=-20~20, Z=-2~62 → 40x64
+  var mapMinX = -20, mapMaxX = 20, mapMinZ = -2, mapMaxZ = 62;
+  var scaleX = w / (mapMaxX - mapMinX);
+  var scaleZ = h / (mapMaxZ - mapMinZ);
+
+  function toMap(x, z) {
+    return [(x - mapMinX) * scaleX, h - (z - mapMinZ) * scaleZ];
+  }
+
+  // 校舎
+  ctx.fillStyle = 'rgba(180,170,150,0.5)';
+  var c1 = toMap(-4.5, -1);
+  var c2 = toMap(4.5, 24);
+  ctx.fillRect(c1[0], c2[1], c2[0] - c1[0], c1[1] - c2[1]);
+
+  // 校庭
+  ctx.fillStyle = 'rgba(200,184,152,0.3)';
+  var g1 = toMap(-20, 20);
+  var g2 = toMap(20, 60);
+  ctx.fillRect(g1[0], g2[1], g2[0] - g1[0], g1[1] - g2[1]);
+
+  // 避難ポイント
+  ctx.fillStyle = 'rgba(255,107,0,0.7)';
+  var ep = toMap(EVAC_POINT.x, EVAC_POINT.z);
+  ctx.beginPath();
+  ctx.arc(ep[0], ep[1], 5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // プレイヤー
+  ctx.fillStyle = '#00ff41';
+  var pp = toMap(GAME.player.x, GAME.player.z);
+  ctx.beginPath();
+  ctx.arc(pp[0], pp[1], 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // プレイヤー向き
+  ctx.strokeStyle = '#00ff41';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(pp[0], pp[1]);
+  ctx.lineTo(pp[0] + Math.sin(GAME.player.yaw) * 8, pp[1] - Math.cos(GAME.player.yaw) * 8);
+  ctx.stroke();
+}
+
+// ============================================================
+// SECTION: 家具転倒エフェクト（地震後）
+// ============================================================
+function shiftFurnitureAfterQuake() {
+  if (GAME._furnitureShifted) return;
+  GAME._furnitureShifted = true;
+  // シーン内のデスク・椅子メッシュを少しずらす・傾ける
+  GAME.scene.traverse(function(obj) {
+    if (obj.isMesh && obj.userData && obj.userData.isClassroomFurniture) {
+      obj.position.x += (Math.random() - 0.5) * 0.15;
+      obj.position.z += (Math.random() - 0.5) * 0.1;
+      obj.rotation.y += (Math.random() - 0.5) * 0.15;
+      if (Math.random() < 0.3) {
+        obj.rotation.z += (Math.random() - 0.5) * 0.2;
+        obj.rotation.x += (Math.random() - 0.5) * 0.1;
+      }
+    }
+  });
+}
+
 function gameLoop(timestamp) {
   if (!GAME.running) return;
   GAME.animId = requestAnimationFrame(gameLoop);
@@ -4453,10 +4715,11 @@ function gameLoop(timestamp) {
   // フェーズ管理
   updatePhase(dtSec);
 
-  // 地震エフェクト + 落下物
+  // 地震エフェクト + 落下物 + ダストパーティクル
   if (GAME.quake.shaking) {
     updateQuake(dtSec);
     updateFallingObjects(dtSec);
+    updateDustParticles(dtSec);
   }
 
   updatePlayer(dt);
@@ -4473,6 +4736,9 @@ function gameLoop(timestamp) {
   if (GAME._evacMarker && GAME._inSchoolyard) {
     GAME._evacMarker.material.emissiveIntensity = 0.3 + Math.sin(GAME.totalTimer * 3) * 0.2;
   }
+
+  // ミニマップ更新
+  updateMinimap();
 
   // HUD更新 + インタラクトプロンプト
   updateHUD();
@@ -4552,6 +4818,8 @@ function transitionPhase(newPhase) {
       SoundManager.startQuakeSound();
       // 落下物スケジュール開始
       scheduleFallingObjects();
+      // ダストパーティクル生成
+      createDustParticles();
       // danger-vignette を有効化
       var vig = document.getElementById('danger-vignette');
       if (vig) vig.style.boxShadow = 'inset 0 0 80px rgba(255,0,64,0.4)';
@@ -4568,6 +4836,8 @@ function transitionPhase(newPhase) {
       showAdvisor('揺れが収まった。まず火の元を確認しよう。', 'normal');
       // ガラス散乱エフェクト（窓ガラスの破片を床に散布）
       spawnGlassDebris();
+      // 家具転倒エフェクト
+      shiftFurnitureAfterQuake();
       break;
 
     case 'evacuation':
@@ -5150,9 +5420,34 @@ function updateCamera() {
   const dist = GAME.cameraDistance;
   const pitch = GAME.cameraPitch;
 
-  var camX = p.x - Math.sin(p.yaw) * dist * Math.cos(pitch);
-  var camY = p.y + dist * Math.sin(pitch) + 0.5;
-  var camZ = p.z - Math.cos(p.yaw) * dist * Math.cos(pitch);
+  // プレイヤー頭部位置（視点基点）
+  var lookY = p.y + 0.5;
+  var playerPos = new THREE.Vector3(p.x, lookY, p.z);
+
+  // カメラの理想位置を計算
+  var idealX = p.x - Math.sin(p.yaw) * dist * Math.cos(pitch);
+  var idealY = lookY + dist * Math.sin(pitch);
+  var idealZ = p.z - Math.cos(p.yaw) * dist * Math.cos(pitch);
+  var idealPos = new THREE.Vector3(idealX, idealY, idealZ);
+
+  // Raycaster: プレイヤー→カメラ方向に壁があれば手前に止める
+  var direction = idealPos.clone().sub(playerPos);
+  var maxDist = direction.length();
+  direction.normalize();
+
+  if (!GAME._cameraRaycaster) GAME._cameraRaycaster = new THREE.Raycaster();
+  GAME._cameraRaycaster.set(playerPos, direction);
+  GAME._cameraRaycaster.far = maxDist;
+
+  var hits = GAME._cameraRaycaster.intersectObjects(GAME.cameraMeshes);
+  var finalDist = maxDist;
+  if (hits.length > 0) {
+    finalDist = Math.max(0.15, hits[0].distance - 0.3);
+  }
+
+  var camX = p.x + direction.x * finalDist;
+  var camY = lookY + direction.y * finalDist;
+  var camZ = p.z + direction.z * finalDist;
 
   // 地震揺れオフセット
   if (GAME.quake.shaking && GAME._quakeOffsetX !== undefined) {
@@ -5162,7 +5457,7 @@ function updateCamera() {
   }
 
   GAME.camera.position.set(camX, camY, camZ);
-  GAME.camera.lookAt(p.x, p.y + 0.5, p.z);
+  GAME.camera.lookAt(p.x, lookY, p.z);
 }
 
 function cleanupGame() {
@@ -5205,7 +5500,14 @@ function cleanupGame() {
   GAME._inSchoolyard = false;
   GAME._evacMarker = null;
   GAME._blockWallZone = null;
+  GAME._dustParticles = null;
+  GAME._furnitureShifted = false;
+  GAME._cameraRaycaster = null;
   GAME.playerMesh = null;
+  // ミニマップ除去
+  var mmCanvas = document.getElementById('minimap-canvas');
+  if (mmCanvas) mmCanvas.remove();
+  GAME._minimap = null;
   SoundManager.stopQuakeSound();
   if (GAME._advisorTimeout) { clearTimeout(GAME._advisorTimeout); GAME._advisorTimeout = null; }
   // 階段カットシーンオーバーレイの残骸除去
