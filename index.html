@@ -3291,6 +3291,143 @@ function buildClassroom() {
     minZ: D - 1 - lockerD - 0.1, maxZ: D - 1 - 0.1,
     minY: 0, maxY: lockerH
   });
+
+  // ============================================================
+  // インタラクト対象物
+  // ============================================================
+  var interactMat = new THREE.MeshStandardMaterial({ color: 0x886644, roughness: 0.6, emissive: 0x0a0806, emissiveIntensity: 0.1 });
+  var doorMat = new THREE.MeshStandardMaterial({ color: 0x8B7355, roughness: 0.5, emissive: 0x0a0806, emissiveIntensity: 0.15 });
+
+  // 教室後方のドア（廊下への出入口）— 右側の壁付近
+  var doorW = 0.9, doorH = 2.1, doorD = 0.08;
+  var door = new THREE.Mesh(new THREE.BoxGeometry(doorW, doorH, doorD), doorMat);
+  door.position.set(W/2 - 0.05, doorH/2, D - 1 - 0.05);
+  scene.add(door);
+  GAME.cameraMeshes.push(door);
+  GAME.interactables.push({
+    id: 'door', mesh: door,
+    x: W/2 - 0.05, z: D - 1 - 0.05,
+    radius: 1.5, // インタラクト可能距離
+    action: 'openDoor',
+    label: 'ドアを開ける',
+    used: false,
+    phases: ['aftershake', 'evacuation'], // これらのフェーズでのみ有効
+  });
+
+  // ブレーカー（前方壁の右端）
+  var breakerMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.4, metalness: 0.5, emissive: 0x080808, emissiveIntensity: 0.1 });
+  var breaker = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.3, 0.05), breakerMat);
+  breaker.position.set(W/2 - 0.5, 1.5, -0.88);
+  scene.add(breaker);
+  GAME.interactables.push({
+    id: 'breaker', mesh: breaker,
+    x: W/2 - 0.5, z: -0.88,
+    radius: 1.2,
+    action: 'turnOffBreaker',
+    label: 'ブレーカーを落とす',
+    used: false,
+    phases: ['aftershake'],
+  });
+
+  // 靴箱エリア（ドア付近の床にマーカー）— 教室後方右
+  var shoesMat = new THREE.MeshStandardMaterial({ color: 0x664422, roughness: 0.8, emissive: 0x060402, emissiveIntensity: 0.1 });
+  var shoesBox = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.15, 0.3), shoesMat);
+  shoesBox.position.set(W/2 - 1.5, 0.075, D - 1 - 0.3);
+  scene.add(shoesBox);
+  GAME.interactables.push({
+    id: 'shoes', mesh: shoesBox,
+    x: W/2 - 1.5, z: D - 1 - 0.3,
+    radius: 1.0,
+    action: 'putOnShoes',
+    label: '靴を履く',
+    used: false,
+    phases: ['aftershake', 'evacuation'],
+  });
+}
+
+// ============================================================
+// SECTION: インタラクトシステム
+// ============================================================
+function getNearestInteractable() {
+  var nearest = null;
+  var minDist = Infinity;
+  var px = GAME.player.x, pz = GAME.player.z;
+
+  for (var i = 0; i < GAME.interactables.length; i++) {
+    var obj = GAME.interactables[i];
+    if (obj.used) continue;
+    if (obj.phases && obj.phases.indexOf(GAME.phase) === -1) continue;
+
+    var dx = px - obj.x;
+    var dz = pz - obj.z;
+    var dist = Math.sqrt(dx * dx + dz * dz);
+    if (dist < obj.radius && dist < minDist) {
+      nearest = obj;
+      minDist = dist;
+    }
+  }
+  return nearest;
+}
+
+function performInteract() {
+  var target = getNearestInteractable();
+  if (!target) return;
+
+  target.used = true;
+  SoundManager.playSE('click');
+
+  switch (target.action) {
+    case 'openDoor':
+      GAME.scoring.openedDoor = true;
+      GAME.score += 6;
+      showAdvisor('ドアを開けて避難経路を確保した！', 'praise');
+      // ドアを開く演出（90度回転）
+      if (target.mesh) {
+        target.mesh.rotation.y = Math.PI / 2;
+        target.mesh.position.x += 0.4;
+      }
+      break;
+
+    case 'turnOffBreaker':
+      GAME.scoring.turnedOffBreaker = true;
+      GAME.score += 6;
+      showAdvisor('ブレーカーを落とした！通電火災を防げるよ。', 'praise');
+      // ブレーカーの色を変える（OFF状態）
+      if (target.mesh) {
+        target.mesh.material = new THREE.MeshStandardMaterial({
+          color: 0x333333, roughness: 0.4, metalness: 0.5,
+          emissive: 0x003300, emissiveIntensity: 0.3
+        });
+      }
+      break;
+
+    case 'putOnShoes':
+      GAME.scoring.putOnShoes = true;
+      GAME.score += 6;
+      showAdvisor('靴を履いた！ガラスの破片から足を守れるよ。', 'praise');
+      // 靴箱を非表示に
+      if (target.mesh) target.mesh.visible = false;
+      break;
+  }
+}
+
+// インタラクトプロンプト表示（近くにインタラクト対象がある時）
+function updateInteractPrompt() {
+  var target = getNearestInteractable();
+  var mobInteract = document.getElementById('mob-interact');
+
+  if (target) {
+    // モバイル: インタラクトボタンをハイライト
+    if (GAME.isMobile && mobInteract) {
+      mobInteract.style.boxShadow = '0 0 20px rgba(0,255,65,0.6)';
+      mobInteract.textContent = target.label || '操作';
+    }
+  } else {
+    if (GAME.isMobile && mobInteract) {
+      mobInteract.style.boxShadow = '0 0 12px rgba(0,255,65,0.3)';
+      mobInteract.textContent = '操作';
+    }
+  }
 }
 
 function gameLoop(timestamp) {
@@ -3321,8 +3458,9 @@ function gameLoop(timestamp) {
   updatePlayer(dt);
   updateCamera();
 
-  // HUD更新
+  // HUD更新 + インタラクトプロンプト
   updateHUD();
+  updateInteractPrompt();
 
   GAME.renderer.render(GAME.scene, GAME.camera);
 }
@@ -3913,6 +4051,11 @@ document.addEventListener('keydown', function(e) {
   GAME._cPrev = true;
   // ガード: G（ホールド）
   if (e.code === 'KeyG') GAME.player.isGuarding = true;
+  // インタラクト: F / Space
+  if (e.code === 'KeyF' || e.code === 'Space') {
+    e.preventDefault();
+    performInteract();
+  }
 });
 
 document.addEventListener('keyup', function(e) {
@@ -4060,6 +4203,15 @@ function initGameControls() {
       this.classList.remove('active');
     });
   })();
+
+  // --- モバイルインタラクトボタン（独立配置） ---
+  var interactBtn = document.getElementById('mob-interact');
+  if (interactBtn) {
+    interactBtn.addEventListener('touchstart', function(e) {
+      e.preventDefault();
+      performInteract();
+    }, { passive: false });
+  }
 
   // --- ウィンドウリサイズ（ゲーム用） ---
   window.addEventListener('resize', function() {
