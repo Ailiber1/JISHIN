@@ -3312,9 +3312,10 @@ function gameLoop(timestamp) {
   // フェーズ管理
   updatePhase(dtSec);
 
-  // 地震エフェクト
+  // 地震エフェクト + 落下物
   if (GAME.quake.shaking) {
     updateQuake(dtSec);
+    updateFallingObjects(dtSec);
   }
 
   updatePlayer(dt);
@@ -3393,6 +3394,8 @@ function transitionPhase(newPhase) {
       // S波（本震）開始
       GAME.quake.shaking = true;
       GAME.quake.elapsed = 0;
+      // 落下物スケジュール開始
+      scheduleFallingObjects();
       // danger-vignette を有効化
       var vig = document.getElementById('danger-vignette');
       if (vig) vig.style.boxShadow = 'inset 0 0 80px rgba(255,0,64,0.4)';
@@ -3492,6 +3495,164 @@ function updateQuake(dtSec) {
   var vigIntensity = 0.2 + decay * 0.3;
   var vig = document.getElementById('danger-vignette');
   if (vig) vig.style.boxShadow = 'inset 0 0 80px rgba(255,0,64,' + vigIntensity + ')';
+}
+
+// ============================================================
+// SECTION: 落下物・転倒物システム
+// ============================================================
+
+// 落下物の生成予約（揺れ中にタイミングをずらして生成）
+function scheduleFallingObjects() {
+  // Stage 1: 蛍光灯(3個)・本(5個) — 時間をずらして落下
+  var schedule = [
+    { time: 2, type: 'light', x: -2, z: 2 },     // 蛍光灯1
+    { time: 4, type: 'light', x: 1, z: 4 },       // 蛍光灯2
+    { time: 7, type: 'book', x: -1.5, z: 7.5 },   // ロッカーから教科書
+    { time: 8, type: 'book', x: -2.5, z: 7.8 },
+    { time: 9, type: 'light', x: 3, z: 6 },       // 蛍光灯3
+    { time: 10, type: 'book', x: -2, z: 8 },
+    { time: 12, type: 'book', x: -1, z: 7.2 },
+    { time: 14, type: 'book', x: -3, z: 7.5 },
+  ];
+  GAME._fallingSchedule = schedule;
+  GAME._fallingSpawned = {};
+}
+
+function updateFallingObjects(dtSec) {
+  if (!GAME._fallingSchedule) return;
+  var t = GAME.quake.elapsed;
+
+  // スケジュールに従って生成
+  for (var i = 0; i < GAME._fallingSchedule.length; i++) {
+    var item = GAME._fallingSchedule[i];
+    if (t >= item.time && !GAME._fallingSpawned[i]) {
+      GAME._fallingSpawned[i] = true;
+      spawnFallingObject(item.type, item.x, item.z);
+    }
+  }
+
+  // 落下中のオブジェクト更新
+  for (var j = GAME.fallingObjects.length - 1; j >= 0; j--) {
+    var fo = GAME.fallingObjects[j];
+    if (fo.falling) {
+      fo.vy -= 9.8 * dtSec; // 重力
+      fo.mesh.position.y += fo.vy * dtSec;
+      fo.mesh.rotation.x += fo.rotSpeed * dtSec;
+      fo.mesh.rotation.z += fo.rotSpeed * 0.7 * dtSec;
+
+      // 床に到達
+      if (fo.mesh.position.y <= fo.groundY) {
+        fo.mesh.position.y = fo.groundY;
+        fo.falling = false;
+        fo.onGround = true;
+        SoundManager.playSE('click'); // 落下音代わり
+
+        // 壁コライダーとして残す（障害物）
+        var s = fo.size;
+        GAME.walls.push({
+          minX: fo.mesh.position.x - s/2, maxX: fo.mesh.position.x + s/2,
+          minZ: fo.mesh.position.z - s/2, maxZ: fo.mesh.position.z + s/2,
+          minY: 0, maxY: s
+        });
+      }
+
+      // プレイヤーとの当たり判定（落下中のみ）
+      if (fo.falling && !fo.hitPlayer) {
+        var dx = GAME.player.x - fo.mesh.position.x;
+        var dz = GAME.player.z - fo.mesh.position.z;
+        var dist = Math.sqrt(dx * dx + dz * dz);
+        var yDiff = Math.abs(GAME.player.y - fo.mesh.position.y);
+        if (dist < 0.5 && yDiff < 1.0) {
+          fo.hitPlayer = true;
+          onPlayerHit(fo.type);
+        }
+      }
+    }
+  }
+}
+
+function spawnFallingObject(type, x, z) {
+  var mat, geo, size, groundY;
+
+  if (type === 'light') {
+    // 蛍光灯（細長い棒）
+    geo = new THREE.BoxGeometry(1.2, 0.05, 0.08);
+    mat = new THREE.MeshStandardMaterial({
+      color: 0xffffff, roughness: 0.3,
+      emissive: 0xeeeeaa, emissiveIntensity: 0.5
+    });
+    size = 0.6;
+    groundY = 0.03;
+  } else {
+    // 教科書（小さい箱）
+    geo = new THREE.BoxGeometry(0.2, 0.03, 0.15);
+    mat = new THREE.MeshStandardMaterial({
+      color: [0xcc4444, 0x4444cc, 0x44aa44, 0xcc8844, 0x8844cc][Math.floor(Math.random() * 5)],
+      roughness: 0.8, emissive: 0x111111, emissiveIntensity: 0.1
+    });
+    size = 0.15;
+    groundY = 0.015;
+  }
+
+  var mesh = new THREE.Mesh(geo, mat);
+  mesh.position.set(x, 2.9, z); // 天井付近から落下
+  mesh.castShadow = true;
+  GAME.scene.add(mesh);
+
+  GAME.fallingObjects.push({
+    mesh: mesh,
+    type: type,
+    falling: true,
+    onGround: false,
+    hitPlayer: false,
+    vy: 0, // 初速0（自然落下）
+    rotSpeed: (Math.random() - 0.5) * 6,
+    size: size,
+    groundY: groundY,
+  });
+}
+
+function onPlayerHit(type) {
+  GAME.hitCount++;
+  GAME.scoring.noHitByFalling = false;
+
+  // ヒットフラッシュ
+  var flash = document.getElementById('hit-flash');
+  if (flash) {
+    flash.classList.add('active');
+    setTimeout(function() { flash.classList.remove('active'); }, 300);
+  }
+
+  // スコア減点
+  GAME.score = Math.max(0, GAME.score - 5);
+
+  // ガード中ならダメージ軽減演出
+  if (GAME.player.isGuarding) {
+    showAdvisor('頭を守っていたから軽傷で済んだ！', 'praise');
+  } else {
+    showAdvisor('落下物に当たった！頭を守ろう！', 'warning');
+  }
+
+  // 移動速度一時低下（3秒間）
+  if (!GAME._speedDebuff) {
+    GAME._speedDebuff = true;
+    var origSpeed = GAME.player.speed;
+    GAME.player.speed = origSpeed * 0.5;
+    setTimeout(function() {
+      GAME.player.speed = origSpeed;
+      GAME._speedDebuff = false;
+    }, 3000);
+  }
+
+  // 3回被弾でゲームオーバー
+  if (GAME.hitCount >= 3) {
+    showAdvisor('動けなくなりました...避難失敗', 'warning');
+    setTimeout(function() {
+      transitionPhase('result');
+    }, 2000);
+  }
+
+  SoundManager.playSE('error');
 }
 
 // ============================================================
@@ -3707,6 +3868,17 @@ function cleanupGame() {
   GAME.camera = null;
   GAME.walls = [];
   GAME.cameraMeshes = [];
+  GAME.fallingObjects = [];
+  GAME.interactables = [];
+  GAME._fallingSchedule = null;
+  GAME._fallingSpawned = {};
+  if (GAME._advisorTimeout) { clearTimeout(GAME._advisorTimeout); GAME._advisorTimeout = null; }
+  // danger-vignette リセット
+  var vigReset = document.getElementById('danger-vignette');
+  if (vigReset) vigReset.style.boxShadow = 'inset 0 0 80px rgba(255,0,64,0)';
+  // advisor非表示
+  var advBox = document.getElementById('advisor-box');
+  if (advBox) advBox.classList.remove('visible');
 
   document.getElementById('mobile-joystick').style.display = 'none';
   document.getElementById('mobile-buttons').style.display = 'none';
