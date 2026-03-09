@@ -4479,7 +4479,7 @@ function spawnNPCs() {
       var rand = Math.random();
       var behavior = rand < 0.7 ? 'calm' : rand < 0.9 ? 'panic' : 'injured';
 
-      var bodyColor = behavior === 'panic' ? 0xcccc00 : studentColors[studentCount % studentColors.length];
+      var bodyColor = studentColors[studentCount % studentColors.length];
       var npcHeight = 1.2 + Math.random() * 0.3; // 子どもサイズ
       var studentModel = createNPCModel(bodyColor, npcHeight, 0xf5c6a0);
       studentModel.position.set(sx, 0, sz);
@@ -4526,11 +4526,10 @@ function updateSingleNPC(npc, dtSec) {
     case 'shaking':
       // 地震中の行動
       if (npc.behavior === 'calm') {
-        // 冷静: 机の下にしゃがむ（Y座標を下げる）
+        // 冷静: 机の下にしゃがむ（Y位置を下げて机の下に隠れる）
         if (npc.state !== 'crouching') {
           npc.state = 'crouching';
-          mesh.scale.y = 0.5;
-          mesh.position.y = -0.2;
+          mesh.position.y = -0.45;
           // 机の下に移動（自分のデスク位置へ）
           if (npc.deskX !== undefined) {
             mesh.position.x = npc.deskX;
