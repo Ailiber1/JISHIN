@@ -3520,7 +3520,7 @@ function showSplash() {
   const skipEl = document.getElementById('splash-skip');
 
   quoteEl.textContent = quote[currentLang === 'ja' ? 'ja' : 'en'];
-  subEl.textContent = currentLang === 'ja' ? quote.en : quote.ja;
+  subEl.textContent = currentLang === 'ja' ? '' : quote.ja;
 
   // フェードインアニメーション
   quoteEl.style.opacity = '0';
