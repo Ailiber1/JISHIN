@@ -3872,6 +3872,11 @@ function initEventListeners() {
 
   // マルチプレイ
   document.getElementById('btn-multi').addEventListener('click', () => {
+    if (isGuest()) {
+      alert(currentLang === 'ja' ? '先に名前を登録してください。' : 'Please register your name first.');
+      document.getElementById('player-name-input').focus();
+      return;
+    }
     showScreen('multi-screen');
     applyI18N();
   });
