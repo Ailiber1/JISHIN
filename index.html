@@ -4207,6 +4207,10 @@ function initGame(stageNum) {
   GAME._novelAftershakeDone = false;
   GAME._novelEpilogueDone = false;
   GAME._novelChoiceScore = 0;
+  GAME._oshimoViolations = 0;
+  GAME._oshimoLastWarn = 0;
+  GAME._aftershockDone = false;
+  GAME._glassWarned = false;
   GAME._windowWarned = false;
 
   GAME.player.x = 0;
@@ -4519,17 +4523,8 @@ function buildClassroom() {
     phases: ['aftershake'],
   });
 
-  // Stage1（学校）ではブレーカー・靴箱・ストーブを非表示＆無効化
-  if (GAME.stageNum === 1) {
-    GAME.interactables.forEach(function(item) {
-      if (item.action === 'turnOffBreaker' || item.action === 'putOnShoes' || item.action === 'turnOffFire') {
-        item.used = true; // インタラクト不可にする
-        if (item.mesh) item.mesh.visible = false;
-      }
-    });
-    // ストーブ排気筒も非表示
-    if (pipe) pipe.visible = false;
-  }
+  // 全ステージでインタラクト有効（防災知識の体験学習として必須）
+  // ストーブは冬季設定 — Stage1でも教室に暖房器具がある想定
 
   // ============================================================
   // 蛍光灯（天井の長い照明器具）
@@ -4724,6 +4719,76 @@ function buildHallway() {
   var exitLight = new THREE.PointLight(0x00ff44, 0.3, 5);
   exitLight.position.set(0, HH - 0.3, hz0 + HD - 0.3);
   scene.add(exitLight);
+
+  // ============================================================
+  // 廊下の障害物（地震後に出現 — 避難経路の判断力を試す）
+  // ============================================================
+  var debrisMat = new THREE.MeshStandardMaterial({ color: 0x888880, roughness: 0.9, emissive: 0x050505, emissiveIntensity: 0.1 });
+  var glassMat = new THREE.MeshStandardMaterial({ color: 0x88ccee, roughness: 0.1, transparent: true, opacity: 0.5, emissive: 0x224466, emissiveIntensity: 0.2 });
+
+  // 障害物グループ（地震後にvisible=trueにする）
+  GAME._hallwayDebris = [];
+
+  // 1. 天井板の落下（廊下中央、Z=12付近 — 右寄りに落下、左を迂回）
+  var ceilingTile = new THREE.Mesh(new THREE.BoxGeometry(3, 0.15, 2), debrisMat);
+  ceilingTile.position.set(1.5, 0.08, hz0 + 3);
+  ceilingTile.rotation.z = 0.15;
+  ceilingTile.visible = false;
+  scene.add(ceilingTile);
+  GAME._hallwayDebris.push(ceilingTile);
+  // 天井板のコリジョン（地震後に追加）
+  GAME._debrisWalls = [];
+  GAME._debrisWalls.push({ minX: -0.5, maxX: 3.5, minZ: hz0 + 2, maxZ: hz0 + 4, minY: 0, maxY: 0.3 });
+
+  // 2. 倒れたロッカー（右壁沿い、Z=17 — 部分的に通路を塞ぐ）
+  var fallenLocker = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.6, 0.8), new THREE.MeshStandardMaterial({ color: 0x999999, roughness: 0.5, metalness: 0.4, emissive: 0x060606 }));
+  fallenLocker.position.set(3, 0.4, hz0 + 8);
+  fallenLocker.rotation.z = Math.PI / 2 - 0.3;
+  fallenLocker.visible = false;
+  scene.add(fallenLocker);
+  GAME._hallwayDebris.push(fallenLocker);
+  GAME._debrisWalls.push({ minX: 1.5, maxX: 4.5, minZ: hz0 + 7.5, maxZ: hz0 + 8.5, minY: 0, maxY: 1.0 });
+
+  // 3. ガラス破片エリア（左壁の窓下、Z=14 — 踏むと警告）
+  var glassArea = new THREE.Mesh(new THREE.PlaneGeometry(3, 2), glassMat);
+  glassArea.rotation.x = -Math.PI / 2;
+  glassArea.position.set(-2.5, 0.01, hz0 + 5);
+  glassArea.visible = false;
+  scene.add(glassArea);
+  GAME._hallwayDebris.push(glassArea);
+  // ガラスエリアの範囲（踏むと靴未着用の場合警告）
+  GAME._glassZone = { minX: -4.0, maxX: -1.0, minZ: hz0 + 4, maxZ: hz0 + 6 };
+
+  // 4. 散乱した教材・本（Z=20 — 小さな障害物）
+  for (var bi = 0; bi < 5; bi++) {
+    var book = new THREE.Mesh(
+      new THREE.BoxGeometry(0.2 + Math.random() * 0.15, 0.05, 0.15 + Math.random() * 0.1),
+      new THREE.MeshStandardMaterial({ color: 0x886644 + Math.floor(Math.random() * 0x222222), roughness: 0.8 })
+    );
+    book.position.set(-1 + Math.random() * 3, 0.025, hz0 + 10.5 + Math.random() * 2);
+    book.rotation.y = Math.random() * Math.PI;
+    book.visible = false;
+    scene.add(book);
+    GAME._hallwayDebris.push(book);
+  }
+
+  // 5. 粉塵パーティクル（廊下全体の雰囲気 — 半透明の浮遊物）
+  var dustGeo = new THREE.BufferGeometry();
+  var dustCount = 80;
+  var dustPositions = new Float32Array(dustCount * 3);
+  for (var di = 0; di < dustCount; di++) {
+    dustPositions[di * 3] = (Math.random() - 0.5) * HW;
+    dustPositions[di * 3 + 1] = Math.random() * HH;
+    dustPositions[di * 3 + 2] = hz0 + Math.random() * HD;
+  }
+  dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPositions, 3));
+  var dustParticles = new THREE.Points(dustGeo, new THREE.PointsMaterial({
+    color: 0xccbbaa, size: 0.04, transparent: true, opacity: 0.4
+  }));
+  dustParticles.visible = false;
+  scene.add(dustParticles);
+  GAME._hallwayDust = dustParticles;
+  GAME._hallwayDebris.push(dustParticles);
 }
 
 // ============================================================
@@ -5797,7 +5862,7 @@ function createMinimap() {
 function updateMinimap() {
   var canvas = GAME._minimap;
   if (!canvas) return;
-  var show = (GAME.phase === 'evacuation' || GAME._inSchoolyard) && GAME.running && !GAME.paused;
+  var show = (GAME.phase === 'aftershake' || GAME.phase === 'evacuation' || GAME._inSchoolyard) && GAME.running && !GAME.paused;
   canvas.style.display = show ? 'block' : 'none';
   if (!show) return;
 
@@ -5826,12 +5891,48 @@ function updateMinimap() {
   var g2 = toMap(20, 60);
   ctx.fillRect(g1[0], g2[1], g2[0] - g1[0], g1[1] - g2[1]);
 
+  // 廊下の障害物表示（赤い×マーク）
+  if (GAME._debrisWalls) {
+    ctx.fillStyle = 'rgba(255,50,50,0.6)';
+    GAME._debrisWalls.forEach(function(dw) {
+      var d1 = toMap(dw.minX, dw.minZ);
+      var d2 = toMap(dw.maxX, dw.maxZ);
+      ctx.fillRect(d1[0], d2[1], d2[0] - d1[0], d1[1] - d2[1]);
+    });
+  }
+
+  // ガラスエリア（黄色警告）
+  if (GAME._glassZone) {
+    ctx.fillStyle = 'rgba(255,255,0,0.3)';
+    var gz1 = toMap(GAME._glassZone.minX, GAME._glassZone.minZ);
+    var gz2 = toMap(GAME._glassZone.maxX, GAME._glassZone.maxZ);
+    ctx.fillRect(gz1[0], gz2[1], gz2[0] - gz1[0], gz1[1] - gz2[1]);
+  }
+
   // 避難ポイント
   ctx.fillStyle = 'rgba(255,107,0,0.7)';
   var ep = toMap(EVAC_POINT.x, EVAC_POINT.z);
   ctx.beginPath();
   ctx.arc(ep[0], ep[1], 5, 0, Math.PI * 2);
   ctx.fill();
+
+  // 避難ルートガイド（点線矢印：教室→廊下→階段→校庭→集合点）
+  ctx.strokeStyle = 'rgba(0,255,65,0.4)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath();
+  var r1 = toMap(4.2, 9); // 教室ドア
+  var r2 = toMap(0, 16);  // 廊下中央
+  var r3 = toMap(0, 24);  // 階段入口
+  var r4 = toMap(0, 35);  // 校庭
+  var r5 = toMap(0, 45);  // 避難ポイント
+  ctx.moveTo(r1[0], r1[1]);
+  ctx.lineTo(r2[0], r2[1]);
+  ctx.lineTo(r3[0], r3[1]);
+  ctx.lineTo(r4[0], r4[1]);
+  ctx.lineTo(r5[0], r5[1]);
+  ctx.stroke();
+  ctx.setLineDash([]);
 
   // プレイヤー
   ctx.fillStyle = '#00ff41';
@@ -5961,6 +6062,45 @@ function updatePhase(dtSec) {
         GAME.scoring.withinTimeLimit = false;
         transitionPhase('result');
       }
+
+      // === 余震イベント（避難開始15秒後に1回） ===
+      if (!GAME._aftershockDone && GAME.phaseTimer > 15 && GAME.phaseTimer < 15.5) {
+        GAME._aftershockDone = true;
+        GAME.quake.shaking = true;
+        showAdvisor('余震だ！その場でしゃがんで！', 'warning');
+        SoundManager.playSE('alarm');
+        var vig3 = document.getElementById('danger-vignette');
+        if (vig3) vig3.style.boxShadow = 'inset 0 0 60px rgba(255,0,64,0.3)';
+        // 3秒後に余震終了
+        setTimeout(function() {
+          GAME.quake.shaking = false;
+          var vig4 = document.getElementById('danger-vignette');
+          if (vig4) vig4.style.boxShadow = 'inset 0 0 80px rgba(255,0,64,0)';
+          showAdvisor('余震が収まった。落ち着いて避難を続けよう。', 'normal');
+        }, 3000);
+      }
+
+      // === おはしも違反チェック（避難中にダッシュ＝走っている） ===
+      if (GAME.player.isSprinting && !GAME._inSchoolyard) {
+        if (GAME.totalTimer - (GAME._oshimoLastWarn || 0) > 5) {
+          GAME._oshimoViolations = (GAME._oshimoViolations || 0) + 1;
+          GAME._oshimoLastWarn = GAME.totalTimer;
+          showAdvisor('走らない！「おはしも」を守ろう！（-3点）', 'warning');
+          SoundManager.playSE('hit');
+        }
+      }
+
+      // === ガラスエリア踏み警告（靴未着用の場合） ===
+      if (GAME._glassZone && !GAME.scoring.putOnShoes && !GAME._glassWarned) {
+        var p = GAME.player;
+        var gz = GAME._glassZone;
+        if (p.x > gz.minX && p.x < gz.maxX && p.z > gz.minZ && p.z < gz.maxZ) {
+          GAME._glassWarned = true;
+          showAdvisor('ガラスの破片だ！靴を履いていないと怪我をするよ！', 'warning');
+          GAME.hitCount++; // 1回分のダメージ
+          SoundManager.playSE('hit');
+        }
+      }
       break;
 
     case 'result':
@@ -6068,9 +6208,22 @@ function _doTransitionPhase(newPhase) {
       SoundManager.startAftershakeAmbient();
       var vig2 = document.getElementById('danger-vignette');
       if (vig2) vig2.style.boxShadow = 'inset 0 0 80px rgba(255,0,64,0)';
-      showAdvisor('揺れが収まった。まず火の元を確認しよう。', 'normal');
+      showAdvisor('揺れが収まった。火の元・ブレーカー・靴を確認しよう。', 'normal');
       spawnGlassDebris();
       shiftFurnitureAfterQuake();
+      // 廊下の障害物を出現させる
+      if (GAME._hallwayDebris) {
+        GAME._hallwayDebris.forEach(function(d) { d.visible = true; });
+      }
+      // 障害物のコリジョンを追加
+      if (GAME._debrisWalls) {
+        GAME._debrisWalls.forEach(function(dw) { GAME.walls.push(dw); });
+      }
+      // おはしも違反カウンター初期化
+      GAME._oshimoViolations = 0;
+      GAME._oshimoLastWarn = 0;
+      GAME._aftershockDone = false;
+      GAME._glassWarned = false;
       break;
 
     case 'evacuation':
@@ -6121,18 +6274,22 @@ function updatePhaseDisplay() {
 }
 
 function updateHUD() {
-  // タイマー表示（残り時間）
-  var remaining = Math.max(0, GAME.timeLimit - GAME.totalTimer);
-  var min = Math.floor(remaining / 60);
-  var sec = Math.floor(remaining % 60);
+  // タイマー表示（残り時間 — 地震発生後から表示）
   var timerEl = document.getElementById('hud-timer');
   if (timerEl) {
-    timerEl.textContent = min + ':' + (sec < 10 ? '0' : '') + sec;
-    // 残り30秒で警告
-    if (remaining <= 30 && remaining > 0) {
-      timerEl.classList.add('warning');
+    if (GAME.phase === 'daily') {
+      timerEl.textContent = '準備中';
     } else {
-      timerEl.classList.remove('warning');
+      var remaining = Math.max(0, GAME.timeLimit - GAME.totalTimer);
+      var min = Math.floor(remaining / 60);
+      var sec = Math.floor(remaining % 60);
+      timerEl.textContent = min + ':' + (sec < 10 ? '0' : '') + sec;
+      // 残り60秒で警告
+      if (remaining <= 60 && remaining > 0) {
+        timerEl.classList.add('warning');
+      } else {
+        timerEl.classList.remove('warning');
+      }
     }
   }
 
@@ -6408,11 +6565,16 @@ function calculateScore() {
 
   // 揺れ後の行動 — ステージ別フィルタリング
   if (stg === 1) {
-    // Stage1（学校）: ドア開放+安否確認+先生の指示に従う = 18点
-    if (s.openedDoor) score += 6;
-    if (s.checkedSafety) score += 6;
-    // ノベル選択肢ボーナス（正解で加算済みのスコアを反映）
+    // Stage1（学校）: 全防災行動 = 最大30点
+    if (s.openedDoor) score += 5;
+    if (s.turnedOffFire) score += 5;
+    if (s.turnedOffBreaker) score += 5;
+    if (s.putOnShoes) score += 5;
+    if (s.checkedSafety) score += 5;
+    // ノベル選択肢ボーナス
     score += (GAME._novelChoiceScore || 0);
+    // おはしも違反ペナルティ
+    if (GAME._oshimoViolations > 0) score -= GAME._oshimoViolations * 3;
   } else if (stg === 3) {
     // Stage3（自宅）: ストーブ消火+ブレーカー+靴+ドア = 24点
     if (s.turnedOffFire) score += 6;
@@ -6495,11 +6657,17 @@ function showResult() {
       ];
       // ステージ別の揺れ後行動
       if (stg === 1) {
-        // Stage1（学校）: ドア・安否確認・ノベル選択肢
-        actions.push({ done: s.openedDoor, text: 'ドアを開けて避難経路を確保した', pts: '+6' });
-        actions.push({ done: s.checkedSafety, text: '周囲の安否確認を行った', pts: '+6' });
+        // Stage1（学校）: 全防災行動チェック
+        actions.push({ done: s.turnedOffFire, text: 'ストーブの火を消した', pts: '+5' });
+        actions.push({ done: s.turnedOffBreaker, text: 'ブレーカーを落とした（通電火災防止）', pts: '+5' });
+        actions.push({ done: s.putOnShoes, text: '靴を履いた（ガラス破片対策）', pts: '+5' });
+        actions.push({ done: s.openedDoor, text: 'ドアを開けて避難経路を確保した', pts: '+5' });
+        actions.push({ done: s.checkedSafety, text: '周囲の安否確認を行った', pts: '+5' });
         var novelPts = GAME._novelChoiceScore || 0;
         actions.push({ done: novelPts > 0, text: 'ノベル選択肢で正しい判断をした', pts: novelPts > 0 ? '+' + novelPts : '0' });
+        if (GAME._oshimoViolations > 0) {
+          actions.push({ done: false, text: 'おはしも違反（走る・押す）' + GAME._oshimoViolations + '回', pts: '-' + (GAME._oshimoViolations * 3) });
+        }
       } else if (stg === 3) {
         actions.push({ done: s.turnedOffFire, text: 'ストーブの火を消した', pts: '+6' });
         actions.push({ done: s.openedDoor, text: 'ドアを開けて避難経路を確保した', pts: '+6' });
@@ -6547,10 +6715,10 @@ function showResult() {
       var stg = GAME.stageNum;
       if (!GAME.scoring.crouchedIn3s) tips.push('地震が来たらまず「低く！頭を守って！動かないで！」（シェイクアウト）が基本です。');
       if (!GAME.scoring.guardedHead) tips.push('頭を守ることが最も重要です。クッションや本で頭を覆いましょう。');
-      if (stg !== 1 && !GAME.scoring.turnedOffFire) tips.push('揺れが収まったらまず火の元を確認！ストーブやガスコンロの火を消しましょう。');
+      if (!GAME.scoring.turnedOffFire) tips.push('揺れが収まったらまず火の元を確認！ストーブやガスコンロの火を消しましょう。');
       if (!GAME.scoring.openedDoor) tips.push('揺れが収まったらドアを開けて避難経路を確保しましょう。地震で建物が歪むとドアが開かなくなることがあります。');
-      if (stg !== 1 && !GAME.scoring.turnedOffBreaker) tips.push('避難前にブレーカーを落としましょう。通電火災を防げます。');
-      if (stg !== 1 && !GAME.scoring.putOnShoes) tips.push('ガラスの破片が散乱している可能性があります。必ず靴を履いてから避難しましょう。');
+      if (!GAME.scoring.turnedOffBreaker) tips.push('避難前にブレーカーを落としましょう。通電火災（停電復旧時に発生する火災）を防げます。');
+      if (!GAME.scoring.putOnShoes) tips.push('ガラスの破片が散乱している可能性があります。必ず靴を履いてから避難しましょう。');
       if (!GAME.scoring.noHitByFalling) tips.push('「落ちてこない・倒れてこない・移動してこない」場所に身を寄せましょう。');
       if (!GAME.scoring.usedStairs) tips.push('避難時は必ず階段を使いましょう。エレベーターは余震で停止し、閉じ込められる危険があります。');
       if (!GAME.scoring.avoidedBlockWall) tips.push('ブロック塀や自動販売機の近くは倒壊の危険があります。離れて避難しましょう。');
