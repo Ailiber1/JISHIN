@@ -1841,6 +1841,132 @@ html, body {
   opacity: 0.6;
 }
 
+/* 結果体験オーバーレイ（デトロイト風） */
+#consequence-overlay {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  z-index: 520; pointer-events: none; display: none;
+}
+#consequence-overlay.active { display: block; }
+#consequence-flash {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  opacity: 0; transition: opacity 0.2s;
+}
+#consequence-flash.red { background: rgba(255,0,0,0.35); }
+#consequence-flash.shake { animation: consequenceShake 0.5s ease-out; }
+@keyframes consequenceShake {
+  0%,100% { transform: translate(0,0); }
+  10% { transform: translate(-8px, 4px); }
+  20% { transform: translate(6px, -6px); }
+  30% { transform: translate(-5px, 3px); }
+  40% { transform: translate(4px, -2px); }
+  50% { transform: translate(-3px, 5px); }
+  60% { transform: translate(2px, -3px); }
+  70% { transform: translate(-2px, 1px); }
+  80% { transform: translate(1px, -1px); }
+}
+#consequence-text {
+  position: absolute; top: 30%; left: 50%; transform: translateX(-50%);
+  font-family: 'Noto Sans JP', sans-serif; font-size: clamp(20px, 5vw, 32px);
+  color: #ff4444; text-shadow: 0 0 20px rgba(255,0,0,0.8), 0 2px 8px rgba(0,0,0,0.9);
+  text-align: center; white-space: pre-line; opacity: 0;
+  transition: opacity 0.4s; line-height: 1.6; font-weight: bold;
+  max-width: 80%;
+}
+#consequence-text.show { opacity: 1; }
+#consequence-icon {
+  position: absolute; top: 15%; left: 50%; transform: translateX(-50%);
+  font-size: clamp(48px, 12vw, 80px); opacity: 0;
+  transition: opacity 0.3s, transform 0.5s;
+}
+#consequence-icon.show { opacity: 1; transform: translateX(-50%) scale(1.2); }
+
+/* 知識テスト画面 */
+#knowledge-quiz-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.92); z-index: 600; display: none;
+  align-items: center; justify-content: center; flex-direction: column;
+}
+#knowledge-quiz-overlay.active { display: flex; }
+.quiz-container {
+  max-width: 600px; width: 92%; padding: 30px; text-align: center;
+  background: rgba(20,20,30,0.95); border: 1px solid rgba(255,107,0,0.3);
+  border-radius: 12px;
+}
+.quiz-header {
+  font-family: 'Share Tech Mono', monospace; font-size: clamp(16px, 3vw, 22px);
+  color: var(--safety-orange); margin-bottom: 6px; letter-spacing: 2px;
+}
+.quiz-progress {
+  font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 20px;
+}
+.quiz-question {
+  font-family: 'Noto Sans JP', sans-serif; font-size: clamp(16px, 3.5vw, 20px);
+  color: #fff; margin-bottom: 24px; line-height: 1.7; text-align: left;
+  padding: 16px; background: rgba(255,255,255,0.05); border-radius: 8px;
+  border-left: 3px solid var(--safety-orange);
+}
+.quiz-choices { display: flex; flex-direction: column; gap: 10px; }
+.quiz-choice-btn {
+  background: rgba(0,0,0,0.6); border: 1px solid rgba(255,107,0,0.3);
+  color: #fff; padding: 14px 18px; border-radius: 8px;
+  font-size: clamp(14px, 3vw, 17px); font-family: 'Noto Sans JP', sans-serif;
+  cursor: pointer; text-align: left; transition: all 0.2s;
+}
+.quiz-choice-btn:hover { border-color: var(--safety-orange); background: rgba(255,107,0,0.1); }
+.quiz-choice-btn.quiz-correct {
+  border-color: var(--safe-green) !important;
+  background: rgba(0,255,65,0.15) !important; color: #00ff41;
+}
+.quiz-choice-btn.quiz-wrong {
+  border-color: var(--alert-red) !important;
+  background: rgba(255,51,51,0.1) !important; opacity: 0.7;
+}
+.quiz-explanation {
+  margin-top: 16px; padding: 14px; background: rgba(255,107,0,0.08);
+  border: 1px solid rgba(255,107,0,0.2); border-radius: 8px;
+  text-align: left; color: #ddd; font-size: 14px; line-height: 1.7;
+  display: none;
+}
+.quiz-explanation.show { display: block; }
+.quiz-explanation .quiz-exp-title {
+  color: var(--safety-orange); font-weight: bold; margin-bottom: 6px; font-size: 15px;
+}
+.quiz-next-btn {
+  margin-top: 16px; padding: 12px 32px;
+  background: rgba(255,107,0,0.15); border: 1px solid var(--safety-orange);
+  color: var(--safety-orange); font-size: 16px; border-radius: 6px;
+  cursor: pointer; display: none; transition: all 0.2s;
+  font-family: 'Noto Sans JP', sans-serif;
+}
+.quiz-next-btn:hover { background: rgba(255,107,0,0.3); }
+.quiz-score-display {
+  font-family: 'Share Tech Mono', monospace; font-size: clamp(20px, 5vw, 28px);
+  color: var(--safety-orange); margin: 20px 0 10px;
+}
+.quiz-result-msg {
+  color: #ccc; font-size: 15px; line-height: 1.7; margin-bottom: 20px;
+}
+
+/* 詳細レポートセクション */
+.result-report-section {
+  margin-top: 16px; padding: 16px; background: rgba(255,107,0,0.05);
+  border: 1px solid rgba(255,107,0,0.15); border-radius: 8px;
+}
+.result-report-section h4 {
+  font-family: 'Share Tech Mono', monospace; font-size: 14px;
+  color: var(--safety-orange); margin-bottom: 10px; letter-spacing: 1px;
+}
+.report-category {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+  padding: 8px 10px; background: rgba(0,0,0,0.3); border-radius: 6px;
+}
+.report-category-label { flex: 1; font-size: 13px; color: #ccc; }
+.report-category-bar {
+  width: 100px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;
+}
+.report-category-fill { height: 100%; border-radius: 3px; transition: width 0.8s ease-out; }
+.report-category-score { font-size: 13px; color: #fff; min-width: 40px; text-align: right; font-family: 'Share Tech Mono', monospace; }
+
 /* ナレーター */
 #novel-window.narrator { border-color: rgba(255,255,255,0.3); }
 #novel-window.narrator #novel-speaker { display: none; }
@@ -2078,6 +2204,21 @@ html, body {
 <!-- ============================================================
      SECTION: RESULT SCREEN
      ============================================================ -->
+<!-- 知識テスト -->
+<div id="knowledge-quiz-overlay">
+  <div class="quiz-container">
+    <div class="quiz-header">KNOWLEDGE TEST</div>
+    <div class="quiz-progress" id="quiz-progress">1 / 5</div>
+    <div class="quiz-question" id="quiz-question"></div>
+    <div class="quiz-choices" id="quiz-choices"></div>
+    <div class="quiz-explanation" id="quiz-explanation">
+      <div class="quiz-exp-title">解説</div>
+      <div id="quiz-exp-body"></div>
+    </div>
+    <button class="quiz-next-btn" id="quiz-next-btn">次の問題</button>
+  </div>
+</div>
+
 <div id="result-screen" class="screen">
   <div class="result-container">
     <div class="result-header">
@@ -2105,6 +2246,18 @@ html, body {
       <div class="result-section">
         <h3 data-i18n="RESULT_REVIEW"></h3>
         <div class="result-actions" id="result-actions"></div>
+      </div>
+
+      <!-- カテゴリ別スコア -->
+      <div class="result-report-section" id="result-report">
+        <h4>CATEGORY ANALYSIS</h4>
+        <div id="result-categories"></div>
+      </div>
+
+      <!-- 知識テスト結果 -->
+      <div class="result-report-section" id="result-quiz-summary" style="display:none">
+        <h4>KNOWLEDGE TEST</h4>
+        <div id="result-quiz-detail"></div>
       </div>
 
       <!-- 今回のポイント -->
@@ -2425,6 +2578,11 @@ html, body {
   <div id="novel-controls">
     <button id="novel-skip-btn">SKIP</button>
     <button id="novel-auto-btn">AUTO</button>
+  </div>
+  <div id="consequence-overlay">
+    <div id="consequence-flash"></div>
+    <div id="consequence-icon"></div>
+    <div id="consequence-text"></div>
   </div>
   <div id="novel-choices"></div>
   <div id="novel-window">
@@ -3255,10 +3413,19 @@ var NovelEngine = {
       SoundManager.playSE('error');
     }
 
+    // 結果体験演出があるか
+    var hasConsequence = !choice.correct && choice.consequence;
+    var consequenceDelay = hasConsequence ? 3000 : 1200;
+
+    if (hasConsequence) {
+      setTimeout(function() { showConsequence(choice.consequence); }, 800);
+    }
+
     // フィードバック表示後に進む
     setTimeout(function() {
       self.choicesEl.classList.remove('active');
       self.choicesEl.innerHTML = '';
+      hideConsequence();
 
       // レスポンス（解説）があれば表示
       if (choice.response) {
@@ -3270,7 +3437,7 @@ var NovelEngine = {
         self.scriptIndex++;
         self.showLine();
       }
-    }, 1200);
+    }, consequenceDelay);
   },
 
   // スキップ
@@ -3347,9 +3514,11 @@ var NOVEL_SCRIPTS = {
           { label: '机の下に隠れる', score: 10, correct: true,
             response: { speaker: 'bousai', expr: 'smile', text: '正解！机の脚をしっかり持って、\n頭を守ろう！' }},
           { label: '廊下に飛び出す', score: -10, correct: false,
-            response: { speaker: 'bousai', expr: 'worry', text: '危ない！揺れている時に外に出ると、\n落下物に当たる危険があるよ。\nまず机の下で身を守ろう。' }},
+            consequence: { icon: '💥', text: '廊下の天井パネルが\n落ちてきた！', flash: 'red', shake: true },
+            response: { speaker: 'bousai', expr: 'worry', text: '危ない！揺れている最中に廊下に出ると\n天井材や照明が落ちてくる。\n阪神淡路大震災では廊下での負傷者が\n非常に多かったんだ。\nまず机の下で身を守ろう。' }},
           { label: '窓の近くで様子を見る', score: -5, correct: false,
-            response: { speaker: 'bousai', expr: 'worry', text: '窓ガラスが割れて飛び散るかも！\n窓から離れて、机の下に入ろう。' }},
+            consequence: { icon: '🪟', text: 'ガラスが割れて\n破片が飛んできた！', flash: 'red', shake: true },
+            response: { speaker: 'bousai', expr: 'worry', text: '窓ガラスは揺れで割れて\n鋭い破片になって飛び散る。\n東日本大震災では窓際でケガをした\n生徒がたくさんいたんだ。\n窓から離れて、机の下に入ろう。' }},
         ]
       },
     ],
@@ -3365,22 +3534,24 @@ var NOVEL_SCRIPTS = {
           { label: '先生の指示を待つ', score: 10, correct: true,
             response: { speaker: 'teacher', expr: 'normal', text: 'よし、今から校庭に避難します。\n走らない、押さない、しゃべらない、戻らない。\n「おはしも」です。' }},
           { label: 'すぐに廊下に出る', score: -5, correct: false,
-            response: { speaker: 'bousai', expr: 'worry', text: '余震が来るかもしれない。\nまずは先生の指示を待とう。\n勝手に行動すると危険だよ。' }},
+            consequence: { icon: '⚠️', text: '余震が来た！\n廊下で転倒してしまった！', flash: 'red', shake: true },
+            response: { speaker: 'bousai', expr: 'worry', text: '余震は本震の直後に来ることが多い。\n2016年の熊本地震では、最初の揺れの\n約28時間後にさらに大きな本震が来た。\n先生の指示を待って、安全を確認してから\n行動しよう。' }},
         ]
       },
     ],
     epilogue_success: [
-      { speaker: 'teacher', expr: 'relief', text: '…全員います。\nよかった…！' },
+      { speaker: 'teacher', expr: 'relief', text: '…全員、点呼完了。\n全員無事です。よかった…！' },
       { speaker: 'student_a', expr: 'relief', text: '怖かった…でも、ちゃんと避難できた…！' },
       { speaker: 'student_b', expr: 'smile', text: '避難訓練のプリント、\nちゃんと読んでおくね…！' },
       { speaker: 'student_a', expr: 'smile', text: '俺も…！次からちゃんとやる！' },
       { speaker: 'bousai', expr: 'smile', text: '素晴らしい避難だったよ！\n今回学んだことを振り返ろう。' },
-      { speaker: 'bousai', expr: 'normal', text: '① 地震が来たら「まず低く、頭を守り、動かない」\n② 先生や大人の指示に従う\n③ 「おはしも」を守って落ち着いて避難する\nこの3つ、忘れないでね！' },
+      { speaker: 'bousai', expr: 'normal', text: '① 地震が来たら「まず低く、頭を守り、動かない」\n② 揺れが収まったら火の元・ブレーカー確認\n③ 靴を履いてガラス破片に備える\n④ 「おはしも」を守って落ち着いて避難する' },
+      { speaker: 'bousai', expr: 'smile', text: '最後に、今の体験で学んだことを\nテストで確認してみよう！\n実際の地震でもきっと役に立つよ。' },
     ],
     epilogue_fail: [
       { speaker: 'bousai', expr: 'worry', text: '残念…今回は避難がうまくいかなかったね。' },
-      { speaker: 'bousai', expr: 'serious', text: 'でも大丈夫。\n失敗から学ぶことが一番大切なんだ。' },
-      { speaker: 'bousai', expr: 'normal', text: 'もう一度チャレンジして、\n正しい避難を身につけよう！' },
+      { speaker: 'bousai', expr: 'serious', text: 'でも大丈夫。\n失敗から学ぶことが一番大切なんだ。\n実際の災害でこの経験が活きるよ。' },
+      { speaker: 'bousai', expr: 'normal', text: '最後に知識テストに挑戦しよう。\n正しい行動を確認して、\nもう一度チャレンジしてみよう！' },
     ],
   }
 };
@@ -3913,6 +4084,11 @@ function initEventListeners() {
       // OFFにしたら即停止
       SoundManager.stopBGM();
     }
+  });
+
+  // 知識テスト「次へ」ボタン
+  document.getElementById('quiz-next-btn').addEventListener('click', function() {
+    nextQuizQuestion();
   });
 
   // 結果画面ボタン
@@ -6367,13 +6543,12 @@ function _doTransitionPhase(newPhase) {
       break;
 
     case 'result':
-      // 全音声停止 → 結果BGM
+      // 全音声停止
       SoundManager.stopAll();
-      // 結果BGMがあれば再生（なければ無音）
-      SoundManager.playBGM('BGM/JISHIN_result.mp3', 0.25, false);
       GAME.running = false;
       calculateScore();
-      showResult();
+      // 知識テストを挟んでから結果表示
+      startKnowledgeQuiz(GAME.stageNum);
       break;
   }
 
@@ -6659,6 +6834,169 @@ function spawnGlassDebris() {
 }
 
 // ============================================================
+// SECTION: 結果体験演出（デトロイト風）
+// ============================================================
+function showConsequence(data) {
+  var overlay = document.getElementById('consequence-overlay');
+  var flash = document.getElementById('consequence-flash');
+  var icon = document.getElementById('consequence-icon');
+  var text = document.getElementById('consequence-text');
+  if (!overlay) return;
+
+  overlay.classList.add('active');
+
+  // フラッシュ
+  if (data.flash) {
+    flash.className = data.flash;
+    flash.style.opacity = '1';
+    if (data.shake) flash.classList.add('shake');
+  }
+
+  // アイコン
+  setTimeout(function() {
+    if (data.icon) { icon.textContent = data.icon; icon.classList.add('show'); }
+    if (data.text) { text.textContent = data.text; text.classList.add('show'); }
+  }, 300);
+
+  // フラッシュフェードアウト
+  setTimeout(function() { flash.style.opacity = '0.15'; }, 600);
+
+  // SE: 衝撃音
+  SoundManager.playSE('hit');
+}
+
+function hideConsequence() {
+  var overlay = document.getElementById('consequence-overlay');
+  var flash = document.getElementById('consequence-flash');
+  var icon = document.getElementById('consequence-icon');
+  var text = document.getElementById('consequence-text');
+  if (!overlay) return;
+  overlay.classList.remove('active');
+  flash.className = ''; flash.style.opacity = '0';
+  icon.className = ''; icon.textContent = '';
+  text.className = ''; text.textContent = '';
+}
+
+// ============================================================
+// SECTION: 知識テスト（体験後の理解度確認）
+// ============================================================
+var QUIZ_DATA = {
+  1: [
+    {
+      q: '地震が発生した時、最初にすべき行動は？',
+      choices: ['窓を開けて外の様子を確認する', '机の下に入り、脚を持って頭を守る', '荷物をまとめて避難準備をする', '友達に「地震だ」と叫んで知らせる'],
+      answer: 1,
+      explain: '地震の際は「まず低く、頭を守り、動かない（Drop, Cover, Hold on）」が世界共通の基本行動です。机の脚をしっかり持つのは、揺れで机が動いてしまうのを防ぐためです。'
+    },
+    {
+      q: '揺れが収まった後、避難前にすべき行動として正しくないものは？',
+      choices: ['ストーブの火を消す', 'ブレーカーを落とす', 'エレベーターで1階に降りる', '靴を履いてガラス破片に備える'],
+      answer: 2,
+      explain: '地震後にエレベーターを使うのは非常に危険です。余震で停止し、閉じ込められる可能性があります。必ず階段を使って避難しましょう。東日本大震災では多くのエレベーター閉じ込めが発生しました。'
+    },
+    {
+      q: '「おはしも」の意味として正しいものは？',
+      choices: ['お菓子を持って避難する', '押さない・走らない・しゃべらない・戻らない', 'お箸を持って避難する', '大きな声で助けを呼ぶ'],
+      answer: 1,
+      explain: '「おはしも」は学校で教える避難の合言葉です。お＝押さない、は＝走らない、し＝しゃべらない、も＝戻らない。パニックを防ぎ、安全に避難するための大切なルールです。'
+    },
+    {
+      q: 'ブレーカーを落とす理由は？',
+      choices: ['電気代を節約するため', '通電火災を防ぐため', '照明が眩しいから', '停電を早く復旧させるため'],
+      answer: 1,
+      explain: '通電火災とは、停電が復旧した時に、倒れた電気ストーブや損傷した電気配線から火災が発生する現象です。阪神淡路大震災の火災の約6割が通電火災だったとされています。'
+    },
+    {
+      q: '地震で窓ガラスが割れた時、正しい行動は？',
+      choices: ['素足で急いで避難する', '割れたガラスを片付けてから避難する', '靴を履いてからガラスを避けて避難する', 'ガラスの上を走って素早く通過する'],
+      answer: 2,
+      explain: '割れたガラスの上を素足や靴下で歩くと、深い切り傷を負い、歩けなくなることがあります。まず靴やスリッパを履き、ガラスのない経路を選んで避難しましょう。'
+    }
+  ]
+};
+
+var quizState = { current: 0, score: 0, total: 0, questions: [] };
+
+function startKnowledgeQuiz(stageNum) {
+  var questions = QUIZ_DATA[stageNum];
+  if (!questions || questions.length === 0) { showResult(); return; }
+
+  quizState = { current: 0, score: 0, total: questions.length, questions: questions };
+  var overlay = document.getElementById('knowledge-quiz-overlay');
+  overlay.classList.add('active');
+  showQuizQuestion();
+}
+
+function showQuizQuestion() {
+  var q = quizState.questions[quizState.current];
+  var progEl = document.getElementById('quiz-progress');
+  var qEl = document.getElementById('quiz-question');
+  var cEl = document.getElementById('quiz-choices');
+  var expEl = document.getElementById('quiz-explanation');
+  var nextBtn = document.getElementById('quiz-next-btn');
+
+  progEl.textContent = (quizState.current + 1) + ' / ' + quizState.total;
+  qEl.textContent = q.q;
+  expEl.classList.remove('show');
+  nextBtn.style.display = 'none';
+  cEl.innerHTML = '';
+
+  q.choices.forEach(function(choice, i) {
+    var btn = document.createElement('button');
+    btn.className = 'quiz-choice-btn';
+    btn.textContent = choice;
+    btn.addEventListener('click', function() { selectQuizAnswer(i); });
+    cEl.appendChild(btn);
+  });
+}
+
+function selectQuizAnswer(index) {
+  var q = quizState.questions[quizState.current];
+  var btns = document.querySelectorAll('.quiz-choice-btn');
+  var isCorrect = index === q.answer;
+
+  btns.forEach(function(btn, i) {
+    btn.style.pointerEvents = 'none';
+    if (i === q.answer) btn.classList.add('quiz-correct');
+    if (i === index && !isCorrect) btn.classList.add('quiz-wrong');
+  });
+
+  if (isCorrect) {
+    quizState.score++;
+    SoundManager.playSE('correct');
+  } else {
+    SoundManager.playSE('error');
+  }
+
+  // 解説表示
+  var expEl = document.getElementById('quiz-explanation');
+  document.getElementById('quiz-exp-body').textContent = q.explain;
+  expEl.classList.add('show');
+
+  // 次へボタン
+  var nextBtn = document.getElementById('quiz-next-btn');
+  if (quizState.current < quizState.total - 1) {
+    nextBtn.textContent = '次の問題';
+  } else {
+    nextBtn.textContent = '結果を見る';
+  }
+  nextBtn.style.display = 'inline-block';
+}
+
+function nextQuizQuestion() {
+  quizState.current++;
+  if (quizState.current >= quizState.total) {
+    // テスト終了
+    GAME._quizScore = quizState.score;
+    GAME._quizTotal = quizState.total;
+    document.getElementById('knowledge-quiz-overlay').classList.remove('active');
+    showResult();
+  } else {
+    showQuizQuestion();
+  }
+}
+
+// ============================================================
 // SECTION: AIアドバイザー表示
 // ============================================================
 function showAdvisor(text, type) {
@@ -6861,7 +7199,52 @@ function showResult() {
       if (stg === 1 && !GAME.scoring.checkedSafety) tips.push('揺れが収まったら周囲の友達の安否を確認しましょう。「大丈夫？」の一声が大切です。');
       if (stg === 1 && (GAME._novelChoiceScore || 0) <= 0) tips.push('地震の時は先生の指示に従い、机の下に入って頭を守りましょう。窓や廊下に飛び出すのは危険です。');
       if (tips.length === 0) tips.push('素晴らしい避難行動でした！この知識を周りの人にも伝えましょう。');
-      tipBox.textContent = tips[0]; // メインのアドバイス1つ
+      // 全tipを箇条書きで表示
+      var tipHtml = '';
+      for (var ti = 0; ti < Math.min(tips.length, 4); ti++) {
+        tipHtml += '<div style="margin-bottom:8px;padding-left:16px;text-indent:-16px;">● ' + escapeHTML(tips[ti]) + '</div>';
+      }
+      tipBox.innerHTML = tipHtml;
+    }
+
+    // カテゴリ別分析
+    var catEl = document.getElementById('result-categories');
+    if (catEl) {
+      var s = GAME.scoring;
+      var categories = [
+        { label: '初動対応', score: (s.crouchedIn3s ? 10 : 0) + (s.guardedHead ? 10 : 0) + (s.movedToSafe ? 10 : 0), max: 30 },
+        { label: '揺れ中の判断', score: (s.awayFromHazard ? 5 : 0) + (s.didNotRunOutside ? 5 : 0) + (s.noHitByFalling ? 5 : 0), max: 15 },
+        { label: '二次災害防止', score: (s.turnedOffFire ? 5 : 0) + (s.turnedOffBreaker ? 5 : 0) + (s.putOnShoes ? 5 : 0) + (s.openedDoor ? 5 : 0), max: 20 },
+        { label: '避難行動', score: (s.usedStairs ? 5 : 0) + (s.avoidedBlockWall ? 5 : 0) + (s.reachedEvacPoint ? 10 : 0) + (s.withinTimeLimit ? 5 : 0), max: 25 },
+        { label: '知識・判断力', score: Math.max(0, GAME._novelChoiceScore || 0), max: 20 }
+      ];
+      var catHtml = '';
+      for (var ci = 0; ci < categories.length; ci++) {
+        var cat = categories[ci];
+        var pct = cat.max > 0 ? Math.round(cat.score / cat.max * 100) : 0;
+        var color = pct >= 80 ? '#00ff41' : pct >= 50 ? '#ffaa00' : '#ff4444';
+        catHtml += '<div class="report-category">'
+          + '<span class="report-category-label">' + escapeHTML(cat.label) + '</span>'
+          + '<div class="report-category-bar"><div class="report-category-fill" style="width:' + pct + '%;background:' + color + '"></div></div>'
+          + '<span class="report-category-score">' + cat.score + '/' + cat.max + '</span>'
+          + '</div>';
+      }
+      catEl.innerHTML = catHtml;
+    }
+
+    // 知識テスト結果
+    var quizSummary = document.getElementById('result-quiz-summary');
+    var quizDetail = document.getElementById('result-quiz-detail');
+    if (quizSummary && quizDetail && GAME._quizScore !== undefined) {
+      quizSummary.style.display = 'block';
+      var qPct = Math.round(GAME._quizScore / GAME._quizTotal * 100);
+      var qColor = qPct >= 80 ? '#00ff41' : qPct >= 60 ? '#ffaa00' : '#ff4444';
+      quizDetail.innerHTML = '<div style="text-align:center;margin-bottom:10px">'
+        + '<span style="font-size:28px;color:' + qColor + ';font-family:Share Tech Mono,monospace">' + GAME._quizScore + ' / ' + GAME._quizTotal + '</span>'
+        + '<span style="color:#999;margin-left:8px">正解</span></div>'
+        + '<div class="report-category"><span class="report-category-label">理解度</span>'
+        + '<div class="report-category-bar"><div class="report-category-fill" style="width:' + qPct + '%;background:' + qColor + '"></div></div>'
+        + '<span class="report-category-score">' + qPct + '%</span></div>';
     }
 
     // ランキング保存（ゲスト除外、ゲームオーバーでなく完了した場合のみ）
