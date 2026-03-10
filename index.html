@@ -4405,10 +4405,24 @@ function buildClassroom() {
       leg.userData.isClassroomFurniture = true;
       scene.add(leg);
 
+      // 椅子座面
       const chair = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.03, 0.35), deskMat);
       chair.position.set(dx, 0.38, dz + 0.4);
       chair.userData.isClassroomFurniture = true;
       scene.add(chair);
+      // 椅子背もたれ
+      const chairBack = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.28, 0.03), deskMat);
+      chairBack.position.set(dx, 0.55, dz + 0.57);
+      chairBack.userData.isClassroomFurniture = true;
+      scene.add(chairBack);
+      // 椅子脚（4本）
+      var chairLegMat = deskLegMat;
+      [[-0.13, dz+0.25], [0.13, dz+0.25], [-0.13, dz+0.55], [0.13, dz+0.55]].forEach(function(lp) {
+        var cleg = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.38, 4), chairLegMat);
+        cleg.position.set(dx + lp[0], 0.19, lp[1]);
+        cleg.userData.isClassroomFurniture = true;
+        scene.add(cleg);
+      });
 
       GAME.walls.push({
         minX: dx - deskW/2 - 0.05,
@@ -5332,7 +5346,9 @@ function spawnNPCs() {
     x: 0.8, z: -0.5, targetX: 0.8, targetZ: -0.5,
     behavior: 'calm', state: 'idle',
     speed: 0.015, phase: 0,
+    npcH: 1.7, evacuationDelay: 30, exited: false,
   });
+  GAME._exitedNPCs = 0;
 
   // 生徒NPC（26名 — 各机に1人ずつ配置）
   var deskStartX = -3.2, deskStartZ = 1.0, gapX = 1.2, gapZ = 1.5;
@@ -5343,7 +5359,7 @@ function spawnNPCs() {
     for (var row = 0; row < 5; row++) {
       if (studentCount >= 26) break;
       var sx = deskStartX + col * gapX;
-      var sz = deskStartZ + row * gapZ + 0.15; // 机と椅子の間（椅子貫通回避）
+      var sz = deskStartZ + row * gapZ + 0.4; // 椅子の位置に座る
 
       // 行動パターン: 冷静70%, パニック20%, 負傷10%
       var rand = Math.random();
@@ -5361,7 +5377,10 @@ function spawnNPCs() {
         behavior: behavior, state: 'idle',
         speed: 0.008 + Math.random() * 0.006,
         phase: 0, deskX: sx, deskZ: deskStartZ + row * gapZ,
-        helped: false, // 負傷NPCを助けたかフラグ
+        helped: false,
+        npcH: npcHeight,
+        evacuationDelay: (5 - col) * 2 + row * 0.5 + Math.random() * 0.5,
+        exited: false,
       });
       studentCount++;
     }
@@ -5380,10 +5399,11 @@ function updateSingleNPC(npc, dtSec) {
 
   switch (GAME.phase) {
     case 'daily':
-      // 日常: 椅子に座っている（scaleは変えない、Y位置で椅子の高さに合わせる）
       npc.phase += dtSec;
       if (npc.role === 'student') {
-        mesh.position.y = -0.35 + Math.sin(npc.phase * 2) * 0.003;
+        // 椅子座面(Y=0.38)に腰が合う高さ: 0.33 - height * 0.40
+        var seatY = 0.33 - (npc.npcH || 1.35) * 0.40;
+        mesh.position.y = seatY + Math.sin(npc.phase * 2) * 0.003;
         mesh.rotation.y = Math.PI; // 黒板方向（-Z）を向く
       } else {
         // 先生は生徒側（+Z）を向いて立っている
@@ -5466,69 +5486,115 @@ function updateSingleNPC(npc, dtSec) {
       break;
 
     case 'aftershake':
+      // 揺れ収束 — NPCは机の下/その場で待機（まだ避難しない）
+      if (npc.behavior === 'calm' && npc.state === 'crouching') {
+        // 机の下で待機継続
+      }
+      if (npc.behavior === 'injured' && !npc.helped) {
+        // 負傷NPCは倒れたまま
+        mesh.rotation.z = Math.PI / 2;
+        mesh.position.y = -0.2;
+      }
+      if (npc.role === 'teacher') {
+        if (npc.state !== 'commanding') npc.state = 'commanding';
+        mesh.scale.set(1, 1.05, 1);
+      }
+      break;
+
     case 'evacuation':
-      // 避難行動
-      if (npc.behavior === 'calm' || npc.role === 'teacher') {
-        if (npc.state !== 'evacuating') {
-          npc.state = 'evacuating';
-          mesh.scale.set(1, 1, 1); // 座り/しゃがみ状態から立ち上がる
+      // 避難フェーズ — 列ごとに順番退出（ドア側の列から）
+      if (npc.exited) break;
+
+      // 負傷NPC（助けていない）はその場に留まる
+      if (npc.behavior === 'injured' && !npc.helped) {
+        mesh.rotation.z = Math.PI / 2;
+        mesh.position.y = -0.2;
+        break;
+      }
+
+      // 避難開始までの遅延チェック（列ごとにずらす）
+      var myDelay = npc.evacuationDelay || 0;
+      if (GAME.phaseTimer < myDelay) {
+        // まだ順番が来ていない — 立ち上がって待機
+        if (npc.state === 'crouching' || npc.state === 'idle' || npc.state === 'sitting') {
+          npc.state = 'waiting';
+          mesh.scale.set(1, 1, 1);
           mesh.position.y = 0;
           mesh.rotation.z = 0;
-          // ドア方向へ向かう
-          npc.targetX = 4.2; // 教室右端のドア付近
-          npc.targetZ = 8.5;
         }
-        // ターゲットに向かって移動
-        var edx = npc.targetX - npc.x;
-        var edz = npc.targetZ - npc.z;
-        var edist = Math.sqrt(edx * edx + edz * edz);
-        if (edist > 0.3) {
-          var espeed = npc.role === 'teacher' ? npc.speed * 1.5 : npc.speed;
-          npc.x += (edx / edist) * espeed;
-          npc.z += (edz / edist) * espeed;
-          mesh.position.x = npc.x;
-          mesh.position.z = npc.z;
-          mesh.rotation.y = Math.atan2(edx, edz);
-          npc.phase += dtSec * 6;
-          if (mesh.userData.leftLeg) {
-            mesh.userData.leftLeg.rotation.x = Math.sin(npc.phase) * 0.3;
-            mesh.userData.rightLeg.rotation.x = -Math.sin(npc.phase) * 0.3;
+        break;
+      }
+
+      // 先生は生徒の避難を見届けてから最後に退出
+      if (npc.role === 'teacher') {
+        var studentsRemaining = 0;
+        for (var si = 0; si < GAME.npcs.length; si++) {
+          var s = GAME.npcs[si];
+          if (s.role === 'student' && !s.exited) {
+            if (s.behavior !== 'injured' || s.helped) studentsRemaining++;
           }
         }
-      } else if (npc.behavior === 'panic') {
-        // パニックNPCも徐々にドアへ
-        if (npc.state !== 'evacuating') {
-          npc.state = 'evacuating';
-          npc.targetX = 4.2;
-          npc.targetZ = 8.5;
-        }
-        var pdx = npc.targetX - npc.x;
-        var pdz = npc.targetZ - npc.z;
-        var pdist = Math.sqrt(pdx * pdx + pdz * pdz);
-        if (pdist > 0.3) {
-          npc.x += (pdx / pdist) * npc.speed * 1.2;
-          npc.z += (pdz / pdist) * npc.speed * 1.2;
-          mesh.position.x = npc.x;
-          mesh.position.z = npc.z;
+        if (studentsRemaining > 0 && GAME.phaseTimer < 60) {
+          // 先生はドア付近で指示
+          if (npc.state !== 'directing') {
+            npc.state = 'directing';
+            mesh.scale.set(1, 1, 1);
+            mesh.position.y = 0;
+            npc.targetX = 3.5;
+            npc.targetZ = 8.0;
+          }
+          var tdx = npc.targetX - npc.x;
+          var tdz = npc.targetZ - npc.z;
+          var tdist = Math.sqrt(tdx * tdx + tdz * tdz);
+          if (tdist > 0.3) {
+            npc.x += (tdx / tdist) * npc.speed;
+            npc.z += (tdz / tdist) * npc.speed;
+            mesh.position.x = npc.x;
+            mesh.position.z = npc.z;
+            mesh.rotation.y = Math.atan2(tdx, tdz);
+          }
+          break;
         }
       }
-      // 負傷NPC: インタラクトで助けたらゆっくり避難開始
-      if (npc.behavior === 'injured' && npc.helped) {
-        if (npc.state !== 'evacuating') {
-          npc.state = 'evacuating';
-          mesh.rotation.z = 0;
-          mesh.position.y = 0;
-          npc.targetX = 4.2;
-          npc.targetZ = 8.5;
+
+      // 避難開始
+      if (npc.state !== 'evacuating') {
+        npc.state = 'evacuating';
+        mesh.scale.set(1, 1, 1);
+        mesh.position.y = 0;
+        mesh.rotation.z = 0;
+        npc.targetX = 4.2;
+        npc.targetZ = 8.5;
+      }
+
+      // ドアへ移動
+      var edx = npc.targetX - npc.x;
+      var edz = npc.targetZ - npc.z;
+      var edist = Math.sqrt(edx * edx + edz * edz);
+      if (edist > 0.5) {
+        var espeed = npc.speed;
+        if (npc.role === 'teacher') espeed = npc.speed * 1.5;
+        else if (npc.behavior === 'panic') espeed = npc.speed * 1.2;
+        else if (npc.behavior === 'injured') espeed = npc.speed * 0.5;
+        npc.x += (edx / edist) * espeed;
+        npc.z += (edz / edist) * espeed;
+        mesh.position.x = npc.x;
+        mesh.position.z = npc.z;
+        mesh.rotation.y = Math.atan2(edx, edz);
+        npc.phase += dtSec * 6;
+        if (mesh.userData.leftLeg) {
+          mesh.userData.leftLeg.rotation.x = Math.sin(npc.phase) * 0.3;
+          mesh.userData.rightLeg.rotation.x = -Math.sin(npc.phase) * 0.3;
         }
-        var idx = npc.targetX - npc.x;
-        var idz = npc.targetZ - npc.z;
-        var idist = Math.sqrt(idx * idx + idz * idz);
-        if (idist > 0.3) {
-          npc.x += (idx / idist) * npc.speed * 0.5;
-          npc.z += (idz / idist) * npc.speed * 0.5;
-          mesh.position.x = npc.x;
-          mesh.position.z = npc.z;
+      } else {
+        // ドア到達 → 退出（フェードアウトして消える）
+        npc.exited = true;
+        mesh.visible = false;
+        GAME._exitedNPCs = (GAME._exitedNPCs || 0) + 1;
+        if (GAME._exitedNPCs === 3) {
+          showAdvisor('生徒たちが避難を始めた！君も廊下へ向かおう！', 'normal');
+        } else if (GAME._exitedNPCs >= 20) {
+          showAdvisor('ほとんどの生徒が避難完了！急いで！', 'warning');
         }
       }
       break;
@@ -6011,7 +6077,8 @@ function _doTransitionPhase(newPhase) {
       // 環境音: きしみ停止 → 非常ベル開始
       SoundManager.stopAmbient(500);
       setTimeout(function() { SoundManager.startEvacAlarm(); }, 600);
-      showAdvisor('避難しよう！階段を使って校庭へ！', 'normal');
+      GAME._exitedNPCs = 0;
+      showAdvisor('避難開始！ドア側の列から順番に！', 'normal');
       break;
 
     case 'result':
