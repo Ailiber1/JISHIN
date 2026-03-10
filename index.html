@@ -1621,6 +1621,146 @@ html, body {
   .pause-panel h2 { font-size: 16px; margin-bottom: 8px; }
 }
 
+/* ============================================================
+   SECTION: NOVEL SYSTEM CSS
+   ============================================================ */
+#novel-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  z-index: 500; display: none; flex-direction: column;
+  justify-content: flex-end; pointer-events: auto;
+}
+#novel-overlay.active { display: flex; }
+
+#novel-bg {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background-size: cover; background-position: center;
+  transition: opacity 0.5s ease;
+}
+#novel-bg-dim {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.15);
+}
+
+/* 立ち絵 */
+.novel-chara {
+  position: absolute; bottom: 0;
+  height: 75%; width: auto;
+  transition: opacity 0.3s ease, transform 0.3s ease, filter 0.15s ease;
+  image-rendering: -webkit-optimize-contrast;
+  filter: brightness(0.6);
+}
+.novel-chara.speaking { filter: brightness(1); }
+.novel-chara.hidden { opacity: 0; transform: translateY(20px); pointer-events: none; }
+#novel-chara-left { left: 2%; }
+#novel-chara-right { right: 2%; }
+
+/* 呼吸アニメーション */
+@keyframes novel-breathe {
+  0%, 100% { transform: scale(1) translateY(0); }
+  50% { transform: scale(1.003) translateY(-2px); }
+}
+.novel-chara.speaking { animation: novel-breathe 3s ease-in-out infinite; }
+
+/* 会話ウィンドウ */
+#novel-window {
+  position: relative; z-index: 10;
+  width: 92%; max-width: 900px; margin: 0 auto 3%;
+  background: rgba(0, 0, 0, 0.82);
+  border: 1px solid rgba(255, 107, 0, 0.5);
+  border-radius: 8px;
+  padding: 16px 22px 14px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  cursor: pointer;
+}
+#novel-speaker {
+  position: absolute; top: -14px; left: 16px;
+  background: var(--safety-orange);
+  color: #000; font-weight: 700;
+  padding: 2px 14px; border-radius: 4px;
+  font-size: 14px; font-family: 'Noto Sans JP', sans-serif;
+}
+#novel-text {
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 17px; line-height: 1.7;
+  color: #fff; min-height: 3.4em;
+  white-space: pre-wrap;
+}
+#novel-next-indicator {
+  position: absolute; bottom: 8px; right: 16px;
+  color: var(--safety-orange); font-size: 18px;
+  animation: novel-blink 0.8s ease-in-out infinite;
+  display: none;
+}
+@keyframes novel-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+
+/* スキップ・オートボタン */
+#novel-controls {
+  position: absolute; top: 12px; right: 12px;
+  z-index: 520; display: none; gap: 8px;
+}
+#novel-controls.active { display: flex; }
+#novel-controls button {
+  background: rgba(0,0,0,0.6); border: 1px solid rgba(255,107,0,0.4);
+  color: #ccc; padding: 4px 12px; border-radius: 4px;
+  font-size: 13px; cursor: pointer; font-family: 'Share Tech Mono', monospace;
+}
+#novel-controls button.on { color: var(--safety-orange); border-color: var(--safety-orange); }
+
+/* 選択肢UI */
+#novel-choices {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 510; display: none;
+  flex-direction: column; gap: 14px;
+  width: 80%; max-width: 500px;
+}
+#novel-choices.active { display: flex; }
+.novel-choice-btn {
+  background: rgba(0, 0, 0, 0.85);
+  border: 2px solid rgba(255, 107, 0, 0.5);
+  color: #fff; padding: 14px 20px; border-radius: 6px;
+  font-size: 17px; font-family: 'Noto Sans JP', sans-serif;
+  cursor: pointer; text-align: left;
+  transition: border-color 0.2s, background 0.2s, transform 0.1s;
+}
+.novel-choice-btn:hover, .novel-choice-btn:active {
+  border-color: var(--safety-orange);
+  background: rgba(255, 107, 0, 0.15);
+  transform: scale(1.02);
+}
+.novel-choice-btn.correct {
+  border-color: var(--safe-green) !important;
+  background: rgba(0, 255, 65, 0.15) !important;
+}
+.novel-choice-btn.wrong {
+  border-color: var(--alert-red) !important;
+  background: rgba(255, 51, 51, 0.1) !important;
+  opacity: 0.6;
+}
+
+/* ナレーター */
+#novel-window.narrator { border-color: rgba(255,255,255,0.3); }
+#novel-window.narrator #novel-speaker { display: none; }
+#novel-window.narrator #novel-text { color: #ccc; font-style: italic; text-align: center; }
+
+/* レスポンシブ */
+@media (max-width: 600px) {
+  .novel-chara { height: 55%; }
+  #novel-window { width: 96%; padding: 14px 16px 12px; margin-bottom: 2%; }
+  #novel-text { font-size: 15px; }
+  #novel-speaker { font-size: 12px; top: -12px; }
+  .novel-choice-btn { font-size: 15px; padding: 12px 16px; }
+}
+@media (max-height: 450px) {
+  .novel-chara { height: 50%; }
+  #novel-window { margin-bottom: 1%; padding: 10px 14px 8px; }
+  #novel-text { font-size: 14px; min-height: 2.8em; }
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -2158,6 +2298,25 @@ html, body {
 </div>
 
 <!-- ============================================================
+     SECTION: NOVEL OVERLAY
+     ============================================================ -->
+<div id="novel-overlay">
+  <div id="novel-bg"><div id="novel-bg-dim"></div></div>
+  <img id="novel-chara-left" class="novel-chara hidden" src="" alt="">
+  <img id="novel-chara-right" class="novel-chara hidden" src="" alt="">
+  <div id="novel-controls">
+    <button id="novel-skip-btn">SKIP</button>
+    <button id="novel-auto-btn">AUTO</button>
+  </div>
+  <div id="novel-choices"></div>
+  <div id="novel-window">
+    <div id="novel-speaker"></div>
+    <div id="novel-text"></div>
+    <div id="novel-next-indicator">▼</div>
+  </div>
+</div>
+
+<!-- ============================================================
      SECTION: JAVASCRIPT
      ============================================================ -->
 <script>
@@ -2683,6 +2842,412 @@ function resumeAudioContext() {
 }
 document.addEventListener('touchstart', resumeAudioContext, { once: true });
 document.addEventListener('click', resumeAudioContext, { once: true });
+
+// ============================================================
+// SECTION: NOVEL ENGINE
+// ============================================================
+var NovelEngine = {
+  overlay: null, bgEl: null, textEl: null, speakerEl: null,
+  nextIndicator: null, choicesEl: null, controlsEl: null,
+  charaLeft: null, charaRight: null,
+  script: [], scriptIndex: 0,
+  isTyping: false, typeTimer: null, autoMode: false, autoTimer: null,
+  currentText: '', charIndex: 0,
+  onComplete: null, // ノベル終了時のコールバック
+  _seOsc: null, _seGain: null,
+
+  // キャラクター名マッピング
+  SPEAKERS: {
+    teacher: { name: '田中先生', pos: 'left', freq: 400 },
+    student_a: { name: 'ユウキ', pos: 'right', freq: 700 },
+    student_b: { name: 'アオイ', pos: 'right', freq: 800 },
+    bousai: { name: 'ボウサイ', pos: 'left', freq: 1000 },
+    narrator: { name: '', pos: null, freq: 0 },
+  },
+
+  // 画像プリロードキャッシュ
+  _imageCache: {},
+
+  init: function() {
+    this.overlay = document.getElementById('novel-overlay');
+    this.bgEl = document.getElementById('novel-bg');
+    this.textEl = document.getElementById('novel-text');
+    this.speakerEl = document.getElementById('novel-speaker');
+    this.nextIndicator = document.getElementById('novel-next-indicator');
+    this.choicesEl = document.getElementById('novel-choices');
+    this.controlsEl = document.getElementById('novel-controls');
+    this.charaLeft = document.getElementById('novel-chara-left');
+    this.charaRight = document.getElementById('novel-chara-right');
+    var self = this;
+
+    // クリック/タップで次へ
+    document.getElementById('novel-window').addEventListener('click', function() { self.advance(); });
+    document.getElementById('novel-window').addEventListener('touchend', function(e) { e.preventDefault(); self.advance(); });
+
+    // スキップボタン
+    document.getElementById('novel-skip-btn').addEventListener('click', function(e) {
+      e.stopPropagation(); self.skipAll();
+    });
+    // オートボタン
+    document.getElementById('novel-auto-btn').addEventListener('click', function(e) {
+      e.stopPropagation(); self.toggleAuto();
+    });
+  },
+
+  // 画像プリロード
+  preloadImages: function(script) {
+    var self = this;
+    script.forEach(function(line) {
+      if (line.speaker && line.expr) {
+        var src = 'characters/' + line.speaker + '_' + line.expr + '.png';
+        if (!self._imageCache[src]) {
+          var img = new Image();
+          img.src = src;
+          self._imageCache[src] = img;
+        }
+      }
+    });
+  },
+
+  // ノベル開始
+  start: function(script, bg, onComplete) {
+    this.script = script;
+    this.scriptIndex = 0;
+    this.onComplete = onComplete || null;
+    this.autoMode = false;
+    document.getElementById('novel-auto-btn').classList.remove('on');
+
+    // 背景設定
+    if (bg) {
+      this.bgEl.style.backgroundImage = 'url(' + bg + ')';
+    } else {
+      this.bgEl.style.backgroundImage = 'none';
+    }
+
+    // プリロード
+    this.preloadImages(script);
+
+    // 立ち絵リセット
+    this.charaLeft.classList.add('hidden');
+    this.charaRight.classList.add('hidden');
+    this.charaLeft.classList.remove('speaking');
+    this.charaRight.classList.remove('speaking');
+
+    // 表示
+    this.overlay.classList.add('active');
+    this.controlsEl.classList.add('active');
+    this.choicesEl.classList.remove('active');
+    this.choicesEl.innerHTML = '';
+
+    this.showLine();
+  },
+
+  // 現在の行を表示
+  showLine: function() {
+    if (this.scriptIndex >= this.script.length) {
+      this.end();
+      return;
+    }
+    var line = this.script[this.scriptIndex];
+
+    // 選択肢タイプ
+    if (line.type === 'choice') {
+      this.showChoices(line);
+      return;
+    }
+
+    // ウィンドウスタイル
+    var win = document.getElementById('novel-window');
+    if (line.speaker === 'narrator' || !line.speaker) {
+      win.classList.add('narrator');
+    } else {
+      win.classList.remove('narrator');
+    }
+
+    // 話者名
+    var info = this.SPEAKERS[line.speaker] || { name: line.speaker || '', pos: null, freq: 0 };
+    this.speakerEl.textContent = info.name;
+
+    // 立ち絵更新
+    this.updateCharaSprites(line);
+
+    // テキスト表示開始
+    this.nextIndicator.style.display = 'none';
+    this.startTypewriter(line.text, info.freq);
+  },
+
+  // 立ち絵更新
+  updateCharaSprites: function(line) {
+    if (!line.speaker || line.speaker === 'narrator') {
+      // ナレーター時は両方暗く
+      this.charaLeft.classList.remove('speaking');
+      this.charaRight.classList.remove('speaking');
+      return;
+    }
+
+    var info = this.SPEAKERS[line.speaker];
+    if (!info) return;
+    var src = 'characters/' + line.speaker + '_' + (line.expr || 'normal') + '.png';
+
+    if (info.pos === 'left') {
+      this.charaLeft.src = src;
+      this.charaLeft.classList.remove('hidden');
+      this.charaLeft.classList.add('speaking');
+      this.charaRight.classList.remove('speaking');
+    } else if (info.pos === 'right') {
+      this.charaRight.src = src;
+      this.charaRight.classList.remove('hidden');
+      this.charaRight.classList.add('speaking');
+      this.charaLeft.classList.remove('speaking');
+    }
+  },
+
+  // タイプライター演出
+  startTypewriter: function(text, freq) {
+    var self = this;
+    this.currentText = text;
+    this.charIndex = 0;
+    this.isTyping = true;
+    this.textEl.textContent = '';
+
+    clearInterval(this.typeTimer);
+    this.typeTimer = setInterval(function() {
+      if (self.charIndex < self.currentText.length) {
+        self.textEl.textContent += self.currentText[self.charIndex];
+        // 文字送りSE
+        if (freq > 0 && SoundManager.seEnabled) {
+          self.playCharSE(freq);
+        }
+        self.charIndex++;
+      } else {
+        clearInterval(self.typeTimer);
+        self.isTyping = false;
+        self.nextIndicator.style.display = 'block';
+        // クリック音
+        if (SoundManager.seEnabled) SoundManager.playSE('click');
+        // オートモード
+        if (self.autoMode) {
+          self.autoTimer = setTimeout(function() { self.advance(); }, 2500);
+        }
+      }
+    }, 35);
+  },
+
+  // 文字送りSE（短い正弦波パルス）
+  playCharSE: function(freq) {
+    if (!SoundManager.audioCtx) return;
+    try {
+      var ctx = SoundManager.audioCtx;
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = freq + (Math.random() * 40 - 20);
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.06);
+    } catch(e) {}
+  },
+
+  // 次へ進む
+  advance: function() {
+    clearTimeout(this.autoTimer);
+    if (this.isTyping) {
+      // 即時全文表示
+      clearInterval(this.typeTimer);
+      this.textEl.textContent = this.currentText;
+      this.isTyping = false;
+      this.nextIndicator.style.display = 'block';
+      if (this.autoMode) {
+        var self = this;
+        this.autoTimer = setTimeout(function() { self.advance(); }, 2500);
+      }
+      return;
+    }
+    // 次の行へ
+    this.scriptIndex++;
+    this.showLine();
+  },
+
+  // 選択肢表示
+  showChoices: function(line) {
+    var self = this;
+    this.textEl.textContent = line.text || '';
+    this.speakerEl.textContent = '';
+    this.nextIndicator.style.display = 'none';
+    this.choicesEl.innerHTML = '';
+    this.choicesEl.classList.add('active');
+
+    line.choices.forEach(function(choice, i) {
+      var btn = document.createElement('button');
+      btn.className = 'novel-choice-btn';
+      btn.textContent = '▶ ' + choice.label;
+      btn.addEventListener('click', function() { self.selectChoice(line, choice, i); });
+      self.choicesEl.appendChild(btn);
+    });
+  },
+
+  // 選択肢選択時
+  selectChoice: function(line, choice, index) {
+    var self = this;
+    var btns = this.choicesEl.querySelectorAll('.novel-choice-btn');
+
+    // 正解/不正解の表示
+    btns.forEach(function(btn, i) {
+      btn.style.pointerEvents = 'none';
+      var c = line.choices[i];
+      if (c.correct) {
+        btn.classList.add('correct');
+      } else if (i === index && !c.correct) {
+        btn.classList.add('wrong');
+      } else {
+        btn.style.opacity = '0.4';
+      }
+    });
+
+    // スコア加算
+    if (choice.score && GAME) {
+      GAME.score = (GAME.score || 0) + choice.score;
+    }
+
+    // SE
+    if (choice.correct) {
+      SoundManager.playSE('correct');
+    } else {
+      SoundManager.playSE('error');
+    }
+
+    // フィードバック表示後に進む
+    setTimeout(function() {
+      self.choicesEl.classList.remove('active');
+      self.choicesEl.innerHTML = '';
+
+      // レスポンス（解説）があれば表示
+      if (choice.response) {
+        self.scriptIndex++;
+        // レスポンスを次の行として挿入
+        self.script.splice(self.scriptIndex, 0, choice.response);
+        self.showLine();
+      } else {
+        self.scriptIndex++;
+        self.showLine();
+      }
+    }, 1200);
+  },
+
+  // スキップ
+  skipAll: function() {
+    clearInterval(this.typeTimer);
+    clearTimeout(this.autoTimer);
+    this.isTyping = false;
+
+    // 選択肢を探して、あれば選択肢で止まる
+    while (this.scriptIndex < this.script.length) {
+      var line = this.script[this.scriptIndex];
+      if (line.type === 'choice') {
+        this.showChoices(line);
+        return;
+      }
+      this.scriptIndex++;
+    }
+    this.end();
+  },
+
+  // オートモード切替
+  toggleAuto: function() {
+    this.autoMode = !this.autoMode;
+    var btn = document.getElementById('novel-auto-btn');
+    if (this.autoMode) {
+      btn.classList.add('on');
+      // 現在表示完了しているなら自動進行開始
+      if (!this.isTyping && this.scriptIndex < this.script.length) {
+        var self = this;
+        this.autoTimer = setTimeout(function() { self.advance(); }, 2500);
+      }
+    } else {
+      btn.classList.remove('on');
+      clearTimeout(this.autoTimer);
+    }
+  },
+
+  // ノベル終了
+  end: function() {
+    clearInterval(this.typeTimer);
+    clearTimeout(this.autoTimer);
+    this.overlay.classList.remove('active');
+    this.controlsEl.classList.remove('active');
+    this.charaLeft.classList.add('hidden');
+    this.charaRight.classList.add('hidden');
+    if (this.onComplete) this.onComplete();
+  },
+};
+
+// ============================================================
+// SECTION: NOVEL SCRIPT DATA (Stage 1)
+// ============================================================
+var NOVEL_SCRIPTS = {
+  stage1: {
+    prologue: [
+      { speaker: 'teacher', expr: 'normal', text: 'はい、3時間目は理科です。\n教科書の32ページを開いてください。' },
+      { speaker: 'student_a', expr: 'normal', text: '（ふぁ〜…眠いな〜…）' },
+      { speaker: 'student_b', expr: 'normal', text: 'ねえ、昨日の避難訓練のプリント出した？' },
+      { speaker: 'student_a', expr: 'surprise', text: 'え！？出してない！やばっ！' },
+      { speaker: 'teacher', expr: 'serious', text: '避難訓練のプリント、来週までですよ。\n地震はいつ来るか分かりません。' },
+      { speaker: 'student_b', expr: 'serious', text: '先生の言う通りだよ。\nちゃんとやっておいた方がいいって。' },
+      { speaker: 'bousai', expr: 'normal', text: '今日のポイント！\n① 机の下に入り、脚を持って頭を守る\n② 先生の指示に従って行動する\n③ 「おはしも」を守って避難する' },
+      { speaker: 'narrator', text: '── 数分後 ──' },
+    ],
+    earthquake: [
+      { speaker: 'narrator', text: '── ﾋﾟﾛﾝﾋﾟﾛﾝ！緊急地震速報です ──' },
+      { speaker: 'teacher', expr: 'surprise', text: '…！地震だ！！' },
+      { speaker: 'student_b', expr: 'panic', text: 'きゃあっ！！' },
+      { speaker: 'teacher', expr: 'serious', text: '全員、机の下に入りなさい！！\n頭を守って！！' },
+      {
+        type: 'choice',
+        text: 'どうする？',
+        choices: [
+          { label: '机の下に隠れる', score: 10, correct: true,
+            response: { speaker: 'bousai', expr: 'smile', text: '正解！机の脚をしっかり持って、\n頭を守ろう！' }},
+          { label: '廊下に飛び出す', score: -10, correct: false,
+            response: { speaker: 'bousai', expr: 'worry', text: '危ない！揺れている時に外に出ると、\n落下物に当たる危険があるよ。\nまず机の下で身を守ろう。' }},
+          { label: '窓の近くで様子を見る', score: -5, correct: false,
+            response: { speaker: 'bousai', expr: 'worry', text: '窓ガラスが割れて飛び散るかも！\n窓から離れて、机の下に入ろう。' }},
+        ]
+      },
+    ],
+    aftershake: [
+      { speaker: 'teacher', expr: 'serious', text: '…揺れが収まりました。\n慌てないで。まず周りを確認して。' },
+      { speaker: 'student_a', expr: 'worry', text: '先生…窓ガラスが割れてます…' },
+      { speaker: 'student_b', expr: 'serious', text: 'ガラスの上を歩いちゃダメだよ。\n上履きをしっかり履いて。' },
+      { speaker: 'teacher', expr: 'normal', text: 'その通りです。落ち着いて行動しましょう。' },
+      {
+        type: 'choice',
+        text: '次にどうする？',
+        choices: [
+          { label: '先生の指示を待つ', score: 10, correct: true,
+            response: { speaker: 'teacher', expr: 'normal', text: 'よし、今から校庭に避難します。\n走らない、押さない、しゃべらない、戻らない。\n「おはしも」です。' }},
+          { label: 'すぐに廊下に出る', score: -5, correct: false,
+            response: { speaker: 'bousai', expr: 'worry', text: '余震が来るかもしれない。\nまずは先生の指示を待とう。\n勝手に行動すると危険だよ。' }},
+        ]
+      },
+    ],
+    epilogue_success: [
+      { speaker: 'teacher', expr: 'relief', text: '…全員います。\nよかった…！' },
+      { speaker: 'student_a', expr: 'relief', text: '怖かった…でも、ちゃんと避難できた…！' },
+      { speaker: 'student_b', expr: 'smile', text: '避難訓練のプリント、\nちゃんと読んでおくね…！' },
+      { speaker: 'student_a', expr: 'smile', text: '俺も…！次からちゃんとやる！' },
+      { speaker: 'bousai', expr: 'smile', text: '素晴らしい避難だったよ！\n今回学んだことを振り返ろう。' },
+      { speaker: 'bousai', expr: 'normal', text: '① 地震が来たら「まず低く、頭を守り、動かない」\n② 先生や大人の指示に従う\n③ 「おはしも」を守って落ち着いて避難する\nこの3つ、忘れないでね！' },
+    ],
+    epilogue_fail: [
+      { speaker: 'bousai', expr: 'worry', text: '残念…今回は避難がうまくいかなかったね。' },
+      { speaker: 'bousai', expr: 'serious', text: 'でも大丈夫。\n失敗から学ぶことが一番大切なんだ。' },
+      { speaker: 'bousai', expr: 'normal', text: 'もう一度チャレンジして、\n正しい避難を身につけよう！' },
+    ],
+  }
+};
 
 // ============================================================
 // SECTION: BRIEFING DATA
@@ -3335,7 +3900,18 @@ function initEventListeners() {
   document.getElementById('briefing-start-btn').addEventListener('click', function() {
     const stageNum = parseInt(this.getAttribute('data-stage') || '1');
     SoundManager.playSE('click');
-    initGame(stageNum);
+
+    // ノベルプロローグがあればノベル→3Dの順で開始
+    if (NOVEL_SCRIPTS['stage' + stageNum] && NOVEL_SCRIPTS['stage' + stageNum].prologue) {
+      SoundManager.stopBGM(500);
+      NovelEngine.start(
+        NOVEL_SCRIPTS['stage' + stageNum].prologue,
+        'backgrounds/bg_classroom.png',
+        function() { initGame(stageNum); }
+      );
+    } else {
+      initGame(stageNum);
+    }
   });
 
   // ルール / 防災知識画面
@@ -3495,6 +4071,11 @@ function initGame(stageNum) {
   s.turnedOffBreaker = false; s.putOnShoes = false; s.checkedSafety = false;
   s.usedStairs = false; s.avoidedBlockWall = true;
   s.reachedEvacPoint = false; s.withinTimeLimit = false;
+  // ノベルフラグリセット
+  GAME._novelEarthquakeDone = false;
+  GAME._novelAftershakeDone = false;
+  GAME._novelEpilogueDone = false;
+
   GAME.player.x = 0;
   GAME.player.y = 0.9;
   GAME.player.z = 5;
@@ -5179,6 +5760,66 @@ function updatePhase(dtSec) {
 
 function transitionPhase(newPhase) {
   var oldPhase = GAME.phase;
+  var stageKey = 'stage' + GAME.stageNum;
+  var novelScripts = NOVEL_SCRIPTS[stageKey] || {};
+
+  // ノベル挿入: earthquake前
+  if (newPhase === 'earthquake' && novelScripts.earthquake && !GAME._novelEarthquakeDone) {
+    GAME._novelEarthquakeDone = true;
+    GAME.running = false; // 3Dを一時停止
+    NovelEngine.start(
+      novelScripts.earthquake,
+      'backgrounds/bg_classroom_shake.png',
+      function() {
+        GAME.running = true;
+        requestAnimationFrame(gameLoop); // ゲームループ再開
+        _doTransitionPhase('earthquake');
+      }
+    );
+    return;
+  }
+
+  // ノベル挿入: aftershake前
+  if (newPhase === 'aftershake' && novelScripts.aftershake && !GAME._novelAftershakeDone) {
+    GAME._novelAftershakeDone = true;
+    GAME.running = false;
+    NovelEngine.start(
+      novelScripts.aftershake,
+      'backgrounds/bg_classroom_shake.png',
+      function() {
+        GAME.running = true;
+        requestAnimationFrame(gameLoop); // ゲームループ再開
+        _doTransitionPhase('aftershake');
+      }
+    );
+    return;
+  }
+
+  // ノベル挿入: result前（エピローグ）
+  if (newPhase === 'result' && !GAME._novelEpilogueDone) {
+    GAME._novelEpilogueDone = true;
+    GAME.running = false;
+    SoundManager.stopAll();
+    var epilogueScript = (GAME.hitCount >= 3)
+      ? novelScripts.epilogue_fail
+      : novelScripts.epilogue_success;
+    if (epilogueScript) {
+      var epilogueBg = (GAME.hitCount >= 3)
+        ? 'backgrounds/bg_classroom_shake.png'
+        : 'backgrounds/bg_schoolyard.png';
+      NovelEngine.start(epilogueScript, epilogueBg, function() {
+        _doTransitionPhase('result');
+      });
+      return;
+    }
+  }
+
+  _doTransitionPhase(newPhase);
+}
+
+// 実際のフェーズ遷移処理
+function _doTransitionPhase(newPhase) {
+  var oldPhase = GAME.phase;
   GAME.phase = newPhase;
   GAME.phaseTimer = 0;
 
@@ -6192,6 +6833,7 @@ function init() {
 
   initEventListeners();
   initUISounds();
+  NovelEngine.init();
   initWarning();
 }
 
