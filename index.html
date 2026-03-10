@@ -3107,9 +3107,9 @@ var NovelEngine = {
       }
     });
 
-    // スコア加算
+    // スコア加算（ノベル選択肢分を別途記録）
     if (choice.score && GAME) {
-      GAME.score = (GAME.score || 0) + choice.score;
+      GAME._novelChoiceScore = (GAME._novelChoiceScore || 0) + choice.score;
     }
 
     // SE
@@ -4075,6 +4075,8 @@ function initGame(stageNum) {
   GAME._novelEarthquakeDone = false;
   GAME._novelAftershakeDone = false;
   GAME._novelEpilogueDone = false;
+  GAME._novelChoiceScore = 0;
+  GAME._windowWarned = false;
 
   GAME.player.x = 0;
   GAME.player.y = 0.9;
@@ -4371,6 +4373,18 @@ function buildClassroom() {
     used: false,
     phases: ['aftershake'],
   });
+
+  // Stage1（学校）ではブレーカー・靴箱・ストーブを非表示＆無効化
+  if (GAME.stageNum === 1) {
+    GAME.interactables.forEach(function(item) {
+      if (item.action === 'turnOffBreaker' || item.action === 'putOnShoes' || item.action === 'turnOffFire') {
+        item.used = true; // インタラクト不可にする
+        if (item.mesh) item.mesh.visible = false;
+      }
+    });
+    // ストーブ排気筒も非表示
+    if (pipe) pipe.visible = false;
+  }
 
   // ============================================================
   // 蛍光灯（天井の長い照明器具）
@@ -6182,23 +6196,39 @@ function showAdvisor(text, type) {
 function calculateScore() {
   var s = GAME.scoring;
   var score = 0;
+  var stg = GAME.stageNum;
 
   // 初期行動（30点）
   if (s.crouchedIn3s) score += 10;
   if (s.guardedHead) score += 10;
   if (s.movedToSafe) score += 10;
 
-  // 揺れ中の行動（15点）— noElevatorはステージ1にエレベーター無いため除外
+  // 揺れ中の行動（15点）
   if (s.awayFromHazard) score += 5;
   if (s.didNotRunOutside) score += 5;
   if (s.noHitByFalling) score += 5;
 
-  // 揺れ後の行動（30点）
-  if (s.turnedOffFire) score += 6;
-  if (s.openedDoor) score += 6;
-  if (s.turnedOffBreaker) score += 6;
-  if (s.putOnShoes) score += 6;
-  if (s.checkedSafety) score += 6;
+  // 揺れ後の行動 — ステージ別フィルタリング
+  if (stg === 1) {
+    // Stage1（学校）: ドア開放+安否確認+先生の指示に従う = 18点
+    if (s.openedDoor) score += 6;
+    if (s.checkedSafety) score += 6;
+    // ノベル選択肢ボーナス（正解で加算済みのスコアを反映）
+    score += (GAME._novelChoiceScore || 0);
+  } else if (stg === 3) {
+    // Stage3（自宅）: ストーブ消火+ブレーカー+靴+ドア = 24点
+    if (s.turnedOffFire) score += 6;
+    if (s.openedDoor) score += 6;
+    if (s.turnedOffBreaker) score += 6;
+    if (s.putOnShoes) score += 6;
+  } else {
+    // Stage2（オフィス）等: 全項目
+    if (s.turnedOffFire) score += 6;
+    if (s.openedDoor) score += 6;
+    if (s.turnedOffBreaker) score += 6;
+    if (s.putOnShoes) score += 6;
+    if (s.checkedSafety) score += 6;
+  }
 
   // 避難行動（25点）
   if (s.usedStairs) score += 5;
@@ -6256,6 +6286,7 @@ function showResult() {
     var actionsEl = document.getElementById('result-actions');
     if (actionsEl) {
       var s = GAME.scoring;
+      var stg = GAME.stageNum;
       var actions = [
         { done: s.crouchedIn3s, text: '地震発生後すぐにしゃがんだ', pts: '+10' },
         { done: s.guardedHead, text: '頭を守る行動を取った', pts: '+10' },
@@ -6263,16 +6294,31 @@ function showResult() {
         { done: s.awayFromHazard, text: '危険物から離れた', pts: '+5' },
         { done: s.didNotRunOutside, text: '揺れ中に外に飛び出さなかった', pts: '+5' },
         { done: s.noHitByFalling, text: '落下物に当たらなかった', pts: '+5' },
-        { done: s.turnedOffFire, text: 'ストーブの火を消した', pts: '+6' },
-        { done: s.openedDoor, text: 'ドアを開けて避難経路を確保した', pts: '+6' },
-        { done: s.turnedOffBreaker, text: 'ブレーカーを落とした', pts: '+6' },
-        { done: s.putOnShoes, text: '靴を履いた', pts: '+6' },
-        { done: s.checkedSafety, text: '周囲の安否確認を行った', pts: '+6' },
-        { done: s.usedStairs, text: '階段で避難した', pts: '+5' },
-        { done: s.avoidedBlockWall, text: 'ブロック塀から離れて移動した', pts: '+5' },
-        { done: s.reachedEvacPoint, text: '避難場所に到達した', pts: '+10' },
-        { done: s.withinTimeLimit, text: '制限時間内に避難完了', pts: '+5' },
       ];
+      // ステージ別の揺れ後行動
+      if (stg === 1) {
+        // Stage1（学校）: ドア・安否確認・ノベル選択肢
+        actions.push({ done: s.openedDoor, text: 'ドアを開けて避難経路を確保した', pts: '+6' });
+        actions.push({ done: s.checkedSafety, text: '周囲の安否確認を行った', pts: '+6' });
+        var novelPts = GAME._novelChoiceScore || 0;
+        actions.push({ done: novelPts > 0, text: 'ノベル選択肢で正しい判断をした', pts: novelPts > 0 ? '+' + novelPts : '0' });
+      } else if (stg === 3) {
+        actions.push({ done: s.turnedOffFire, text: 'ストーブの火を消した', pts: '+6' });
+        actions.push({ done: s.openedDoor, text: 'ドアを開けて避難経路を確保した', pts: '+6' });
+        actions.push({ done: s.turnedOffBreaker, text: 'ブレーカーを落とした', pts: '+6' });
+        actions.push({ done: s.putOnShoes, text: '靴を履いた', pts: '+6' });
+      } else {
+        actions.push({ done: s.turnedOffFire, text: 'ストーブの火を消した', pts: '+6' });
+        actions.push({ done: s.openedDoor, text: 'ドアを開けて避難経路を確保した', pts: '+6' });
+        actions.push({ done: s.turnedOffBreaker, text: 'ブレーカーを落とした', pts: '+6' });
+        actions.push({ done: s.putOnShoes, text: '靴を履いた', pts: '+6' });
+        actions.push({ done: s.checkedSafety, text: '周囲の安否確認を行った', pts: '+6' });
+      }
+      // 避難行動（全ステージ共通）
+      actions.push({ done: s.usedStairs, text: '階段で避難した', pts: '+5' });
+      actions.push({ done: s.avoidedBlockWall, text: 'ブロック塀から離れて移動した', pts: '+5' });
+      actions.push({ done: s.reachedEvacPoint, text: '避難場所に到達した', pts: '+10' });
+      actions.push({ done: s.withinTimeLimit, text: '制限時間内に避難完了', pts: '+5' });
 
       var html = '';
       for (var i = 0; i < actions.length; i++) {
@@ -6300,16 +6346,19 @@ function showResult() {
     var tipBox = document.getElementById('result-tip-box');
     if (tipBox) {
       var tips = [];
+      var stg = GAME.stageNum;
       if (!GAME.scoring.crouchedIn3s) tips.push('地震が来たらまず「低く！頭を守って！動かないで！」（シェイクアウト）が基本です。');
       if (!GAME.scoring.guardedHead) tips.push('頭を守ることが最も重要です。クッションや本で頭を覆いましょう。');
-      if (!GAME.scoring.turnedOffFire) tips.push('揺れが収まったらまず火の元を確認！ストーブやガスコンロの火を消しましょう。火災防止の第一歩です。');
+      if (stg !== 1 && !GAME.scoring.turnedOffFire) tips.push('揺れが収まったらまず火の元を確認！ストーブやガスコンロの火を消しましょう。');
       if (!GAME.scoring.openedDoor) tips.push('揺れが収まったらドアを開けて避難経路を確保しましょう。地震で建物が歪むとドアが開かなくなることがあります。');
-      if (!GAME.scoring.turnedOffBreaker) tips.push('避難前にブレーカーを落としましょう。通電火災（電気が復旧した際に発生する火災）を防げます。');
-      if (!GAME.scoring.putOnShoes) tips.push('ガラスの破片が散乱している可能性があります。必ず靴を履いてから避難しましょう。');
+      if (stg !== 1 && !GAME.scoring.turnedOffBreaker) tips.push('避難前にブレーカーを落としましょう。通電火災を防げます。');
+      if (stg !== 1 && !GAME.scoring.putOnShoes) tips.push('ガラスの破片が散乱している可能性があります。必ず靴を履いてから避難しましょう。');
       if (!GAME.scoring.noHitByFalling) tips.push('「落ちてこない・倒れてこない・移動してこない」場所に身を寄せましょう。');
       if (!GAME.scoring.usedStairs) tips.push('避難時は必ず階段を使いましょう。エレベーターは余震で停止し、閉じ込められる危険があります。');
       if (!GAME.scoring.avoidedBlockWall) tips.push('ブロック塀や自動販売機の近くは倒壊の危険があります。離れて避難しましょう。');
       if (!GAME.scoring.reachedEvacPoint) tips.push('避難場所（学校の校庭など広い場所）まで移動しましょう。建物の近くは落下物の危険があります。');
+      if (stg === 1 && !GAME.scoring.checkedSafety) tips.push('揺れが収まったら周囲の友達の安否を確認しましょう。「大丈夫？」の一声が大切です。');
+      if (stg === 1 && (GAME._novelChoiceScore || 0) <= 0) tips.push('地震の時は先生の指示に従い、机の下に入って頭を守りましょう。窓や廊下に飛び出すのは危険です。');
       if (tips.length === 0) tips.push('素晴らしい避難行動でした！この知識を周りの人にも伝えましょう。');
       tipBox.textContent = tips[0]; // メインのアドバイス1つ
     }
@@ -6387,6 +6436,12 @@ function checkScoringTriggers() {
     if (s.didNotRunOutside && p.z > 9.5) {
       s.didNotRunOutside = false;
       showAdvisor('揺れている最中に外に出るのは危険！落下物に注意！', 'warning');
+    }
+
+    // 窓際に近づいた警告（X < -3.5で一度だけ警告）
+    if (!GAME._windowWarned && p.x < -3.5 && timeSinceQuake > 1) {
+      GAME._windowWarned = true;
+      showAdvisor('窓から離れて！ガラスが割れて飛び散るよ！', 'warning');
     }
   }
 }
