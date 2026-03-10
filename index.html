@@ -2034,6 +2034,57 @@ html, body {
   #novel-text { font-size: 13px; min-height: 2.4em; }
 }
 
+/* 知識テスト・結果体験・解放判定 — スマホ縦向き */
+@media (max-width: 600px) and (orientation: portrait) {
+  .quiz-container { padding: 20px 16px; width: 95%; }
+  .quiz-header { font-size: 16px; }
+  .quiz-question { font-size: 15px; padding: 12px; }
+  .quiz-choice-btn { font-size: 14px; padding: 12px 14px; }
+  .quiz-explanation { font-size: 13px; padding: 10px; }
+  .quiz-next-btn { font-size: 14px; padding: 10px 24px; }
+  #consequence-text { font-size: 20px; top: 25%; }
+  #consequence-icon { font-size: 48px; top: 12%; }
+  .result-unlock-box { margin: 0 12px 6px; padding: 12px 14px; font-size: 13px; }
+  .unlock-total-score { font-size: 22px; }
+  .report-category-label { font-size: 12px; }
+  .report-category-bar { width: 70px; }
+  .report-category-score { font-size: 12px; }
+  #result-next-stage-btn { font-size: 13px; }
+}
+
+/* 知識テスト・結果体験・解放判定 — スマホ横向き */
+@media (orientation: landscape) and (max-height: 500px) {
+  .quiz-container { padding: 14px 16px; width: 90%; max-height: 90vh; overflow-y: auto; }
+  .quiz-header { font-size: 14px; margin-bottom: 2px; }
+  .quiz-progress { font-size: 11px; margin-bottom: 8px; }
+  .quiz-question { font-size: 13px; padding: 8px 10px; margin-bottom: 12px; line-height: 1.5; }
+  .quiz-choices { gap: 6px; }
+  .quiz-choice-btn { font-size: 13px; padding: 8px 12px; }
+  .quiz-explanation { font-size: 12px; padding: 8px; margin-top: 10px; }
+  .quiz-next-btn { font-size: 13px; padding: 8px 20px; margin-top: 8px; }
+  #consequence-text { font-size: 18px; top: 20%; }
+  #consequence-icon { font-size: 40px; top: 8%; }
+  .result-unlock-box { margin: 0 10px 4px; padding: 8px 10px; font-size: 12px; }
+  .unlock-total-score { font-size: 18px; }
+  .unlock-breakdown { font-size: 10px; }
+  .report-category { padding: 4px 8px; margin-bottom: 4px; }
+  .report-category-label { font-size: 11px; }
+  .report-category-bar { width: 60px; height: 5px; }
+  .report-category-score { font-size: 11px; min-width: 32px; }
+  .result-report-section { padding: 10px; margin-top: 10px; }
+  .result-report-section h4 { font-size: 12px; margin-bottom: 6px; }
+}
+
+/* 極小スマホ横向き */
+@media (orientation: landscape) and (max-height: 380px) {
+  .quiz-container { padding: 10px 12px; }
+  .quiz-question { font-size: 12px; padding: 6px 8px; margin-bottom: 8px; }
+  .quiz-choice-btn { font-size: 12px; padding: 6px 10px; }
+  .quiz-explanation { font-size: 11px; }
+  .result-unlock-box { padding: 6px 8px; font-size: 11px; }
+  .unlock-total-score { font-size: 16px; }
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -3599,7 +3650,7 @@ const BRIEFING_DATA = {
   1: {
     setting: { ja: '日本の一般的な小中学校の教室（3階）。昼間の授業中に地震が発生。先生と生徒たちがいる。', en: 'A typical Japanese school classroom on the 3rd floor. An earthquake strikes during class with a teacher and students present.' },
     points: {
-      ja: ['机の下に入り、脚を持って頭を守る', '先生（NPC）の指示に従って行動する', '「おはしも」を守って避難（押さない・走らない・しゃべらない・戻らない）'],
+      ja: ['机の下に入り、脚を持って頭を守る', '先生（NPC）の指示に従って行動する', '「おはしも」を守って避難する'],
       en: ['Get under a desk and hold its legs to protect your head', 'Follow the teacher (NPC) instructions', 'Follow "O-HA-SHI-MO" rules (don\'t push, run, talk, or go back)']
     },
     advisor: { ja: '「学校では先生の指示が一番大事。まずは机の下に入って揺れが収まるのを待とう。」', en: '"In school, following the teacher is key. Get under a desk first and wait for the shaking to stop."' }
