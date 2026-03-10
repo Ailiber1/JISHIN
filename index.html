@@ -5510,7 +5510,8 @@ function createPlayerModel() {
   lctx.fillStyle = '#ffffff';
   lctx.font = 'bold 28px sans-serif';
   lctx.textAlign = 'center';
-  lctx.fillText('▼ プレイヤー', 128, 38);
+  var playerDisplayName = getUsername() || 'プレイヤー';
+  lctx.fillText('▼ ' + playerDisplayName, 128, 38);
   var labelTex = new THREE.CanvasTexture(labelCanvas);
   var labelMat = new THREE.SpriteMaterial({ map: labelTex, transparent: true, depthTest: false });
   var labelSprite = new THREE.Sprite(labelMat);
