@@ -2989,7 +2989,7 @@ var NovelEngine = {
         var src = folder + line.speaker + '_' + line.expr + '.png';
         if (!self._imageCache[src]) {
           var img = new Image();
-          img.src = src + '?v=3';
+          img.src = src + '?v=4';
           self._imageCache[src] = img;
         }
       }
@@ -3076,7 +3076,7 @@ var NovelEngine = {
     var info = this.SPEAKERS[line.speaker];
     if (!info) return;
     var folder = (line.speaker === 'bousai') ? 'characters/shared/' : 'characters/stage' + (GAME.stageNum || 1) + '/';
-    var src = folder + line.speaker + '_' + (line.expr || 'normal') + '.png?v=3';
+    var src = folder + line.speaker + '_' + (line.expr || 'normal') + '.png?v=4';
 
     if (info.pos === 'left') {
       this.charaLeft.src = src;
