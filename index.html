@@ -1806,7 +1806,7 @@ html, body {
 <div id="splash-screen" class="screen">
   <div id="splash-quote"></div>
   <div id="splash-sub"></div>
-  <div id="splash-skip">TAP TO SKIP</div>
+  <div id="splash-skip"></div>
 </div>
 
 <!-- ============================================================
@@ -3521,6 +3521,7 @@ function showSplash() {
 
   quoteEl.textContent = quote[currentLang === 'ja' ? 'ja' : 'en'];
   subEl.textContent = currentLang === 'ja' ? '' : quote.ja;
+  skipEl.textContent = currentLang === 'ja' ? 'タップでスキップ' : 'TAP TO SKIP';
 
   // フェードインアニメーション
   quoteEl.style.opacity = '0';
