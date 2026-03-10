@@ -81,6 +81,9 @@ html, body {
   text-align: center;
   background: rgba(20, 12, 0, 0.6);
   box-shadow: 0 0 30px rgba(255, 107, 0, 0.15);
+  max-height: 90dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 #warning-box p {
   font-family: 'Noto Sans JP', sans-serif;
@@ -1396,7 +1399,7 @@ html, body {
 
 /* HUD上部バー — KANKERI統一: position absolute + 各要素に背景ボックス */
 #hud-top-bar {
-  position: absolute; top: 12px; left: 12px; right: 12px;
+  position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); left: 12px; right: 12px;
   display: flex; justify-content: space-between; align-items: center;
   font-family: 'Share Tech Mono', monospace;
 }
@@ -1699,14 +1702,15 @@ html, body {
 
 /* スキップ・オートボタン */
 #novel-controls {
-  position: absolute; top: 12px; right: 12px;
+  position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); right: calc(12px + env(safe-area-inset-right, 0px));
   z-index: 520; display: none; gap: 8px;
 }
 #novel-controls.active { display: flex; }
 #novel-controls button {
   background: rgba(0,0,0,0.6); border: 1px solid rgba(255,107,0,0.4);
-  color: #ccc; padding: 4px 12px; border-radius: 4px;
+  color: #ccc; padding: 8px 14px; border-radius: 4px;
   font-size: 13px; cursor: pointer; font-family: 'Share Tech Mono', monospace;
+  min-height: 40px; min-width: 56px;
 }
 #novel-controls button.on { color: var(--safety-orange); border-color: var(--safety-orange); }
 
@@ -1726,6 +1730,7 @@ html, body {
   font-size: 17px; font-family: 'Noto Sans JP', sans-serif;
   cursor: pointer; text-align: left;
   transition: border-color 0.2s, background 0.2s, transform 0.1s;
+  min-height: 48px;
 }
 .novel-choice-btn:hover, .novel-choice-btn:active {
   border-color: var(--safety-orange);
@@ -1750,15 +1755,22 @@ html, body {
 /* レスポンシブ */
 @media (max-width: 600px) {
   .novel-chara { height: 55%; }
-  #novel-window { width: 96%; padding: 14px 16px 12px; margin-bottom: 2%; }
+  #novel-window { width: 96%; padding: 14px 16px 12px; margin-bottom: calc(2% + env(safe-area-inset-bottom, 0px)); }
   #novel-text { font-size: 15px; }
   #novel-speaker { font-size: 12px; top: -12px; }
-  .novel-choice-btn { font-size: 15px; padding: 12px 16px; }
+  .novel-choice-btn { font-size: 15px; padding: 12px 16px; min-height: 48px; }
 }
 @media (max-height: 450px) {
-  .novel-chara { height: 50%; }
+  .novel-chara { height: 45%; }
   #novel-window { margin-bottom: 1%; padding: 10px 14px 8px; }
   #novel-text { font-size: 14px; min-height: 2.8em; }
+  .novel-choice-btn { font-size: 14px; padding: 10px 14px; min-height: 44px; }
+  #novel-controls button { padding: 6px 10px; min-height: 36px; }
+}
+@media (max-height: 380px) {
+  .novel-chara { height: 40%; }
+  #novel-window { padding: 8px 12px 6px; margin-bottom: 0; }
+  #novel-text { font-size: 13px; min-height: 2.4em; }
 }
 
 </style>
@@ -2880,9 +2892,18 @@ var NovelEngine = {
     this.charaRight = document.getElementById('novel-chara-right');
     var self = this;
 
-    // クリック/タップで次へ
-    document.getElementById('novel-window').addEventListener('click', function() { self.advance(); });
-    document.getElementById('novel-window').addEventListener('touchend', function(e) { e.preventDefault(); self.advance(); });
+    // クリック/タップで次へ（二重発火防止）
+    var novelWin = document.getElementById('novel-window');
+    var _touchAdvanced = false;
+    novelWin.addEventListener('touchend', function(e) {
+      e.preventDefault();
+      _touchAdvanced = true;
+      self.advance();
+      setTimeout(function() { _touchAdvanced = false; }, 300);
+    });
+    novelWin.addEventListener('click', function() {
+      if (!_touchAdvanced) self.advance();
+    });
 
     // スキップボタン
     document.getElementById('novel-skip-btn').addEventListener('click', function(e) {
@@ -2911,7 +2932,8 @@ var NovelEngine = {
 
   // ノベル開始
   start: function(script, bg, onComplete) {
-    this.script = script;
+    // ディープコピー（spliceによる配列汚染防止）
+    this.script = JSON.parse(JSON.stringify(script));
     this.scriptIndex = 0;
     this.onComplete = onComplete || null;
     this.autoMode = false;
