@@ -1712,7 +1712,8 @@ html, body {
 /* 立ち絵 */
 .novel-chara {
   position: absolute; bottom: 0;
-  height: 75%; width: auto;
+  height: 75%; width: 30%;
+  background-size: contain; background-repeat: no-repeat; background-position: bottom center;
   transition: opacity 0.3s ease, transform 0.3s ease, filter 0.15s ease;
   filter: brightness(0.6);
 }
@@ -2378,8 +2379,8 @@ html, body {
      ============================================================ -->
 <div id="novel-overlay">
   <div id="novel-bg"><div id="novel-bg-dim"></div></div>
-  <img id="novel-chara-left" class="novel-chara hidden" src="" alt="">
-  <img id="novel-chara-right" class="novel-chara hidden" src="" alt="">
+  <div id="novel-chara-left" class="novel-chara hidden"></div>
+  <div id="novel-chara-right" class="novel-chara hidden"></div>
   <div id="novel-controls">
     <button id="novel-skip-btn">SKIP</button>
     <button id="novel-auto-btn">AUTO</button>
@@ -2988,7 +2989,7 @@ var NovelEngine = {
         var src = folder + line.speaker + '_' + line.expr + '.png';
         if (!self._imageCache[src]) {
           var img = new Image();
-          img.src = src + '?v=5';
+          img.src = src + '?v=6';
           self._imageCache[src] = img;
         }
       }
@@ -3075,15 +3076,15 @@ var NovelEngine = {
     var info = this.SPEAKERS[line.speaker];
     if (!info) return;
     var folder = (line.speaker === 'bousai') ? 'characters/shared/' : 'characters/stage' + (GAME.stageNum || 1) + '/';
-    var src = folder + line.speaker + '_' + (line.expr || 'normal') + '.png?v=5';
+    var src = folder + line.speaker + '_' + (line.expr || 'normal') + '.png?v=6';
 
     if (info.pos === 'left') {
-      this.charaLeft.src = src;
+      this.charaLeft.style.backgroundImage = 'url(' + src + ')';
       this.charaLeft.classList.remove('hidden');
       this.charaLeft.classList.add('speaking');
       this.charaRight.classList.remove('speaking');
     } else if (info.pos === 'right') {
-      this.charaRight.src = src;
+      this.charaRight.style.backgroundImage = 'url(' + src + ')';
       this.charaRight.classList.remove('hidden');
       this.charaRight.classList.add('speaking');
       this.charaLeft.classList.remove('speaking');
