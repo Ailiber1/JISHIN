@@ -2920,7 +2920,8 @@ var NovelEngine = {
     var self = this;
     script.forEach(function(line) {
       if (line.speaker && line.expr) {
-        var src = 'characters/' + line.speaker + '_' + line.expr + '.png';
+        var folder = (line.speaker === 'bousai') ? 'characters/shared/' : 'characters/stage' + (GAME.stageNum || 1) + '/';
+        var src = folder + line.speaker + '_' + line.expr + '.png';
         if (!self._imageCache[src]) {
           var img = new Image();
           img.src = src;
@@ -3009,7 +3010,8 @@ var NovelEngine = {
 
     var info = this.SPEAKERS[line.speaker];
     if (!info) return;
-    var src = 'characters/' + line.speaker + '_' + (line.expr || 'normal') + '.png';
+    var folder = (line.speaker === 'bousai') ? 'characters/shared/' : 'characters/stage' + (GAME.stageNum || 1) + '/';
+    var src = folder + line.speaker + '_' + (line.expr || 'normal') + '.png';
 
     if (info.pos === 'left') {
       this.charaLeft.src = src;
@@ -3928,7 +3930,7 @@ function initEventListeners() {
       SoundManager.stopBGM(500);
       NovelEngine.start(
         NOVEL_SCRIPTS['stage' + stageNum].prologue,
-        'backgrounds/bg_classroom.png',
+        'backgrounds/stage1/bg_classroom.png',
         function() { initGame(stageNum); }
       );
     } else {
@@ -5805,7 +5807,7 @@ function transitionPhase(newPhase) {
     GAME.running = false; // 3Dを一時停止
     NovelEngine.start(
       novelScripts.earthquake,
-      'backgrounds/bg_classroom_shake.png',
+      'backgrounds/stage1/bg_classroom_shake.png',
       function() {
         GAME.running = true;
         requestAnimationFrame(gameLoop); // ゲームループ再開
@@ -5821,7 +5823,7 @@ function transitionPhase(newPhase) {
     GAME.running = false;
     NovelEngine.start(
       novelScripts.aftershake,
-      'backgrounds/bg_classroom_shake.png',
+      'backgrounds/stage1/bg_classroom_shake.png',
       function() {
         GAME.running = true;
         requestAnimationFrame(gameLoop); // ゲームループ再開
@@ -5841,8 +5843,8 @@ function transitionPhase(newPhase) {
       : novelScripts.epilogue_success;
     if (epilogueScript) {
       var epilogueBg = (GAME.hitCount >= 3)
-        ? 'backgrounds/bg_classroom_shake.png'
-        : 'backgrounds/bg_schoolyard.png';
+        ? 'backgrounds/stage1/bg_classroom_shake.png'
+        : 'backgrounds/stage1/bg_schoolyard.png';
       NovelEngine.start(epilogueScript, epilogueBg, function() {
         _doTransitionPhase('result');
       });
