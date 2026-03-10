@@ -788,6 +788,38 @@ html, body {
 }
 .result-footer .btn { flex: 1; min-width: 0; }
 
+/* ステージ解放判定ボックス */
+.result-unlock-box {
+  margin: 0 20px 8px; padding: 16px 20px;
+  border-radius: 10px; text-align: center;
+  font-family: 'Noto Sans JP', sans-serif; font-size: 15px; line-height: 1.7;
+}
+.result-unlock-box.unlocked {
+  background: rgba(0,255,65,0.08); border: 2px solid rgba(0,255,65,0.4);
+  color: #00ff41;
+}
+.result-unlock-box.locked {
+  background: rgba(255,68,68,0.08); border: 2px solid rgba(255,68,68,0.3);
+  color: #ff8888;
+}
+.unlock-total-score {
+  font-family: 'Share Tech Mono', monospace; font-size: clamp(22px,5vw,30px);
+  font-weight: bold; display: block; margin-bottom: 4px;
+}
+.unlock-breakdown {
+  font-size: 12px; color: rgba(255,255,255,0.5); margin-bottom: 6px;
+}
+.unlock-message { font-weight: bold; }
+#result-next-stage-btn {
+  background: rgba(0,255,65,0.15); border-color: var(--safe-green);
+  color: var(--safe-green); animation: nextStagePulse 2s infinite;
+}
+#result-next-stage-btn:hover { background: rgba(0,255,65,0.3); }
+@keyframes nextStagePulse {
+  0%,100% { box-shadow: 0 0 8px rgba(0,255,65,0.2); }
+  50% { box-shadow: 0 0 20px rgba(0,255,65,0.5); }
+}
+
 /* ============================================================
    SECTION: SHARED COMPONENTS (select, input, toggle)
    ============================================================ */
@@ -2267,8 +2299,12 @@ html, body {
       </div>
 
     </div>
+    <!-- ステージ解放判定 -->
+    <div class="result-unlock-box" id="result-unlock-box" style="display:none"></div>
+
     <div class="result-footer">
       <button class="btn btn-neon" id="result-retry-btn" data-i18n="RESULT_RETRY"></button>
+      <button class="btn btn-neon" id="result-next-stage-btn" style="display:none">次のステージへ進む ▶</button>
       <button class="btn btn-thin" id="result-select-btn" data-i18n="RESULT_TO_SELECT"></button>
       <button class="btn btn-thin" id="result-title-btn" data-i18n="RESULT_TO_TITLE"></button>
     </div>
@@ -3962,11 +3998,11 @@ function updateStageUnlocks() {
     // ベストスコア表示
     const scoreEl = document.getElementById('best-score-' + i);
 
-    // 解放判定: Stage1は常に解放、Stage N は Stage N-1 をCランク(40点)以上でクリア
+    // 解放判定: Stage1は常に解放、Stage N は Stage N-1 を総合60点以上でクリア
     let unlocked = (i === 1);
     if (i > 1) {
       const prevBest = parseInt(localStorage.getItem('jishin_best_' + (i - 1)));
-      unlocked = !isNaN(prevBest) && prevBest >= 40;
+      unlocked = !isNaN(prevBest) && prevBest >= 60;
     }
 
     const nameEl = card.querySelector('.stage-name-display');
@@ -4094,6 +4130,12 @@ function initEventListeners() {
   // 結果画面ボタン
   document.getElementById('result-retry-btn').addEventListener('click', () => {
     showBriefing(selectedStage);
+  });
+  document.getElementById('result-next-stage-btn').addEventListener('click', () => {
+    var nextStage = (GAME.stageNum || 1) + 1;
+    if (nextStage <= 5) {
+      showBriefing(nextStage);
+    }
   });
   document.getElementById('result-select-btn').addEventListener('click', () => {
     showScreen('stage-select-screen');
@@ -7247,9 +7289,55 @@ function showResult() {
         + '<span class="report-category-score">' + qPct + '%</span></div>';
     }
 
+    // 総合スコア計算（行動70% + 知識30%）
+    var quizPct = (GAME._quizScore !== undefined && GAME._quizTotal > 0)
+      ? (GAME._quizScore / GAME._quizTotal) : 0;
+    var totalScore = Math.round(GAME.score * 0.7 + quizPct * 30);
+    var UNLOCK_THRESHOLD = 60;
+
+    // ベストスコア保存（totalScoreで上書き判定）
+    var prevBest = parseInt(localStorage.getItem('jishin_best_' + GAME.stageNum));
+    if (isNaN(prevBest) || totalScore > prevBest) {
+      localStorage.setItem('jishin_best_' + GAME.stageNum, String(totalScore));
+    }
+
+    // 解放判定ボックス
+    var unlockBox = document.getElementById('result-unlock-box');
+    var nextBtn = document.getElementById('result-next-stage-btn');
+    var isUnlocked = totalScore >= UNLOCK_THRESHOLD && GAME.hitCount < 3;
+    var stageNum = GAME.stageNum;
+
+    if (unlockBox) {
+      unlockBox.style.display = 'block';
+      var breakdownText = '行動スコア ' + GAME.score + '点 × 70% + 知識テスト '
+        + (GAME._quizScore || 0) + '/' + (GAME._quizTotal || 0) + ' × 30%';
+
+      if (isUnlocked && stageNum < 5) {
+        unlockBox.className = 'result-unlock-box unlocked';
+        unlockBox.innerHTML = '<span class="unlock-total-score">' + totalScore + ' / 100</span>'
+          + '<div class="unlock-breakdown">' + escapeHTML(breakdownText) + '</div>'
+          + '<div class="unlock-message">🎉 Stage ' + (stageNum + 1) + ' 解放！</div>';
+        if (nextBtn) nextBtn.style.display = 'inline-block';
+      } else if (isUnlocked && stageNum >= 5) {
+        unlockBox.className = 'result-unlock-box unlocked';
+        unlockBox.innerHTML = '<span class="unlock-total-score">' + totalScore + ' / 100</span>'
+          + '<div class="unlock-breakdown">' + escapeHTML(breakdownText) + '</div>'
+          + '<div class="unlock-message">🏆 全ステージクリア！</div>';
+        if (nextBtn) nextBtn.style.display = 'none';
+      } else {
+        unlockBox.className = 'result-unlock-box locked';
+        var needed = UNLOCK_THRESHOLD - totalScore;
+        unlockBox.innerHTML = '<span class="unlock-total-score">' + totalScore + ' / 100</span>'
+          + '<div class="unlock-breakdown">' + escapeHTML(breakdownText) + '</div>'
+          + '<div class="unlock-message">🔒 次のステージ解放まであと ' + needed + '点</div>'
+          + '<div style="font-size:12px;color:#aaa;margin-top:4px">行動スコアと知識テストの両方で高得点を目指そう！</div>';
+        if (nextBtn) nextBtn.style.display = 'none';
+      }
+    }
+
     // ランキング保存（ゲスト除外、ゲームオーバーでなく完了した場合のみ）
     if (GAME.hitCount < 3) {
-      saveRanking(GAME.stageNum, GAME.score);
+      saveRanking(GAME.stageNum, totalScore);
     }
   }, 500);
 }
