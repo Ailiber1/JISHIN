@@ -7343,6 +7343,15 @@ function showResult() {
       for (var ti = 0; ti < Math.min(tips.length, 4); ti++) {
         tipHtml += '<div style="margin-bottom:8px;padding-left:16px;text-indent:-16px;">● ' + escapeHTML(tips[ti]) + '</div>';
       }
+      // Stage1: ストーブ・ブレーカーの知識を必ず伝える（先生の役割だがお知識として重要）
+      if (stg === 1) {
+        tipHtml += '<div style="margin-top:14px;padding:12px;background:rgba(255,107,0,0.08);border:1px solid rgba(255,107,0,0.2);border-radius:8px;">'
+          + '<div style="color:#ff6b00;font-weight:bold;margin-bottom:6px;">💡 覚えておこう（大人がやること）</div>'
+          + '<div style="margin-bottom:6px;padding-left:16px;text-indent:-16px;">🔥 揺れが収まったら<b>ストーブやガスコンロの火を消す</b>。地震後の火災は二次災害として最も危険です。阪神淡路大震災では火災が大きな被害をもたらしました。</div>'
+          + '<div style="margin-bottom:6px;padding-left:16px;text-indent:-16px;">⚡ 避難前に<b>ブレーカーを落とす</b>。停電が復旧した時、倒れた電気ストーブや損傷した配線から「通電火災」が発生します。阪神淡路大震災の火災の約6割が通電火災でした。</div>'
+          + '<div style="color:#aaa;font-size:12px;">※学校では先生が対応しますが、自宅では家族みんなで確認しましょう。</div>'
+          + '</div>';
+      }
       tipBox.innerHTML = tipHtml;
     }
 
