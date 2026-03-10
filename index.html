@@ -117,6 +117,71 @@ html, body {
 }
 
 /* ============================================================
+   SECTION: GUEST NOTICE MODAL
+   ============================================================ */
+#guest-notice-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 9999;
+  justify-content: center;
+  align-items: center;
+}
+#guest-notice-overlay.active { display: flex; }
+#guest-notice-box {
+  max-width: 460px;
+  width: 90%;
+  padding: 32px 28px;
+  border: 1px solid rgba(255, 107, 0, 0.4);
+  text-align: center;
+  background: rgba(20, 12, 0, 0.95);
+  box-shadow: 0 0 30px rgba(255, 107, 0, 0.15);
+}
+#guest-notice-box p {
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: clamp(13px, 3.5vw, 16px);
+  line-height: 1.9;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+  white-space: pre-line;
+}
+.guest-notice-btns {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.guest-notice-btns button {
+  font-family: 'Share Tech Mono', 'Noto Sans JP', monospace;
+  font-size: 14px;
+  padding: 10px 24px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
+  min-height: 44px;
+}
+#guest-notice-continue {
+  color: var(--text-dim);
+  background: transparent;
+  border: 1px solid var(--text-dim);
+}
+#guest-notice-continue:hover {
+  border-color: var(--text-secondary);
+  color: var(--text-secondary);
+}
+#guest-notice-register {
+  color: var(--safety-orange);
+  background: transparent;
+  border: 1px solid var(--safety-orange);
+  box-shadow: 0 0 8px rgba(255, 107, 0, 0.3);
+}
+#guest-notice-register:hover {
+  background: rgba(255, 107, 0, 0.15);
+  box-shadow: 0 0 20px rgba(255, 107, 0, 0.6);
+}
+
+/* ============================================================
    SECTION: SPLASH / QUOTE SCREEN
    ============================================================ */
 #splash-screen {
@@ -3894,11 +3959,32 @@ function initEventListeners() {
     SoundManager.playSE('click');
   });
 
-  // ストーリーモード → ステージ選択
+  // ストーリーモード → ステージ選択（ゲスト時はモーダル表示）
   document.getElementById('btn-story').addEventListener('click', () => {
+    if (isGuest()) {
+      var overlay = document.getElementById('guest-notice-overlay');
+      var ja = currentLang === 'ja';
+      document.getElementById('guest-notice-msg').textContent = ja
+        ? '名前が未登録のため、ランキングに記録されません。\nこのまま続けますか？'
+        : 'Your name is not registered.\nYour score will not be saved to the ranking.\nContinue anyway?';
+      document.getElementById('guest-notice-continue').textContent = ja ? 'このまま進む' : 'Continue';
+      document.getElementById('guest-notice-register').textContent = ja ? '名前を登録する' : 'Register Name';
+      overlay.classList.add('active');
+      return;
+    }
     showScreen('stage-select-screen');
     applyI18N();
     updateStageUnlocks();
+  });
+  document.getElementById('guest-notice-continue').addEventListener('click', () => {
+    document.getElementById('guest-notice-overlay').classList.remove('active');
+    showScreen('stage-select-screen');
+    applyI18N();
+    updateStageUnlocks();
+  });
+  document.getElementById('guest-notice-register').addEventListener('click', () => {
+    document.getElementById('guest-notice-overlay').classList.remove('active');
+    document.getElementById('player-name-input').focus();
   });
   document.getElementById('stage-back-btn').addEventListener('click', () => {
     showTitle();
@@ -6923,5 +7009,17 @@ function init() {
 
 document.addEventListener('DOMContentLoaded', init);
 </script>
+
+<!-- ゲスト通知モーダル -->
+<div id="guest-notice-overlay">
+  <div id="guest-notice-box">
+    <p id="guest-notice-msg"></p>
+    <div class="guest-notice-btns">
+      <button id="guest-notice-continue"></button>
+      <button id="guest-notice-register"></button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
