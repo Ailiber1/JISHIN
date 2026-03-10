@@ -2309,6 +2309,7 @@ html, body {
   <div class="result-container">
     <div class="result-header">
       <div class="result-title" id="result-title" data-i18n="RESULT_CLEAR"></div>
+      <div class="result-player-name" id="result-player-name" style="color:#5599ff;font-size:16px;margin:4px 0 2px;font-weight:bold;"></div>
       <div class="result-stage" id="result-stage-label"></div>
     </div>
     <div class="result-scroll">
@@ -2359,6 +2360,7 @@ html, body {
     <div class="result-footer">
       <button class="btn btn-neon" id="result-retry-btn" data-i18n="RESULT_RETRY"></button>
       <button class="btn btn-neon" id="result-next-stage-btn" style="display:none">次のステージへ進む ▶</button>
+      <button class="btn btn-thin" id="result-download-btn" style="display:none">📄 成績データをダウンロード</button>
       <button class="btn btn-thin" id="result-select-btn" data-i18n="RESULT_TO_SELECT"></button>
       <button class="btn btn-thin" id="result-title-btn" data-i18n="RESULT_TO_TITLE"></button>
     </div>
@@ -4510,6 +4512,7 @@ function initGame(stageNum) {
   GAME._novelAftershakeDone = false;
   GAME._novelEpilogueDone = false;
   GAME._novelChoiceScore = 0;
+  GAME._quizAnswers = [];
   GAME._oshimoViolations = 0;
   GAME._oshimoLastWarn = 0;
   GAME._aftershockDone = false;
@@ -7170,6 +7173,15 @@ function selectQuizAnswer(index) {
     SoundManager.playSE('error');
   }
 
+  // 回答記録を保存（成績データ出力用）
+  if (!GAME._quizAnswers) GAME._quizAnswers = [];
+  GAME._quizAnswers.push({
+    question: q.q,
+    correct: isCorrect,
+    correctAnswer: q.choices[q.answer],
+    selectedAnswer: q.choices[index]
+  });
+
   // 解説表示
   var expEl = document.getElementById('quiz-explanation');
   document.getElementById('quiz-exp-body').textContent = q.explain;
@@ -7314,11 +7326,13 @@ function showResult() {
     }
 
     // 行動の振り返り
+    var s = GAME.scoring;
+    var stg = GAME.stageNum;
+    var actions = []; // スコープ外で宣言（ダウンロード用）
+    var categories = []; // スコープ外で宣言（ダウンロード用）
     var actionsEl = document.getElementById('result-actions');
     if (actionsEl) {
-      var s = GAME.scoring;
-      var stg = GAME.stageNum;
-      var actions = [
+      actions = [
         { done: s.crouchedIn3s, text: '地震発生後すぐにしゃがんだ', pts: '+10' },
         { done: s.guardedHead, text: '頭を守る行動を取った', pts: '+10' },
         { done: s.movedToSafe, text: '安全な場所に移動した', pts: '+10' },
@@ -7384,7 +7398,6 @@ function showResult() {
     var tipBox = document.getElementById('result-tip-box');
     if (tipBox) {
       var tips = [];
-      var stg = GAME.stageNum;
       if (!GAME.scoring.crouchedIn3s) tips.push('地震が来たらまず「低く！頭を守って！動かないで！」（シェイクアウト）が基本です。');
       if (!GAME.scoring.guardedHead) tips.push('頭を守ることが最も重要です。クッションや本で頭を覆いましょう。');
       if (!GAME.scoring.turnedOffFire) tips.push('揺れが収まったらまず火の元を確認！ストーブやガスコンロの火を消しましょう。');
@@ -7418,8 +7431,7 @@ function showResult() {
     // カテゴリ別分析
     var catEl = document.getElementById('result-categories');
     if (catEl) {
-      var s = GAME.scoring;
-      var categories = [
+      categories = [
         { label: '初動対応', score: (s.crouchedIn3s ? 10 : 0) + (s.guardedHead ? 10 : 0) + (s.movedToSafe ? 10 : 0), max: 30 },
         { label: '揺れ中の判断', score: (s.awayFromHazard ? 5 : 0) + (s.didNotRunOutside ? 5 : 0) + (s.noHitByFalling ? 5 : 0), max: 15 },
         { label: '安全確保行動', score: (s.putOnShoes ? 7 : 0) + (s.openedDoor ? 8 : 0) + (s.checkedSafety ? 5 : 0), max: 20 },
@@ -7501,11 +7513,106 @@ function showResult() {
       }
     }
 
+    // プレイヤー名表示
+    var pName = getUsername();
+    var pNameEl = document.getElementById('result-player-name');
+    if (pNameEl) {
+      pNameEl.textContent = pName ? '🎮 ' + pName : '';
+    }
+
+    // 成績データダウンロードボタン
+    var dlBtn = document.getElementById('result-download-btn');
+    if (dlBtn) {
+      dlBtn.style.display = 'inline-block';
+      dlBtn.onclick = function() { downloadResultData(totalScore, categories, actions); };
+    }
+
     // ランキング保存（ゲスト除外、ゲームオーバーでなく完了した場合のみ）
     if (GAME.hitCount < 3) {
       saveRanking(GAME.stageNum, totalScore);
     }
   }, 500);
+}
+
+// 成績データダウンロード（CSV形式）
+function downloadResultData(totalScore, categories, actions) {
+  var name = getUsername() || '未登録';
+  var now = new Date();
+  var dateStr = now.getFullYear() + '/' + (now.getMonth()+1) + '/' + now.getDate()
+    + ' ' + now.getHours() + ':' + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
+  var stageNames = { 1: '学校（教室）', 2: 'オフィスビル', 3: '木造住宅', 4: '高層マンション', 5: '屋外（繁華街）' };
+  var stageName = stageNames[GAME.stageNum] || 'Stage ' + GAME.stageNum;
+  var r = getRank(GAME.score);
+  var totalSec = Math.floor(GAME.totalTimer);
+  var min = Math.floor(totalSec / 60);
+  var sec = totalSec % 60;
+  var timeStr = min + ':' + (sec < 10 ? '0' : '') + sec;
+
+  var lines = [];
+  lines.push('==========================================');
+  lines.push('JISHIN 防災シミュレーション — 成績レポート');
+  lines.push('==========================================');
+  lines.push('');
+  lines.push('■ 基本情報');
+  lines.push('  氏名: ' + name);
+  lines.push('  実施日時: ' + dateStr);
+  lines.push('  ステージ: Stage ' + GAME.stageNum + ' — ' + stageName);
+  lines.push('  クリア時間: ' + timeStr);
+  lines.push('  ダメージ回数: ' + GAME.hitCount + ' / 3');
+  lines.push('');
+  lines.push('■ 総合スコア');
+  lines.push('  行動スコア: ' + GAME.score + ' 点');
+  lines.push('  知識テスト: ' + (GAME._quizScore || 0) + ' / ' + (GAME._quizTotal || 0) + ' 正解');
+  lines.push('  総合: ' + totalScore + ' / 100 点（行動70% + 知識30%）');
+  lines.push('  ランク: ' + r.rank + '「' + r.title + '」');
+  lines.push('');
+  lines.push('■ カテゴリ別スコア');
+  if (categories) {
+    for (var ci = 0; ci < categories.length; ci++) {
+      var cat = categories[ci];
+      var pct = cat.max > 0 ? Math.round(cat.score / cat.max * 100) : 0;
+      lines.push('  ' + cat.label + ': ' + cat.score + ' / ' + cat.max + ' (' + pct + '%)');
+    }
+  }
+  lines.push('');
+  lines.push('■ 行動チェックリスト');
+  if (actions) {
+    for (var ai = 0; ai < actions.length; ai++) {
+      var a = actions[ai];
+      var mark = a.done ? '○' : '×';
+      lines.push('  ' + mark + ' ' + a.text + ' [' + (a.done ? a.pts : '—') + ']');
+    }
+  }
+  lines.push('');
+  lines.push('■ 知識テスト詳細');
+  if (GAME._quizAnswers && GAME._quizAnswers.length > 0) {
+    for (var qi = 0; qi < GAME._quizAnswers.length; qi++) {
+      var qa = GAME._quizAnswers[qi];
+      var qMark = qa.correct ? '○' : '×';
+      lines.push('  Q' + (qi+1) + ' ' + qMark + ' ' + qa.question);
+      if (!qa.correct) {
+        lines.push('    → 正解: ' + qa.correctAnswer);
+      }
+    }
+  } else {
+    lines.push('  （テスト未実施）');
+  }
+  lines.push('');
+  lines.push('==========================================');
+  lines.push('JISHIN — 地震防災シミュレーションゲーム');
+  lines.push('==========================================');
+
+  var text = lines.join('\n');
+  var blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  var safeDate = now.getFullYear() + '' + (now.getMonth()+1) + '' + now.getDate();
+  a.download = 'JISHIN_成績_' + name + '_Stage' + GAME.stageNum + '_' + safeDate + '.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 // ============================================================
