@@ -1714,7 +1714,6 @@ html, body {
   position: absolute; bottom: 0;
   height: 75%; width: auto;
   transition: opacity 0.3s ease, transform 0.3s ease, filter 0.15s ease;
-  image-rendering: -webkit-optimize-contrast;
   filter: brightness(0.6);
 }
 .novel-chara.speaking { filter: brightness(1); }
@@ -2989,7 +2988,7 @@ var NovelEngine = {
         var src = folder + line.speaker + '_' + line.expr + '.png';
         if (!self._imageCache[src]) {
           var img = new Image();
-          img.src = src + '?v=4';
+          img.src = src + '?v=5';
           self._imageCache[src] = img;
         }
       }
@@ -3076,7 +3075,7 @@ var NovelEngine = {
     var info = this.SPEAKERS[line.speaker];
     if (!info) return;
     var folder = (line.speaker === 'bousai') ? 'characters/shared/' : 'characters/stage' + (GAME.stageNum || 1) + '/';
-    var src = folder + line.speaker + '_' + (line.expr || 'normal') + '.png?v=4';
+    var src = folder + line.speaker + '_' + (line.expr || 'normal') + '.png?v=5';
 
     if (info.pos === 'left') {
       this.charaLeft.src = src;
