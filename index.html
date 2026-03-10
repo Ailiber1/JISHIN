@@ -1756,6 +1756,7 @@ html, body {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
   z-index: 500; display: none; flex-direction: column;
   justify-content: flex-end; pointer-events: auto;
+  overflow: hidden;
 }
 #novel-overlay.active { display: flex; }
 
@@ -1780,8 +1781,8 @@ html, body {
 .novel-chara.speaking { filter: brightness(1); }
 .novel-chara.hidden { opacity: 0; transform: translateY(20px); pointer-events: none; }
 .novel-chara.chara-bousai { height: 50%; bottom: 5%; }
-#novel-chara-left { left: 2%; }
-#novel-chara-right { right: 2%; }
+#novel-chara-left { left: -3%; }
+#novel-chara-right { right: -3%; }
 
 /* 呼吸アニメーション */
 @keyframes novel-breathe {
@@ -4651,11 +4652,16 @@ function buildClassroom() {
   GAME.cameraMeshes.push(frontWall);
   GAME.walls.push({ minX: -W/2, maxX: W/2, minZ: -1 - wallThick/2, maxZ: -1 + wallThick/2, minY: 0, maxY: H });
 
+  // 後方壁 — ドア部分を除く左右2枚に分割可能にする
+  var doorOpeningX = W/2 - 0.05; // ドアのX位置
+  var doorOpeningW = 1.2; // ドア開口幅
   const backWall = new THREE.Mesh(new THREE.BoxGeometry(W, H, wallThick), wallMat);
   backWall.position.set(0, H / 2, D - 1);
   backWall.receiveShadow = true;
   scene.add(backWall);
   GAME.cameraMeshes.push(backWall);
+  GAME._backWall = backWall;
+  GAME._backWallMat = wallMat;
   GAME.walls.push({ minX: -W/2, maxX: W/2, minZ: D-1-wallThick/2, maxZ: D-1+wallThick/2, minY: 0, maxY: H });
 
   const leftWall = new THREE.Mesh(new THREE.BoxGeometry(wallThick, H, D), wallMat);
@@ -6030,6 +6036,8 @@ function getNearestInteractable() {
     var obj = GAME.interactables[i];
     if (obj.used) continue;
     if (obj.phases && obj.phases.indexOf(GAME.phase) === -1) continue;
+    // Stage1では火・ブレーカーは先生の役割（生徒は操作不可）
+    if (GAME.stageNum === 1 && (obj.action === 'turnOffFire' || obj.action === 'turnOffBreaker')) continue;
 
     var dx = px - obj.x;
     var dz = pz - obj.z;
@@ -6064,13 +6072,34 @@ function performInteract() {
         target.mesh.rotation.y = Math.PI / 2;
         target.mesh.position.x += 0.4;
       }
-      // 教室→廊下の壁コリジョンを除去（backWallのコリジョン）
-      // backWall = Z=9付近、ドア部分(X=3~5)のコリジョンを除去
+      // 後方壁メッシュを消して、ドア開口部を除いた壁を再生成
+      if (GAME._backWall) {
+        GAME.scene.remove(GAME._backWall);
+        var W = 9, H = 3, wt = 0.2, D = 10;
+        var doorX = W/2 - 0.05, doorW = 1.4;
+        // 左側の壁（ドアの左）
+        var leftPartW = (doorX - doorW/2) - (-W/2);
+        if (leftPartW > 0.1) {
+          var leftPart = new THREE.Mesh(new THREE.BoxGeometry(leftPartW, H, wt), GAME._backWallMat);
+          leftPart.position.set(-W/2 + leftPartW/2, H/2, D - 1);
+          GAME.scene.add(leftPart);
+          GAME.cameraMeshes.push(leftPart);
+        }
+        // 右側の壁（ドアの右 → 極小なので省略可）
+        // ドア上部の壁（ドア高さ2.1m以上）
+        var doorH = 2.1;
+        var topPart = new THREE.Mesh(new THREE.BoxGeometry(doorW, H - doorH, wt), GAME._backWallMat);
+        topPart.position.set(doorX, doorH + (H - doorH)/2, D - 1);
+        GAME.scene.add(topPart);
+        GAME._backWall = null;
+      }
+      // 教室→廊下の壁コリジョンを除去して、ドア開口部以外を再設定
       for (var wi = GAME.walls.length - 1; wi >= 0; wi--) {
         var wall = GAME.walls[wi];
-        // 教室後方壁(Z≈9, X=-4.5~4.5)を検出して除去
         if (wall.minZ > 7.8 && wall.minZ < 9.2 && wall.maxZ > 7.8 && wall.maxZ < 9.2 && wall.minX < -4 && wall.maxX > 4) {
           GAME.walls.splice(wi, 1);
+          // 左側の壁コリジョン（ドア開口部の左）
+          GAME.walls.push({ minX: -4.5, maxX: 3.0, minZ: 8.8, maxZ: 9.1, minY: 0, maxY: 3 });
           break;
         }
       }
@@ -6632,7 +6661,25 @@ function _doTransitionPhase(newPhase) {
       SoundManager.stopAmbient(500);
       setTimeout(function() { SoundManager.startEvacAlarm(); }, 600);
       GAME._exitedNPCs = 0;
+      GAME._evacuationStarted = true; // 避難開始フラグ（机コリジョン無視用）
+      // プレイヤーを通路に移動（机に埋まり防止）
+      GAME.player.x = 3.5;
+      GAME.player.z = 4;
+      GAME.player.isCrouching = false;
       showAdvisor('避難開始！ドア側の列から順番に！', 'normal');
+      // Stage1: 先生が自動で火・ブレーカーを処理する演出
+      if (GAME.stageNum === 1) {
+        setTimeout(function() {
+          showAdvisor('田中先生がストーブの火を消した！', 'normal');
+          // ストーブの炎エフェクトを消す
+          if (GAME._stoveFlame) GAME._stoveFlame.visible = false;
+          if (GAME._stoveLight) GAME._stoveLight.intensity = 0;
+        }, 2000);
+        setTimeout(function() {
+          showAdvisor('田中先生がブレーカーを落とした！通電火災を防止！', 'normal');
+          if (GAME._breakerLight) GAME._breakerLight.material.emissiveIntensity = 0;
+        }, 5000);
+      }
       break;
 
     case 'result':
@@ -7128,12 +7175,11 @@ function calculateScore() {
 
   // 揺れ後の行動 — ステージ別フィルタリング
   if (stg === 1) {
-    // Stage1（学校）: 全防災行動 = 最大30点
-    if (s.openedDoor) score += 5;
-    if (s.turnedOffFire) score += 5;
-    if (s.turnedOffBreaker) score += 5;
-    if (s.putOnShoes) score += 5;
-    if (s.checkedSafety) score += 5;
+    // Stage1（学校）: 生徒としての行動 = 最大30点
+    // ※火・ブレーカーは先生の役割のため採点対象外
+    if (s.openedDoor) score += 8;     // ドアを開けて避難経路確保
+    if (s.putOnShoes) score += 7;     // 上履きを履く（ガラス対策）
+    if (s.checkedSafety) score += 5;  // 周囲の安否確認
     // ノベル選択肢ボーナス
     score += (GAME._novelChoiceScore || 0);
     // おはしも違反ペナルティ
@@ -7220,12 +7266,10 @@ function showResult() {
       ];
       // ステージ別の揺れ後行動
       if (stg === 1) {
-        // Stage1（学校）: 全防災行動チェック
-        actions.push({ done: s.turnedOffFire, text: 'ストーブの火を消した', pts: '+5' });
-        actions.push({ done: s.turnedOffBreaker, text: 'ブレーカーを落とした（通電火災防止）', pts: '+5' });
-        actions.push({ done: s.putOnShoes, text: '靴を履いた（ガラス破片対策）', pts: '+5' });
-        actions.push({ done: s.openedDoor, text: 'ドアを開けて避難経路を確保した', pts: '+5' });
-        actions.push({ done: s.checkedSafety, text: '周囲の安否確認を行った', pts: '+5' });
+        // Stage1（学校）: 生徒としての行動チェック
+        actions.push({ done: s.openedDoor, text: 'ドアを開けて避難経路を確保した', pts: '+8' });
+        actions.push({ done: s.putOnShoes, text: '上履きを履いた（ガラス破片対策）', pts: '+7' });
+        actions.push({ done: s.checkedSafety, text: '周囲の友達の安否確認を行った', pts: '+5' });
         var novelPts = GAME._novelChoiceScore || 0;
         actions.push({ done: novelPts > 0, text: 'ノベル選択肢で正しい判断をした', pts: novelPts > 0 ? '+' + novelPts : '0' });
         if (GAME._oshimoViolations > 0) {
@@ -7307,7 +7351,7 @@ function showResult() {
       var categories = [
         { label: '初動対応', score: (s.crouchedIn3s ? 10 : 0) + (s.guardedHead ? 10 : 0) + (s.movedToSafe ? 10 : 0), max: 30 },
         { label: '揺れ中の判断', score: (s.awayFromHazard ? 5 : 0) + (s.didNotRunOutside ? 5 : 0) + (s.noHitByFalling ? 5 : 0), max: 15 },
-        { label: '二次災害防止', score: (s.turnedOffFire ? 5 : 0) + (s.turnedOffBreaker ? 5 : 0) + (s.putOnShoes ? 5 : 0) + (s.openedDoor ? 5 : 0), max: 20 },
+        { label: '安全確保行動', score: (s.putOnShoes ? 7 : 0) + (s.openedDoor ? 8 : 0) + (s.checkedSafety ? 5 : 0), max: 20 },
         { label: '避難行動', score: (s.usedStairs ? 5 : 0) + (s.avoidedBlockWall ? 5 : 0) + (s.reachedEvacPoint ? 10 : 0) + (s.withinTimeLimit ? 5 : 0), max: 25 },
         { label: '知識・判断力', score: Math.max(0, GAME._novelChoiceScore || 0), max: 20 }
       ];
@@ -7507,8 +7551,9 @@ function updatePlayer(dt) {
   let blocked = false;
   for (let i = 0; i < GAME.walls.length; i++) {
     const w = GAME.walls[i];
-    // しゃがみ時は家具（机: maxY<=0.65）の衝突を無視 → 机の下に入れる
-    if (p.isCrouching && w.maxY !== undefined && w.maxY <= 0.65) continue;
+    // しゃがみ時 or 避難開始後は家具（机: maxY<=0.65）の衝突を無視
+    var ignoreFurniture = p.isCrouching || GAME._evacuationStarted;
+    if (ignoreFurniture && w.maxY !== undefined && w.maxY <= 0.65) continue;
     if (newX + R > w.minX && newX - R < w.maxX && p.z + R > w.minZ && p.z - R < w.maxZ) {
       blocked = true; break;
     }
@@ -7519,7 +7564,8 @@ function updatePlayer(dt) {
   blocked = false;
   for (let i = 0; i < GAME.walls.length; i++) {
     const w = GAME.walls[i];
-    if (p.isCrouching && w.maxY !== undefined && w.maxY <= 0.65) continue;
+    var ignoreFurniture2 = p.isCrouching || GAME._evacuationStarted;
+    if (ignoreFurniture2 && w.maxY !== undefined && w.maxY <= 0.65) continue;
     if (p.x + R > w.minX && p.x - R < w.maxX && newZ + R > w.minZ && newZ - R < w.maxZ) {
       blocked = true; break;
     }
