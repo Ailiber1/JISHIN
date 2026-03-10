@@ -1777,8 +1777,8 @@ html, body {
   background-size: contain; background-repeat: no-repeat; background-position: bottom center;
   transition: opacity 0.3s ease, transform 0.3s ease, filter 0.15s ease;
   filter: brightness(0.6);
-  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 98%);
-  mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 98%);
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 88%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 0%, black 88%, transparent 100%);
 }
 .novel-chara.speaking { filter: brightness(1); }
 .novel-chara.hidden { opacity: 0; transform: translateY(20px); pointer-events: none; }
@@ -4516,9 +4516,12 @@ function initGame(stageNum) {
   GAME._glassWarned = false;
   GAME._windowWarned = false;
 
-  GAME.player.x = 0;
+  // プレイヤーの席: col=3, row=2 → x=0.4, deskZ=4.0, 椅子z=4.4
+  GAME._playerDeskCol = 3;
+  GAME._playerDeskRow = 2;
+  GAME.player.x = -3.2 + 3 * 1.2;   // 0.4
   GAME.player.y = 0.9;
-  GAME.player.z = 5;
+  GAME.player.z = 1.0 + 2 * 1.5 + 0.4; // 4.4（椅子位置）
   GAME.player.yaw = Math.PI;
   GAME.player.pitch = 0;
   GAME.player.isCrouching = false;
@@ -5489,6 +5492,33 @@ function createPlayerModel() {
   shadowPlane.position.y = 0.01;
   figure.add(shadowPlane);
 
+  // --- 頭上「▼ プレイヤー」ラベル ---
+  var labelCanvas = document.createElement('canvas');
+  labelCanvas.width = 256; labelCanvas.height = 64;
+  var lctx = labelCanvas.getContext('2d');
+  lctx.clearRect(0, 0, 256, 64);
+  // 背景（半透明の丸角矩形）
+  lctx.fillStyle = 'rgba(0,120,255,0.85)';
+  lctx.beginPath();
+  lctx.roundRect(8, 4, 240, 50, 12);
+  lctx.fill();
+  lctx.strokeStyle = 'rgba(255,255,255,0.9)';
+  lctx.lineWidth = 2;
+  lctx.beginPath();
+  lctx.roundRect(8, 4, 240, 50, 12);
+  lctx.stroke();
+  lctx.fillStyle = '#ffffff';
+  lctx.font = 'bold 28px sans-serif';
+  lctx.textAlign = 'center';
+  lctx.fillText('▼ プレイヤー', 128, 38);
+  var labelTex = new THREE.CanvasTexture(labelCanvas);
+  var labelMat = new THREE.SpriteMaterial({ map: labelTex, transparent: true, depthTest: false });
+  var labelSprite = new THREE.Sprite(labelMat);
+  labelSprite.scale.set(0.8, 0.2, 1);
+  labelSprite.position.set(0, totalHeight + headRadius + 0.35, 0);
+  figure.add(labelSprite);
+  GAME._playerLabel = labelSprite;
+
   // 関節参照を保存（KANKERI方式）
   figure.userData = {
     joints: {
@@ -5518,6 +5548,33 @@ function updatePlayerModel() {
   if (!mesh || !mesh.userData.joints) return;
   var p = GAME.player;
   var j = mesh.userData.joints;
+
+  // dailyフェーズ: 椅子に座ったポーズ
+  if (GAME.phase === 'daily') {
+    mesh.position.set(p.x, 0, p.z);
+    mesh.rotation.y = Math.PI; // 黒板方向を向く
+    // 椅子に座る高さ（NPC生徒と同じ計算）
+    var playerH = 0.82; // totalHeight相当
+    var seatY = 0.33 - playerH * 0.40;
+    mesh.position.y = seatY + Math.sin((GAME.totalTimer || 0) * 2) * 0.003;
+    // 座りポーズ: 脚を90度曲げる
+    j.leftHip.rotation.x = -1.57;
+    j.rightHip.rotation.x = -1.57;
+    j.leftKnee.rotation.x = 1.57;
+    j.rightKnee.rotation.x = 1.57;
+    j.torso.position.y = mesh.userData.baseY;
+    j.torso.rotation.x = 0;
+    // 腕は机の上に（軽く前に伸ばす）
+    j.leftShoulder.rotation.x = -0.4;
+    j.leftShoulder.rotation.z = 0.1;
+    j.leftElbow.rotation.x = -0.9;
+    j.rightShoulder.rotation.x = -0.4;
+    j.rightShoulder.rotation.z = -0.1;
+    j.rightElbow.rotation.x = -0.9;
+    j.neckPivot.rotation.x = 0;
+    j.neckPivot.rotation.z = 0;
+    return;
+  }
 
   // 位置
   mesh.position.set(p.x, 0, p.z);
@@ -5762,6 +5819,8 @@ function spawnNPCs() {
   for (var col = 0; col < 6; col++) {
     for (var row = 0; row < 5; row++) {
       if (studentCount >= 26) break;
+      // プレイヤーの席はスキップ
+      if (col === GAME._playerDeskCol && row === GAME._playerDeskRow) continue;
       var sx = deskStartX + col * gapX;
       var sz = deskStartZ + row * gapZ + 0.4; // 椅子の位置に座る
 
@@ -7525,6 +7584,8 @@ function checkScoringTriggers() {
 }
 
 function updatePlayer(dt) {
+  // dailyフェーズ中は操作不可（席に座っている）
+  if (GAME.phase === 'daily') return;
   const p = GAME.player;
   let mx = 0, mz = 0;
   const speed = p.speed * (p.isSprinting ? p.sprintMult : 1) * (p.isCrouching ? 0.5 : 1) * dt;
