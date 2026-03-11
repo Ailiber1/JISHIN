@@ -3317,7 +3317,8 @@ var NovelEngine = {
     script.forEach(function(line) {
       if (line.speaker && line.expr) {
         var folder = (line.speaker === 'bousai') ? 'characters/shared/' : 'characters/stage' + (GAME.stageNum || 1) + '/';
-        var src = folder + line.speaker + '_' + line.expr + '.png';
+        var resolvedExpr = self._resolveExpr(line.speaker, line.expr);
+        var src = folder + line.speaker + '_' + resolvedExpr + '.png';
         if (!self._imageCache[src]) {
           var img = new Image();
           img.src = src + CACHE_BUSTER;
@@ -3325,6 +3326,19 @@ var NovelEngine = {
         }
       }
     });
+  },
+
+  // 表情名を実在するファイルに解決（不足画像のフォールバック）
+  _EXPR_AVAILABLE: {
+    student_b: { normal: 1, panic: 1, serious: 1, smile: 1 }
+  },
+  _EXPR_FALLBACK: { worry: 'serious', surprise: 'panic', relief: 'smile' },
+  _resolveExpr: function(speaker, expr) {
+    var avail = this._EXPR_AVAILABLE[speaker];
+    if (avail && !avail[expr] && this._EXPR_FALLBACK[expr]) {
+      return this._EXPR_FALLBACK[expr];
+    }
+    return expr;
   },
 
   // ノベル開始
@@ -3426,7 +3440,8 @@ var NovelEngine = {
     var info = this.SPEAKERS[line.speaker];
     if (!info) return;
     var folder = (line.speaker === 'bousai') ? 'characters/shared/' : 'characters/stage' + (GAME.stageNum || 1) + '/';
-    var src = folder + line.speaker + '_' + (line.expr || 'normal') + '.png' + CACHE_BUSTER;
+    var expr = this._resolveExpr(line.speaker, line.expr || 'normal');
+    var src = folder + line.speaker + '_' + expr + '.png' + CACHE_BUSTER;
 
     // ボウサイキャラのサイズ調整クラス
     this.charaLeft.classList.remove('chara-bousai');
