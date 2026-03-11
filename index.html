@@ -4379,6 +4379,8 @@ function initEventListeners() {
     // ノベルプロローグがあればノベル→3Dの順で開始
     if (NOVEL_SCRIPTS['stage' + stageNum] && NOVEL_SCRIPTS['stage' + stageNum].prologue) {
       SoundManager.stopBGM(500);
+      // プロローグ中は教室のざわめき環境音を流す
+      SoundManager.startClassroomAmbient();
       NovelEngine.start(
         NOVEL_SCRIPTS['stage' + stageNum].prologue,
         'backgrounds/stage1/bg_classroom.png',
@@ -6806,6 +6808,10 @@ function transitionPhase(newPhase) {
     GAME.running = false; // 3Dを一時停止
     // ノベルシーンではカーソルが必要なのでPointer Lock強制解除
     document.exitPointerLock();
+    // 地震ノベル: 教室ざわめき停止→地震BGM開始
+    SoundManager.stopAmbient(300);
+    SoundManager.playBGM('BGM/JISHIN_earthquake.mp3', 0.35, false);
+    SoundManager.playSE('alarm');
     NovelEngine.start(
       novelScripts.earthquake,
       'backgrounds/stage1/bg_classroom_shake.png',
@@ -6875,10 +6881,13 @@ function _doTransitionPhase(newPhase) {
     case 'earthquake':
       // 地震発生！P波（初期微動）開始
       GAME.earthquakeStartTime = GAME.totalTimer;
-      // 環境音: 教室ざわめき停止 → 地震BGM開始
+      // 環境音: 教室ざわめき停止 → 地震BGM開始（ノベルで既に開始済みの場合もあるため安全に呼ぶ）
       SoundManager.stopAmbient(500);
-      SoundManager.playBGM('BGM/JISHIN_earthquake.mp3', 0.35, false);
-      SoundManager.playSE('alarm');
+      if (!GAME._novelEarthquakeDone) {
+        // ノベルなしの場合のみここでBGM/SE開始
+        SoundManager.playBGM('BGM/JISHIN_earthquake.mp3', 0.35, false);
+        SoundManager.playSE('alarm');
+      }
       showAdvisor('地震だ！低い姿勢を取って！', 'warning');
       break;
 
