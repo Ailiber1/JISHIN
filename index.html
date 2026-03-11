@@ -4727,15 +4727,10 @@ const GAME = {
 };
 
 function initGame(stageNum) {
-  try { _initGameInner(stageNum); } catch(e) {
-    console.error('initGame致命的エラー:', e);
-    var lt = document.getElementById('loading-text');
-    if (lt) lt.textContent = 'エラー: ' + e.message;
-  } finally {
+  // 安全装置: 3秒後に必ずLOADING非表示（エラーでフリーズ防止）
+  var _loadingSafety = setTimeout(function() {
     document.getElementById('game-loading').style.display = 'none';
-  }
-}
-function _initGameInner(stageNum) {
+  }, 3000);
   GAME.stageNum = stageNum;
   GAME.score = 0;
   GAME.hitCount = 0;
@@ -4846,12 +4841,12 @@ function _initGameInner(stageNum) {
   GAME._dustParticles = null;
   GAME._minimap = null;
   GAME._furnitureShifted = false;
-  buildClassroom();
-  buildHallway();
-  buildSchoolyard();
-  createPlayerModel();
-  spawnNPCs();
-  createMinimap();
+  try { buildClassroom(); } catch(e) { console.error('buildClassroom:', e); }
+  try { buildHallway(); } catch(e) { console.error('buildHallway:', e); }
+  try { buildSchoolyard(); } catch(e) { console.error('buildSchoolyard:', e); }
+  try { createPlayerModel(); } catch(e) { console.error('createPlayerModel:', e); }
+  try { spawnNPCs(); } catch(e) { console.error('spawnNPCs:', e); }
+  try { createMinimap(); } catch(e) { console.error('createMinimap:', e); }
 
   if (GAME.isMobile) {
     document.getElementById('mobile-joystick').style.display = 'block';
@@ -4868,6 +4863,10 @@ function _initGameInner(stageNum) {
   // 環境音: 教室のざわめき開始（日常パート）
   SoundManager.stopAll();
   SoundManager.startClassroomAmbient();
+
+  // LOADING非表示（正常完了時）
+  clearTimeout(_loadingSafety);
+  document.getElementById('game-loading').style.display = 'none';
 
   GAME.lastFrameTime = 0;
   if (GAME.animId) cancelAnimationFrame(GAME.animId);
