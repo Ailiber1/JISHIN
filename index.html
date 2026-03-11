@@ -1777,8 +1777,7 @@ html, body {
   background-size: contain; background-repeat: no-repeat; background-position: bottom center;
   transition: opacity 0.3s ease, transform 0.3s ease, filter 0.15s ease;
   filter: brightness(0.6);
-  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 88%, transparent 100%);
-  mask-image: linear-gradient(to bottom, black 0%, black 88%, transparent 100%);
+  /* mask-image削除: バストアップ画像の下端より半透明バグの方が目立つため */
 }
 .novel-chara.speaking { filter: brightness(1); }
 .novel-chara.hidden { opacity: 0; transform: translateY(20px); pointer-events: none; }
@@ -5242,8 +5241,9 @@ function checkStairTrigger() {
   if (GAME.phase !== 'evacuation') return;
 
   var p = GAME.player;
-  if (p.x > STAIR_TRIGGER.minX && p.x < STAIR_TRIGGER.maxX &&
-      p.z > STAIR_TRIGGER.minZ && p.z < STAIR_TRIGGER.maxZ) {
+  // ドアを抜けて廊下に出たら（Z > 9.5）すぐ階段カットシーンを発動
+  // 長い廊下を歩かせず、テンポよく校庭へ遷移
+  if (p.z > 9.5 && GAME.scoring.openedDoor) {
     startStairCutscene();
   }
 }
@@ -5596,20 +5596,21 @@ function updatePlayerModel() {
     mesh.rotation.y = p.yaw;
   }
 
-  // しゃがみ（KANKERI方式: 関節を曲げて低姿勢）
+  // しゃがみ（机の下に完全に隠れる深い姿勢）
   if (p.isCrouching) {
-    j.leftHip.rotation.x = -0.8;
-    j.rightHip.rotation.x = -0.8;
-    j.leftKnee.rotation.x = 1.4;
-    j.rightKnee.rotation.x = 1.4;
-    j.torso.position.y = mesh.userData.baseY - 0.30;
-    j.torso.rotation.x = 0.2;
-    j.leftShoulder.rotation.x = -0.3;
-    j.leftShoulder.rotation.z = 0.2;
-    j.rightShoulder.rotation.x = -0.3;
-    j.rightShoulder.rotation.z = -0.2;
-    j.leftElbow.rotation.x = -0.6;
-    j.rightElbow.rotation.x = -0.6;
+    j.leftHip.rotation.x = -1.6;
+    j.rightHip.rotation.x = -1.6;
+    j.leftKnee.rotation.x = 2.2;
+    j.rightKnee.rotation.x = 2.2;
+    j.torso.position.y = mesh.userData.baseY - 0.50;
+    j.torso.rotation.x = 0.5;
+    j.neckPivot.rotation.x = 0.3;
+    j.leftShoulder.rotation.x = -0.5;
+    j.leftShoulder.rotation.z = 0.3;
+    j.rightShoulder.rotation.x = -0.5;
+    j.rightShoulder.rotation.z = -0.3;
+    j.leftElbow.rotation.x = -1.0;
+    j.rightElbow.rotation.x = -1.0;
     return;
   }
 
@@ -7770,8 +7771,8 @@ function updateCamera() {
   const dist = GAME.cameraDistance;
   const pitch = GAME.cameraPitch;
 
-  // プレイヤー頭部位置（視点基点）
-  var lookY = p.y + 0.5;
+  // プレイヤー頭部位置（視点基点）— しゃがみ時は机の下まで下げる
+  var lookY = p.isCrouching ? 0.35 : p.y + 0.5;
   var playerPos = new THREE.Vector3(p.x, lookY, p.z);
 
   // カメラの理想位置を計算
