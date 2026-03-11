@@ -3318,7 +3318,7 @@ var NovelEngine = {
         var src = folder + line.speaker + '_' + line.expr + '.png';
         if (!self._imageCache[src]) {
           var img = new Image();
-          img.src = src + '?v=13';
+          img.src = src + '?v=14';
           self._imageCache[src] = img;
         }
       }
@@ -3424,7 +3424,7 @@ var NovelEngine = {
     var info = this.SPEAKERS[line.speaker];
     if (!info) return;
     var folder = (line.speaker === 'bousai') ? 'characters/shared/' : 'characters/stage' + (GAME.stageNum || 1) + '/';
-    var src = folder + line.speaker + '_' + (line.expr || 'normal') + '.png?v=13';
+    var src = folder + line.speaker + '_' + (line.expr || 'normal') + '.png?v=14';
 
     // ボウサイキャラのサイズ調整クラス
     this.charaLeft.classList.remove('chara-bousai');
@@ -6037,6 +6037,7 @@ function spawnNPCs() {
     behavior: 'calm', state: 'idle',
     speed: 0.015, phase: 0,
     npcH: 1.7, evacuationDelay: 30, exited: false,
+    deskX: 0, deskZ: -0.3,  // 教卓の下に避難
   });
   GAME._exitedNPCs = 0;
 
@@ -6111,22 +6112,23 @@ function updateSingleNPC(npc, dtSec) {
         // 冷静: 机の下にしゃがむ（関節ポーズ変更で頭が机の下に入る）
         if (npc.state !== 'crouching') {
           npc.state = 'crouching';
-          mesh.position.y = -0.55;
-          // 関節ポーズ: 深いしゃがみ（プレイヤーと同じ方式）
+          // 高さに応じて適切にY位置を下げる（机の天板 deskH=0.6 以下に頭が収まるように）
+          var crouchY = npc.role === 'teacher' ? -1.0 : -0.80;
+          mesh.position.y = crouchY;
+          // 関節ポーズ: 深いしゃがみ＋前かがみ
           var body = mesh.userData.body;
           if (body) {
-            body.rotation.x = 0.5; // 前かがみ
-            var neck = body.children.find(function(c) { return c.type === 'Object3D' && c.children.length > 0 && c.children[0].geometry && c.children[0].geometry.type === 'SphereGeometry'; });
+            body.rotation.x = 0.9; // 深い前かがみ
           }
           if (mesh.userData.leftLeg) {
-            mesh.userData.leftLeg.rotation.x = -1.6;
+            mesh.userData.leftLeg.rotation.x = -1.8;
             var upperL = mesh.userData.leftLeg.children[0];
-            if (upperL && upperL.children[0]) upperL.children[0].rotation.x = 2.2;
+            if (upperL && upperL.children[0]) upperL.children[0].rotation.x = 2.4;
           }
           if (mesh.userData.rightLeg) {
-            mesh.userData.rightLeg.rotation.x = -1.6;
+            mesh.userData.rightLeg.rotation.x = -1.8;
             var upperR = mesh.userData.rightLeg.children[0];
-            if (upperR && upperR.children[0]) upperR.children[0].rotation.x = 2.2;
+            if (upperR && upperR.children[0]) upperR.children[0].rotation.x = 2.4;
           }
           // 机の下に移動（自分のデスク位置へ）
           if (npc.deskX !== undefined) {
@@ -6183,29 +6185,19 @@ function updateSingleNPC(npc, dtSec) {
         }
       }
 
-      // 先生の行動
-      if (npc.role === 'teacher') {
-        if (npc.state !== 'commanding') {
-          npc.state = 'commanding';
-        }
-        // 手を上げる演出（体を少し大きく）
-        mesh.scale.set(1, 1.05, 1);
-      }
+      // 先生も机（教卓）の下に避難する（正しい行動の手本）
+      // calm behaviorで既にしゃがみ処理済み
       break;
 
     case 'aftershake':
       // 揺れ収束 — NPCは机の下/その場で待機（まだ避難しない）
-      if (npc.behavior === 'calm' && npc.state === 'crouching') {
+      if ((npc.behavior === 'calm' || npc.role === 'teacher') && npc.state === 'crouching') {
         // 机の下で待機継続
       }
       if (npc.behavior === 'injured' && !npc.helped) {
         // 負傷NPCは倒れたまま
         mesh.rotation.z = Math.PI / 2;
         mesh.position.y = -0.2;
-      }
-      if (npc.role === 'teacher') {
-        if (npc.state !== 'commanding') npc.state = 'commanding';
-        mesh.scale.set(1, 1.05, 1);
       }
       break;
 
@@ -6223,12 +6215,24 @@ function updateSingleNPC(npc, dtSec) {
       // 避難開始までの遅延チェック（列ごとにずらす）
       var myDelay = npc.evacuationDelay || 0;
       if (GAME.phaseTimer < myDelay) {
-        // まだ順番が来ていない — 立ち上がって待機
+        // まだ順番が来ていない — 立ち上がって待機（ポーズ完全リセット）
         if (npc.state === 'crouching' || npc.state === 'idle' || npc.state === 'sitting') {
           npc.state = 'waiting';
           mesh.scale.set(1, 1, 1);
           mesh.position.y = 0;
           mesh.rotation.z = 0;
+          var wb = mesh.userData.body;
+          if (wb) { wb.rotation.x = 0; wb.rotation.z = 0; }
+          if (mesh.userData.leftLeg) {
+            mesh.userData.leftLeg.rotation.x = 0;
+            var wl = mesh.userData.leftLeg.children[0];
+            if (wl && wl.children[0]) wl.children[0].rotation.x = 0;
+          }
+          if (mesh.userData.rightLeg) {
+            mesh.userData.rightLeg.rotation.x = 0;
+            var wr = mesh.userData.rightLeg.children[0];
+            if (wr && wr.children[0]) wr.children[0].rotation.x = 0;
+          }
         }
         break;
       }
@@ -6248,6 +6252,20 @@ function updateSingleNPC(npc, dtSec) {
             npc.state = 'directing';
             mesh.scale.set(1, 1, 1);
             mesh.position.y = 0;
+            mesh.rotation.z = 0;
+            // しゃがみポーズリセット
+            var db = mesh.userData.body;
+            if (db) { db.rotation.x = 0; db.rotation.z = 0; }
+            if (mesh.userData.leftLeg) {
+              mesh.userData.leftLeg.rotation.x = 0;
+              var dl = mesh.userData.leftLeg.children[0];
+              if (dl && dl.children[0]) dl.children[0].rotation.x = 0;
+            }
+            if (mesh.userData.rightLeg) {
+              mesh.userData.rightLeg.rotation.x = 0;
+              var dr = mesh.userData.rightLeg.children[0];
+              if (dr && dr.children[0]) dr.children[0].rotation.x = 0;
+            }
             npc.targetX = 3.5;
             npc.targetZ = 8.0;
           }
@@ -6260,6 +6278,20 @@ function updateSingleNPC(npc, dtSec) {
             mesh.position.x = npc.x;
             mesh.position.z = npc.z;
             mesh.rotation.y = Math.atan2(tdx, tdz);
+            // 歩行アニメーション
+            npc.phase += dtSec * 7;
+            var tls = Math.sin(npc.phase) * 0.55;
+            if (mesh.userData.leftLeg) {
+              mesh.userData.leftLeg.rotation.x = tls;
+              var tkl = mesh.userData.leftLeg.children[0];
+              if (tkl && tkl.children[0]) tkl.children[0].rotation.x = Math.max(0, -tls) * 0.8;
+            }
+            if (mesh.userData.rightLeg) {
+              mesh.userData.rightLeg.rotation.x = -tls;
+              var tkr = mesh.userData.rightLeg.children[0];
+              if (tkr && tkr.children[0]) tkr.children[0].rotation.x = Math.max(0, tls) * 0.8;
+            }
+            mesh.position.y = Math.abs(Math.sin(npc.phase * 2)) * 0.03;
           }
           break;
         }
@@ -6271,6 +6303,19 @@ function updateSingleNPC(npc, dtSec) {
         mesh.scale.set(1, 1, 1);
         mesh.position.y = 0;
         mesh.rotation.z = 0;
+        // しゃがみポーズを完全リセット（これがないと幽霊のように浮く）
+        var resetBody = mesh.userData.body;
+        if (resetBody) { resetBody.rotation.x = 0; resetBody.rotation.z = 0; }
+        if (mesh.userData.leftLeg) {
+          mesh.userData.leftLeg.rotation.x = 0;
+          var rul = mesh.userData.leftLeg.children[0];
+          if (rul && rul.children[0]) rul.children[0].rotation.x = 0;
+        }
+        if (mesh.userData.rightLeg) {
+          mesh.userData.rightLeg.rotation.x = 0;
+          var rur = mesh.userData.rightLeg.children[0];
+          if (rur && rur.children[0]) rur.children[0].rotation.x = 0;
+        }
         npc.targetX = 4.2;
         npc.targetZ = 8.5;
       }
@@ -6289,10 +6334,31 @@ function updateSingleNPC(npc, dtSec) {
         mesh.position.x = npc.x;
         mesh.position.z = npc.z;
         mesh.rotation.y = Math.atan2(edx, edz);
-        npc.phase += dtSec * 6;
+        // 歩行アニメーション（脚振り + 腕振り + 体の上下動）
+        npc.phase += dtSec * 7;
+        var legSwing = Math.sin(npc.phase) * 0.55;
+        var armSwing = Math.sin(npc.phase) * 0.35;
         if (mesh.userData.leftLeg) {
-          mesh.userData.leftLeg.rotation.x = Math.sin(npc.phase) * 0.3;
-          mesh.userData.rightLeg.rotation.x = -Math.sin(npc.phase) * 0.3;
+          mesh.userData.leftLeg.rotation.x = legSwing;
+          // 膝の曲がり（後ろ脚の時に膝を曲げる）
+          var kneeL = mesh.userData.leftLeg.children[0];
+          if (kneeL && kneeL.children[0]) {
+            kneeL.children[0].rotation.x = Math.max(0, -legSwing) * 0.8;
+          }
+        }
+        if (mesh.userData.rightLeg) {
+          mesh.userData.rightLeg.rotation.x = -legSwing;
+          var kneeR = mesh.userData.rightLeg.children[0];
+          if (kneeR && kneeR.children[0]) {
+            kneeR.children[0].rotation.x = Math.max(0, legSwing) * 0.8;
+          }
+        }
+        // 腕振り（脚と逆位相）
+        var bodyNode = mesh.userData.body;
+        if (bodyNode) {
+          bodyNode.rotation.x = 0.05; // 軽い前傾
+          // 体の上下動（歩行のバウンス）
+          mesh.position.y = Math.abs(Math.sin(npc.phase * 2)) * 0.03;
         }
       } else {
         // ドア到達 → 退出（フェードアウトして消える）
