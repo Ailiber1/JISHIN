@@ -3295,6 +3295,8 @@ var NovelEngine = {
 
   // ノベル開始
   start: function(script, bg, onComplete) {
+    // ノベル中はカーソルが必要なのでPointer Lock強制解除
+    if (document.pointerLockElement) document.exitPointerLock();
     // ディープコピー（spliceによる配列汚染防止）
     this.script = JSON.parse(JSON.stringify(script));
     this.scriptIndex = 0;
@@ -4657,7 +4659,8 @@ function initGame(stageNum) {
 
   if (!GAME.isMobile) {
     GAME.renderer.domElement.addEventListener('click', function() {
-      if (!GAME.pointerLocked) {
+      // ゲーム動作中かつdaily以外のみPointer Lock取得（ノベル中・日常中は不要）
+      if (!GAME.pointerLocked && GAME.running && GAME.phase !== 'daily') {
         GAME.renderer.domElement.requestPointerLock();
       }
     });
@@ -6801,8 +6804,8 @@ function transitionPhase(newPhase) {
   if (newPhase === 'earthquake' && novelScripts.earthquake && !GAME._novelEarthquakeDone) {
     GAME._novelEarthquakeDone = true;
     GAME.running = false; // 3Dを一時停止
-    // ノベルシーンではカーソルが必要なのでPointer Lock解除
-    if (document.pointerLockElement) document.exitPointerLock();
+    // ノベルシーンではカーソルが必要なのでPointer Lock強制解除
+    document.exitPointerLock();
     NovelEngine.start(
       novelScripts.earthquake,
       'backgrounds/stage1/bg_classroom_shake.png',
