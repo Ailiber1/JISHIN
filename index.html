@@ -7615,8 +7615,9 @@ function downloadResultData(totalScore, categories, actions) {
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
   a.href = url;
-  var safeDate = now.getFullYear() + pad2(now.getMonth()+1) + pad2(now.getDate());
-  a.download = 'JISHIN_成績_' + name + '_Stage' + GAME.stageNum + '_' + safeDate + '.csv';
+  var safeDate = now.getFullYear() + pad2(now.getMonth()+1) + pad2(now.getDate())
+    + '_' + pad2(now.getHours()) + pad2(now.getMinutes());
+  a.download = safeDate + '_' + name + '_Stage' + GAME.stageNum + '.csv';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
