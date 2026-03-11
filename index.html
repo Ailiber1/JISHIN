@@ -3144,6 +3144,38 @@ const SoundManager = {
     this._quakeLoop = null;
   },
 
+  // J-Alert風 緊急地震速報警報音（ピロンピロン × 3回）
+  playEarthquakeAlarm() {
+    if (!this.seEnabled) return;
+    try {
+      const ctx = this.getCtx();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      // NHKチャイム風: 2音交互（D5=587Hz, A5=880Hz）を繰り返す
+      var tones = [
+        {f: 880, t: 0},    {f: 587, t: 0.20},
+        {f: 880, t: 0.40}, {f: 587, t: 0.60},
+        {f: 880, t: 0.80}, {f: 587, t: 1.00},
+        {f: 880, t: 1.20}, {f: 587, t: 1.40},
+        {f: 880, t: 1.60}, {f: 587, t: 1.80},
+        {f: 880, t: 2.00}, {f: 587, t: 2.20}
+      ];
+      for (var i = 0; i < tones.length; i++) {
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        var start = now + tones[i].t;
+        osc.frequency.setValueAtTime(tones[i].f, start);
+        gain.gain.setValueAtTime(0.3, start);
+        gain.gain.linearRampToValueAtTime(0, start + 0.18);
+        osc.start(start);
+        osc.stop(start + 0.19);
+      }
+    } catch (e) {}
+  },
+
   playSE(type) {
     if (!this.seEnabled) return;
     try {
@@ -3286,7 +3318,7 @@ var NovelEngine = {
         var src = folder + line.speaker + '_' + line.expr + '.png';
         if (!self._imageCache[src]) {
           var img = new Image();
-          img.src = src + '?v=12';
+          img.src = src + '?v=13';
           self._imageCache[src] = img;
         }
       }
@@ -3392,7 +3424,7 @@ var NovelEngine = {
     var info = this.SPEAKERS[line.speaker];
     if (!info) return;
     var folder = (line.speaker === 'bousai') ? 'characters/shared/' : 'characters/stage' + (GAME.stageNum || 1) + '/';
-    var src = folder + line.speaker + '_' + (line.expr || 'normal') + '.png?v=12';
+    var src = folder + line.speaker + '_' + (line.expr || 'normal') + '.png?v=13';
 
     // ボウサイキャラのサイズ調整クラス
     this.charaLeft.classList.remove('chara-bousai');
@@ -6076,10 +6108,26 @@ function updateSingleNPC(npc, dtSec) {
     case 'shaking':
       // 地震中の行動
       if (npc.behavior === 'calm') {
-        // 冷静: 机の下にしゃがむ（Y位置を下げて机の下に隠れる）
+        // 冷静: 机の下にしゃがむ（関節ポーズ変更で頭が机の下に入る）
         if (npc.state !== 'crouching') {
           npc.state = 'crouching';
-          mesh.position.y = -0.45;
+          mesh.position.y = -0.55;
+          // 関節ポーズ: 深いしゃがみ（プレイヤーと同じ方式）
+          var body = mesh.userData.body;
+          if (body) {
+            body.rotation.x = 0.5; // 前かがみ
+            var neck = body.children.find(function(c) { return c.type === 'Object3D' && c.children.length > 0 && c.children[0].geometry && c.children[0].geometry.type === 'SphereGeometry'; });
+          }
+          if (mesh.userData.leftLeg) {
+            mesh.userData.leftLeg.rotation.x = -1.6;
+            var upperL = mesh.userData.leftLeg.children[0];
+            if (upperL && upperL.children[0]) upperL.children[0].rotation.x = 2.2;
+          }
+          if (mesh.userData.rightLeg) {
+            mesh.userData.rightLeg.rotation.x = -1.6;
+            var upperR = mesh.userData.rightLeg.children[0];
+            if (upperR && upperR.children[0]) upperR.children[0].rotation.x = 2.2;
+          }
           // 机の下に移動（自分のデスク位置へ）
           if (npc.deskX !== undefined) {
             mesh.position.x = npc.deskX;
@@ -6811,7 +6859,7 @@ function transitionPhase(newPhase) {
     // 地震ノベル: 教室ざわめき停止→地震BGM開始
     SoundManager.stopAmbient(300);
     SoundManager.playBGM('BGM/JISHIN_earthquake.mp3', 0.35, false);
-    SoundManager.playSE('alarm');
+    SoundManager.playEarthquakeAlarm(); // J-Alert風警報音（ピロンピロン）
     NovelEngine.start(
       novelScripts.earthquake,
       'backgrounds/stage1/bg_classroom_shake.png',
@@ -7108,14 +7156,18 @@ function updateFallingObjects(dtSec) {
       }
 
       // プレイヤーとの当たり判定（落下中のみ）
+      // 机の下にしゃがんでいる場合はダメージ無効（机が落下物を防ぐ）
       if (fo.falling && !fo.hitPlayer) {
-        var dx = GAME.player.x - fo.mesh.position.x;
-        var dz = GAME.player.z - fo.mesh.position.z;
-        var dist = Math.sqrt(dx * dx + dz * dz);
-        var yDiff = Math.abs(GAME.player.y - fo.mesh.position.y);
-        if (dist < 0.5 && yDiff < 1.0) {
-          fo.hitPlayer = true;
-          onPlayerHit(fo.type);
+        var isUnderDesk = GAME.player.isCrouching && (GAME.phase === 'earthquake' || GAME.phase === 'shaking');
+        if (!isUnderDesk) {
+          var dx = GAME.player.x - fo.mesh.position.x;
+          var dz = GAME.player.z - fo.mesh.position.z;
+          var dist = Math.sqrt(dx * dx + dz * dz);
+          var yDiff = Math.abs(GAME.player.y - fo.mesh.position.y);
+          if (dist < 0.5 && yDiff < 1.0) {
+            fo.hitPlayer = true;
+            onPlayerHit(fo.type);
+          }
         }
       }
     }
