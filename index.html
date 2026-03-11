@@ -3271,9 +3271,15 @@ var NovelEngine = {
     });
   },
 
-  // 画像プリロード
-  preloadImages: function(script) {
+  // 画像プリロード（キャラ＋背景）
+  preloadImages: function(script, bgUrl) {
     var self = this;
+    // 背景画像もプリロード
+    if (bgUrl && !self._imageCache[bgUrl]) {
+      var bgImg = new Image();
+      bgImg.src = bgUrl;
+      self._imageCache[bgUrl] = bgImg;
+    }
     script.forEach(function(line) {
       if (line.speaker && line.expr) {
         var folder = (line.speaker === 'bousai') ? 'characters/shared/' : 'characters/stage' + (GAME.stageNum || 1) + '/';
@@ -3296,15 +3302,8 @@ var NovelEngine = {
     this.autoMode = false;
     document.getElementById('novel-auto-btn').classList.remove('on');
 
-    // 背景設定
-    if (bg) {
-      this.bgEl.style.backgroundImage = 'url(' + bg + ')';
-    } else {
-      this.bgEl.style.backgroundImage = 'none';
-    }
-
-    // プリロード
-    this.preloadImages(script);
+    // プリロード（背景含む）
+    this.preloadImages(script, bg);
 
     // 立ち絵リセット
     this.charaLeft.classList.add('hidden');
@@ -3312,13 +3311,37 @@ var NovelEngine = {
     this.charaLeft.classList.remove('speaking');
     this.charaRight.classList.remove('speaking');
 
-    // 表示
-    this.overlay.classList.add('active');
-    this.controlsEl.classList.add('active');
     this.choicesEl.classList.remove('active');
     this.choicesEl.innerHTML = '';
 
-    this.showLine();
+    // 背景設定 — 読み込み完了を待ってから表示開始
+    var self = this;
+    var _displayStarted = false;
+    var startDisplay = function() {
+      if (_displayStarted) return;
+      _displayStarted = true;
+      self.overlay.classList.add('active');
+      self.controlsEl.classList.add('active');
+      self.showLine();
+    };
+
+    if (bg) {
+      this.bgEl.style.backgroundImage = 'url(' + bg + ')';
+      var cachedBg = this._imageCache[bg];
+      if (cachedBg && cachedBg.complete) {
+        startDisplay();
+      } else {
+        // 背景読み込み完了を待つ（最大2秒でタイムアウト）
+        var bgReady = new Image();
+        bgReady.onload = function() { startDisplay(); };
+        bgReady.onerror = function() { startDisplay(); };
+        bgReady.src = bg;
+        setTimeout(function() { startDisplay(); }, 2000);
+      }
+    } else {
+      this.bgEl.style.backgroundImage = 'none';
+      startDisplay();
+    }
   },
 
   // 現在の行を表示
@@ -4126,6 +4149,20 @@ function showBriefing(stageNum) {
 
   showScreen('briefing-screen');
   applyI18N();
+
+  // ブリーフィング表示時に背景＋キャラ画像を先行プリロード
+  var bgMap = { 1: 'backgrounds/stage1/bg_classroom.png', 2: 'backgrounds/stage2/bg_office.png', 3: 'backgrounds/stage3/bg_living_room.png' };
+  var bgUrl = bgMap[stageNum];
+  if (bgUrl && !NovelEngine._imageCache[bgUrl]) {
+    var bgImg = new Image();
+    bgImg.src = bgUrl;
+    NovelEngine._imageCache[bgUrl] = bgImg;
+  }
+  // キャラ画像もプリロード
+  var novelScript = NOVEL_SCRIPTS['stage' + stageNum];
+  if (novelScript && novelScript.prologue) {
+    NovelEngine.preloadImages(novelScript.prologue, bgUrl);
+  }
 }
 
 // ============================================================
