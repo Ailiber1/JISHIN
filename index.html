@@ -3246,6 +3246,8 @@ document.addEventListener('click', resumeAudioContext, { once: true });
 // ============================================================
 // SECTION: NOVEL ENGINE
 // ============================================================
+var CACHE_BUSTER = '?t=' + Date.now();
+
 var NovelEngine = {
   overlay: null, bgEl: null, textEl: null, speakerEl: null,
   nextIndicator: null, choicesEl: null, controlsEl: null,
@@ -3318,7 +3320,7 @@ var NovelEngine = {
         var src = folder + line.speaker + '_' + line.expr + '.png';
         if (!self._imageCache[src]) {
           var img = new Image();
-          img.src = src + '?v=18';
+          img.src = src + CACHE_BUSTER;
           self._imageCache[src] = img;
         }
       }
@@ -3424,7 +3426,7 @@ var NovelEngine = {
     var info = this.SPEAKERS[line.speaker];
     if (!info) return;
     var folder = (line.speaker === 'bousai') ? 'characters/shared/' : 'characters/stage' + (GAME.stageNum || 1) + '/';
-    var src = folder + line.speaker + '_' + (line.expr || 'normal') + '.png?v=18';
+    var src = folder + line.speaker + '_' + (line.expr || 'normal') + '.png' + CACHE_BUSTER;
 
     // ボウサイキャラのサイズ調整クラス
     this.charaLeft.classList.remove('chara-bousai');
@@ -4725,6 +4727,15 @@ const GAME = {
 };
 
 function initGame(stageNum) {
+  try { _initGameInner(stageNum); } catch(e) {
+    console.error('initGame致命的エラー:', e);
+    var lt = document.getElementById('loading-text');
+    if (lt) lt.textContent = 'エラー: ' + e.message;
+  } finally {
+    document.getElementById('game-loading').style.display = 'none';
+  }
+}
+function _initGameInner(stageNum) {
   GAME.stageNum = stageNum;
   GAME.score = 0;
   GAME.hitCount = 0;
@@ -4841,8 +4852,6 @@ function initGame(stageNum) {
   createPlayerModel();
   spawnNPCs();
   createMinimap();
-
-  document.getElementById('game-loading').style.display = 'none';
 
   if (GAME.isMobile) {
     document.getElementById('mobile-joystick').style.display = 'block';
