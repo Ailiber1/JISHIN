@@ -7534,81 +7534,89 @@ function showResult() {
   }, 500);
 }
 
-// 成績データダウンロード（CSV形式）
+// 成績データダウンロード（CSV形式 — Excel/スプレッドシート対応）
+// 1人1行。複数ファイルを結合すれば一覧表になる。ヘッダー行付き。
 function downloadResultData(totalScore, categories, actions) {
   var name = getUsername() || '未登録';
   var now = new Date();
-  var dateStr = now.getFullYear() + '/' + (now.getMonth()+1) + '/' + now.getDate()
-    + ' ' + now.getHours() + ':' + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
+  var pad2 = function(n) { return n < 10 ? '0' + n : '' + n; };
+  var dateStr = now.getFullYear() + '/' + pad2(now.getMonth()+1) + '/' + pad2(now.getDate())
+    + ' ' + pad2(now.getHours()) + ':' + pad2(now.getMinutes());
   var stageNames = { 1: '学校（教室）', 2: 'オフィスビル', 3: '木造住宅', 4: '高層マンション', 5: '屋外（繁華街）' };
   var stageName = stageNames[GAME.stageNum] || 'Stage ' + GAME.stageNum;
   var r = getRank(GAME.score);
   var totalSec = Math.floor(GAME.totalTimer);
   var min = Math.floor(totalSec / 60);
   var sec = totalSec % 60;
-  var timeStr = min + ':' + (sec < 10 ? '0' : '') + sec;
+  var timeStr = min + ':' + pad2(sec);
 
-  var lines = [];
-  lines.push('==========================================');
-  lines.push('JISHIN 防災シミュレーション — 成績レポート');
-  lines.push('==========================================');
-  lines.push('');
-  lines.push('■ 基本情報');
-  lines.push('  氏名: ' + name);
-  lines.push('  実施日時: ' + dateStr);
-  lines.push('  ステージ: Stage ' + GAME.stageNum + ' — ' + stageName);
-  lines.push('  クリア時間: ' + timeStr);
-  lines.push('  ダメージ回数: ' + GAME.hitCount + ' / 3');
-  lines.push('');
-  lines.push('■ 総合スコア');
-  lines.push('  行動スコア: ' + GAME.score + ' 点');
-  lines.push('  知識テスト: ' + (GAME._quizScore || 0) + ' / ' + (GAME._quizTotal || 0) + ' 正解');
-  lines.push('  総合: ' + totalScore + ' / 100 点（行動70% + 知識30%）');
-  lines.push('  ランク: ' + r.rank + '「' + r.title + '」');
-  lines.push('');
-  lines.push('■ カテゴリ別スコア');
+  // CSV用エスケープ（カンマ・改行・ダブルクォートを含む場合）
+  function csvEsc(val) {
+    var s = String(val);
+    if (s.indexOf(',') >= 0 || s.indexOf('"') >= 0 || s.indexOf('\n') >= 0) {
+      return '"' + s.replace(/"/g, '""') + '"';
+    }
+    return s;
+  }
+
+  // --- ヘッダー行 ---
+  var headers = [
+    '氏名', '実施日時', 'ステージ', 'クリア時間', 'ダメージ回数',
+    '行動スコア', '知識テスト正解数', '知識テスト問題数', '総合スコア', 'ランク'
+  ];
+  // カテゴリ列
   if (categories) {
     for (var ci = 0; ci < categories.length; ci++) {
-      var cat = categories[ci];
-      var pct = cat.max > 0 ? Math.round(cat.score / cat.max * 100) : 0;
-      lines.push('  ' + cat.label + ': ' + cat.score + ' / ' + cat.max + ' (' + pct + '%)');
+      headers.push(categories[ci].label);
     }
   }
-  lines.push('');
-  lines.push('■ 行動チェックリスト');
+  // 行動チェック列
   if (actions) {
     for (var ai = 0; ai < actions.length; ai++) {
-      var a = actions[ai];
-      var mark = a.done ? '○' : '×';
-      lines.push('  ' + mark + ' ' + a.text + ' [' + (a.done ? a.pts : '—') + ']');
+      headers.push(actions[ai].text);
     }
   }
-  lines.push('');
-  lines.push('■ 知識テスト詳細');
-  if (GAME._quizAnswers && GAME._quizAnswers.length > 0) {
-    for (var qi = 0; qi < GAME._quizAnswers.length; qi++) {
-      var qa = GAME._quizAnswers[qi];
-      var qMark = qa.correct ? '○' : '×';
-      lines.push('  Q' + (qi+1) + ' ' + qMark + ' ' + qa.question);
-      if (!qa.correct) {
-        lines.push('    → 正解: ' + qa.correctAnswer);
-      }
-    }
-  } else {
-    lines.push('  （テスト未実施）');
+  // 知識テスト各問
+  var quizCount = GAME._quizAnswers ? GAME._quizAnswers.length : 0;
+  for (var qi = 0; qi < quizCount; qi++) {
+    headers.push('Q' + (qi+1));
   }
-  lines.push('');
-  lines.push('==========================================');
-  lines.push('JISHIN — 地震防災シミュレーションゲーム');
-  lines.push('==========================================');
 
-  var text = lines.join('\n');
-  var blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  // --- データ行 ---
+  var row = [
+    csvEsc(name), csvEsc(dateStr), csvEsc('Stage' + GAME.stageNum + ' ' + stageName),
+    csvEsc(timeStr), GAME.hitCount,
+    GAME.score, (GAME._quizScore || 0), (GAME._quizTotal || 0), totalScore, r.rank
+  ];
+  // カテゴリスコア
+  if (categories) {
+    for (var ci2 = 0; ci2 < categories.length; ci2++) {
+      row.push(categories[ci2].score + '/' + categories[ci2].max);
+    }
+  }
+  // 行動チェック（○/×）
+  if (actions) {
+    for (var ai2 = 0; ai2 < actions.length; ai2++) {
+      row.push(actions[ai2].done ? '○' : '×');
+    }
+  }
+  // 知識テスト各問（○/×）
+  if (GAME._quizAnswers) {
+    for (var qi2 = 0; qi2 < GAME._quizAnswers.length; qi2++) {
+      row.push(GAME._quizAnswers[qi2].correct ? '○' : '×');
+    }
+  }
+
+  // BOM付きUTF-8 CSV（Excelで文字化けしない）
+  var bom = '\uFEFF';
+  var csv = bom + headers.join(',') + '\n' + row.join(',') + '\n';
+
+  var blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
   a.href = url;
-  var safeDate = now.getFullYear() + '' + (now.getMonth()+1) + '' + now.getDate();
-  a.download = 'JISHIN_成績_' + name + '_Stage' + GAME.stageNum + '_' + safeDate + '.txt';
+  var safeDate = now.getFullYear() + pad2(now.getMonth()+1) + pad2(now.getDate());
+  a.download = 'JISHIN_成績_' + name + '_Stage' + GAME.stageNum + '_' + safeDate + '.csv';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
