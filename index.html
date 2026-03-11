@@ -4835,12 +4835,16 @@ function initGame(stageNum) {
   GAME._dustParticles = null;
   GAME._minimap = null;
   GAME._furnitureShifted = false;
-  buildClassroom();
-  buildHallway();
-  buildSchoolyard();
-  createPlayerModel();
-  spawnNPCs();
-  createMinimap();
+  try {
+    buildClassroom();
+    buildHallway();
+    buildSchoolyard();
+    createPlayerModel();
+    spawnNPCs();
+    createMinimap();
+  } catch (e) {
+    console.error('initGame error:', e);
+  }
 
   document.getElementById('game-loading').style.display = 'none';
 
