@@ -6801,11 +6801,17 @@ function transitionPhase(newPhase) {
   if (newPhase === 'earthquake' && novelScripts.earthquake && !GAME._novelEarthquakeDone) {
     GAME._novelEarthquakeDone = true;
     GAME.running = false; // 3Dを一時停止
+    // ノベルシーンではカーソルが必要なのでPointer Lock解除
+    if (document.pointerLockElement) document.exitPointerLock();
     NovelEngine.start(
       novelScripts.earthquake,
       'backgrounds/stage1/bg_classroom_shake.png',
       function() {
         GAME.running = true;
+        // 3D復帰時にPointer Lock再取得
+        if (!GAME.isMobile && GAME.renderer && GAME.renderer.domElement) {
+          GAME.renderer.domElement.requestPointerLock();
+        }
         requestAnimationFrame(gameLoop); // ゲームループ再開
         _doTransitionPhase('earthquake');
       }
@@ -6817,11 +6823,15 @@ function transitionPhase(newPhase) {
   if (newPhase === 'aftershake' && novelScripts.aftershake && !GAME._novelAftershakeDone) {
     GAME._novelAftershakeDone = true;
     GAME.running = false;
+    if (document.pointerLockElement) document.exitPointerLock();
     NovelEngine.start(
       novelScripts.aftershake,
       'backgrounds/stage1/bg_classroom_shake.png',
       function() {
         GAME.running = true;
+        if (!GAME.isMobile && GAME.renderer && GAME.renderer.domElement) {
+          GAME.renderer.domElement.requestPointerLock();
+        }
         requestAnimationFrame(gameLoop); // ゲームループ再開
         _doTransitionPhase('aftershake');
       }
@@ -6833,6 +6843,7 @@ function transitionPhase(newPhase) {
   if (newPhase === 'result' && !GAME._novelEpilogueDone) {
     GAME._novelEpilogueDone = true;
     GAME.running = false;
+    if (document.pointerLockElement) document.exitPointerLock();
     SoundManager.stopAll();
     var epilogueScript = (GAME.hitCount >= 3)
       ? novelScripts.epilogue_fail
