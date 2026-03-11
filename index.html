@@ -3639,71 +3639,242 @@ var NovelEngine = {
 // ============================================================
 // SECTION: NOVEL SCRIPT DATA (Stage 1)
 // ============================================================
-var NOVEL_SCRIPTS = {
+// ============================================================
+// ランダムノベルスクリプト — プレイのたびにセリフが変化
+// ============================================================
+var NOVEL_VARIANTS = {
   stage1: {
+    // ====== プロローグ（3パターン）======
     prologue: [
-      { speaker: 'teacher', expr: 'normal', text: 'はい、3時間目は理科です。\n教科書の32ページを開いてください。' },
-      { speaker: 'student_a', expr: 'normal', text: '（ふぁ〜…眠いな〜…）' },
-      { speaker: 'student_b', expr: 'normal', text: 'ねえ、昨日の避難訓練のプリント出した？' },
-      { speaker: 'student_a', expr: 'surprise', text: 'え！？出してない！やばっ！' },
-      { speaker: 'teacher', expr: 'serious', text: '避難訓練のプリント、来週までですよ。\n地震はいつ来るか分かりません。' },
-      { speaker: 'student_b', expr: 'serious', text: '先生の言う通りだよ。\nちゃんとやっておいた方がいいって。' },
-      { speaker: 'bousai', expr: 'normal', text: '今日のポイント！\n① 机の下に入り、脚を持って頭を守る\n② 先生の指示に従って行動する\n③ 「おはしも」を守って避難する' },
-      { speaker: 'narrator', text: '── 数分後 ──' },
+      // パターンA: 理科の授業 + 避難訓練プリント
+      [
+        { speaker: 'teacher', expr: 'normal', text: 'はい、3時間目は理科です。\n教科書の32ページを開いてください。' },
+        { speaker: 'student_a', expr: 'normal', text: '（ふぁ〜…眠いな〜…）' },
+        { speaker: 'student_b', expr: 'normal', text: 'ねえ、昨日の避難訓練のプリント出した？' },
+        { speaker: 'student_a', expr: 'surprise', text: 'え！？出してない！やばっ！' },
+        { speaker: 'teacher', expr: 'serious', text: '避難訓練のプリント、来週までですよ。\n地震はいつ来るか分かりません。' },
+        { speaker: 'student_b', expr: 'serious', text: '先生の言う通りだよ。\nちゃんとやっておいた方がいいって。' },
+        { speaker: 'bousai', expr: 'normal', text: '今日のポイント！\n① 机の下に入り、脚を持って頭を守る\n② 先生の指示に従って行動する\n③ 「おはしも」を守って避難する' },
+        { speaker: 'narrator', text: '── 数分後 ──' },
+      ],
+      // パターンB: 社会の授業 + 最近の地震ニュース
+      [
+        { speaker: 'teacher', expr: 'normal', text: 'では社会の続き。\n日本の自然災害について学びます。' },
+        { speaker: 'student_b', expr: 'normal', text: '昨日ニュースで地震あったよね。\n震度3だって。' },
+        { speaker: 'student_a', expr: 'normal', text: '震度3？全然気づかなかった…\n寝てたし…' },
+        { speaker: 'teacher', expr: 'serious', text: '日本は世界の地震の約10%が\n集中する地震大国です。\nいつ大きな揺れが来てもおかしくない。' },
+        { speaker: 'student_b', expr: 'worry', text: 'え…この学校も？' },
+        { speaker: 'teacher', expr: 'normal', text: 'だからこそ、正しい知識が大切なんです。' },
+        { speaker: 'bousai', expr: 'normal', text: '今日のポイント！\n① 「落ちてこない・倒れてこない」場所に移動\n② 机の下に入り、脚をしっかり持つ\n③ 先生の指示があるまで動かない' },
+        { speaker: 'narrator', text: '── 数分後 ──' },
+      ],
+      // パターンC: 休み時間明け + 防災クイズの話
+      [
+        { speaker: 'narrator', text: '── 昼休み明け ──' },
+        { speaker: 'student_a', expr: 'smile', text: '給食うまかったー！\n今日のカレー最高！' },
+        { speaker: 'student_b', expr: 'normal', text: 'ねえ、さっき防災アプリで\n「地震クイズ」やってみたんだけど…' },
+        { speaker: 'student_a', expr: 'normal', text: 'へぇ、何点だった？' },
+        { speaker: 'student_b', expr: 'worry', text: '40点…「おはしも」って何か\n全然わからなくて…' },
+        { speaker: 'teacher', expr: 'normal', text: '「おはしも」は大切ですよ。\n押さない・走らない・しゃべらない・戻らない。\n避難の時の合言葉です。' },
+        { speaker: 'bousai', expr: 'smile', text: '今日のポイント！\n① 揺れたらすぐ机の下に入る\n② 頭と首を守ることが最優先\n③ 「おはしも」を覚えて実践しよう' },
+        { speaker: 'narrator', text: '── 授業再開 ──' },
+      ],
     ],
+
+    // ====== 地震発生（3パターン）======
     earthquake: [
-      { speaker: 'narrator', text: '── ﾋﾟﾛﾝﾋﾟﾛﾝ！緊急地震速報です ──' },
-      { speaker: 'teacher', expr: 'surprise', text: '…！地震だ！！' },
-      { speaker: 'student_b', expr: 'panic', text: 'きゃあっ！！' },
-      { speaker: 'teacher', expr: 'serious', text: '全員、机の下に入りなさい！！\n頭を守って！！' },
-      {
-        type: 'choice',
-        text: 'どうする？',
-        choices: [
-          { label: '机の下に隠れる', score: 10, correct: true,
-            response: { speaker: 'bousai', expr: 'smile', text: '正解！机の脚をしっかり持って、\n頭を守ろう！' }},
-          { label: '廊下に飛び出す', score: -10, correct: false,
-            consequence: { icon: '💥', text: '廊下の天井パネルが\n落ちてきた！', flash: 'red', shake: true },
-            response: { speaker: 'bousai', expr: 'worry', text: '危ない！揺れている最中に廊下に出ると\n天井材や照明が落ちてくる。\n阪神淡路大震災では廊下での負傷者が\n非常に多かったんだ。\nまず机の下で身を守ろう。' }},
-          { label: '窓の近くで様子を見る', score: -5, correct: false,
-            consequence: { icon: '🪟', text: 'ガラスが割れて\n破片が飛んできた！', flash: 'red', shake: true },
-            response: { speaker: 'bousai', expr: 'worry', text: '窓ガラスは揺れで割れて\n鋭い破片になって飛び散る。\n東日本大震災では窓際でケガをした\n生徒がたくさんいたんだ。\n窓から離れて、机の下に入ろう。' }},
-        ]
-      },
+      // パターンA: 緊急地震速報 → 驚き
+      [
+        { speaker: 'narrator', text: '── ﾋﾟﾛﾝﾋﾟﾛﾝ！緊急地震速報です ──' },
+        { speaker: 'teacher', expr: 'surprise', text: '…！地震だ！！' },
+        { speaker: 'student_b', expr: 'panic', text: 'きゃあっ！！' },
+        { speaker: 'teacher', expr: 'serious', text: '全員、机の下に入りなさい！！\n頭を守って！！' },
+        {
+          type: 'choice', text: 'どうする？',
+          choices: [
+            { label: '机の下に隠れる', score: 10, correct: true,
+              response: { speaker: 'bousai', expr: 'smile', text: '正解！机の脚をしっかり持って、\n頭を守ろう！' }},
+            { label: '廊下に飛び出す', score: -10, correct: false,
+              consequence: { icon: '💥', text: '廊下の天井パネルが\n落ちてきた！', flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: '危ない！揺れている最中に廊下に出ると\n天井材や照明が落ちてくる。\n阪神淡路大震災では廊下での負傷者が\n非常に多かったんだ。\nまず机の下で身を守ろう。' }},
+            { label: '窓の近くで様子を見る', score: -5, correct: false,
+              consequence: { icon: '🪟', text: 'ガラスが割れて\n破片が飛んできた！', flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: '窓ガラスは揺れで割れて\n鋭い破片になって飛び散る。\n東日本大震災では窓際でケガをした\n生徒がたくさんいたんだ。\n窓から離れて、机の下に入ろう。' }},
+          ]
+        },
+      ],
+      // パターンB: 突然の揺れ → パニック
+      [
+        { speaker: 'narrator', text: '── ガタガタガタ…！ ──' },
+        { speaker: 'student_a', expr: 'surprise', text: 'え…揺れてる！？' },
+        { speaker: 'student_b', expr: 'panic', text: '地震！地震だよ！！' },
+        { speaker: 'teacher', expr: 'serious', text: '落ち着いて！\n「まず低く、頭を守り、動かない」！！' },
+        {
+          type: 'choice', text: 'どうする？',
+          choices: [
+            { label: '机の下に入って脚を持つ', score: 10, correct: true,
+              response: { speaker: 'bousai', expr: 'smile', text: '正解！「DROP, COVER, HOLD ON」\nこれは世界共通の地震対応だよ！' }},
+            { label: '教室の出口に走る', score: -10, correct: false,
+              consequence: { icon: '💥', text: '蛍光灯が落下して\n頭を直撃！', flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: '揺れの中を走ると転倒するし\n落下物に当たる危険がある。\n新潟県中越地震では、慌てて\n動いた人のケガが多かったんだ。\nまず身を守ることが最優先！' }},
+            { label: 'カバンを頭に乗せて様子を見る', score: -5, correct: false,
+              consequence: { icon: '📚', text: 'カバンでは重い落下物を\n防げなかった！', flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: 'カバンでは天井材や蛍光灯の\n落下は防げない。\n机の下に入れば、天板が\n盾になってくれる。\n頑丈なものの下に入ろう！' }},
+          ]
+        },
+      ],
+      // パターンC: 携帯が鳴る → 速報
+      [
+        { speaker: 'narrator', text: '── ﾋﾞｰﾋﾞｰﾋﾞｰ！（携帯の緊急速報） ──' },
+        { speaker: 'student_b', expr: 'surprise', text: 'スマホが鳴ってる…！\n緊急地震速報！？' },
+        { speaker: 'teacher', expr: 'surprise', text: '…来る！全員しゃがんで！！' },
+        { speaker: 'narrator', text: '── 激しい揺れが教室を襲った ──' },
+        {
+          type: 'choice', text: '揺れが始まった！どうする？',
+          choices: [
+            { label: '机の下に潜り込む', score: 10, correct: true,
+              response: { speaker: 'bousai', expr: 'smile', text: 'ナイス判断！緊急地震速報が鳴ったら\n数秒以内に行動することが大切。\n机の下が一番安全だよ！' }},
+            { label: 'スマホで情報を確認する', score: -5, correct: false,
+              consequence: { icon: '📱', text: 'スマホを見ている間に\n本棚が倒れてきた！', flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: '緊急地震速報から強い揺れまでは\n数秒しかない。\nスマホを見るよりまず身の安全！\n情報確認は揺れが収まってからだよ。' }},
+            { label: '窓を開けて逃げ道を確保する', score: -10, correct: false,
+              consequence: { icon: '🪟', text: '窓ガラスが割れて\n手を切ってしまった！', flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: '揺れの最中にガラスに触れるのは\n非常に危険。窓の開放は\n揺れが収まってからでいい。\nまず「低く・頭を守る・動かない」！' }},
+          ]
+        },
+      ],
     ],
+
+    // ====== 揺れ収束後（3パターン）======
     aftershake: [
-      { speaker: 'teacher', expr: 'serious', text: '…揺れが収まりました。\n慌てないで。まず周りを確認して。' },
-      { speaker: 'student_a', expr: 'worry', text: '先生…窓ガラスが割れてます…' },
-      { speaker: 'student_b', expr: 'serious', text: 'ガラスの上を歩いちゃダメだよ。\n上履きをしっかり履いて。' },
-      { speaker: 'teacher', expr: 'normal', text: 'その通りです。落ち着いて行動しましょう。' },
-      {
-        type: 'choice',
-        text: '次にどうする？',
-        choices: [
-          { label: '先生の指示を待つ', score: 10, correct: true,
-            response: { speaker: 'teacher', expr: 'normal', text: 'よし、今から校庭に避難します。\n走らない、押さない、しゃべらない、戻らない。\n「おはしも」です。' }},
-          { label: 'すぐに廊下に出る', score: -5, correct: false,
-            consequence: { icon: '⚠️', text: '余震が来た！\n廊下で転倒してしまった！', flash: 'red', shake: true },
-            response: { speaker: 'bousai', expr: 'worry', text: '余震は本震の直後に来ることが多い。\n2016年の熊本地震では、最初の揺れの\n約28時間後にさらに大きな本震が来た。\n先生の指示を待って、安全を確認してから\n行動しよう。' }},
-        ]
-      },
+      // パターンA: ガラスに注意 + 先生の指示を待つ
+      [
+        { speaker: 'teacher', expr: 'serious', text: '…揺れが収まりました。\n慌てないで。まず周りを確認して。' },
+        { speaker: 'student_a', expr: 'worry', text: '先生…窓ガラスが割れてます…' },
+        { speaker: 'student_b', expr: 'serious', text: 'ガラスの上を歩いちゃダメだよ。\n上履きをしっかり履いて。' },
+        { speaker: 'teacher', expr: 'normal', text: 'その通りです。落ち着いて行動しましょう。' },
+        {
+          type: 'choice', text: '次にどうする？',
+          choices: [
+            { label: '先生の指示を待つ', score: 10, correct: true,
+              response: { speaker: 'teacher', expr: 'normal', text: 'よし、今から校庭に避難します。\n走らない、押さない、しゃべらない、戻らない。\n「おはしも」です。' }},
+            { label: 'すぐに廊下に出る', score: -5, correct: false,
+              consequence: { icon: '⚠️', text: '余震が来た！\n廊下で転倒してしまった！', flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: '余震は本震の直後に来ることが多い。\n2016年の熊本地震では、最初の揺れの\n約28時間後にさらに大きな本震が来た。\n先生の指示を待って、安全を確認してから\n行動しよう。' }},
+          ]
+        },
+      ],
+      // パターンB: 火の元確認 + エレベーター禁止
+      [
+        { speaker: 'teacher', expr: 'serious', text: '揺れが止まった…\n全員、ケガはありませんか！？' },
+        { speaker: 'student_b', expr: 'relief', text: '大丈夫…でもストーブの火が…！' },
+        { speaker: 'teacher', expr: 'normal', text: '私が消します。\n皆さんはまだ机の下にいなさい。' },
+        { speaker: 'student_a', expr: 'worry', text: 'エレベーターで降りた方が\n早くない？' },
+        {
+          type: 'choice', text: '避難はどうする？',
+          choices: [
+            { label: '先生の指示に従い階段で避難', score: 10, correct: true,
+              response: { speaker: 'bousai', expr: 'smile', text: '正解！地震後のエレベーターは絶対NG。\n余震で停止して閉じ込められる危険がある。\n東日本大震災では約14,000件もの\nエレベーター閉じ込めが発生したんだ。' }},
+            { label: 'エレベーターで素早く1階へ', score: -5, correct: false,
+              consequence: { icon: '🛗', text: '余震でエレベーターが\n停止した！閉じ込められた！', flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: '地震後のエレベーター使用は厳禁！\n余震で停止し、救助まで何時間も\n閉じ込められることがある。\n必ず階段で避難しよう。' }},
+          ]
+        },
+      ],
+      // パターンC: 通電火災の知識 + ブレーカー
+      [
+        { speaker: 'narrator', text: '── 揺れが収まった… ──' },
+        { speaker: 'teacher', expr: 'serious', text: '全員無事ですか？\n落ち着いて周りを確認して。' },
+        { speaker: 'student_a', expr: 'worry', text: '先生、天井の一部が落ちてます…' },
+        { speaker: 'student_b', expr: 'normal', text: 'ブレーカーを落とした方が\nいいんだよね？\n「通電火災」を防ぐために。' },
+        {
+          type: 'choice', text: '避難前にすべきことは？',
+          choices: [
+            { label: '火の元・ブレーカーを確認してから避難', score: 10, correct: true,
+              response: { speaker: 'bousai', expr: 'smile', text: '素晴らしい！通電火災は停電が復旧した時に\n倒れた電気ストーブなどから発生する火災。\n阪神淡路大震災の火災の約6割が\n通電火災だったんだ。\nブレーカーを落とすのは超重要！' }},
+            { label: '荷物を全部持って急いで避難', score: -5, correct: false,
+              consequence: { icon: '🎒', text: '大きな荷物が邪魔になり\n避難に時間がかかった！', flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: '避難時に大量の荷物は危険。\n通路が狭くなるし、転倒の原因にも。\n貴重品と靴だけ持って、\nまず安全な場所に避難しよう。\n荷物は後から取りに来られる。' }},
+          ]
+        },
+      ],
     ],
+
+    // ====== エピローグ成功（3パターン）======
     epilogue_success: [
-      { speaker: 'teacher', expr: 'relief', text: '…全員、点呼完了。\n全員無事です。よかった…！' },
-      { speaker: 'student_a', expr: 'relief', text: '怖かった…でも、ちゃんと避難できた…！' },
-      { speaker: 'student_b', expr: 'smile', text: '避難訓練のプリント、\nちゃんと読んでおくね…！' },
-      { speaker: 'student_a', expr: 'smile', text: '俺も…！次からちゃんとやる！' },
-      { speaker: 'bousai', expr: 'smile', text: '素晴らしい避難だったよ！\n今回学んだことを振り返ろう。' },
-      { speaker: 'bousai', expr: 'normal', text: '① 地震が来たら「まず低く、頭を守り、動かない」\n② 揺れが収まったら火の元・ブレーカー確認\n③ 靴を履いてガラス破片に備える\n④ 「おはしも」を守って落ち着いて避難する' },
-      { speaker: 'bousai', expr: 'smile', text: '最後に、今の体験で学んだことを\nテストで確認してみよう！\n実際の地震でもきっと役に立つよ。' },
+      // パターンA
+      [
+        { speaker: 'teacher', expr: 'relief', text: '…全員、点呼完了。\n全員無事です。よかった…！' },
+        { speaker: 'student_a', expr: 'relief', text: '怖かった…でも、ちゃんと避難できた…！' },
+        { speaker: 'student_b', expr: 'smile', text: '避難訓練のプリント、\nちゃんと読んでおくね…！' },
+        { speaker: 'student_a', expr: 'smile', text: '俺も…！次からちゃんとやる！' },
+        { speaker: 'bousai', expr: 'smile', text: '素晴らしい避難だったよ！\n今回学んだことを振り返ろう。' },
+        { speaker: 'bousai', expr: 'normal', text: '① 地震が来たら「まず低く、頭を守り、動かない」\n② 揺れが収まったら火の元・ブレーカー確認\n③ 靴を履いてガラス破片に備える\n④ 「おはしも」を守って落ち着いて避難する' },
+        { speaker: 'bousai', expr: 'smile', text: '最後に、今の体験で学んだことを\nテストで確認してみよう！\n実際の地震でもきっと役に立つよ。' },
+      ],
+      // パターンB
+      [
+        { speaker: 'teacher', expr: 'relief', text: '全員無事…本当によかった。\n皆さん、立派でしたよ。' },
+        { speaker: 'student_b', expr: 'smile', text: '先生が冷静だったから\nみんな落ち着けたんだよ。' },
+        { speaker: 'student_a', expr: 'relief', text: '正直すっごく怖かった…\nでも、やるべきことがわかってたから\n動けたんだと思う。' },
+        { speaker: 'bousai', expr: 'smile', text: 'その通り！「知っている」と「できる」は\n全然違う。今日の体験は本物の力になるよ。' },
+        { speaker: 'bousai', expr: 'normal', text: '日本では過去100年で震度6以上の\n地震が50回以上発生している。\n「備え」が命を守る唯一の方法だよ。' },
+        { speaker: 'bousai', expr: 'smile', text: 'さあ、学んだことをテストで\n確認してみよう！\n家族にも教えてあげてね。' },
+      ],
+      // パターンC
+      [
+        { speaker: 'teacher', expr: 'relief', text: '…はい、全員の無事を確認しました。' },
+        { speaker: 'student_a', expr: 'smile', text: '「おはしも」ちゃんと守れた！\n走りたくなったけど我慢した！' },
+        { speaker: 'student_b', expr: 'serious', text: '実はね…東日本大震災の時、\nお姉ちゃんが学校にいたんだ。\n先生の指示で全員助かったって。' },
+        { speaker: 'student_a', expr: 'serious', text: 'そうだったんだ…\n訓練って本当に大事なんだな。' },
+        { speaker: 'bousai', expr: 'normal', text: '「釜石の奇跡」を知ってるかな？\n東日本大震災で、釜石市の小中学生は\n日頃の防災教育のおかげで\nほぼ全員が助かったんだ。' },
+        { speaker: 'bousai', expr: 'smile', text: '知識は最強の防災グッズ！\nテストで今日の学びを確認しよう！' },
+      ],
     ],
+
+    // ====== エピローグ失敗（3パターン）======
     epilogue_fail: [
-      { speaker: 'bousai', expr: 'worry', text: '残念…今回は避難がうまくいかなかったね。' },
-      { speaker: 'bousai', expr: 'serious', text: 'でも大丈夫。\n失敗から学ぶことが一番大切なんだ。\n実際の災害でこの経験が活きるよ。' },
-      { speaker: 'bousai', expr: 'normal', text: '最後に知識テストに挑戦しよう。\n正しい行動を確認して、\nもう一度チャレンジしてみよう！' },
+      // パターンA
+      [
+        { speaker: 'bousai', expr: 'worry', text: '残念…今回は避難がうまくいかなかったね。' },
+        { speaker: 'bousai', expr: 'serious', text: 'でも大丈夫。\n失敗から学ぶことが一番大切なんだ。\n実際の災害でこの経験が活きるよ。' },
+        { speaker: 'bousai', expr: 'normal', text: '最後に知識テストに挑戦しよう。\n正しい行動を確認して、\nもう一度チャレンジしてみよう！' },
+      ],
+      // パターンB
+      [
+        { speaker: 'bousai', expr: 'worry', text: '今回は厳しい結果になったね…\nでも、これは「練習」だから大丈夫。' },
+        { speaker: 'bousai', expr: 'normal', text: '大切なのは「次はどうするか」。\n何が危なかったか、振り返ってみよう。' },
+        { speaker: 'bousai', expr: 'smile', text: 'テストで正しい知識を確認して、\nもう一回挑戦してみて！\n次はきっとうまくいくよ！' },
+      ],
+      // パターンC
+      [
+        { speaker: 'bousai', expr: 'serious', text: '地震は怖い。\nだからこそ、準備が大事なんだ。' },
+        { speaker: 'bousai', expr: 'normal', text: '実は、防災訓練を1回やるだけで\n避難成功率は2倍になるという\nデータがあるんだよ。' },
+        { speaker: 'bousai', expr: 'smile', text: '今回の経験も立派な訓練さ！\nテストで復習して、\nもう一度やってみよう！' },
+      ],
     ],
   }
 };
+
+// ランダム選択ヘルパー
+function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+// ゲーム開始時にランダムスクリプトを生成
+function generateNovelScripts(stageNum) {
+  var key = 'stage' + stageNum;
+  var variants = NOVEL_VARIANTS[key];
+  if (!variants) return null;
+  return {
+    prologue: pickRandom(variants.prologue),
+    earthquake: pickRandom(variants.earthquake),
+    aftershake: pickRandom(variants.aftershake),
+    epilogue_success: pickRandom(variants.epilogue_success),
+    epilogue_fail: pickRandom(variants.epilogue_fail),
+  };
+}
+
+// 後方互換: NOVEL_SCRIPTS は初回読み込み時にデフォルト値を持つ
+var NOVEL_SCRIPTS = { stage1: generateNovelScripts(1) };
 
 // ============================================================
 // SECTION: BRIEFING DATA
@@ -4408,6 +4579,8 @@ function initEventListeners() {
     const stageNum = parseInt(this.getAttribute('data-stage') || '1');
     SoundManager.playSE('click');
 
+    // プレイのたびにセリフをランダム化
+    NOVEL_SCRIPTS['stage' + stageNum] = generateNovelScripts(stageNum);
     // ノベルプロローグがあればノベル→3Dの順で開始
     if (NOVEL_SCRIPTS['stage' + stageNum] && NOVEL_SCRIPTS['stage' + stageNum].prologue) {
       SoundManager.stopBGM(500);
