@@ -3318,7 +3318,7 @@ var NovelEngine = {
         var src = folder + line.speaker + '_' + line.expr + '.png';
         if (!self._imageCache[src]) {
           var img = new Image();
-          img.src = src + '?v=15';
+          img.src = src + '?v=16';
           self._imageCache[src] = img;
         }
       }
@@ -3424,7 +3424,7 @@ var NovelEngine = {
     var info = this.SPEAKERS[line.speaker];
     if (!info) return;
     var folder = (line.speaker === 'bousai') ? 'characters/shared/' : 'characters/stage' + (GAME.stageNum || 1) + '/';
-    var src = folder + line.speaker + '_' + (line.expr || 'normal') + '.png?v=15';
+    var src = folder + line.speaker + '_' + (line.expr || 'normal') + '.png?v=16';
 
     // ボウサイキャラのサイズ調整クラス
     this.charaLeft.classList.remove('chara-bousai');
