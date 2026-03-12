@@ -3500,9 +3500,13 @@ var NovelEngine = {
 
   // 表情名を実在するファイルに解決（不足画像のフォールバック）
   _EXPR_AVAILABLE: {
-    student_b: { normal: 1, panic: 1, serious: 1, smile: 1 }
+    student_b: { normal: 1, panic: 1, serious: 1, smile: 1 },
+    // Stage 2: 実在ファイルのみ登録
+    boss: { normal: 1, relief: 1, relieved: 1, serious: 1, smile: 1, surprise: 1 },
+    colleague_a: { normal: 1, relief: 1, serious: 1, smile: 1, worry: 1 },
+    colleague_b: { normal: 1, panic: 1, surprise: 1, worry: 1 }
   },
-  _EXPR_FALLBACK: { worry: 'serious', surprise: 'panic', relief: 'smile' },
+  _EXPR_FALLBACK: { worry: 'serious', surprise: 'panic', relief: 'smile', serious: 'normal', smile: 'normal' },
   _resolveExpr: function(speaker, expr) {
     var avail = this._EXPR_AVAILABLE[speaker];
     if (avail && !avail[expr] && this._EXPR_FALLBACK[expr]) {
@@ -5029,11 +5033,16 @@ function initEventListeners() {
     // ノベルプロローグがあればノベル→3Dの順で開始
     if (NOVEL_SCRIPTS['stage' + stageNum] && NOVEL_SCRIPTS['stage' + stageNum].prologue) {
       SoundManager.stopBGM(500);
-      // プロローグ中は教室のざわめき環境音を流す
-      SoundManager.startClassroomAmbient();
+      // プロローグ中は環境音を流す
+      if (stageNum === 2) {
+        SoundManager.startOfficeAmbient();
+      } else {
+        SoundManager.startClassroomAmbient();
+      }
+      var prologueBgMap = { 1: 'backgrounds/stage1/bg_classroom.png', 2: 'backgrounds/stage2/bg_office.png' };
       NovelEngine.start(
         NOVEL_SCRIPTS['stage' + stageNum].prologue,
-        'backgrounds/stage1/bg_classroom.png',
+        prologueBgMap[stageNum] || prologueBgMap[1],
         function() { initGame(stageNum); }
       );
     } else {
