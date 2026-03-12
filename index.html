@@ -9225,13 +9225,25 @@ document.addEventListener('mousemove', function(e) {
   GAME.cameraPitch = Math.max(-0.5, Math.min(1.2, GAME.cameraPitch + e.movementY * GAME.mouseSensitivity));
 });
 
-// --- タブ離脱時の自動ポーズ（ソロ）---
-document.addEventListener('visibilitychange', function() {
+// --- タブ離脱・アプリ切替時の自動ポーズ（KANKERI準拠）---
+function autoPause() {
   if (!GAME.running) return;
-  if (document.hidden && !GAME.paused) {
-    GAME.paused = true;
-    document.getElementById('pause-overlay').classList.add('active');
-  }
+  if (GAME.paused) return;
+  if (GAME.phase === 'result' || GAME.phase === 'daily') return;
+  // ノベルシーン中はポーズしない
+  var novelOv = document.getElementById('novel-overlay');
+  if (novelOv && novelOv.style.display !== 'none' && novelOv.style.display !== '') return;
+  GAME.paused = true;
+  document.getElementById('pause-overlay').classList.add('active');
+  if (document.pointerLockElement) document.exitPointerLock();
+}
+// visibilitychange: タブ切替・アプリ切替（スマホ含む）
+document.addEventListener('visibilitychange', function() {
+  if (document.hidden) autoPause();
+});
+// blur: ウィンドウからフォーカスが外れた場合（DevTools・別ウィンドウ等）
+window.addEventListener('blur', function() {
+  autoPause();
 });
 
 /**
@@ -9373,18 +9385,23 @@ function initGameControls() {
   // --- ポーズボタン（click + touchstart 両対応 — KANKERI教訓）---
   var _resumeTouched = false;
   var resumeBtn = document.getElementById('btn-resume');
+  function resumeGame() {
+    GAME.paused = false;
+    document.getElementById('pause-overlay').classList.remove('active');
+    SoundManager.playSE('click');
+    // PCポインターロック再取得
+    if (!GAME.isMobile && GAME.renderer && GAME.renderer.domElement) {
+      GAME.renderer.domElement.requestPointerLock();
+    }
+  }
   resumeBtn.addEventListener('touchstart', function(e) {
     e.preventDefault();
     _resumeTouched = true;
-    GAME.paused = false;
-    document.getElementById('pause-overlay').classList.remove('active');
-    SoundManager.playSE('click');
+    resumeGame();
   }, { passive: false });
   resumeBtn.addEventListener('click', function() {
     if (_resumeTouched) { _resumeTouched = false; return; }
-    GAME.paused = false;
-    document.getElementById('pause-overlay').classList.remove('active');
-    SoundManager.playSE('click');
+    resumeGame();
   });
 
   var _quitTouched = false;
