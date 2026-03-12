@@ -8532,14 +8532,7 @@ function updateFallingObjects(dtSec) {
         fo.falling = false;
         fo.onGround = true;
         SoundManager.playSE('click'); // 落下音代わり
-
-        // 壁コライダーとして残す（障害物）
-        var s = fo.size;
-        GAME.walls.push({
-          minX: fo.mesh.position.x - s/2, maxX: fo.mesh.position.x + s/2,
-          minZ: fo.mesh.position.z - s/2, maxZ: fo.mesh.position.z + s/2,
-          minY: 0, maxY: s
-        });
+        // ※蛍光灯・教科書は跨げるサイズのためウォールコリジョン不要
       }
 
       // プレイヤーとの当たり判定（落下中のみ）
