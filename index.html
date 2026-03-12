@@ -3179,6 +3179,17 @@ const SoundManager = {
     this._playAmbientFile('sounds/classroom-ambient.mp3', 0.25, true);
   },
 
+  // オフィスの環境音（日常パート — Stage 2）
+  startOfficeAmbient() {
+    // オフィス環境音がない場合、教室環境音を低音量で代用
+    this._playAmbientFile('sounds/classroom-ambient.mp3', 0.15, true);
+  },
+
+  // ビル前広場の環境音（Stage 2避難後）
+  startPlazaAmbient() {
+    this._playAmbientFile('sounds/schoolyard.mp3', 0.18, true);
+  },
+
   // 非常ベル + 校庭環境音（避難フェーズ）
   startEvacAlarm() {
     this._playAmbientFile('sounds/emergency-alert.mp3', 0.20, true);
@@ -4041,6 +4052,226 @@ var NOVEL_VARIANTS = {
         { speaker: 'bousai', expr: 'smile', text: '今回の経験も立派な訓練さ！\nテストで復習して、\nもう一度やってみよう！' },
       ],
     ],
+  },
+
+  stage2: {
+    // ====== プロローグ（3パターン）======
+    prologue: [
+      // パターンA: 午後のミーティング前の雑談
+      [
+        { speaker: 'narrator', text: '── 午後2時・オフィス ──' },
+        { speaker: 'boss', expr: 'normal', text: 'ミーティングは3時からだ。\nそれまで各自作業を進めてくれ。' },
+        { speaker: 'colleague_a', expr: 'normal', text: '（ふぁ〜…午後は眠いな…）' },
+        { speaker: 'colleague_b', expr: 'normal', text: 'ねえ、来週の防災訓練の案内見た？\n今年は全館避難訓練だって。' },
+        { speaker: 'colleague_a', expr: 'worry', text: 'えー、また？\n忙しいのに面倒だなぁ…' },
+        { speaker: 'colleague_b', expr: 'serious', text: '何言ってるの。\n去年、出張先で震度5に遭った時は\n本当に怖かったよ…' },
+        { speaker: 'boss', expr: 'serious', text: '防災訓練は大事だ。\nこのビルは10階建てだからな。\nいざという時、判断を間違えると命に関わる。' },
+        { speaker: 'bousai', expr: 'normal', text: 'オフィスでの地震対策ポイント！\n① 揺れたらデスクの下に入り脚を持つ\n② エレベーターは絶対に使わない\n③ 非常階段の位置を普段から確認しておく' },
+        { speaker: 'narrator', text: '── 数分後 ──' },
+      ],
+      // パターンB: コーヒーブレイク中
+      [
+        { speaker: 'narrator', text: '── 午後の休憩時間・給湯室 ──' },
+        { speaker: 'colleague_a', expr: 'normal', text: 'そういえばさ、\n地震保険って入ってる？' },
+        { speaker: 'colleague_b', expr: 'normal', text: '私は入ってるよ。\nマンションの管理組合で勧められて。' },
+        { speaker: 'colleague_a', expr: 'worry', text: '俺、まだなんだよなぁ…\n高いんでしょ？' },
+        { speaker: 'boss', expr: 'normal', text: 'このビルは耐震等級2だが、\n過信は禁物だ。\n耐震と免震は違うからな。' },
+        { speaker: 'colleague_b', expr: 'surprise', text: 'え、耐震と免震って違うんですか？' },
+        { speaker: 'boss', expr: 'serious', text: '耐震は「壊れにくい」構造、\n免震は「揺れを伝えにくい」構造だ。\nどちらにしても中にいる人間の行動が大事だ。' },
+        { speaker: 'bousai', expr: 'normal', text: 'オフィス地震のポイント！\n① デスク周りの物が凶器になる\n② キャビネットは揺れで倒れてくる\n③ コピー機は揺れで移動するから近づかない' },
+        { speaker: 'narrator', text: '── 休憩終了、業務に戻る ──' },
+      ],
+      // パターンC: 締め切り前の忙しい午後
+      [
+        { speaker: 'narrator', text: '── 午後3時・締め切り間近のオフィス ──' },
+        { speaker: 'colleague_a', expr: 'serious', text: 'うわ、今日中にこのレポート\n仕上げないと…' },
+        { speaker: 'colleague_b', expr: 'normal', text: 'ねえ、さっき防災アプリの\n緊急地震速報の通知設定したんだけど…' },
+        { speaker: 'colleague_a', expr: 'normal', text: 'え、そんなのあるの？' },
+        { speaker: 'colleague_b', expr: 'normal', text: 'うん。スマホの設定で\n緊急速報をONにしておくと、\n揺れの数秒前に知らせてくれるの。' },
+        { speaker: 'boss', expr: 'normal', text: 'いい心がけだ。\nついでに確認しておこう。\n非常口はあのドアの先だ。覚えているな？' },
+        { speaker: 'colleague_a', expr: 'surprise', text: 'あ、あそこか…\n正直、普段意識してなかったです。' },
+        { speaker: 'boss', expr: 'serious', text: '非常階段は2か所ある。\n東側と西側だ。\nどちらが近いか、覚えておけ。' },
+        { speaker: 'bousai', expr: 'smile', text: 'オフィスの備えポイント！\n① 緊急地震速報の通知設定をONに\n② 非常階段の場所を必ず確認\n③ デスク下のスペースを物で塞がない' },
+        { speaker: 'narrator', text: '── 業務再開 ──' },
+      ],
+    ],
+
+    // ====== 地震発生（3パターン）======
+    earthquake: [
+      // パターンA: 緊急地震速報 → 上司の指示
+      [
+        { speaker: 'narrator', text: '── ﾋﾟﾛﾝﾋﾟﾛﾝ！緊急地震速報です ──' },
+        { speaker: 'boss', expr: 'surprise', text: '…！緊急地震速報だ！！' },
+        { speaker: 'colleague_a', expr: 'worry', text: 'え！？ど、どうすれば…！' },
+        { speaker: 'boss', expr: 'serious', text: '全員、デスクの下に入れ！\n頭を守れ！！' },
+        {
+          type: 'choice', text: 'どうする？',
+          choices: [
+            { label: 'デスクの下に潜る', score: 10, correct: true,
+              response: { speaker: 'bousai', expr: 'smile', text: '正解！デスクの脚をしっかり持って、\n頭を守ろう！\nオフィスではキャビネットやモニターが\n落ちてくるから、デスクの下が一番安全だよ。' }},
+            { label: 'エレベーターに走る', score: -10, correct: false,
+              consequence: { icon: '🛗', text: 'エレベーターが緊急停止！\n閉じ込められた！', flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: '揺れの最中にエレベーターに乗るのは\n最も危険な行動の一つ！\n停電で閉じ込められたら救助まで\n何時間もかかることがある。\n絶対にエレベーターは使わないで！' }},
+            { label: 'コピー機の横で様子を見る', score: -5, correct: false,
+              consequence: { icon: '🖨️', text: 'コピー機が揺れで\n移動してきた！', flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: 'コピー機は100kg以上あるけど、\n大きな揺れで簡単に移動するんだ。\n挟まれたら大ケガになる。\n重い機器の近くは避けて、\n丈夫なデスクの下に入ろう！' }},
+          ]
+        },
+      ],
+      // パターンB: 突然の揺れ → 同僚Aがパニック
+      [
+        { speaker: 'narrator', text: '── ガタガタガタ…！！ ──' },
+        { speaker: 'colleague_a', expr: 'worry', text: 'う、うわあっ！\n揺れてる！地震だ！！' },
+        { speaker: 'colleague_b', expr: 'surprise', text: '大きい…！\nキャビネットが倒れそう！！' },
+        { speaker: 'colleague_b', expr: 'normal', text: '落ち着いて！\nまずデスクの下に入って！\n脚をしっかり持つのよ！' },
+        {
+          type: 'choice', text: '揺れが激しい！どうする？',
+          choices: [
+            { label: 'デスクの下に入って脚を持つ', score: 10, correct: true,
+              response: { speaker: 'bousai', expr: 'smile', text: '素晴らしい判断！\nデスクの脚を持つのは、\n揺れでデスクが動いてしまうのを防ぐため。\n頭と体をしっかり守れるよ！' }},
+            { label: '窓際に逃げる', score: -10, correct: false,
+              consequence: { icon: '🪟', text: 'ガラスが割れて\n破片が降り注いだ！', flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: 'オフィスビルの窓は大きいから、\n割れた時の破片の量もすごいんだ。\n窓際は最も危険な場所の一つ。\n窓から離れてデスクの下に入ろう！' }},
+            { label: '荷物をまとめて避難準備', score: -5, correct: false,
+              consequence: { icon: '💼', text: '荷物を集めている間に\n棚が倒れてきた！', flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: '揺れの最中に荷物を集めるのはダメ！\n数秒の判断の遅れが命取りになる。\n荷物よりまず自分の身を守ること。\n「まず低く、頭を守り、動かない」が鉄則だよ。' }},
+          ]
+        },
+      ],
+      // パターンC: サーバールームのガラスが割れる
+      [
+        { speaker: 'narrator', text: '── ガタガタ…ガシャーン！！ ──' },
+        { speaker: 'colleague_b', expr: 'surprise', text: 'サーバールームのガラスが\n割れた音がする…！！' },
+        { speaker: 'colleague_a', expr: 'worry', text: 'やばい！データが…！\n見に行かないと…！' },
+        { speaker: 'boss', expr: 'serious', text: '今はサーバーどころじゃない！\n全員、低い姿勢を取れ！\nデスクの下だ！' },
+        {
+          type: 'choice', text: '大きな揺れだ！どうする？',
+          choices: [
+            { label: '低い姿勢でデスクの下へ', score: 10, correct: true,
+              response: { speaker: 'bousai', expr: 'smile', text: '正解！地震の時は\n「まず低く、頭を守り、動かない」。\nサーバーやデータより、\n自分の命が最優先だよ！' }},
+            { label: '階段に走る', score: -10, correct: false,
+              consequence: { icon: '🏃', text: '揺れで転倒！\n階段から転げ落ちそうに！', flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: '揺れている最中に移動するのは超危険！\n特に階段は転落の恐れがある。\n揺れが収まるまではその場で\n身を守ることに集中しよう。' }},
+            { label: 'サーバールームを確認しに行く', score: -5, correct: false,
+              consequence: { icon: '💥', text: 'ガラスの破片で\n足をケガした！', flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: 'サーバーは後から復旧できるけど、\nケガをした体は簡単には治らない。\n割れたガラスの近くは特に危険。\nまず自分の安全を確保してから\n被害を確認しよう！' }},
+          ]
+        },
+      ],
+    ],
+
+    // ====== 揺れ収束後（3パターン）======
+    aftershake: [
+      // パターンA: 全員無事か確認 → エレベーター問題
+      [
+        { speaker: 'boss', expr: 'serious', text: '…揺れが収まった。\n全員、無事か？返事をしてくれ。' },
+        { speaker: 'colleague_a', expr: 'relief', text: 'は、はい…無事です…' },
+        { speaker: 'colleague_b', expr: 'normal', text: '私も大丈夫です。' },
+        { speaker: 'colleague_a', expr: 'normal', text: 'よし、早く避難しましょう。\nエレベーターで1階に降りれば\nすぐ外に出られますよ。' },
+        { speaker: 'boss', expr: 'serious', text: '待て。避難の方法を考えろ。' },
+        {
+          type: 'choice', text: 'どうやって避難する？',
+          choices: [
+            { label: '非常階段で避難する', score: 10, correct: true,
+              response: { speaker: 'bousai', expr: 'smile', text: '正解！地震後のエレベーターは絶対NG。\n余震で停止して閉じ込められる危険がある。\n東日本大震災では約14,000件もの\nエレベーター閉じ込めが発生したんだ。\n必ず非常階段を使おう！' }},
+            { label: 'エレベーターで素早く避難', score: -5, correct: false,
+              consequence: { icon: '🛗', text: '余震でエレベーターが\n緊急停止した！', flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: '地震後のエレベーター使用は厳禁！\n余震で停止し、救助まで何時間も\n閉じ込められることがある。\n東日本大震災では約14,000件の\n閉じ込めが発生した。\n必ず階段で避難しよう。' }},
+          ]
+        },
+      ],
+      // パターンB: 通電火災 → ブレーカー確認
+      [
+        { speaker: 'narrator', text: '── 揺れが収まった… ──' },
+        { speaker: 'boss', expr: 'serious', text: '全員ケガはないか？' },
+        { speaker: 'colleague_a', expr: 'relief', text: '大丈夫です…\nでもデスク周り散らかって…' },
+        { speaker: 'colleague_b', expr: 'normal', text: '停電してますね…\nあの、ブレーカーを確認した方が\nいいんじゃないですか？' },
+        { speaker: 'colleague_a', expr: 'surprise', text: 'え？なんで？\n早く逃げた方がよくない？' },
+        { speaker: 'colleague_b', expr: 'serious', text: '「通電火災」って知ってる？\n停電が復旧した時に、\n倒れた機器から火が出ることがあるの。' },
+        {
+          type: 'choice', text: '避難前にどうする？',
+          choices: [
+            { label: 'ブレーカーを確認してから避難', score: 10, correct: true,
+              response: { speaker: 'bousai', expr: 'smile', text: '素晴らしい！通電火災は\n阪神淡路大震災の火災の約6割の原因。\nブレーカーを落としてから避難すれば、\n二次災害を防げるんだ。\n余裕があれば必ず確認しよう！' }},
+            { label: '荷物を全部持って急いで避難', score: -5, correct: false,
+              consequence: { icon: '🔥', text: '数時間後、通電火災で\nオフィスが燃えてしまった…', flash: 'red', shake: false },
+              response: { speaker: 'bousai', expr: 'worry', text: '大量の荷物を持つと避難の邪魔になるし、\nブレーカーを落とさずに出ると\n通電火災の危険がある。\n貴重品だけ持って、\nブレーカーを確認してから避難しよう。' }},
+          ]
+        },
+      ],
+      // パターンC: 天井パネル落下 → 点呼して避難
+      [
+        { speaker: 'boss', expr: 'serious', text: '揺れが止まった。\n天井パネルが何枚か落ちているな…\n全員、名前を呼ぶから返事をしろ。' },
+        { speaker: 'colleague_a', expr: 'relief', text: 'はい…無事です。' },
+        { speaker: 'colleague_b', expr: 'normal', text: '大丈夫です。\nでも、通路に天井の破片が\n散らばっています。' },
+        { speaker: 'boss', expr: 'normal', text: 'よし、全員無事だ。\nこれから避難するぞ。\n足元に気をつけてくれ。' },
+        {
+          type: 'choice', text: 'どの方法で避難する？',
+          choices: [
+            { label: '落ち着いて非常階段で避難', score: 10, correct: true,
+              response: { speaker: 'bousai', expr: 'smile', text: '正解！非常階段は地震に強い構造で、\n避難経路として最も安全だよ。\n慌てず、足元に気をつけながら\n一段ずつ降りていこう。' }},
+            { label: '階段が混むからエレベーターで', score: -5, correct: false,
+              consequence: { icon: '🛗', text: '余震でエレベーターが\n途中で止まってしまった！', flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: '「階段が混む」は地震後に\nエレベーターを使う理由にならない。\n閉じ込められたら救助を待つしかない。\n少し時間がかかっても、\n安全な非常階段を使おう！' }},
+          ]
+        },
+      ],
+    ],
+
+    // ====== エピローグ成功（3パターン）======
+    epilogue_success: [
+      // パターンA
+      [
+        { speaker: 'narrator', text: '── オフィスビル前の広場 ──' },
+        { speaker: 'boss', expr: 'relief', text: '…全員の安全を確認した。\n全員無事だ。よかった。' },
+        { speaker: 'colleague_a', expr: 'relief', text: '正直、パニックになりかけました…\nでも、正しい行動ができてよかった。' },
+        { speaker: 'colleague_b', expr: 'smile', text: '日頃から避難経路を確認していたから\n落ち着いて動けたんだと思う。\nやっぱり普段の備えが大事だね。' },
+        { speaker: 'boss', expr: 'smile', text: 'その通りだ。\n今日の経験を忘れないようにしよう。' },
+        { speaker: 'bousai', expr: 'smile', text: '素晴らしい避難だったよ！\n今回学んだことをおさらいしよう。' },
+        { speaker: 'bousai', expr: 'normal', text: '① 揺れたらデスクの下で頭を守る\n② エレベーターは絶対に使わない\n③ ブレーカーを落として通電火災を防ぐ\n④ 非常階段で落ち着いて避難する' },
+        { speaker: 'bousai', expr: 'smile', text: '最後にテストで知識を確認しよう！\nオフィスでの地震対策、\nしっかり身についたかな？' },
+      ],
+      // パターンB
+      [
+        { speaker: 'narrator', text: '── オフィスビル前の広場 ──' },
+        { speaker: 'colleague_a', expr: 'relief', text: 'はぁ…助かった…\nエレベーターに乗らなくて\n本当によかったです。' },
+        { speaker: 'colleague_b', expr: 'smile', text: '上司の判断が的確でしたね。\nあの状況で冷静に指示を出すなんて。' },
+        { speaker: 'boss', expr: 'normal', text: '私も内心は焦っていたよ。\nだが、事前に対応を考えていたから\n動けたんだ。' },
+        { speaker: 'bousai', expr: 'normal', text: 'ちなみに、東日本大震災では\n約14,000件のエレベーター閉じ込めが\n発生したんだ。\nエレベーターに乗らない判断は\n本当に正しかったよ。' },
+        { speaker: 'bousai', expr: 'smile', text: 'さあ、テストで今日の知識を\n確認してみよう！\n家族や同僚にも教えてあげてね。' },
+      ],
+      // パターンC
+      [
+        { speaker: 'narrator', text: '── オフィスビル前の広場 ──' },
+        { speaker: 'colleague_b', expr: 'smile', text: '非常階段の場所、\n知っていたからスムーズに避難できた。\n日頃から確認しておくのは大事だね。' },
+        { speaker: 'colleague_a', expr: 'serious', text: '俺、正直あの非常階段の場所\n知らなかったら詰んでた…\n明日から毎日確認するよ。' },
+        { speaker: 'boss', expr: 'smile', text: 'この経験を忘れるな。\n次に備えて、防災マニュアルも\n見直しておこう。' },
+        { speaker: 'bousai', expr: 'normal', text: '高層ビルでは「長周期地震動」にも\n注意が必要だよ。\n遠くの地震でもゆっくり大きく揺れて、\n10分以上続くことがある。\n2011年の東日本大震災では\n東京や大阪の高層ビルも揺れたんだ。' },
+        { speaker: 'bousai', expr: 'smile', text: 'テストで今日の学びを確認しよう！\nオフィスの防災知識、\nバッチリ身についたかな？' },
+      ],
+    ],
+
+    // ====== エピローグ失敗（3パターン）======
+    epilogue_fail: [
+      // パターンA
+      [
+        { speaker: 'bousai', expr: 'worry', text: '残念…今回は避難がうまくいかなかったね。\nでも、ここで学べたことがあるはず。' },
+        { speaker: 'bousai', expr: 'normal', text: 'オフィスでの地震は、\n家庭とは違う危険がたくさんある。\n重い機器、ガラス、エレベーター…\n正しい知識が身を守るよ。' },
+        { speaker: 'bousai', expr: 'smile', text: 'テストで正しい行動を確認して、\nもう一度挑戦してみよう！\n次はきっとうまくいくよ！' },
+      ],
+      // パターンB
+      [
+        { speaker: 'bousai', expr: 'worry', text: '実際の災害で同じ判断をしないために、\n今回の体験を振り返ろう。' },
+        { speaker: 'bousai', expr: 'serious', text: 'オフィスビルでは「エレベーターを使わない」\n「デスクの下に入る」「非常階段で避難」、\nこの3つが基本中の基本だよ。' },
+        { speaker: 'bousai', expr: 'smile', text: 'さあ、テストで知識を確認して、\n再挑戦してみよう！\n正しい判断ができるようになるはず！' },
+      ],
+      // パターンC
+      [
+        { speaker: 'bousai', expr: 'serious', text: '高層ビルでの地震は特に危険なんだ。\n上の階ほど揺れが大きくなるし、\n避難にも時間がかかる。' },
+        { speaker: 'bousai', expr: 'normal', text: 'だからこそ、「事前の備え」と\n「正しい判断」が命を救う。\n今回の体験を無駄にしないでほしい。' },
+        { speaker: 'bousai', expr: 'smile', text: '知識確認テストに挑戦しよう！\n正しい知識を身につけて、\nもう一回やってみて！' },
+      ],
+    ],
   }
 };
 
@@ -4771,7 +5002,7 @@ function initEventListeners() {
     SoundManager.playSE('click');
 
     // 未実装ステージチェック
-    var implementedStages = [1]; // 実装済みステージ番号
+    var implementedStages = [1, 2]; // 実装済みステージ番号
     if (implementedStages.indexOf(stageNum) === -1) {
       alert('Stage ' + stageNum + ' は現在開発中です。\ncoming soon...');
       return;
@@ -4977,13 +5208,26 @@ function initGame(stageNum) {
   GAME._glassWarned = false;
   GAME._windowWarned = false;
 
-  // プレイヤーの席: col=3, row=2 → x=0.4, deskZ=4.0, 椅子z=4.4
-  GAME._playerDeskCol = 3;
-  GAME._playerDeskRow = 2;
-  GAME.player.x = -3.2 + 3 * 1.2;   // 0.4
-  GAME.player.y = 0.9;
-  GAME.player.z = 1.0 + 2 * 1.5 + 0.4; // 4.4（椅子位置）
-  GAME.player.yaw = Math.PI;
+  // ステージ別プレイヤー初期位置
+  if (stageNum === 2) {
+    // Stage 2: オフィス — プレイヤーの席(col=2, row=1)
+    GAME._playerDeskCol = 2;
+    GAME._playerDeskRow = 1;
+    GAME.player.x = -8 + 2 * 4;  // 0
+    GAME.player.y = 0.9;
+    GAME.player.z = 2 + 1 * 2.5 + 0.4; // 4.9（椅子位置）
+    GAME.player.yaw = Math.PI;
+    GAME.timeLimit = 360; // 6分
+  } else {
+    // Stage 1: 学校 — プレイヤーの席(col=3, row=2)
+    GAME._playerDeskCol = 3;
+    GAME._playerDeskRow = 2;
+    GAME.player.x = -3.2 + 3 * 1.2;   // 0.4
+    GAME.player.y = 0.9;
+    GAME.player.z = 1.0 + 2 * 1.5 + 0.4; // 4.4（椅子位置）
+    GAME.player.yaw = Math.PI;
+    GAME.timeLimit = 300; // 5分
+  }
   GAME.player.pitch = 0;
   GAME.player.isCrouching = false;
   GAME.player.isGuarding = false;
@@ -5030,16 +5274,9 @@ function initGame(stageNum) {
   dirLight.shadow.camera.bottom = -25;
   GAME.scene.add(dirLight);
 
-  for (let i = -3; i <= 3; i += 3) {
-    for (let j = -2; j <= 4; j += 3) {
-      const pl = new THREE.PointLight(0xffeedd, 0.3, 8);
-      pl.position.set(i, 2.8, j);
-      GAME.scene.add(pl);
-    }
-  }
-
   GAME._stairCutsceneActive = false;
   GAME._inSchoolyard = false;
+  GAME._inBuildingPlaza = false;
   GAME._evacMarker = null;
   GAME._blockWallZone = null;
   GAME.playerMesh = null;
@@ -5047,12 +5284,33 @@ function initGame(stageNum) {
   GAME._dustParticles = null;
   GAME._minimap = null;
   GAME._furnitureShifted = false;
-  try { buildClassroom(); } catch(e) { console.error('buildClassroom:', e); }
-  try { buildHallway(); } catch(e) { console.error('buildHallway:', e); }
-  try { buildSchoolyard(); } catch(e) { console.error('buildSchoolyard:', e); }
-  try { createPlayerModel(); } catch(e) { console.error('createPlayerModel:', e); }
-  try { spawnNPCs(); } catch(e) { console.error('spawnNPCs:', e); }
-  try { createMinimap(); } catch(e) { console.error('createMinimap:', e); }
+  GAME._elevatorTrapActive = false;
+
+  if (stageNum === 2) {
+    // Stage 2: オフィスビル12階
+    // 室内PointLight配列は buildOfficeFloor 内で配置
+    try { buildOfficeFloor(); } catch(e) { console.error('buildOfficeFloor:', e); }
+    try { buildElevatorHall(); } catch(e) { console.error('buildElevatorHall:', e); }
+    try { buildBuildingPlaza(); } catch(e) { console.error('buildBuildingPlaza:', e); }
+    try { createPlayerModel(2); } catch(e) { console.error('createPlayerModel:', e); }
+    try { spawnOfficeNPCs(); } catch(e) { console.error('spawnOfficeNPCs:', e); }
+    try { createMinimap(); } catch(e) { console.error('createMinimap:', e); }
+  } else {
+    // Stage 1: 学校
+    for (var i = -3; i <= 3; i += 3) {
+      for (var j = -2; j <= 4; j += 3) {
+        var pl = new THREE.PointLight(0xffeedd, 0.3, 8);
+        pl.position.set(i, 2.8, j);
+        GAME.scene.add(pl);
+      }
+    }
+    try { buildClassroom(); } catch(e) { console.error('buildClassroom:', e); }
+    try { buildHallway(); } catch(e) { console.error('buildHallway:', e); }
+    try { buildSchoolyard(); } catch(e) { console.error('buildSchoolyard:', e); }
+    try { createPlayerModel(); } catch(e) { console.error('createPlayerModel:', e); }
+    try { spawnNPCs(); } catch(e) { console.error('spawnNPCs:', e); }
+    try { createMinimap(); } catch(e) { console.error('createMinimap:', e); }
+  }
 
   if (GAME.isMobile) {
     document.getElementById('mobile-joystick').style.display = 'block';
@@ -5064,16 +5322,24 @@ function initGame(stageNum) {
   document.getElementById('hud-score').textContent = 'SCORE: 0';
   document.getElementById('hud-phase').textContent = GAME.phase === 'daily' ? '授業中' : '';
   document.getElementById('hud-timer').textContent = '--:--';
-  // 「授業中」ラベル表示
+  // 日常ラベル表示（ステージ別）
   var dclEl = document.getElementById('daily-class-label');
-  dclEl.innerHTML = '<div class="dcl-main">📚 授業中</div>';
+  if (stageNum === 2) {
+    dclEl.innerHTML = '<div class="dcl-main">💼 業務中</div>';
+  } else {
+    dclEl.innerHTML = '<div class="dcl-main">📚 授業中</div>';
+  }
   dclEl.className = 'active';
   document.getElementById('hud-safety-indicator').className = 'safe';
   document.getElementById('hud-safety-indicator').textContent = 'SAFE';
 
-  // 環境音: 教室のざわめき開始（日常パート）
+  // 環境音: 日常パート開始（ステージ別）
   SoundManager.stopAll();
-  SoundManager.startClassroomAmbient();
+  if (stageNum === 2) {
+    SoundManager.startOfficeAmbient();
+  } else {
+    SoundManager.startClassroomAmbient();
+  }
 
   // LOADING非表示（正常完了時）
   clearTimeout(_loadingSafety);
@@ -6606,18 +6872,559 @@ function buildSchoolyard() {
 }
 
 // ============================================================
+// SECTION: Stage 2 定数・3D環境構築関数
+// ============================================================
+var EVAC_POINT_S2 = { x: 0, z: 30, radius: 3 };
+var STAIR_TRIGGER_S2 = { minX: -2, maxX: 2, minZ: 13.5, maxZ: 15.5 };
+var GROUND_Y_S2 = 0;
+var OFFICE_FLOOR_Y = 0; // 12階だが座標上はY=0で構築
+
+// ============================================================
+// buildOfficeFloor() — Stage 2: オフィスフロア（12階）25m×15m
+// ============================================================
+function buildOfficeFloor() {
+  var scene = GAME.scene;
+  if (!PROC_TEX) PROC_TEX = generateProceduralTextures();
+  var T = PROC_TEX;
+
+  var W = 25, D = 15, H = 3.2;
+  var wallThick = 0.2;
+
+  // --- マテリアル ---
+  var floorMat = new THREE.MeshStandardMaterial({ map: T.vinylFloor, color: 0x666677, roughness: 0.8, emissive: 0x050508, emissiveIntensity: 0.05 });
+  var wallMat = new THREE.MeshStandardMaterial({ map: T.wallPlaster, color: 0xf0f0ee, roughness: 0.7, emissive: 0x080808, emissiveIntensity: 0.05 });
+  var ceilingMat = new THREE.MeshStandardMaterial({ map: T.ceiling, color: 0xf5f5f0, roughness: 0.6, emissive: 0x080808, emissiveIntensity: 0.05 });
+  var deskMat = new THREE.MeshStandardMaterial({ color: 0xd0d0d0, roughness: 0.4, metalness: 0.2, emissive: 0x080808, emissiveIntensity: 0.05 });
+  var deskLegMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.4, metalness: 0.6, emissive: 0x050505, emissiveIntensity: 0.1 });
+  var monitorMat = new THREE.MeshStandardMaterial({ color: 0x222222, emissive: 0x111155, emissiveIntensity: 0.3, roughness: 0.3 });
+  var cabinetMat = new THREE.MeshStandardMaterial({ color: 0x999999, roughness: 0.5, metalness: 0.3, emissive: 0x050505, emissiveIntensity: 0.05 });
+  var copierMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.4, metalness: 0.1, emissive: 0x050505, emissiveIntensity: 0.05 });
+  var windowMat = new THREE.MeshStandardMaterial({ color: 0x88ccee, roughness: 0.1, metalness: 0.1, transparent: true, opacity: 0.3, emissive: 0x224466, emissiveIntensity: 0.3 });
+  var serverGlassMat = new THREE.MeshStandardMaterial({ color: 0xaaddee, roughness: 0.1, transparent: true, opacity: 0.25, emissive: 0x112233, emissiveIntensity: 0.2 });
+  var breakerMat = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.5, metalness: 0.5, emissive: 0x050505, emissiveIntensity: 0.1 });
+  var doorMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.5, metalness: 0.3, emissive: 0x050505, emissiveIntensity: 0.1 });
+  var waterMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.4, metalness: 0.1, emissive: 0x050505, emissiveIntensity: 0.05 });
+
+  // --- 床 ---
+  var floor = new THREE.Mesh(new THREE.PlaneGeometry(W, D), floorMat);
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.set(0, OFFICE_FLOOR_Y, D / 2);
+  floor.receiveShadow = true;
+  scene.add(floor);
+
+  // --- 天井パネル（4×3 = 12枚） ---
+  var cpW = W / 4, cpD = D / 3;
+  for (var cpi = 0; cpi < 4; cpi++) {
+    for (var cpj = 0; cpj < 3; cpj++) {
+      var cp = new THREE.Mesh(new THREE.PlaneGeometry(cpW - 0.1, cpD - 0.1), ceilingMat);
+      cp.rotation.x = Math.PI / 2;
+      cp.position.set(-W / 2 + cpW / 2 + cpi * cpW, H, cpD / 2 + cpj * cpD);
+      scene.add(cp);
+    }
+  }
+
+  // --- 壁 ---
+  // 前壁 (Z=0)
+  var frontWall = new THREE.Mesh(new THREE.BoxGeometry(W, H, wallThick), wallMat);
+  frontWall.position.set(0, H / 2, 0);
+  frontWall.receiveShadow = true;
+  scene.add(frontWall);
+  GAME.cameraMeshes.push(frontWall);
+  GAME.walls.push({ minX: -W / 2, maxX: W / 2, minZ: -wallThick / 2, maxZ: wallThick / 2, minY: 0, maxY: H });
+
+  // 後壁 (Z=15) — 中央に非常階段ドア開口(幅2m)
+  var backWallLeft = new THREE.Mesh(new THREE.BoxGeometry((W - 2) / 2, H, wallThick), wallMat);
+  backWallLeft.position.set(-(W - 2) / 4 - 1, H / 2, D);
+  backWallLeft.receiveShadow = true;
+  scene.add(backWallLeft);
+  GAME.cameraMeshes.push(backWallLeft);
+  GAME.walls.push({ minX: -W / 2, maxX: -1, minZ: D - wallThick / 2, maxZ: D + wallThick / 2, minY: 0, maxY: H });
+
+  var backWallRight = new THREE.Mesh(new THREE.BoxGeometry((W - 2) / 2, H, wallThick), wallMat);
+  backWallRight.position.set((W - 2) / 4 + 1, H / 2, D);
+  backWallRight.receiveShadow = true;
+  scene.add(backWallRight);
+  GAME.cameraMeshes.push(backWallRight);
+  GAME.walls.push({ minX: 1, maxX: W / 2, minZ: D - wallThick / 2, maxZ: D + wallThick / 2, minY: 0, maxY: H });
+
+  // 左壁 (X=-12.5)
+  var leftWall = new THREE.Mesh(new THREE.BoxGeometry(wallThick, H, D), wallMat);
+  leftWall.position.set(-W / 2, H / 2, D / 2);
+  leftWall.receiveShadow = true;
+  scene.add(leftWall);
+  GAME.cameraMeshes.push(leftWall);
+  GAME.walls.push({ minX: -W / 2 - wallThick / 2, maxX: -W / 2 + wallThick / 2, minZ: 0, maxZ: D, minY: 0, maxY: H });
+
+  // 右壁 (X=12.5) — エレベーターホールへの開口(Z=5〜9)
+  var rightWallBottom = new THREE.Mesh(new THREE.BoxGeometry(wallThick, H, 5), wallMat);
+  rightWallBottom.position.set(W / 2, H / 2, 2.5);
+  rightWallBottom.receiveShadow = true;
+  scene.add(rightWallBottom);
+  GAME.cameraMeshes.push(rightWallBottom);
+  GAME.walls.push({ minX: W / 2 - wallThick / 2, maxX: W / 2 + wallThick / 2, minZ: 0, maxZ: 5, minY: 0, maxY: H });
+
+  var rightWallTop = new THREE.Mesh(new THREE.BoxGeometry(wallThick, H, 6), wallMat);
+  rightWallTop.position.set(W / 2, H / 2, 12);
+  rightWallTop.receiveShadow = true;
+  scene.add(rightWallTop);
+  GAME.cameraMeshes.push(rightWallTop);
+  GAME.walls.push({ minX: W / 2 - wallThick / 2, maxX: W / 2 + wallThick / 2, minZ: 9, maxZ: D, minY: 0, maxY: H });
+
+  // --- 左壁の窓（3つ） ---
+  for (var wi = 0; wi < 3; wi++) {
+    var win = new THREE.Mesh(new THREE.PlaneGeometry(0.05, 1.8, 3.5), windowMat);
+    win.position.set(-W / 2 + 0.12, H / 2 + 0.2, 3 + wi * 4.5);
+    win.rotation.y = Math.PI / 2;
+    scene.add(win);
+  }
+
+  // --- デスク配列（4×5 = 20席） ---
+  var startX = -8, startZ = 2, gapX = 4, gapZ = 2.5;
+  var playerDeskX = startX, playerDeskZ = startZ; // 最初のデスク位置を記録
+  for (var dx = 0; dx < 4; dx++) {
+    for (var dz = 0; dz < 5; dz++) {
+      var dPosX = startX + dx * gapX;
+      var dPosZ = startZ + dz * gapZ;
+
+      // デスク天板
+      var deskTop = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.04, 0.7), deskMat);
+      deskTop.position.set(dPosX, 0.72, dPosZ);
+      deskTop.receiveShadow = true;
+      deskTop.userData.isOfficeFurniture = true;
+      scene.add(deskTop);
+
+      // デスク脚（4本）
+      var legPositions = [[-0.5, -0.25], [0.5, -0.25], [-0.5, 0.25], [0.5, 0.25]];
+      for (var li = 0; li < 4; li++) {
+        var leg = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.72, 0.04), deskLegMat);
+        leg.position.set(dPosX + legPositions[li][0] * 1.0, 0.36, dPosZ + legPositions[li][1] * 0.6);
+        leg.userData.isOfficeFurniture = true;
+        scene.add(leg);
+      }
+
+      // PC本体（小さい箱）
+      var pcBox = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.3, 0.35), new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.5 }));
+      pcBox.position.set(dPosX + 0.45, 0.87, dPosZ);
+      pcBox.userData.isOfficeFurniture = true;
+      scene.add(pcBox);
+
+      // モニター（薄い板）
+      var monitor = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.35, 0.03), monitorMat);
+      monitor.position.set(dPosX, 0.92, dPosZ - 0.2);
+      monitor.userData.isOfficeFurniture = true;
+      scene.add(monitor);
+    }
+  }
+
+  // --- コピー機（2台） ---
+  var copierPositions = [[8, 0.5, 4], [8, 0.5, 10]];
+  for (var ci = 0; ci < 2; ci++) {
+    var copier = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.0, 0.6), copierMat);
+    copier.position.set(copierPositions[ci][0], copierPositions[ci][1], copierPositions[ci][2]);
+    copier.receiveShadow = true;
+    scene.add(copier);
+  }
+
+  // --- キャビネット（背の高い書棚4つ） ---
+  var cabinetPositions = [[-11, 1.0, 3], [-11, 1.0, 7], [-11, 1.0, 11], [11, 1.0, 7]];
+  for (var cbi = 0; cbi < 4; cbi++) {
+    var cabinet = new THREE.Mesh(new THREE.BoxGeometry(0.5, 2.0, 0.8), cabinetMat);
+    cabinet.position.set(cabinetPositions[cbi][0], cabinetPositions[cbi][1], cabinetPositions[cbi][2]);
+    cabinet.receiveShadow = true;
+    scene.add(cabinet);
+  }
+
+  // --- ウォーターサーバー ---
+  var waterServer = new THREE.Mesh(new THREE.BoxGeometry(0.35, 1.2, 0.35), waterMat);
+  waterServer.position.set(10, 0.6, 2);
+  scene.add(waterServer);
+  // ボトル部分（上部の円柱）
+  var waterBottle = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.4, 12), new THREE.MeshStandardMaterial({ color: 0x88ccff, transparent: true, opacity: 0.5 }));
+  waterBottle.position.set(10, 1.4, 2);
+  scene.add(waterBottle);
+
+  // --- サーバールーム（ガラス壁）Z=13〜15, X=-5〜5 ---
+  // ガラス前壁
+  var serverFrontGlass = new THREE.Mesh(new THREE.BoxGeometry(10, H, 0.05), serverGlassMat);
+  serverFrontGlass.position.set(0, H / 2, 13);
+  scene.add(serverFrontGlass);
+  GAME.cameraMeshes.push(serverFrontGlass);
+  GAME.walls.push({ minX: -5, maxX: 5, minZ: 12.97, maxZ: 13.03, minY: 0, maxY: H });
+
+  // ガラス左壁
+  var serverLeftGlass = new THREE.Mesh(new THREE.BoxGeometry(0.05, H, 2), serverGlassMat);
+  serverLeftGlass.position.set(-5, H / 2, 14);
+  scene.add(serverLeftGlass);
+  GAME.walls.push({ minX: -5.03, maxX: -4.97, minZ: 13, maxZ: 15, minY: 0, maxY: H });
+
+  // ガラス右壁
+  var serverRightGlass = new THREE.Mesh(new THREE.BoxGeometry(0.05, H, 2), serverGlassMat);
+  serverRightGlass.position.set(5, H / 2, 14);
+  scene.add(serverRightGlass);
+  GAME.walls.push({ minX: 4.97, maxX: 5.03, minZ: 13, maxZ: 15, minY: 0, maxY: H });
+
+  // サーバーラック（中の機器）
+  var rackMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.4, metalness: 0.5, emissive: 0x001100, emissiveIntensity: 0.2 });
+  for (var ri = 0; ri < 4; ri++) {
+    var rack = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.8, 0.5), rackMat);
+    rack.position.set(-3 + ri * 2, 0.9, 14);
+    scene.add(rack);
+  }
+
+  // --- ブレーカー ---
+  var breakerBox = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.5, 0.1), breakerMat);
+  breakerBox.position.set(-12, 1.5, 1);
+  scene.add(breakerBox);
+  var breakerLever = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.15, 0.06), new THREE.MeshStandardMaterial({ color: 0xff4444, roughness: 0.4, emissive: 0x441111, emissiveIntensity: 0.3 }));
+  breakerLever.position.set(-12, 1.5, 1.07);
+  scene.add(breakerLever);
+
+  // --- 非常階段ドア ---
+  var stairDoorMesh = new THREE.Mesh(new THREE.BoxGeometry(1.8, 2.4, 0.1), doorMat);
+  stairDoorMesh.position.set(0, 1.2, D - 0.05);
+  scene.add(stairDoorMesh);
+  GAME.cameraMeshes.push(stairDoorMesh);
+  // ドアが閉じている間のコリジョン
+  GAME.walls.push({ minX: -1, maxX: 1, minZ: D - wallThick / 2, maxZ: D + wallThick / 2, minY: 0, maxY: 2.4, _isDoor: true, _doorId: 'stairDoorS2' });
+
+  // 非常口サイン（ドア上部）
+  var exitSign = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.2, 0.05), new THREE.MeshStandardMaterial({ color: 0x00cc44, emissive: 0x00cc44, emissiveIntensity: 0.8 }));
+  exitSign.position.set(0, 2.6, D - 0.05);
+  scene.add(exitSign);
+
+  // --- 天井照明（4×3 = 12個の PointLight） ---
+  for (var lx = 0; lx < 4; lx++) {
+    for (var lz = 0; lz < 3; lz++) {
+      var light = new THREE.PointLight(0xffeedd, 0.4, 10);
+      light.position.set(-W / 2 + 3 + lx * (W / 4), H - 0.1, 2.5 + lz * 5);
+      scene.add(light);
+      // 照明器具のメッシュ（薄い白い板）
+      var lightPanel = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.02, 0.4), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffeedd, emissiveIntensity: 0.5 }));
+      lightPanel.position.set(-W / 2 + 3 + lx * (W / 4), H - 0.02, 2.5 + lz * 5);
+      scene.add(lightPanel);
+    }
+  }
+
+  // --- インタラクタブル ---
+  // デスク（机の下に潜る）
+  GAME.interactables.push({ x: playerDeskX, z: playerDeskZ, radius: 1.5, action: 'hideUnderDesk', label: 'デスクの下に潜る', phases: ['earthquake', 'shaking'], used: false });
+
+  // ブレーカー
+  GAME.interactables.push({ x: -12, z: 1, radius: 1.5, action: 'turnOffBreaker', label: 'ブレーカーを落とす', phases: ['aftershake', 'evacuation'], used: false, mesh: breakerLever });
+
+  // 非常階段ドア
+  GAME.interactables.push({ x: 0, z: 14.5, radius: 2.0, action: 'openStairDoor', label: '非常階段のドアを開ける', phases: ['aftershake', 'evacuation'], used: false, mesh: stairDoorMesh });
+
+  // 参照保存
+  GAME._stairDoorS2 = stairDoorMesh;
+  GAME._breakerLeverS2 = breakerLever;
+}
+
+// ============================================================
+// buildElevatorHall() — Stage 2: エレベーターホール（5m×4m）
+// ============================================================
+function buildElevatorHall() {
+  var scene = GAME.scene;
+  if (!PROC_TEX) PROC_TEX = generateProceduralTextures();
+  var T = PROC_TEX;
+
+  var hallX = 12.5, hallZ = 5;
+  var hallW = 5, hallD = 4, H = 3.2;
+  var wallThick = 0.2;
+
+  var floorMat = new THREE.MeshStandardMaterial({ map: T.vinylFloor, color: 0x777777, roughness: 0.7, emissive: 0x050505, emissiveIntensity: 0.05 });
+  var wallMat = new THREE.MeshStandardMaterial({ map: T.wallPlaster, color: 0xeeeee8, roughness: 0.7, emissive: 0x080808, emissiveIntensity: 0.05 });
+  var elevDoorMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, roughness: 0.3, metalness: 0.7, emissive: 0x080808, emissiveIntensity: 0.1 });
+  var buttonMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.3, metalness: 0.5, emissive: 0x222200, emissiveIntensity: 0.2 });
+
+  // 床
+  var hallFloor = new THREE.Mesh(new THREE.PlaneGeometry(hallW, hallD), floorMat);
+  hallFloor.rotation.x = -Math.PI / 2;
+  hallFloor.position.set(hallX + hallW / 2, 0, hallZ + hallD / 2);
+  hallFloor.receiveShadow = true;
+  scene.add(hallFloor);
+
+  // 天井
+  var hallCeiling = new THREE.Mesh(new THREE.PlaneGeometry(hallW, hallD), new THREE.MeshStandardMaterial({ map: T.ceiling, color: 0xf5f5f0, roughness: 0.6 }));
+  hallCeiling.rotation.x = Math.PI / 2;
+  hallCeiling.position.set(hallX + hallW / 2, H, hallZ + hallD / 2);
+  scene.add(hallCeiling);
+
+  // 右壁（エレベーターホール外壁 X=17.5）
+  var hallRightWall = new THREE.Mesh(new THREE.BoxGeometry(wallThick, H, hallD), wallMat);
+  hallRightWall.position.set(hallX + hallW, H / 2, hallZ + hallD / 2);
+  hallRightWall.receiveShadow = true;
+  scene.add(hallRightWall);
+  GAME.cameraMeshes.push(hallRightWall);
+  GAME.walls.push({ minX: hallX + hallW - wallThick / 2, maxX: hallX + hallW + wallThick / 2, minZ: hallZ, maxZ: hallZ + hallD, minY: 0, maxY: H });
+
+  // 前壁（Z=5）
+  var hallFrontWall = new THREE.Mesh(new THREE.BoxGeometry(hallW, H, wallThick), wallMat);
+  hallFrontWall.position.set(hallX + hallW / 2, H / 2, hallZ);
+  hallFrontWall.receiveShadow = true;
+  scene.add(hallFrontWall);
+  GAME.cameraMeshes.push(hallFrontWall);
+  GAME.walls.push({ minX: hallX, maxX: hallX + hallW, minZ: hallZ - wallThick / 2, maxZ: hallZ + wallThick / 2, minY: 0, maxY: H });
+
+  // 後壁（Z=9）
+  var hallBackWall = new THREE.Mesh(new THREE.BoxGeometry(hallW, H, wallThick), wallMat);
+  hallBackWall.position.set(hallX + hallW / 2, H / 2, hallZ + hallD);
+  hallBackWall.receiveShadow = true;
+  scene.add(hallBackWall);
+  GAME.cameraMeshes.push(hallBackWall);
+  GAME.walls.push({ minX: hallX, maxX: hallX + hallW, minZ: hallZ + hallD - wallThick / 2, maxZ: hallZ + hallD + wallThick / 2, minY: 0, maxY: H });
+
+  // エレベーター2基（金属ドア、閉じた状態）
+  for (var ei = 0; ei < 2; ei++) {
+    var elevZ = hallZ + 1.2 + ei * 1.8;
+    // 左ドア
+    var elevDoorL = new THREE.Mesh(new THREE.BoxGeometry(0.5, 2.2, 0.05), elevDoorMat);
+    elevDoorL.position.set(hallX + hallW - 0.15, 1.1, elevZ);
+    scene.add(elevDoorL);
+    // 右ドア
+    var elevDoorR = new THREE.Mesh(new THREE.BoxGeometry(0.5, 2.2, 0.05), elevDoorMat);
+    elevDoorR.position.set(hallX + hallW - 0.15, 1.1, elevZ + 0.55);
+    scene.add(elevDoorR);
+    // ドア枠
+    var elevFrame = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2.4, 1.2), new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.4, metalness: 0.5 }));
+    elevFrame.position.set(hallX + hallW - 0.15, 1.2, elevZ + 0.275);
+    scene.add(elevFrame);
+  }
+
+  // エレベーターボタン（壁面）
+  var elevButton = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.12, 0.04), buttonMat);
+  elevButton.position.set(hallX + hallW - 0.25, 1.1, hallZ + hallD / 2);
+  scene.add(elevButton);
+  // ボタンの上下矢印（装飾）
+  var arrowUp = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.03, 0.02), new THREE.MeshStandardMaterial({ color: 0x00ff00, emissive: 0x00ff00, emissiveIntensity: 0.5 }));
+  arrowUp.position.set(hallX + hallW - 0.25, 1.15, hallZ + hallD / 2 + 0.025);
+  scene.add(arrowUp);
+
+  // 照明（1個）
+  var hallLight = new THREE.PointLight(0xffeedd, 0.4, 8);
+  hallLight.position.set(hallX + hallW / 2, H - 0.1, hallZ + hallD / 2);
+  scene.add(hallLight);
+
+  // インタラクタブル — エレベーターボタン
+  GAME.interactables.push({ x: 14.5, z: 7, radius: 1.5, action: 'pressElevatorButton', label: 'エレベーターを呼ぶ', phases: ['aftershake', 'evacuation'], used: false });
+}
+
+// ============================================================
+// buildOfficeLobby() — Stage 2: 1階ロビー（テレポート先）15m×10m
+// ============================================================
+function buildOfficeLobby() {
+  var scene = GAME.scene;
+  if (!PROC_TEX) PROC_TEX = generateProceduralTextures();
+  var T = PROC_TEX;
+
+  var W = 15, D = 10, H = 3.5;
+  var wallThick = 0.2;
+
+  // 大理石風の床
+  var lobbyFloorMat = new THREE.MeshStandardMaterial({ map: T.vinylFloor, color: 0xe0ddd0, roughness: 0.3, emissive: 0x060605, emissiveIntensity: 0.05 });
+  var lobbyWallMat = new THREE.MeshStandardMaterial({ map: T.wallPlaster, color: 0xf0efe8, roughness: 0.6, emissive: 0x080808, emissiveIntensity: 0.05 });
+  var lobbyCeilingMat = new THREE.MeshStandardMaterial({ map: T.ceiling, color: 0xf5f5f0, roughness: 0.5, emissive: 0x080808, emissiveIntensity: 0.05 });
+  var glassDoorMat = new THREE.MeshStandardMaterial({ color: 0xaaddee, roughness: 0.1, transparent: true, opacity: 0.2, emissive: 0x224455, emissiveIntensity: 0.2 });
+
+  // 床
+  var lobbyFloor = new THREE.Mesh(new THREE.PlaneGeometry(W, D), lobbyFloorMat);
+  lobbyFloor.rotation.x = -Math.PI / 2;
+  lobbyFloor.position.set(0, GROUND_Y_S2, D / 2);
+  lobbyFloor.receiveShadow = true;
+  scene.add(lobbyFloor);
+
+  // 天井
+  var lobbyCeiling = new THREE.Mesh(new THREE.PlaneGeometry(W, D), lobbyCeilingMat);
+  lobbyCeiling.rotation.x = Math.PI / 2;
+  lobbyCeiling.position.set(0, H, D / 2);
+  scene.add(lobbyCeiling);
+
+  // 前壁 (Z=0)
+  var lobbyFront = new THREE.Mesh(new THREE.BoxGeometry(W, H, wallThick), lobbyWallMat);
+  lobbyFront.position.set(0, H / 2, 0);
+  lobbyFront.receiveShadow = true;
+  scene.add(lobbyFront);
+  GAME.cameraMeshes.push(lobbyFront);
+  GAME.walls.push({ minX: -W / 2, maxX: W / 2, minZ: -wallThick / 2, maxZ: wallThick / 2, minY: 0, maxY: H });
+
+  // 左壁 (X=-7.5)
+  var lobbyLeft = new THREE.Mesh(new THREE.BoxGeometry(wallThick, H, D), lobbyWallMat);
+  lobbyLeft.position.set(-W / 2, H / 2, D / 2);
+  lobbyLeft.receiveShadow = true;
+  scene.add(lobbyLeft);
+  GAME.cameraMeshes.push(lobbyLeft);
+  GAME.walls.push({ minX: -W / 2 - wallThick / 2, maxX: -W / 2 + wallThick / 2, minZ: 0, maxZ: D, minY: 0, maxY: H });
+
+  // 右壁 (X=7.5)
+  var lobbyRight = new THREE.Mesh(new THREE.BoxGeometry(wallThick, H, D), lobbyWallMat);
+  lobbyRight.position.set(W / 2, H / 2, D / 2);
+  lobbyRight.receiveShadow = true;
+  scene.add(lobbyRight);
+  GAME.cameraMeshes.push(lobbyRight);
+  GAME.walls.push({ minX: W / 2 - wallThick / 2, maxX: W / 2 + wallThick / 2, minZ: 0, maxZ: D, minY: 0, maxY: H });
+
+  // 後壁 (Z=10) — 出口開口（中央3m幅）
+  var lobbyBackLeft = new THREE.Mesh(new THREE.BoxGeometry((W - 3) / 2, H, wallThick), lobbyWallMat);
+  lobbyBackLeft.position.set(-(W - 3) / 4 - 1.5, H / 2, D);
+  lobbyBackLeft.receiveShadow = true;
+  scene.add(lobbyBackLeft);
+  GAME.cameraMeshes.push(lobbyBackLeft);
+  GAME.walls.push({ minX: -W / 2, maxX: -1.5, minZ: D - wallThick / 2, maxZ: D + wallThick / 2, minY: 0, maxY: H });
+
+  var lobbyBackRight = new THREE.Mesh(new THREE.BoxGeometry((W - 3) / 2, H, wallThick), lobbyWallMat);
+  lobbyBackRight.position.set((W - 3) / 4 + 1.5, H / 2, D);
+  lobbyBackRight.receiveShadow = true;
+  scene.add(lobbyBackRight);
+  GAME.cameraMeshes.push(lobbyBackRight);
+  GAME.walls.push({ minX: 1.5, maxX: W / 2, minZ: D - wallThick / 2, maxZ: D + wallThick / 2, minY: 0, maxY: H });
+
+  // ガラスの自動ドア（壊れて開放状態 — 左右に割れたガラス片）
+  var glassDoorL = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2.4, 0.05), glassDoorMat);
+  glassDoorL.position.set(-1.8, 1.2, D);
+  glassDoorL.rotation.y = 0.5; // 半開き
+  scene.add(glassDoorL);
+
+  var glassDoorR = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2.4, 0.05), glassDoorMat);
+  glassDoorR.position.set(1.8, 1.2, D);
+  glassDoorR.rotation.y = -0.5; // 半開き
+  scene.add(glassDoorR);
+
+  // ロビー受付カウンター
+  var counterMat = new THREE.MeshStandardMaterial({ color: 0x8b7355, roughness: 0.5, emissive: 0x0a0806, emissiveIntensity: 0.1 });
+  var counter = new THREE.Mesh(new THREE.BoxGeometry(3, 1.0, 0.8), counterMat);
+  counter.position.set(-3, 0.5, 3);
+  scene.add(counter);
+
+  // 照明（2個）
+  var lobbyLight1 = new THREE.PointLight(0xffeedd, 0.5, 12);
+  lobbyLight1.position.set(-3, H - 0.1, D / 2);
+  scene.add(lobbyLight1);
+  var lobbyLight2 = new THREE.PointLight(0xffeedd, 0.5, 12);
+  lobbyLight2.position.set(3, H - 0.1, D / 2);
+  scene.add(lobbyLight2);
+}
+
+// ============================================================
+// buildBuildingPlaza() — Stage 2: ビル前広場（避難場所）20m×20m
+// ============================================================
+function buildBuildingPlaza() {
+  var scene = GAME.scene;
+  if (!PROC_TEX) PROC_TEX = generateProceduralTextures();
+  var T = PROC_TEX;
+
+  // 地面（アスファルト/コンクリート）
+  var groundMat = new THREE.MeshStandardMaterial({ map: T.concrete, color: 0xaaaaaa, roughness: 0.85, emissive: 0x050505, emissiveIntensity: 0.05 });
+  var ground = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), groundMat);
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.set(EVAC_POINT_S2.x, GROUND_Y_S2, EVAC_POINT_S2.z);
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  // ビル外壁（背後に見えるビルの壁面）
+  var extWallMat = new THREE.MeshStandardMaterial({ map: T.concrete, color: 0xc0bdb0, roughness: 0.75, emissive: 0x050505, emissiveIntensity: 0.05 });
+  var extWall = new THREE.Mesh(new THREE.BoxGeometry(20, 40, 0.3), extWallMat);
+  extWall.position.set(0, 20, 10);
+  scene.add(extWall);
+  GAME.cameraMeshes.push(extWall);
+  GAME.walls.push({ minX: -10, maxX: 10, minZ: 9.85, maxZ: 10.15, minY: 0, maxY: 40 });
+
+  // ビル外壁の窓（オフィスビル風の格子状窓）
+  var extWinMat = new THREE.MeshStandardMaterial({ color: 0x6699bb, roughness: 0.1, metalness: 0.1, transparent: true, opacity: 0.4, emissive: 0x334466, emissiveIntensity: 0.2 });
+  for (var ewi = 0; ewi < 8; ewi++) {
+    for (var ewr = 0; ewr < 12; ewr++) {
+      var extWin = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.5), extWinMat);
+      extWin.position.set(-7 + ewi * 2.2, 2 + ewr * 3.2, 10.16);
+      scene.add(extWin);
+    }
+  }
+
+  // 道路のライン
+  var lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 });
+  var roadLine = new THREE.Mesh(new THREE.PlaneGeometry(0.15, 20), lineMat);
+  roadLine.rotation.x = -Math.PI / 2;
+  roadLine.position.set(-8, GROUND_Y_S2 + 0.01, EVAC_POINT_S2.z);
+  scene.add(roadLine);
+  var roadLine2 = new THREE.Mesh(new THREE.PlaneGeometry(0.15, 20), lineMat);
+  roadLine2.rotation.x = -Math.PI / 2;
+  roadLine2.position.set(8, GROUND_Y_S2 + 0.01, EVAC_POINT_S2.z);
+  scene.add(roadLine2);
+
+  // --- 避難ポイントマーカー（オレンジの円 + 看板 + 光柱） ---
+  var markerMat = new THREE.MeshStandardMaterial({ color: 0xff6b00, roughness: 0.5, emissive: 0xff6b00, emissiveIntensity: 0.4, transparent: true, opacity: 0.6 });
+  var marker = new THREE.Mesh(new THREE.CylinderGeometry(EVAC_POINT_S2.radius, EVAC_POINT_S2.radius, 0.05, 32), markerMat);
+  marker.position.set(EVAC_POINT_S2.x, GROUND_Y_S2 + 0.03, EVAC_POINT_S2.z);
+  scene.add(marker);
+  GAME._evacMarkerS2 = marker;
+
+  // 避難ポイント看板
+  var evacSignMat = new THREE.MeshStandardMaterial({ color: 0xff6b00, roughness: 0.4, emissive: 0xff6b00, emissiveIntensity: 0.5 });
+  var evacPole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.5, 8), new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.5, emissive: 0x050505 }));
+  evacPole.position.set(EVAC_POINT_S2.x, 1.25, EVAC_POINT_S2.z - EVAC_POINT_S2.radius - 0.5);
+  scene.add(evacPole);
+  var evacBoard = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.4, 0.05), evacSignMat);
+  evacBoard.position.set(EVAC_POINT_S2.x, 2.3, EVAC_POINT_S2.z - EVAC_POINT_S2.radius - 0.5);
+  scene.add(evacBoard);
+
+  // 光柱ビーム
+  var beamGeo = new THREE.CylinderGeometry(0.3, 1.0, 20, 16, 1, true);
+  var beamMat = new THREE.MeshBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0.25, side: THREE.DoubleSide, depthWrite: false });
+  var beam = new THREE.Mesh(beamGeo, beamMat);
+  beam.position.set(EVAC_POINT_S2.x, 10, EVAC_POINT_S2.z);
+  scene.add(beam);
+  GAME._evacBeamS2 = beam;
+  GAME._evacBeamMatS2 = beamMat;
+
+  // 地面の発光サークル
+  var glowGeo = new THREE.CircleGeometry(EVAC_POINT_S2.radius + 0.5, 32);
+  var glowMat = new THREE.MeshBasicMaterial({ color: 0x00ff66, transparent: true, opacity: 0.3, side: THREE.DoubleSide, depthWrite: false });
+  var glowCircle = new THREE.Mesh(glowGeo, glowMat);
+  glowCircle.rotation.x = -Math.PI / 2;
+  glowCircle.position.set(EVAC_POINT_S2.x, GROUND_Y_S2 + 0.04, EVAC_POINT_S2.z);
+  scene.add(glowCircle);
+  GAME._evacGlowS2 = glowCircle;
+
+  // 内側リング
+  var innerRingGeo = new THREE.RingGeometry(0.5, EVAC_POINT_S2.radius, 32);
+  var innerRingMat = new THREE.MeshBasicMaterial({ color: 0x00ffaa, transparent: true, opacity: 0.2, side: THREE.DoubleSide, depthWrite: false });
+  var innerRing = new THREE.Mesh(innerRingGeo, innerRingMat);
+  innerRing.rotation.x = -Math.PI / 2;
+  innerRing.position.set(EVAC_POINT_S2.x, GROUND_Y_S2 + 0.05, EVAC_POINT_S2.z);
+  scene.add(innerRing);
+
+  // 照明（広場用のポイントライト 2個）
+  var plazaLight1 = new THREE.PointLight(0xffeedd, 0.3, 20);
+  plazaLight1.position.set(-5, 8, EVAC_POINT_S2.z);
+  scene.add(plazaLight1);
+  var plazaLight2 = new THREE.PointLight(0xffeedd, 0.3, 20);
+  plazaLight2.position.set(5, 8, EVAC_POINT_S2.z);
+  scene.add(plazaLight2);
+}
+
+// ============================================================
 // SECTION: 階段カットシーン（フェード演出で3F→1F移動）
 // ============================================================
 GAME._stairCutsceneActive = false;
 GAME._inSchoolyard = false;
 
 function checkStairTrigger() {
-  if (GAME._stairCutsceneActive || GAME._inSchoolyard) return;
+  if (GAME._stairCutsceneActive || GAME._inSchoolyard || GAME._inBuildingPlaza) return;
   if (GAME.phase !== 'evacuation') return;
 
   var p = GAME.player;
 
-  // 普通の階段に近づいた場合（不正解ルート）→ 崩壊警告
+  if (GAME.stageNum === 2) {
+    // Stage 2: 非常階段ドアが開いていて、トリガーゾーンに入った場合
+    if (GAME._stairDoorOpen) {
+      var inTrig2 = p.x > STAIR_TRIGGER_S2.minX && p.x < STAIR_TRIGGER_S2.maxX &&
+                    p.z > STAIR_TRIGGER_S2.minZ && p.z < STAIR_TRIGGER_S2.maxZ;
+      if (inTrig2) {
+        startStairCutsceneS2();
+      }
+    }
+    return;
+  }
+
+  // Stage 1: 普通の階段に近づいた場合（不正解ルート）→ 崩壊警告
   if (GAME._normalStairZone && !GAME._normalStairWarned) {
     if (p.x > GAME._normalStairZone.minX && p.x < GAME._normalStairZone.maxX &&
         p.z > GAME._normalStairZone.minZ && p.z < GAME._normalStairZone.maxZ) {
@@ -6625,7 +7432,6 @@ function checkStairTrigger() {
       GAME.score = Math.max(0, GAME.score - 5);
       SoundManager.playSE('hit');
       showAdvisor('天井材が崩落して通れない！\n廊下の反対側（左側）に非常口がある！', 'warning');
-      // 画面を少し揺らす
       if (GAME.camera) {
         var origY = GAME.camera.position.y;
         GAME.camera.position.y += 0.1;
@@ -6633,8 +7439,6 @@ function checkStairTrigger() {
       }
     }
   }
-
-  // ※非常口はインタラクトシステム（Eキー/モバイルタップ）で操作
 
   // セクション2左端のドア前に到達 → カットシーン開始
   var inTrigger = p.x > STAIR_TRIGGER.minX && p.x < STAIR_TRIGGER.maxX &&
@@ -6744,6 +7548,93 @@ function spawnSchoolyardNPCs() {
   }
 }
 
+// ====== Stage 2: 非常階段カットシーン ======
+function startStairCutsceneS2() {
+  GAME._stairCutsceneActive = true;
+  GAME.scoring.usedStairs = true;
+
+  var overlay = document.createElement('div');
+  overlay.id = 'stair-fade-overlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:#000;opacity:0;z-index:9999;transition:opacity 0.8s;pointer-events:none;display:flex;align-items:center;justify-content:center;';
+  var text = document.createElement('div');
+  text.style.cssText = 'color:#ff6b00;font-family:"Share Tech Mono",monospace;font-size:clamp(16px,4vw,24px);text-align:center;opacity:0;transition:opacity 0.5s 0.5s;';
+  text.innerHTML = currentLang === 'ja'
+    ? '非常階段で12階→1階へ移動中...<br><span style="font-size:0.7em;color:#999;">「落ち着いて、手すりを掴んで降りよう」</span>'
+    : 'Taking emergency stairs from 12F to 1F...<br><span style="font-size:0.7em;color:#999;">"Stay calm, hold the handrail"</span>';
+  overlay.appendChild(text);
+  document.body.appendChild(overlay);
+
+  requestAnimationFrame(function() {
+    overlay.style.opacity = '1';
+    text.style.opacity = '1';
+  });
+  SoundManager.playSE('click');
+
+  setTimeout(function() {
+    teleportToBuildingPlaza();
+    overlay.style.opacity = '0';
+    text.style.opacity = '0';
+    setTimeout(function() {
+      if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+      GAME._stairCutsceneActive = false;
+    }, 1000);
+  }, 3000);
+}
+
+function teleportToBuildingPlaza() {
+  GAME._inBuildingPlaza = true;
+  SoundManager.stopAmbient(500);
+  setTimeout(function() { SoundManager.startPlazaAmbient(); }, 600);
+  GAME.player.x = 0;
+  GAME.player.y = 0.9;
+  GAME.player.z = 20; // 広場の手前
+  GAME.player.yaw = Math.PI;
+
+  // fog・照明を屋外に変更
+  GAME.scene.fog = new THREE.FogExp2(0x87ceeb, 0.005);
+  GAME.renderer.setClearColor(0x87ceeb);
+
+  GAME.scene.traverse(function(obj) {
+    if (obj.isDirectionalLight) {
+      obj.intensity = 1.0;
+      obj.position.set(10, 20, 30);
+      obj.shadow.camera.left = -20;
+      obj.shadow.camera.right = 20;
+      obj.shadow.camera.top = 20;
+      obj.shadow.camera.bottom = -20;
+      obj.shadow.camera.updateProjectionMatrix();
+    }
+  });
+
+  showAdvisor('ビル前広場の避難ポイント（オレンジ）に集合しよう！', 'normal');
+
+  // 広場にNPC群（先に避難した同僚）を配置
+  spawnPlazaNPCs();
+}
+
+function spawnPlazaNPCs() {
+  GAME._plazaNPCs = [];
+  // 上司（避難ポイント手前で待機）
+  var bossModel = createNPCModel(0x1a237e, 1.7, 0xf5c6a0);
+  bossModel.position.set(EVAC_POINT_S2.x + 2, 0, EVAC_POINT_S2.z - 2);
+  bossModel.rotation.y = Math.PI;
+  GAME.scene.add(bossModel);
+  GAME._plazaNPCs.push({ mesh: bossModel, role: 'boss', phase: 0 });
+
+  var colors = [0xf5f5f5, 0xe8e8e8, 0xeeeeee, 0xe0e0e0, 0xf0f0f0, 0xdadada];
+  for (var i = 0; i < 8; i++) {
+    var angle = (i / 8) * Math.PI * 2;
+    var r = 1.0 + Math.random() * 1.5;
+    var sx = EVAC_POINT_S2.x + Math.cos(angle) * r;
+    var sz = EVAC_POINT_S2.z + Math.sin(angle) * r;
+    var nModel = createNPCModel(colors[i % colors.length], 1.55 + Math.random() * 0.15, 0xf5c6a0);
+    nModel.position.set(sx, 0, sz);
+    nModel.rotation.y = Math.random() * Math.PI * 2;
+    GAME.scene.add(nModel);
+    GAME._plazaNPCs.push({ mesh: nModel, role: 'colleague', phase: Math.random() * 6 });
+  }
+}
+
 // 校庭NPCの微動アニメーション
 function updateSchoolyardNPCs(dtSec) {
   if (!GAME._schoolyardNPCs) return;
@@ -6763,7 +7654,23 @@ function updateSchoolyardNPCs(dtSec) {
 }
 
 function checkEvacPointReached() {
-  // 校庭エリア（Z>30）に入ったらフラグ自動設定
+  if (GAME.stageNum === 2) {
+    // Stage 2: ビル前広場
+    if (!GAME._inBuildingPlaza) return;
+    if (GAME.scoring.reachedEvacPoint) return;
+    var p2 = GAME.player;
+    var dx2 = p2.x - EVAC_POINT_S2.x;
+    var dz2 = p2.z - EVAC_POINT_S2.z;
+    if (Math.sqrt(dx2 * dx2 + dz2 * dz2) < EVAC_POINT_S2.radius) {
+      GAME.scoring.reachedEvacPoint = true;
+      GAME.scoring.withinTimeLimit = GAME.totalTimer < GAME.timeLimit;
+      SoundManager.playSE('correct');
+      transitionPhase('result');
+    }
+    return;
+  }
+
+  // Stage 1: 校庭
   if (!GAME._inSchoolyard && GAME.phase === 'evacuation' && GAME.player.z > 30) {
     teleportToSchoolyard();
   }
@@ -6777,7 +7684,6 @@ function checkEvacPointReached() {
     GAME.scoring.reachedEvacPoint = true;
     GAME.scoring.withinTimeLimit = GAME.totalTimer < GAME.timeLimit;
     SoundManager.playSE('correct');
-    // ゴール到達 → 即座にノベル演出に切り替え
     transitionPhase('result');
   }
 }
@@ -6798,24 +7704,33 @@ function checkBlockWallProximity() {
 // ============================================================
 // SECTION: プレイヤーモデル（KANKERI方式 — 関節ベース棒人間）
 // ============================================================
-function createPlayerModel() {
+function createPlayerModel(stageNum) {
   var figure = new THREE.Group();
+  var sn = stageNum || GAME.stageNum || 1;
 
   // --- パラメータ（KANKERI子どもキャラ完全準拠） ---
-  var headRadius = 0.17;
-  var torsoLength = 0.34;
-  var torsoRadius = 0.10;
-  var upperArmLength = 0.18;
-  var lowerArmLength = 0.16;
+  var headRadius = sn === 2 ? 0.16 : 0.17;
+  var torsoLength = sn === 2 ? 0.38 : 0.34;
+  var torsoRadius = sn === 2 ? 0.11 : 0.10;
+  var upperArmLength = sn === 2 ? 0.20 : 0.18;
+  var lowerArmLength = sn === 2 ? 0.18 : 0.16;
   var armRadius = 0.045;
-  var upperLegLength = 0.22;
-  var lowerLegLength = 0.22;
+  var upperLegLength = sn === 2 ? 0.25 : 0.22;
+  var lowerLegLength = sn === 2 ? 0.25 : 0.22;
   var legRadius = 0.055;
 
-  // --- マテリアル（学生服カラー） ---
-  var bodyMat = new THREE.MeshStandardMaterial({ color: 0x223355, emissive: 0x223355, emissiveIntensity: 0.3, roughness: 0.7, metalness: 0.1 });
+  // --- マテリアル ---
+  var bodyMat, pantsMat;
+  if (sn === 2) {
+    // Stage 2: 白シャツ + グレースラックス（オフィスワーカー）
+    bodyMat = new THREE.MeshStandardMaterial({ color: 0xf5f5f5, emissive: 0xf5f5f5, emissiveIntensity: 0.2, roughness: 0.6, metalness: 0.05 });
+    pantsMat = new THREE.MeshStandardMaterial({ color: 0x424242, emissive: 0x424242, emissiveIntensity: 0.15, roughness: 0.7 });
+  } else {
+    // Stage 1: 学生服カラー
+    bodyMat = new THREE.MeshStandardMaterial({ color: 0x223355, emissive: 0x223355, emissiveIntensity: 0.3, roughness: 0.7, metalness: 0.1 });
+    pantsMat = new THREE.MeshStandardMaterial({ color: 0x1a1a33, emissive: 0x1a1a33, emissiveIntensity: 0.15, roughness: 0.7 });
+  }
   var skinMat = new THREE.MeshStandardMaterial({ color: 0xf5c6a0, emissive: 0xf5c6a0, emissiveIntensity: 0.1, roughness: 0.6 });
-  var pantsMat = new THREE.MeshStandardMaterial({ color: 0x1a1a33, emissive: 0x1a1a33, emissiveIntensity: 0.15, roughness: 0.7 });
   var hairMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8, emissive: 0x111111, emissiveIntensity: 0.1 });
 
   // --- 頭（KANKERI準拠: headに直接add） ---
@@ -6861,6 +7776,18 @@ function createPlayerModel() {
   var torso = new THREE.Mesh(new THREE.CylinderGeometry(torsoRadius, torsoRadius * 1.05, torsoLength, 12), bodyMat);
   torso.castShadow = true;
   torso.add(neckPivot);
+
+  // Stage 2: ネクタイ
+  if (sn === 2) {
+    var tieMat = new THREE.MeshStandardMaterial({ color: 0x1a237e, emissive: 0x1a237e, emissiveIntensity: 0.2 });
+    var tie = new THREE.Mesh(new THREE.BoxGeometry(0.03, torsoLength * 0.7, 0.015), tieMat);
+    tie.position.set(0, 0.02, torsoRadius * 0.95);
+    torso.add(tie);
+    // ネクタイ結び目
+    var tieKnot = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.03, 0.02), tieMat);
+    tieKnot.position.set(0, torsoLength * 0.35, torsoRadius * 0.95);
+    torso.add(tieKnot);
+  }
 
   // --- 腕（KANKERI関節式: 肩→上腕→肘→前腕→手） ---
   function createArm(side) {
@@ -7299,6 +8226,65 @@ function spawnNPCs() {
   }
 }
 
+// ====== Stage 2: オフィスNPC配置 ======
+function spawnOfficeNPCs() {
+  GAME.npcs = [];
+  GAME._exitedNPCs = 0;
+
+  // 上司NPC（オフィス奥 — ダークスーツ）
+  var bossModel = createNPCModel(0x1a237e, 1.7, 0xf5c6a0);
+  bossModel.position.set(8, 0, 12);
+  GAME.scene.add(bossModel);
+  GAME.npcs.push({
+    mesh: bossModel, role: 'boss',
+    x: 8, z: 12, targetX: 8, targetZ: 12,
+    behavior: 'calm', state: 'idle',
+    speed: 0.018, phase: 0,
+    npcH: 1.7, evacuationDelay: 5, exited: false,
+    deskX: 8, deskZ: 11.5,
+  });
+
+  // 同僚NPC（16名 — 各デスクに1人ずつ配置）
+  var deskStartX = -8, deskStartZ = 2, gapX = 4, gapZ = 2.5;
+  var maleColors = [0xf5f5f5, 0xe8e8e8, 0xeeeeee]; // ワイシャツ系
+  var femaleColors = [0xf5f5f5, 0xe0e0e0, 0xf0f0f0]; // オフィスカジュアル
+  var colleagueCount = 0;
+
+  for (var col = 0; col < 4; col++) {
+    for (var row = 0; row < 5; row++) {
+      if (colleagueCount >= 16) break;
+      // プレイヤーの席はスキップ
+      if (col === GAME._playerDeskCol && row === GAME._playerDeskRow) continue;
+      var sx = deskStartX + col * gapX;
+      var sz = deskStartZ + row * gapZ + 0.4;
+
+      // 行動パターン: 冷静60%, パニック25%, 負傷15%
+      var rand = Math.random();
+      var behavior = rand < 0.6 ? 'calm' : rand < 0.85 ? 'panic' : 'injured';
+
+      var isMale = Math.random() > 0.5;
+      var bodyColor = isMale ? maleColors[colleagueCount % maleColors.length] : femaleColors[colleagueCount % femaleColors.length];
+      var npcHeight = 1.55 + Math.random() * 0.2; // 大人サイズ
+      var model = createNPCModel(bodyColor, npcHeight, 0xf5c6a0);
+      model.position.set(sx, 0, sz);
+      GAME.scene.add(model);
+
+      GAME.npcs.push({
+        mesh: model, role: 'colleague',
+        x: sx, z: sz, targetX: sx, targetZ: sz,
+        behavior: behavior, state: 'idle',
+        speed: 0.010 + Math.random() * 0.008,
+        phase: 0, deskX: sx, deskZ: deskStartZ + row * gapZ,
+        helped: false,
+        npcH: npcHeight,
+        evacuationDelay: col * 3 + row * 0.8 + Math.random() * 2,
+        exited: false,
+      });
+      colleagueCount++;
+    }
+  }
+}
+
 // ====== 黒板チョーク文字アニメーション ======
 function updateBlackboardText(elapsed) {
   if (!GAME._bbCtx || !GAME._bbTexture) return;
@@ -7366,7 +8352,27 @@ function updateSingleNPC(npc, dtSec) {
   switch (GAME.phase) {
     case 'daily':
       npc.phase += dtSec;
-      if (npc.role === 'student') {
+      if (npc.role === 'colleague') {
+        // Stage 2: 同僚のオフィスワーク（PCに向かって座っている）
+        var coSeatY = 0.33 - (npc.npcH || 1.6) * 0.38;
+        mesh.position.y = coSeatY + Math.sin(npc.phase * 1.5) * 0.002;
+        mesh.rotation.y = Math.PI;
+        var coSeed = (npc.deskX || 0) * 5 + (npc.deskZ || 0) * 3;
+        var coHead = mesh.userData.head;
+        if (coHead) coHead.rotation.x = 0.15 + Math.sin(npc.phase * 0.6 + coSeed) * 0.04;
+        var coBody = mesh.userData.body;
+        if (coBody) coBody.rotation.z = Math.sin(npc.phase * 0.8 + coSeed) * 0.01;
+      } else if (npc.role === 'boss') {
+        // Stage 2: 上司（立って歩き回る）
+        mesh.position.y = Math.sin(npc.phase * 2) * 0.003;
+        var bossT = GAME.phaseTimer || 0;
+        // ゆっくり歩き回る
+        npc.x = 8 + Math.sin(bossT * 0.3) * 2;
+        npc.z = 12 + Math.cos(bossT * 0.25) * 1.5;
+        mesh.position.x = npc.x;
+        mesh.position.z = npc.z;
+        mesh.rotation.y = Math.atan2(Math.cos(bossT * 0.3), -Math.sin(bossT * 0.25));
+      } else if (npc.role === 'student') {
         // 椅子座面(Y=0.38)に腰が合う高さ: 0.33 - height * 0.40
         var seatY = 0.33 - (npc.npcH || 1.35) * 0.40;
         mesh.position.y = seatY + Math.sin(npc.phase * 2) * 0.003;
@@ -7684,8 +8690,14 @@ function updateSingleNPC(npc, dtSec) {
           var rur = mesh.userData.rightLeg.children[0];
           if (rur && rur.children[0]) rur.children[0].rotation.x = 0;
         }
-        npc.targetX = 4.2;
-        npc.targetZ = 6.6;
+        if (GAME.stageNum === 2) {
+          // Stage 2: 非常階段ドアへ (x=0, z=14.5)
+          npc.targetX = 0 + (Math.random() - 0.5) * 2;
+          npc.targetZ = 14.5;
+        } else {
+          npc.targetX = 4.2;
+          npc.targetZ = 6.6;
+        }
       }
 
       // ドアへ移動
@@ -7695,6 +8707,7 @@ function updateSingleNPC(npc, dtSec) {
       if (edist > 0.5) {
         var espeed = npc.speed;
         if (npc.role === 'teacher') espeed = npc.speed * 1.5;
+        else if (npc.role === 'boss') espeed = npc.speed * 1.4;
         else if (npc.behavior === 'panic') espeed = npc.speed * 1.2;
         else if (npc.behavior === 'injured') espeed = npc.speed * 0.5;
         npc.x += (edx / edist) * espeed;
@@ -7733,17 +8746,30 @@ function updateSingleNPC(npc, dtSec) {
         if (!npc._hallwayPhase) {
           npc._hallwayPhase = 1;
           GAME._exitedNPCs = (GAME._exitedNPCs || 0) + 1;
-          if (GAME._exitedNPCs === 3) {
-            showAdvisor('生徒たちが避難を始めた！君も廊下へ向かおう！', 'normal');
-          } else if (GAME._exitedNPCs >= 20) {
-            showAdvisor('ほとんどの生徒が避難完了！急いで！', 'warning');
+          if (GAME.stageNum === 2) {
+            if (GAME._exitedNPCs === 3) {
+              showAdvisor('同僚たちが非常階段へ向かっている！君も急ごう！', 'normal');
+            } else if (GAME._exitedNPCs >= 12) {
+              showAdvisor('ほとんどの社員が避難完了！急いで！', 'warning');
+            }
+            // Stage 2 ウェイポイント: 非常階段ドア → 退出
+            npc._waypoints = [
+              { x: 0, z: 15.5 },   // 非常階段ドア通過
+              { x: 0, z: 17.0 },   // 退出
+            ];
+          } else {
+            if (GAME._exitedNPCs === 3) {
+              showAdvisor('生徒たちが避難を始めた！君も廊下へ向かおう！', 'normal');
+            } else if (GAME._exitedNPCs >= 20) {
+              showAdvisor('ほとんどの生徒が避難完了！急いで！', 'warning');
+            }
+            // Stage 1 ウェイポイント: ドア出口(廊下内) → 廊下左端(非常口)
+            npc._waypoints = [
+              { x: 5.5, z: 6.6 },   // ドアを通って廊下に出る
+              { x: 6.0, z: 9.0 },   // 廊下を非常口方向へ
+              { x: 6.0, z: 11.0 },  // 非常口
+            ];
           }
-          // ウェイポイント: ドア出口(廊下内) → 廊下左端(非常口)
-          npc._waypoints = [
-            { x: 5.5, z: 6.6 },   // ドアを通って廊下に出る
-            { x: 6.0, z: 9.0 },   // 廊下を非常口方向へ
-            { x: 6.0, z: 11.0 },  // 非常口
-          ];
           npc._wpIndex = 0;
           npc.targetX = npc._waypoints[0].x;
           npc.targetZ = npc._waypoints[0].z;
@@ -7970,7 +8996,72 @@ function performInteract() {
       var oldBtn = document.getElementById('emergency-exit-btn');
       if (oldBtn) oldBtn.remove();
       break;
+
+    case 'pressElevatorButton':
+      // Stage 2: エレベータートラップ — 乗ると避難失敗
+      startElevatorTrap();
+      break;
+
+    case 'openStairDoor':
+      // Stage 2: 非常階段ドアを開ける
+      GAME.scoring.usedStairs = true;
+      GAME.score += 5;
+      showAdvisor('非常階段のドアを開けた！12階から1階まで、階段で避難しよう！', 'praise');
+      showItemGet('🚪 非常階段のドアを開放！ — 正しい避難ルート');
+      // ドアのコリジョン除去
+      if (GAME._stairDoorCollision) {
+        var sdIdx = GAME.walls.indexOf(GAME._stairDoorCollision);
+        if (sdIdx >= 0) GAME.walls.splice(sdIdx, 1);
+        GAME._stairDoorOpen = true;
+      }
+      if (target.mesh) {
+        target.mesh.position.z += 1.5; // ドアを奥に開く
+      }
+      break;
   }
+}
+
+// ====== Stage 2: エレベータートラップ ======
+function startElevatorTrap() {
+  if (GAME._elevatorTrapActive) return;
+  GAME._elevatorTrapActive = true;
+  GAME.scoring.noElevator = false;
+  GAME.running = false;
+  if (document.pointerLockElement) document.exitPointerLock();
+
+  // フェードアウト→エレベーター内演出→ゲームオーバー
+  var overlay = document.createElement('div');
+  overlay.id = 'elevator-trap-overlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:#000;opacity:0;z-index:9999;transition:opacity 0.8s;display:flex;flex-direction:column;align-items:center;justify-content:center;';
+  document.body.appendChild(overlay);
+
+  // フェードイン
+  requestAnimationFrame(function() { overlay.style.opacity = '1'; });
+
+  // 1.5秒後: エレベーター内テキスト表示
+  setTimeout(function() {
+    overlay.innerHTML = '<div style="color:#ff4444;font-family:Share Tech Mono,monospace;font-size:clamp(18px,4vw,28px);text-align:center;animation:pulse 1s infinite">'
+      + '⚠️ エレベーターが停止しました<br>'
+      + '<span style="font-size:0.7em;color:#999">余震により完全停止…閉じ込められた</span></div>';
+    SoundManager.playSE('alarm');
+  }, 1500);
+
+  // 4秒後: 防災クンの警告
+  setTimeout(function() {
+    overlay.innerHTML += '<div style="color:#ffaa00;font-family:Noto Sans JP,sans-serif;font-size:clamp(14px,3vw,20px);margin-top:30px;padding:20px;max-width:600px;text-align:center;">'
+      + '地震の後にエレベーターに乗ってはいけません。<br>'
+      + '余震や停電で閉じ込められる危険があります。<br>'
+      + '必ず非常階段を使って避難しましょう。<br>'
+      + '<span style="font-size:0.8em;color:#888">東日本大震災では約14,000件のエレベーター閉じ込めが発生</span></div>';
+  }, 4000);
+
+  // 8秒後: ゲームオーバー
+  setTimeout(function() {
+    if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    GAME.hitCount = 3; // 避難失敗扱い
+    GAME.running = true;
+    transitionPhase('result');
+  }, 8000);
 }
 
 // インタラクトプロンプト表示（近くにインタラクト対象がある時）
@@ -8079,7 +9170,7 @@ function createMinimap() {
 function updateMinimap() {
   var canvas = GAME._minimap;
   if (!canvas) return;
-  var show = (GAME.phase === 'aftershake' || GAME.phase === 'evacuation' || GAME._inSchoolyard) && GAME.running && !GAME.paused;
+  var show = (GAME.phase === 'aftershake' || GAME.phase === 'evacuation' || GAME._inSchoolyard || GAME._inBuildingPlaza) && GAME.running && !GAME.paused;
   canvas.style.display = show ? 'block' : 'none';
   if (!show) return;
 
@@ -8087,69 +9178,126 @@ function updateMinimap() {
   var w = canvas.width, h = canvas.height;
   ctx.clearRect(0, 0, w, h);
 
-  // マップ範囲: X=-20~20, Z=-2~62 → 40x64
-  var mapMinX = -20, mapMaxX = 20, mapMinZ = -2, mapMaxZ = 62;
-  var scaleX = w / (mapMaxX - mapMinX);
-  var scaleZ = h / (mapMaxZ - mapMinZ);
+  if (GAME.stageNum === 2) {
+    // === Stage 2: オフィスビル ===
+    // マップ範囲: X=-15~15, Z=-5~45
+    var mapMinX = -15, mapMaxX = 15, mapMinZ = -5, mapMaxZ = 45;
+    var scaleX = w / (mapMaxX - mapMinX);
+    var scaleZ = h / (mapMaxZ - mapMinZ);
+    function toMap(x, z) {
+      return [(x - mapMinX) * scaleX, h - (z - mapMinZ) * scaleZ];
+    }
 
-  function toMap(x, z) {
-    return [(x - mapMinX) * scaleX, h - (z - mapMinZ) * scaleZ];
+    if (!GAME._inBuildingPlaza) {
+      // オフィスフロア（25m×15m）
+      ctx.fillStyle = 'rgba(160,160,180,0.5)';
+      var of1 = toMap(-12.5, 0);
+      var of2 = toMap(12.5, 15);
+      ctx.fillRect(of1[0], of2[1], of2[0] - of1[0], of1[1] - of2[1]);
+
+      // エレベーターホール（危険: 赤表示）
+      ctx.fillStyle = 'rgba(255,50,50,0.4)';
+      var eh1 = toMap(-2.5, 15);
+      var eh2 = toMap(2.5, 19);
+      ctx.fillRect(eh1[0], eh2[1], eh2[0] - eh1[0], eh1[1] - eh2[1]);
+
+      // 非常階段ドア位置（緑の目印）
+      ctx.fillStyle = 'rgba(0,255,65,0.7)';
+      var sd = toMap(0, 14.5);
+      ctx.fillRect(sd[0] - 4, sd[1] - 2, 8, 4);
+    } else {
+      // ビル前広場（20m×20m）
+      ctx.fillStyle = 'rgba(200,184,152,0.3)';
+      var pl1 = toMap(-10, 20);
+      var pl2 = toMap(10, 40);
+      ctx.fillRect(pl1[0], pl2[1], pl2[0] - pl1[0], pl1[1] - pl2[1]);
+    }
+
+    // 避難ポイント
+    ctx.fillStyle = 'rgba(255,107,0,0.7)';
+    var ep2 = toMap(EVAC_POINT_S2.x, EVAC_POINT_S2.z);
+    ctx.beginPath();
+    ctx.arc(ep2[0], ep2[1], 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 避難ルート（点線）
+    ctx.strokeStyle = 'rgba(0,255,65,0.4)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    var s1 = toMap(0, 7);     // オフィス中央
+    var s2 = toMap(0, 14.5);  // 非常階段ドア
+    var s3 = toMap(0, 30);    // 広場
+    ctx.moveTo(s1[0], s1[1]);
+    ctx.lineTo(s2[0], s2[1]);
+    ctx.lineTo(s3[0], s3[1]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  } else {
+    // === Stage 1: 学校 ===
+    // マップ範囲: X=-20~20, Z=-2~62 → 40x64
+    var mapMinX = -20, mapMaxX = 20, mapMinZ = -2, mapMaxZ = 62;
+    var scaleX = w / (mapMaxX - mapMinX);
+    var scaleZ = h / (mapMaxZ - mapMinZ);
+    function toMap(x, z) {
+      return [(x - mapMinX) * scaleX, h - (z - mapMinZ) * scaleZ];
+    }
+
+    // 校舎
+    ctx.fillStyle = 'rgba(180,170,150,0.5)';
+    var c1 = toMap(-4.5, -1);
+    var c2 = toMap(4.5, 24);
+    ctx.fillRect(c1[0], c2[1], c2[0] - c1[0], c1[1] - c2[1]);
+
+    // 校庭
+    ctx.fillStyle = 'rgba(200,184,152,0.3)';
+    var g1 = toMap(-20, 20);
+    var g2 = toMap(20, 60);
+    ctx.fillRect(g1[0], g2[1], g2[0] - g1[0], g1[1] - g2[1]);
+
+    // 廊下の障害物表示（赤い×マーク）
+    if (GAME._debrisWalls) {
+      ctx.fillStyle = 'rgba(255,50,50,0.6)';
+      GAME._debrisWalls.forEach(function(dw) {
+        var d1 = toMap(dw.minX, dw.minZ);
+        var d2 = toMap(dw.maxX, dw.maxZ);
+        ctx.fillRect(d1[0], d2[1], d2[0] - d1[0], d1[1] - d2[1]);
+      });
+    }
+
+    // ガラスエリア（黄色警告）
+    if (GAME._glassZone) {
+      ctx.fillStyle = 'rgba(255,255,0,0.3)';
+      var gz1 = toMap(GAME._glassZone.minX, GAME._glassZone.minZ);
+      var gz2 = toMap(GAME._glassZone.maxX, GAME._glassZone.maxZ);
+      ctx.fillRect(gz1[0], gz2[1], gz2[0] - gz1[0], gz1[1] - gz2[1]);
+    }
+
+    // 避難ポイント
+    ctx.fillStyle = 'rgba(255,107,0,0.7)';
+    var ep = toMap(EVAC_POINT.x, EVAC_POINT.z);
+    ctx.beginPath();
+    ctx.arc(ep[0], ep[1], 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 避難ルートガイド（点線矢印：教室→廊下→階段→校庭→集合点）
+    ctx.strokeStyle = 'rgba(0,255,65,0.4)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    var r1 = toMap(4.2, 9);  // 教室ドア
+    var r2 = toMap(4, 10.5); // 廊下右寄り
+    var r3 = toMap(-2, 10.5); // 非常口（廊下左端）
+    var r4 = toMap(0, 35);  // 校庭
+    var r5 = toMap(0, 45);  // 避難ポイント
+    ctx.moveTo(r1[0], r1[1]);
+    ctx.lineTo(r2[0], r2[1]);
+    ctx.lineTo(r3[0], r3[1]);
+    ctx.lineTo(r4[0], r4[1]);
+    ctx.lineTo(r5[0], r5[1]);
+    ctx.stroke();
+    ctx.setLineDash([]);
   }
-
-  // 校舎
-  ctx.fillStyle = 'rgba(180,170,150,0.5)';
-  var c1 = toMap(-4.5, -1);
-  var c2 = toMap(4.5, 24);
-  ctx.fillRect(c1[0], c2[1], c2[0] - c1[0], c1[1] - c2[1]);
-
-  // 校庭
-  ctx.fillStyle = 'rgba(200,184,152,0.3)';
-  var g1 = toMap(-20, 20);
-  var g2 = toMap(20, 60);
-  ctx.fillRect(g1[0], g2[1], g2[0] - g1[0], g1[1] - g2[1]);
-
-  // 廊下の障害物表示（赤い×マーク）
-  if (GAME._debrisWalls) {
-    ctx.fillStyle = 'rgba(255,50,50,0.6)';
-    GAME._debrisWalls.forEach(function(dw) {
-      var d1 = toMap(dw.minX, dw.minZ);
-      var d2 = toMap(dw.maxX, dw.maxZ);
-      ctx.fillRect(d1[0], d2[1], d2[0] - d1[0], d1[1] - d2[1]);
-    });
-  }
-
-  // ガラスエリア（黄色警告）
-  if (GAME._glassZone) {
-    ctx.fillStyle = 'rgba(255,255,0,0.3)';
-    var gz1 = toMap(GAME._glassZone.minX, GAME._glassZone.minZ);
-    var gz2 = toMap(GAME._glassZone.maxX, GAME._glassZone.maxZ);
-    ctx.fillRect(gz1[0], gz2[1], gz2[0] - gz1[0], gz1[1] - gz2[1]);
-  }
-
-  // 避難ポイント
-  ctx.fillStyle = 'rgba(255,107,0,0.7)';
-  var ep = toMap(EVAC_POINT.x, EVAC_POINT.z);
-  ctx.beginPath();
-  ctx.arc(ep[0], ep[1], 5, 0, Math.PI * 2);
-  ctx.fill();
-
-  // 避難ルートガイド（点線矢印：教室→廊下→階段→校庭→集合点）
-  ctx.strokeStyle = 'rgba(0,255,65,0.4)';
-  ctx.lineWidth = 1;
-  ctx.setLineDash([3, 3]);
-  ctx.beginPath();
-  var r1 = toMap(4.2, 9);  // 教室ドア
-  var r2 = toMap(4, 10.5); // 廊下右寄り
-  var r3 = toMap(-2, 10.5); // 非常口（廊下左端）
-  var r4 = toMap(0, 35);  // 校庭
-  var r5 = toMap(0, 45);  // 避難ポイント
-  ctx.moveTo(r1[0], r1[1]);
-  ctx.lineTo(r2[0], r2[1]);
-  ctx.lineTo(r3[0], r3[1]);
-  ctx.lineTo(r4[0], r4[1]);
-  ctx.lineTo(r5[0], r5[1]);
-  ctx.stroke();
-  ctx.setLineDash([]);
 
   // プレイヤー
   ctx.fillStyle = '#00ff41';
@@ -8175,7 +9323,7 @@ function shiftFurnitureAfterQuake() {
   GAME._furnitureShifted = true;
   // シーン内のデスク・椅子メッシュを少しずらす・傾ける
   GAME.scene.traverse(function(obj) {
-    if (obj.isMesh && obj.userData && obj.userData.isClassroomFurniture) {
+    if (obj.isMesh && obj.userData && (obj.userData.isClassroomFurniture || obj.userData.isOfficeFurniture)) {
       obj.position.x += (Math.random() - 0.5) * 0.15;
       obj.position.z += (Math.random() - 0.5) * 0.1;
       obj.rotation.y += (Math.random() - 0.5) * 0.15;
@@ -8269,6 +9417,14 @@ function gameLoop(timestamp) {
   // 校庭NPC更新
   if (GAME._inSchoolyard) {
     updateSchoolyardNPCs(dtSec);
+  }
+  // Stage 2: 広場NPC更新
+  if (GAME._inBuildingPlaza && GAME._plazaNPCs) {
+    for (var pi = 0; pi < GAME._plazaNPCs.length; pi++) {
+      var pnpc = GAME._plazaNPCs[pi];
+      pnpc.phase += dtSec;
+      pnpc.mesh.position.y = Math.sin(pnpc.phase * 2) * 0.005;
+    }
   }
 
   // ミニマップ更新
@@ -8404,16 +9560,16 @@ function transitionPhase(newPhase) {
     SoundManager.stopAmbient(300);
     SoundManager.playBGM('BGM/JISHIN_earthquake.mp3', 0.35, false);
     SoundManager.playEarthquakeAlarm(); // J-Alert風警報音（ピロンピロン）
+    var eqBg = GAME.stageNum === 2 ? 'backgrounds/stage2/bg_office_shake.png' : 'backgrounds/stage1/bg_classroom_shake.png';
     NovelEngine.start(
       novelScripts.earthquake,
-      'backgrounds/stage1/bg_classroom_shake.png',
+      eqBg,
       function() {
         GAME.running = true;
-        // 3D復帰時にPointer Lock再取得
         if (!GAME.isMobile && GAME.renderer && GAME.renderer.domElement) {
           GAME.renderer.domElement.requestPointerLock();
         }
-        requestAnimationFrame(gameLoop); // ゲームループ再開
+        requestAnimationFrame(gameLoop);
         _doTransitionPhase('earthquake');
       }
     );
@@ -8425,15 +9581,16 @@ function transitionPhase(newPhase) {
     GAME._novelAftershakeDone = true;
     GAME.running = false;
     if (document.pointerLockElement) document.exitPointerLock();
+    var asBg = GAME.stageNum === 2 ? 'backgrounds/stage2/bg_office_shake.png' : 'backgrounds/stage1/bg_classroom_shake.png';
     NovelEngine.start(
       novelScripts.aftershake,
-      'backgrounds/stage1/bg_classroom_shake.png',
+      asBg,
       function() {
         GAME.running = true;
         if (!GAME.isMobile && GAME.renderer && GAME.renderer.domElement) {
           GAME.renderer.domElement.requestPointerLock();
         }
-        requestAnimationFrame(gameLoop); // ゲームループ再開
+        requestAnimationFrame(gameLoop);
         _doTransitionPhase('aftershake');
       }
     );
@@ -8450,9 +9607,12 @@ function transitionPhase(newPhase) {
       ? novelScripts.epilogue_fail
       : novelScripts.epilogue_success;
     if (epilogueScript) {
-      var epilogueBg = (GAME.hitCount >= 3)
-        ? 'backgrounds/stage1/bg_classroom_shake.png'
-        : 'backgrounds/stage1/bg_schoolyard.png';
+      var epilogueBg;
+      if (GAME.stageNum === 2) {
+        epilogueBg = (GAME.hitCount >= 3) ? 'backgrounds/stage2/bg_office_shake.png' : 'backgrounds/stage2/bg_building_plaza.png';
+      } else {
+        epilogueBg = (GAME.hitCount >= 3) ? 'backgrounds/stage1/bg_classroom_shake.png' : 'backgrounds/stage1/bg_schoolyard.png';
+      }
       NovelEngine.start(epilogueScript, epilogueBg, function() {
         _doTransitionPhase('result');
       });
@@ -8536,17 +9696,22 @@ function _doTransitionPhase(newPhase) {
       SoundManager.stopAmbient(500);
       setTimeout(function() { SoundManager.startEvacAlarm(); }, 600);
       GAME._exitedNPCs = 0;
-      GAME._evacuationStarted = true; // 避難開始フラグ（机コリジョン無視用）
-      // プレイヤーを通路に移動（机に埋まり防止）
-      GAME.player.x = 3.5;
-      GAME.player.z = 4;
+      GAME._evacuationStarted = true;
       GAME.player.isCrouching = false;
-      showAdvisor('避難開始！教室のドアから廊下へ出よう！', 'normal');
-      // Stage1: 先生が自動で火・ブレーカーを処理する演出
-      if (GAME.stageNum === 1) {
+
+      if (GAME.stageNum === 2) {
+        // Stage 2: オフィス — プレイヤーを通路に移動
+        GAME.player.x = 0;
+        GAME.player.z = 7;
+        showAdvisor('避難開始！非常階段を目指そう！エレベーターは使うな！', 'normal');
+      } else {
+        // Stage 1: 学校
+        GAME.player.x = 3.5;
+        GAME.player.z = 4;
+        showAdvisor('避難開始！教室のドアから廊下へ出よう！', 'normal');
+        // Stage1: 先生が自動で火・ブレーカーを処理する演出
         setTimeout(function() {
           showAdvisor('田中先生がストーブの火を消した！', 'normal');
-          // ストーブの炎エフェクトを消す
           if (GAME._stoveFlame) GAME._stoveFlame.visible = false;
           if (GAME._stoveLight) GAME._stoveLight.intensity = 0;
         }, 2000);
@@ -8653,17 +9818,34 @@ function updateQuake(dtSec) {
 
 // 落下物の生成予約（揺れ中にタイミングをずらして生成）
 function scheduleFallingObjects() {
-  // Stage 1: 蛍光灯(3個)・本(5個) — 時間をずらして落下
-  var schedule = [
-    { time: 2, type: 'light', x: -2, z: 2 },     // 蛍光灯1
-    { time: 4, type: 'light', x: 1, z: 4 },       // 蛍光灯2
-    { time: 7, type: 'book', x: -1.5, z: 7.5 },   // ロッカーから教科書
-    { time: 8, type: 'book', x: -2.5, z: 7.8 },
-    { time: 9, type: 'light', x: 3, z: 6 },       // 蛍光灯3
-    { time: 10, type: 'book', x: -2, z: 8 },
-    { time: 12, type: 'book', x: -1, z: 7.2 },
-    { time: 14, type: 'book', x: -3, z: 7.5 },
-  ];
+  var schedule;
+  if (GAME.stageNum === 2) {
+    // Stage 2: 天井パネル・書類・コピー機部品・モニター — オフィス向け
+    schedule = [
+      { time: 2, type: 'light', x: -4, z: 3 },      // 天井照明パネル1
+      { time: 3, type: 'book', x: -8, z: 5 },        // キャビネットから書類
+      { time: 4, type: 'light', x: 4, z: 8 },        // 天井照明パネル2
+      { time: 5, type: 'book', x: -7, z: 3 },        // デスクからファイル
+      { time: 6, type: 'light', x: 0, z: 6 },        // 天井照明パネル3
+      { time: 7, type: 'book', x: 8, z: 4.5 },       // コピー機そばの書類
+      { time: 8, type: 'book', x: -4, z: 10 },       // キャビネットから書類
+      { time: 9, type: 'light', x: -6, z: 11 },      // 天井照明パネル4
+      { time: 11, type: 'book', x: 0, z: 2.5 },      // デスクからモニター落下
+      { time: 13, type: 'book', x: 4, z: 12 },       // 書類散乱
+    ];
+  } else {
+    // Stage 1: 蛍光灯(3個)・本(5個) — 時間をずらして落下
+    schedule = [
+      { time: 2, type: 'light', x: -2, z: 2 },     // 蛍光灯1
+      { time: 4, type: 'light', x: 1, z: 4 },       // 蛍光灯2
+      { time: 7, type: 'book', x: -1.5, z: 7.5 },   // ロッカーから教科書
+      { time: 8, type: 'book', x: -2.5, z: 7.8 },
+      { time: 9, type: 'light', x: 3, z: 6 },       // 蛍光灯3
+      { time: 10, type: 'book', x: -2, z: 8 },
+      { time: 12, type: 'book', x: -1, z: 7.2 },
+      { time: 14, type: 'book', x: -3, z: 7.5 },
+    ];
+  }
   GAME._fallingSchedule = schedule;
   GAME._fallingSpawned = {};
 }
@@ -8925,6 +10107,38 @@ var QUIZ_DATA = {
       answer: 2,
       explain: '割れたガラスの上を素足や靴下で歩くと、深い切り傷を負い、歩けなくなることがあります。まず靴やスリッパを履き、ガラスのない経路を選んで避難しましょう。'
     }
+  ],
+  2: [
+    {
+      q: 'オフィスビルで地震が発生した時、最初にすべき行動は？',
+      choices: ['エレベーターで避難する', 'デスクの下に入り、脚を持って頭を守る', '重要書類をまとめる', 'スマホで地震情報を確認する'],
+      answer: 1,
+      explain: '高層ビルでも基本は「まず低く、頭を守り、動かない」です。特にオフィスのキャビネットやコピー機は揺れで移動するため、頑丈なデスクの下が最も安全です。'
+    },
+    {
+      q: '地震後の避難で、絶対に使ってはいけないものは？',
+      choices: ['非常階段', '防火扉', 'エレベーター', '非常口'],
+      answer: 2,
+      explain: '地震後のエレベーターは余震で停止し、閉じ込められる危険があります。東日本大震災では約14,000件のエレベーター閉じ込めが発生しました。必ず階段で避難しましょう。'
+    },
+    {
+      q: '高層ビルで地震時に特に注意すべき現象は？',
+      choices: ['液状化現象', '長周期地震動', '津波', '停電'],
+      answer: 1,
+      explain: '長周期地震動は高層ビルをゆっくり大きく揺らす現象です。2011年の東日本大震災では、震源から遠く離れた東京や大阪の高層ビルが10分以上揺れ続けました。'
+    },
+    {
+      q: '避難前にブレーカーを落とす理由は？',
+      choices: ['電気代を節約するため', '通電火災を防ぐため', '照明を消すため', 'エレベーターを止めるため'],
+      answer: 1,
+      explain: '通電火災は停電が復旧した際に、倒れた電気機器や損傷した配線から発生する火災です。阪神淡路大震災の火災の約6割が通電火災でした。'
+    },
+    {
+      q: 'オフィスで「落ちてこない・倒れてこない・移動してこない」場所として最も安全なのは？',
+      choices: ['窓際のデスク', 'コピー機の横', 'キャビネットの前', '柱の近くの丈夫なデスクの下'],
+      answer: 3,
+      explain: '地震の3原則「落ちてこない・倒れてこない・移動してこない」場所を選びましょう。柱の近くは構造的に強く、丈夫なデスクの下なら落下物からも身を守れます。'
+    }
   ]
 };
 
@@ -9073,6 +10287,12 @@ function calculateScore() {
     score += (GAME._novelChoiceScore || 0);
     // おはしも違反ペナルティ
     if (GAME._oshimoViolations > 0) score -= GAME._oshimoViolations * 3;
+  } else if (stg === 2) {
+    // Stage2（オフィス）: ブレーカー+安否確認+エレベーター不使用+ノベル
+    if (s.turnedOffBreaker) score += 6;
+    if (s.checkedSafety) score += 5;
+    if (s.noElevator) score += 6; // エレベーターに乗らなかったボーナス
+    score += (GAME._novelChoiceScore || 0);
   } else if (stg === 3) {
     // Stage3（自宅）: ストーブ消火+ブレーカー+靴+ドア = 24点
     if (s.turnedOffFire) score += 6;
@@ -9080,7 +10300,7 @@ function calculateScore() {
     if (s.turnedOffBreaker) score += 6;
     if (s.putOnShoes) score += 6;
   } else {
-    // Stage2（オフィス）等: 全項目
+    // その他: 全項目
     if (s.turnedOffFire) score += 6;
     if (s.openedDoor) score += 6;
     if (s.turnedOffBreaker) score += 6;
@@ -9138,7 +10358,8 @@ function showResult() {
     if (rankNameEl) rankNameEl.textContent = '「' + r.title + '」';
     if (scoreEl) scoreEl.textContent = GAME.score;
     if (timeEl) timeEl.textContent = min + ':' + (sec < 10 ? '0' : '') + sec;
-    if (stageLabel) stageLabel.textContent = 'Stage ' + GAME.stageNum + ': 学校（教室）';
+    var stageNames = { 1: '学校（教室）', 2: 'オフィスビル（12階）', 3: '一軒家', 4: 'マンション', 5: '地下街' };
+    if (stageLabel) stageLabel.textContent = 'Stage ' + GAME.stageNum + ': ' + (stageNames[GAME.stageNum] || '');
     if (titleEl) titleEl.textContent = GAME.hitCount >= 3 ? '避難失敗' : '避難完了';
 
     // ランク色
@@ -9173,6 +10394,13 @@ function showResult() {
         if (GAME._oshimoViolations > 0) {
           actions.push({ done: false, text: 'おはしも違反（走る・押す）' + GAME._oshimoViolations + '回', pts: '-' + (GAME._oshimoViolations * 3) });
         }
+      } else if (stg === 2) {
+        // Stage2（オフィス）: 社員としての行動チェック
+        actions.push({ done: s.turnedOffBreaker, text: 'ブレーカーを落とした（通電火災防止）', pts: '+6' });
+        actions.push({ done: s.checkedSafety, text: '同僚に「大丈夫？」と声をかけた', pts: '+5' });
+        actions.push({ done: s.noElevator, text: 'エレベーターに乗らなかった', pts: s.noElevator ? '+6' : '0' });
+        var novelPts2 = GAME._novelChoiceScore || 0;
+        actions.push({ done: novelPts2 > 0, text: 'ノベル選択肢で正しい判断をした', pts: novelPts2 > 0 ? '+' + novelPts2 : '0' });
       } else if (stg === 3) {
         actions.push({ done: s.turnedOffFire, text: 'ストーブの火を消した', pts: '+6' });
         actions.push({ done: s.openedDoor, text: 'ドアを開けて避難経路を確保した', pts: '+6' });
@@ -9462,6 +10690,22 @@ function downloadResultData(totalScore, categories, actions) {
 // ============================================================
 // 安全ゾーン定義（机の下 = 各デスクの位置）
 function isUnderDesk(px, pz) {
+  if (GAME.stageNum === 2) {
+    // Stage 2: オフィスデスク配列（4×5）
+    var oStartX = -8, oStartZ = 2, oGapX = 4, oGapZ = 2.5;
+    var oDeskW = 1.0, oDeskD = 0.7;
+    for (var oc = 0; oc < 4; oc++) {
+      for (var or2 = 0; or2 < 5; or2++) {
+        var odx = oStartX + oc * oGapX;
+        var odz = oStartZ + or2 * oGapZ;
+        if (Math.abs(px - odx) < oDeskW && Math.abs(pz - odz) < oDeskD * 1.5) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+  // Stage 1: 教室デスク配列
   var startX = -3.2, startZ = 1.0, gapX = 1.2, gapZ = 1.5;
   var deskW = 0.6, deskD = 0.45;
   for (var col = 0; col < 6; col++) {
@@ -9476,9 +10720,16 @@ function isUnderDesk(px, pz) {
   return false;
 }
 
-// 危険ゾーン定義（窓際・ロッカー付近）
+// 危険ゾーン定義（窓際・ロッカー・キャビネット付近）
 function isNearHazard(px, pz) {
-  // 窓際（左壁付近 X < -3.5）
+  if (GAME.stageNum === 2) {
+    // Stage 2: キャビネット付近、コピー機付近、窓際
+    if (px < -10.5) return true; // 窓際
+    if (Math.abs(px - 8) < 1.5 && (Math.abs(pz - 4) < 1.5 || Math.abs(pz - 10) < 1.5)) return true; // コピー機
+    if (px < -9 && (Math.abs(pz - 3) < 1.5 || Math.abs(pz - 7) < 1.5 || Math.abs(pz - 11) < 1.5)) return true; // キャビネット
+    return false;
+  }
+  // Stage 1: 窓際（左壁付近 X < -3.5）
   if (px < -3.5) return true;
   // ロッカー付近（後方左 X=-2, Z≈8.5）
   if (Math.abs(px - (-2)) < 1.8 && pz > 7.5) return true;
@@ -9506,7 +10757,10 @@ function checkScoringTriggers() {
     if (!s.movedToSafe && p.isCrouching && isUnderDesk(p.x, p.z)) {
       s.movedToSafe = true;
       GAME.score += 10;
-      showAdvisor('机の下に入れた！Eキー長押しで脚を掴もう！', 'praise');
+      var deskMsg = GAME.stageNum === 2
+        ? 'デスクの下に入れた！Eキー長押しで脚を掴もう！'
+        : '机の下に入れた！Eキー長押しで脚を掴もう！';
+      showAdvisor(deskMsg, 'praise');
     }
 
     // HOLD ON（机の脚を掴む）判定
@@ -9529,7 +10783,7 @@ function checkScoringTriggers() {
       // 初回HOLD ON達成
       if (!s.heldDeskLegs && GAME._holdOnTime >= 1.0) {
         s.heldDeskLegs = true;
-        showAdvisor('机の脚をしっかり掴んだ！揺れが収まるまで離すな！', 'praise');
+        showAdvisor(GAME.stageNum === 2 ? 'デスクの脚をしっかり掴んだ！揺れが収まるまで離すな！' : '机の脚をしっかり掴んだ！揺れが収まるまで離すな！', 'praise');
       }
     } else {
       GAME._holdOnActive = false;
@@ -9542,16 +10796,22 @@ function checkScoringTriggers() {
       s.awayFromHazard = true;
     }
 
-    // 揺れ中に教室の外（Z > 9）に出た場合
-    if (s.didNotRunOutside && p.z > 9.5) {
-      s.didNotRunOutside = false;
-      showAdvisor('揺れている最中に外に出るのは危険！落下物に注意！', 'warning');
+    // 揺れ中に部屋の外に出た場合
+    if (s.didNotRunOutside) {
+      var outsideThreshold = GAME.stageNum === 2 ? 14.0 : 9.5;
+      if (p.z > outsideThreshold) {
+        s.didNotRunOutside = false;
+        showAdvisor('揺れている最中に外に出るのは危険！落下物に注意！', 'warning');
+      }
     }
 
-    // 窓際に近づいた警告（X < -3.5で一度だけ警告）
-    if (!GAME._windowWarned && p.x < -3.5 && timeSinceQuake > 1) {
-      GAME._windowWarned = true;
-      showAdvisor('窓から離れて！ガラスが割れて飛び散るよ！', 'warning');
+    // 窓際に近づいた警告
+    if (!GAME._windowWarned && timeSinceQuake > 1) {
+      var nearWindow = GAME.stageNum === 2 ? (p.x < -10.5) : (p.x < -3.5);
+      if (nearWindow) {
+        GAME._windowWarned = true;
+        showAdvisor('窓から離れて！ガラスが割れて飛び散るよ！', 'warning');
+      }
     }
   }
 
