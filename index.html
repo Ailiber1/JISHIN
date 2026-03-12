@@ -1683,6 +1683,49 @@ html, body {
 }
 .pause-btn:hover { background: rgba(255,107,0,0.15); border-color: var(--safety-orange); }
 
+/* スマホ用ポーズボタン */
+#mob-pause {
+  position: absolute; top: calc(8px + env(safe-area-inset-top, 0px));
+  right: calc(8px + env(safe-area-inset-right, 0px));
+  width: 40px; height: 40px; border-radius: 50%;
+  background: rgba(0,0,0,0.5); border: 1.5px solid rgba(255,107,0,0.5);
+  color: #fff; font-size: 18px; z-index: 25;
+  display: none; align-items: center; justify-content: center;
+  touch-action: none; user-select: none; -webkit-user-select: none;
+  cursor: pointer;
+}
+#mob-pause:active { background: rgba(255,107,0,0.3); }
+
+/* 操作説明オーバーレイ */
+#controls-overlay {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.88); display: none;
+  align-items: center; justify-content: center; z-index: 55;
+  pointer-events: auto;
+}
+#controls-overlay.active { display: flex; }
+.controls-panel {
+  max-width: 420px; width: 90%; max-height: 80vh; overflow-y: auto;
+  padding: 24px; text-align: left;
+}
+.controls-table {
+  width: 100%; border-collapse: collapse;
+  font-family: 'Share Tech Mono', monospace; font-size: 13px; color: #ccc;
+}
+.controls-table th {
+  color: var(--safety-orange); text-align: left; padding: 5px 8px;
+  border-bottom: 1px solid rgba(255,107,0,0.3); font-size: 12px;
+}
+.controls-table td {
+  padding: 5px 8px; border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.controls-table td:nth-child(2) { color: #ffcc00; text-align: right; }
+.controls-tips {
+  font-family: 'Noto Sans JP', sans-serif; font-size: 12px;
+  color: #aaa; padding-left: 18px; line-height: 1.8; margin: 0;
+}
+.controls-tips li { margin-bottom: 2px; }
+
 /* ローディング */
 #game-loading {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -1703,7 +1746,7 @@ html, body {
 
 /* PC: モバイルUI非表示 */
 @media (hover: hover) and (pointer: fine) {
-  #mobile-joystick, #mobile-buttons, #mob-interact { display: none !important; }
+  #mobile-joystick, #mobile-buttons, #mob-interact, #mob-pause { display: none !important; }
 }
 
 /* スマホ横: HUD調整 — KANKERI統一 */
@@ -2647,11 +2690,49 @@ html, body {
     <button class="mob-btn" id="mob-guard">ガード</button>
   </div>
   <button id="mob-interact">操作</button>
+  <button id="mob-pause">⏸</button>
   <div id="pause-overlay">
     <div class="pause-panel ui-panel">
       <h2>PAUSED</h2>
       <div class="pause-btn" id="btn-resume">再開</div>
+      <div class="pause-btn" id="btn-controls">操作説明</div>
       <div class="pause-btn" id="btn-quit-game">タイトルに戻る</div>
+    </div>
+  </div>
+  <div id="controls-overlay">
+    <div class="controls-panel ui-panel">
+      <h2 style="font-family:'Share Tech Mono',monospace;font-size:20px;color:var(--safety-orange);text-align:center;margin-bottom:16px;letter-spacing:3px;">操作説明</h2>
+      <h3 style="color:var(--safety-orange);margin:0 0 8px;font-size:14px;">PC操作</h3>
+      <table class="controls-table">
+        <tr><th>操作</th><th>キー</th></tr>
+        <tr><td>移動</td><td>W A S D / 矢印キー</td></tr>
+        <tr><td>視点回転</td><td>マウス移動</td></tr>
+        <tr><td>しゃがむ</td><td>C</td></tr>
+        <tr><td>ダッシュ</td><td>Shift</td></tr>
+        <tr><td>ガード</td><td>G（押し続ける）</td></tr>
+        <tr><td>アクション</td><td>F / Space</td></tr>
+        <tr><td>ポーズ</td><td>Esc</td></tr>
+      </table>
+      <h3 style="color:var(--safety-orange);margin:14px 0 8px;font-size:14px;">スマホ操作</h3>
+      <table class="controls-table">
+        <tr><th>操作</th><th>方法</th></tr>
+        <tr><td>移動</td><td>左側スティック</td></tr>
+        <tr><td>視点回転</td><td>右側スワイプ</td></tr>
+        <tr><td>しゃがむ</td><td>しゃがむボタン</td></tr>
+        <tr><td>ダッシュ</td><td>走るボタン</td></tr>
+        <tr><td>ガード</td><td>ガードボタン</td></tr>
+        <tr><td>アクション</td><td>操作ボタン</td></tr>
+        <tr><td>ポーズ</td><td>⏸ボタン</td></tr>
+      </table>
+      <h3 style="color:#ff6b00;margin:14px 0 8px;font-size:14px;">ゲームのコツ</h3>
+      <ul class="controls-tips">
+        <li>地震が来たら「まず低く、頭を守り、動かない」</li>
+        <li>揺れが収まったらブレーカーを落とす</li>
+        <li>非常口（緑の看板）を目指して避難</li>
+        <li>廊下の落下物を避けて進む</li>
+        <li>しゃがんでガードすると被ダメージ軽減</li>
+      </ul>
+      <div class="pause-btn" id="btn-controls-back">戻る</div>
     </div>
   </div>
   <div id="game-loading">
@@ -4894,6 +4975,7 @@ function initGame(stageNum) {
     document.getElementById('mobile-joystick').style.display = 'block';
     document.getElementById('mobile-buttons').style.display = 'flex';
     document.getElementById('mob-interact').style.display = 'flex';
+    document.getElementById('mob-pause').style.display = 'flex';
   }
 
   document.getElementById('hud-score').textContent = 'SCORE: 0';
@@ -9204,6 +9286,7 @@ function cleanupGame() {
   document.getElementById('mobile-joystick').style.display = 'none';
   document.getElementById('mobile-buttons').style.display = 'none';
   document.getElementById('mob-interact').style.display = 'none';
+  document.getElementById('mob-pause').style.display = 'none';
   document.getElementById('game-loading').style.display = 'flex';
 
   if (document.pointerLockElement) {
@@ -9223,11 +9306,10 @@ document.addEventListener('keydown', function(e) {
     const pauseEl = document.getElementById('pause-overlay');
     if (GAME.paused) {
       pauseEl.classList.add('active');
-      // PCポインターロック解除（カーソル表示）
       if (document.pointerLockElement) document.exitPointerLock();
     } else {
       pauseEl.classList.remove('active');
-      // PCポインターロック再取得
+      document.getElementById('controls-overlay').classList.remove('active');
       if (!GAME.isMobile && GAME.renderer && GAME.renderer.domElement) {
         GAME.renderer.domElement.requestPointerLock();
       }
@@ -9434,8 +9516,8 @@ function initGameControls() {
   function resumeGame() {
     GAME.paused = false;
     document.getElementById('pause-overlay').classList.remove('active');
+    document.getElementById('controls-overlay').classList.remove('active');
     SoundManager.playSE('click');
-    // PCポインターロック再取得
     if (!GAME.isMobile && GAME.renderer && GAME.renderer.domElement) {
       GAME.renderer.domElement.requestPointerLock();
     }
@@ -9469,6 +9551,35 @@ function initGameControls() {
     showTitle();
     SoundManager.playSE('click');
   });
+
+  // --- 操作説明ボタン ---
+  var controlsBtn = document.getElementById('btn-controls');
+  if (controlsBtn) controlsBtn.addEventListener('click', function() {
+    document.getElementById('controls-overlay').classList.add('active');
+    SoundManager.playSE('click');
+  });
+  var controlsBackBtn = document.getElementById('btn-controls-back');
+  if (controlsBackBtn) controlsBackBtn.addEventListener('click', function() {
+    document.getElementById('controls-overlay').classList.remove('active');
+    SoundManager.playSE('click');
+  });
+
+  // --- スマホ用ポーズボタン ---
+  var mobPauseBtn = document.getElementById('mob-pause');
+  if (mobPauseBtn) {
+    mobPauseBtn.addEventListener('touchstart', function(e) {
+      e.preventDefault();
+      if (!GAME.running || GAME.phase === 'result' || GAME.phase === 'daily') return;
+      GAME.paused = !GAME.paused;
+      var pauseEl = document.getElementById('pause-overlay');
+      if (GAME.paused) {
+        pauseEl.classList.add('active');
+      } else {
+        pauseEl.classList.remove('active');
+        document.getElementById('controls-overlay').classList.remove('active');
+      }
+    }, { passive: false });
+  }
 }
 
 // ============================================================
