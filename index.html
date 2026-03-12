@@ -4839,6 +4839,9 @@ function initGame(stageNum) {
   GAME.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   GAME.renderer.shadowMap.enabled = true;
   GAME.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  GAME.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  GAME.renderer.toneMappingExposure = 1.1;
+  GAME.renderer.outputEncoding = THREE.sRGBEncoding;
   GAME.renderer.setClearColor(0x1a1a2e);
   container.appendChild(GAME.renderer.domElement);
 
@@ -4924,13 +4927,275 @@ function initGame(stageNum) {
   }
 }
 
+// ============================================================
+// SECTION: プロシージャルテクスチャ生成（UE5風リアル質感）
+// ============================================================
+function generateProceduralTextures() {
+  var T = {};
+
+  // --- 木目フローリング（教室床）256x256 ---
+  var wc = document.createElement('canvas');
+  wc.width = 256; wc.height = 256;
+  var wx = wc.getContext('2d');
+  wx.fillStyle = '#b89a6a';
+  wx.fillRect(0, 0, 256, 256);
+  // 木の板（横向き）
+  for (var pi = 0; pi < 8; pi++) {
+    var py = pi * 32;
+    var baseR = 160 + Math.floor(Math.random() * 30);
+    var baseG = 130 + Math.floor(Math.random() * 25);
+    var baseB = 85 + Math.floor(Math.random() * 20);
+    wx.fillStyle = 'rgb(' + baseR + ',' + baseG + ',' + baseB + ')';
+    wx.fillRect(0, py, 256, 30);
+    // 板の隙間
+    wx.fillStyle = 'rgba(60,40,20,0.4)';
+    wx.fillRect(0, py + 30, 256, 2);
+    // 木目線
+    for (var gi = 0; gi < 6; gi++) {
+      wx.strokeStyle = 'rgba(80,55,30,' + (0.08 + Math.random() * 0.12) + ')';
+      wx.lineWidth = 0.5 + Math.random();
+      wx.beginPath();
+      wx.moveTo(0, py + 3 + gi * 5 + Math.random() * 3);
+      for (var gx = 0; gx < 256; gx += 8) {
+        wx.lineTo(gx, py + 3 + gi * 5 + Math.sin(gx * 0.02 + gi) * 2 + Math.random() * 1.5);
+      }
+      wx.stroke();
+    }
+  }
+  T.woodFloor = new THREE.CanvasTexture(wc);
+  T.woodFloor.wrapS = T.woodFloor.wrapT = THREE.RepeatWrapping;
+  T.woodFloor.repeat.set(3, 3);
+
+  // --- 壁プラスター（教室・廊下壁）128x128 ---
+  var pc = document.createElement('canvas');
+  pc.width = 128; pc.height = 128;
+  var px = pc.getContext('2d');
+  px.fillStyle = '#e8dcc8';
+  px.fillRect(0, 0, 128, 128);
+  // 微細なノイズ
+  for (var ni = 0; ni < 600; ni++) {
+    var nx = Math.random() * 128;
+    var ny = Math.random() * 128;
+    var nb = Math.random() * 0.08;
+    px.fillStyle = 'rgba(0,0,0,' + nb + ')';
+    px.fillRect(nx, ny, 2, 2);
+  }
+  // かすかな汚れ
+  for (var di = 0; di < 3; di++) {
+    px.fillStyle = 'rgba(100,80,60,0.03)';
+    px.beginPath();
+    px.arc(Math.random()*128, Math.random()*128, 10+Math.random()*20, 0, Math.PI*2);
+    px.fill();
+  }
+  T.wallPlaster = new THREE.CanvasTexture(pc);
+  T.wallPlaster.wrapS = T.wallPlaster.wrapT = THREE.RepeatWrapping;
+  T.wallPlaster.repeat.set(2, 1);
+
+  // --- 天井タイル 128x128 ---
+  var cc = document.createElement('canvas');
+  cc.width = 128; cc.height = 128;
+  var cx = cc.getContext('2d');
+  cx.fillStyle = '#f2f0ec';
+  cx.fillRect(0, 0, 128, 128);
+  // タイルグリッド
+  cx.strokeStyle = 'rgba(180,175,165,0.3)';
+  cx.lineWidth = 1;
+  for (var ti = 0; ti <= 4; ti++) {
+    cx.beginPath(); cx.moveTo(ti * 32, 0); cx.lineTo(ti * 32, 128); cx.stroke();
+    cx.beginPath(); cx.moveTo(0, ti * 32); cx.lineTo(128, ti * 32); cx.stroke();
+  }
+  // 微細テクスチャ
+  for (var cni = 0; cni < 200; cni++) {
+    cx.fillStyle = 'rgba(0,0,0,' + (Math.random() * 0.04) + ')';
+    cx.fillRect(Math.random()*128, Math.random()*128, 1, 1);
+  }
+  T.ceiling = new THREE.CanvasTexture(cc);
+  T.ceiling.wrapS = T.ceiling.wrapT = THREE.RepeatWrapping;
+  T.ceiling.repeat.set(3, 3);
+
+  // --- 廊下・通路の床タイル（ビニル）256x256 ---
+  var vc = document.createElement('canvas');
+  vc.width = 256; vc.height = 256;
+  var vx = vc.getContext('2d');
+  for (var ty = 0; ty < 4; ty++) {
+    for (var tx = 0; tx < 4; tx++) {
+      var shade = 165 + Math.floor(Math.random() * 15);
+      var shadeG = shade - 5;
+      var shadeB = shade - 15;
+      vx.fillStyle = 'rgb(' + shade + ',' + shadeG + ',' + shadeB + ')';
+      vx.fillRect(tx * 64, ty * 64, 64, 64);
+      // タイル境界
+      vx.strokeStyle = 'rgba(120,110,100,0.3)';
+      vx.lineWidth = 1;
+      vx.strokeRect(tx * 64, ty * 64, 64, 64);
+      // 微細スクラッチ
+      for (var si = 0; si < 3; si++) {
+        vx.strokeStyle = 'rgba(100,90,80,' + (0.05 + Math.random() * 0.08) + ')';
+        vx.lineWidth = 0.5;
+        vx.beginPath();
+        vx.moveTo(tx*64 + Math.random()*64, ty*64 + Math.random()*64);
+        vx.lineTo(tx*64 + Math.random()*64, ty*64 + Math.random()*64);
+        vx.stroke();
+      }
+    }
+  }
+  T.vinylFloor = new THREE.CanvasTexture(vc);
+  T.vinylFloor.wrapS = T.vinylFloor.wrapT = THREE.RepeatWrapping;
+  T.vinylFloor.repeat.set(2, 2);
+
+  // --- コンクリート壁（外壁）128x128 ---
+  var ec = document.createElement('canvas');
+  ec.width = 128; ec.height = 128;
+  var ex = ec.getContext('2d');
+  ex.fillStyle = '#c8c4b8';
+  ex.fillRect(0, 0, 128, 128);
+  // コンクリートのざらつき
+  for (var eni = 0; eni < 1200; eni++) {
+    var ev = Math.random() * 0.12;
+    ex.fillStyle = Math.random() > 0.5 ? 'rgba(0,0,0,' + ev + ')' : 'rgba(255,255,255,' + ev + ')';
+    ex.fillRect(Math.random()*128, Math.random()*128, 1 + Math.random()*2, 1 + Math.random()*2);
+  }
+  // ひび割れ
+  ex.strokeStyle = 'rgba(80,70,60,0.15)';
+  ex.lineWidth = 0.5;
+  ex.beginPath();
+  var crx = 30 + Math.random() * 60;
+  var cry = 20;
+  ex.moveTo(crx, cry);
+  for (var cri = 0; cri < 6; cri++) {
+    crx += Math.random() * 20 - 10;
+    cry += 15 + Math.random() * 10;
+    ex.lineTo(crx, cry);
+  }
+  ex.stroke();
+  T.concrete = new THREE.CanvasTexture(ec);
+  T.concrete.wrapS = T.concrete.wrapT = THREE.RepeatWrapping;
+  T.concrete.repeat.set(4, 3);
+
+  // --- 校庭の地面（土）256x256 ---
+  var gc = document.createElement('canvas');
+  gc.width = 256; gc.height = 256;
+  var gx = gc.getContext('2d');
+  gx.fillStyle = '#b8a070';
+  gx.fillRect(0, 0, 256, 256);
+  // 土のムラ
+  for (var gni = 0; gni < 3000; gni++) {
+    var gv = Math.random();
+    if (gv < 0.3) {
+      gx.fillStyle = 'rgba(90,70,40,' + (Math.random() * 0.15) + ')';
+    } else if (gv < 0.6) {
+      gx.fillStyle = 'rgba(200,180,140,' + (Math.random() * 0.12) + ')';
+    } else {
+      gx.fillStyle = 'rgba(60,80,40,' + (Math.random() * 0.06) + ')';
+    }
+    var gs = 1 + Math.random() * 3;
+    gx.fillRect(Math.random()*256, Math.random()*256, gs, gs);
+  }
+  // 小石
+  for (var pbi = 0; pbi < 20; pbi++) {
+    gx.fillStyle = 'rgba(140,130,110,' + (0.3 + Math.random() * 0.3) + ')';
+    gx.beginPath();
+    gx.arc(Math.random()*256, Math.random()*256, 1 + Math.random()*2, 0, Math.PI*2);
+    gx.fill();
+  }
+  T.ground = new THREE.CanvasTexture(gc);
+  T.ground.wrapS = T.ground.wrapT = THREE.RepeatWrapping;
+  T.ground.repeat.set(8, 8);
+
+  // --- ドア木目 128x256 ---
+  var dc = document.createElement('canvas');
+  dc.width = 128; dc.height = 256;
+  var dx = dc.getContext('2d');
+  dx.fillStyle = '#8b6914';
+  dx.fillRect(0, 0, 128, 256);
+  // パネル溝
+  dx.strokeStyle = 'rgba(50,30,10,0.4)';
+  dx.lineWidth = 2;
+  dx.strokeRect(10, 10, 108, 110);
+  dx.strokeRect(10, 130, 108, 116);
+  // 木目
+  for (var dgi = 0; dgi < 12; dgi++) {
+    dx.strokeStyle = 'rgba(60,35,10,' + (0.06 + Math.random() * 0.1) + ')';
+    dx.lineWidth = 0.5 + Math.random();
+    dx.beginPath();
+    var dgy = dgi * 22 + Math.random() * 5;
+    dx.moveTo(0, dgy);
+    for (var dgx = 0; dgx < 128; dgx += 6) {
+      dx.lineTo(dgx, dgy + Math.sin(dgx * 0.03 + dgi) * 2);
+    }
+    dx.stroke();
+  }
+  T.door = new THREE.CanvasTexture(dc);
+
+  // --- 非常口標識 256x128 ---
+  var sc = document.createElement('canvas');
+  sc.width = 256; sc.height = 128;
+  var sx = sc.getContext('2d');
+  // 緑背景
+  sx.fillStyle = '#007a33';
+  sx.fillRect(0, 0, 256, 128);
+  // 白枠
+  sx.strokeStyle = '#ffffff';
+  sx.lineWidth = 4;
+  sx.strokeRect(4, 4, 248, 120);
+  // 走る人アイコン（簡略化）
+  sx.fillStyle = '#ffffff';
+  // 頭
+  sx.beginPath(); sx.arc(90, 30, 12, 0, Math.PI*2); sx.fill();
+  // 体
+  sx.lineWidth = 6; sx.strokeStyle = '#ffffff'; sx.lineCap = 'round';
+  sx.beginPath(); sx.moveTo(90, 42); sx.lineTo(85, 75); sx.stroke();
+  // 足
+  sx.beginPath(); sx.moveTo(85, 75); sx.lineTo(65, 105); sx.stroke();
+  sx.beginPath(); sx.moveTo(85, 75); sx.lineTo(105, 105); sx.stroke();
+  // 手
+  sx.beginPath(); sx.moveTo(90, 50); sx.lineTo(110, 38); sx.stroke();
+  sx.beginPath(); sx.moveTo(90, 55); sx.lineTo(70, 65); sx.stroke();
+  // ドア
+  sx.fillStyle = '#ffffff';
+  sx.fillRect(140, 15, 6, 98);
+  sx.fillRect(146, 15, 55, 6);
+  sx.fillRect(146, 107, 55, 6);
+  // 矢印
+  sx.fillRect(120, 55, 30, 6);
+  sx.beginPath(); sx.moveTo(120, 42); sx.lineTo(120, 72); sx.lineTo(105, 58); sx.fill();
+  // 「非常口」テキスト
+  sx.font = 'bold 22px sans-serif';
+  sx.fillStyle = '#ffffff';
+  sx.textAlign = 'center';
+  sx.fillText('非常口', 180, 90);
+  T.exitSign = new THREE.CanvasTexture(sc);
+
+  // --- 巾木（かまち）用テクスチャ 64x32 ---
+  var bc = document.createElement('canvas');
+  bc.width = 64; bc.height = 32;
+  var bx = bc.getContext('2d');
+  bx.fillStyle = '#6b5b3a';
+  bx.fillRect(0, 0, 64, 32);
+  bx.fillStyle = 'rgba(0,0,0,0.1)';
+  bx.fillRect(0, 0, 64, 2);
+  bx.fillStyle = 'rgba(255,255,255,0.08)';
+  bx.fillRect(0, 30, 64, 2);
+  T.baseboard = new THREE.CanvasTexture(bc);
+  T.baseboard.wrapS = THREE.RepeatWrapping;
+
+  return T;
+}
+
+// テクスチャをグローバルに保持
+var PROC_TEX = null;
+
 function buildClassroom() {
   const scene = GAME.scene;
   const W = 9, D = 10, H = 3;
 
-  const floorMat = new THREE.MeshStandardMaterial({ color: 0xb0a896, roughness: 0.8, emissive: 0x111108, emissiveIntensity: 0.2 });
-  const wallMat = new THREE.MeshStandardMaterial({ color: 0xe8e0d0, roughness: 0.7, emissive: 0x0f0e0a, emissiveIntensity: 0.15 });
-  const ceilingMat = new THREE.MeshStandardMaterial({ color: 0xf0f0f0, roughness: 0.6, emissive: 0x101010, emissiveIntensity: 0.1 });
+  // プロシージャルテクスチャ初期化
+  if (!PROC_TEX) PROC_TEX = generateProceduralTextures();
+  var T = PROC_TEX;
+
+  const floorMat = new THREE.MeshStandardMaterial({ map: T.woodFloor, color: 0xddc8a0, roughness: 0.75, emissive: 0x0a0804, emissiveIntensity: 0.1 });
+  const wallMat = new THREE.MeshStandardMaterial({ map: T.wallPlaster, color: 0xf0e8d8, roughness: 0.75, emissive: 0x080604, emissiveIntensity: 0.08 });
+  const ceilingMat = new THREE.MeshStandardMaterial({ map: T.ceiling, color: 0xf5f3ef, roughness: 0.6, emissive: 0x080808, emissiveIntensity: 0.05 });
   const deskMat = new THREE.MeshStandardMaterial({ color: 0xc4a67d, roughness: 0.6, emissive: 0x0a0806, emissiveIntensity: 0.1 });
   const deskLegMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.4, metalness: 0.6, emissive: 0x050505, emissiveIntensity: 0.1 });
   const blackboardMat = new THREE.MeshStandardMaterial({ color: 0x2d4a2d, roughness: 0.5, emissive: 0x050a05, emissiveIntensity: 0.15 });
@@ -4987,12 +5252,40 @@ function buildClassroom() {
   blackboard.position.set(0, 1.6, -0.85);
   scene.add(blackboard);
 
+  // 窓（ガラス + サッシ枠）
+  var sashMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.4, metalness: 0.5 });
   for (let i = 0; i < 4; i++) {
+    var winX = -W/2 + 0.01;
+    var winZ = -0.5 + i * 2.5;
     const win = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.5), windowMat);
-    win.position.set(-W/2 + 0.01, 1.6, -0.5 + i * 2.5);
+    win.position.set(winX, 1.6, winZ);
     win.rotation.y = Math.PI / 2;
     scene.add(win);
+    // サッシ枠（上下左右）
+    var sT = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.04, 1.54), sashMat);
+    sT.position.set(winX + 0.01, 2.35, winZ); scene.add(sT);
+    var sB = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.04, 1.54), sashMat);
+    sB.position.set(winX + 0.01, 0.85, winZ); scene.add(sB);
+    var sL = new THREE.Mesh(new THREE.BoxGeometry(0.02, 1.54, 0.04), sashMat);
+    sL.position.set(winX + 0.01, 1.6, winZ - 0.77); scene.add(sL);
+    var sR = new THREE.Mesh(new THREE.BoxGeometry(0.02, 1.54, 0.04), sashMat);
+    sR.position.set(winX + 0.01, 1.6, winZ + 0.77); scene.add(sR);
+    // 中桟
+    var sM = new THREE.Mesh(new THREE.BoxGeometry(0.02, 1.54, 0.03), sashMat);
+    sM.position.set(winX + 0.01, 1.6, winZ); scene.add(sM);
   }
+
+  // 巾木（床と壁の境目 — 全周）
+  var baseboardMat = new THREE.MeshStandardMaterial({ color: 0x6b5b3a, roughness: 0.65, emissive: 0x030201, emissiveIntensity: 0.05 });
+  var bbH = 0.08;
+  // 前壁
+  scene.add(Object.assign(new THREE.Mesh(new THREE.BoxGeometry(W, bbH, 0.03), baseboardMat), { position: new THREE.Vector3(0, bbH/2, -1 + 0.015) }));
+  // 後壁
+  scene.add(Object.assign(new THREE.Mesh(new THREE.BoxGeometry(W, bbH, 0.03), baseboardMat), { position: new THREE.Vector3(0, bbH/2, D - 1 - 0.015) }));
+  // 左壁
+  scene.add(Object.assign(new THREE.Mesh(new THREE.BoxGeometry(0.03, bbH, D), baseboardMat), { position: new THREE.Vector3(-W/2 + 0.015, bbH/2, D/2 - 1) }));
+  // 右壁
+  scene.add(Object.assign(new THREE.Mesh(new THREE.BoxGeometry(0.03, bbH, D), baseboardMat), { position: new THREE.Vector3(W/2 - 0.015, bbH/2, D/2 - 1) }));
 
   const kyoutaku = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.7, 0.6), deskMat);
   kyoutaku.position.set(0, 0.35, -0.3);
@@ -5066,7 +5359,7 @@ function buildClassroom() {
   // インタラクト対象物
   // ============================================================
   var interactMat = new THREE.MeshStandardMaterial({ color: 0x886644, roughness: 0.6, emissive: 0x0a0806, emissiveIntensity: 0.1 });
-  var doorMat = new THREE.MeshStandardMaterial({ color: 0x8B7355, roughness: 0.5, emissive: 0x0a0806, emissiveIntensity: 0.15 });
+  var doorMat = new THREE.MeshStandardMaterial({ map: T.door, color: 0xc8a060, roughness: 0.5, emissive: 0x0a0806, emissiveIntensity: 0.12 });
 
   // 教室後方のドア（廊下への出入口）— 右側の壁付近
   var doorW = 0.9, doorH = 2.1, doorD = 0.08;
@@ -5074,6 +5367,22 @@ function buildClassroom() {
   door.position.set(W/2 - 0.05, doorH/2, D - 1 - 0.05);
   scene.add(door);
   GAME.cameraMeshes.push(door);
+  // ドア枠（木製）
+  var frameMat = new THREE.MeshStandardMaterial({ color: 0x6b5035, roughness: 0.6, emissive: 0x050402, emissiveIntensity: 0.08 });
+  var dFrameTop = new THREE.Mesh(new THREE.BoxGeometry(doorW + 0.15, 0.08, doorD + 0.04), frameMat);
+  dFrameTop.position.set(W/2 - 0.05, doorH + 0.04, D - 1 - 0.05);
+  scene.add(dFrameTop);
+  var dFrameL = new THREE.Mesh(new THREE.BoxGeometry(0.07, doorH, doorD + 0.04), frameMat);
+  dFrameL.position.set(W/2 - 0.05 - doorW/2 - 0.035, doorH/2, D - 1 - 0.05);
+  scene.add(dFrameL);
+  var dFrameR = new THREE.Mesh(new THREE.BoxGeometry(0.07, doorH, doorD + 0.04), frameMat);
+  dFrameR.position.set(W/2 - 0.05 + doorW/2 + 0.035, doorH/2, D - 1 - 0.05);
+  scene.add(dFrameR);
+  // ドアノブ
+  var knobMat = new THREE.MeshStandardMaterial({ color: 0xddddcc, roughness: 0.3, metalness: 0.8 });
+  var knob = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 8), knobMat);
+  knob.position.set(W/2 - 0.05 - doorW/2 + 0.12, 1.0, D - 1 - 0.05 - doorD/2 - 0.02);
+  scene.add(knob);
   GAME.interactables.push({
     id: 'door', mesh: door,
     x: W/2 - 0.05, z: D - 1 - 0.05,
@@ -5263,9 +5572,11 @@ function buildHallway() {
   var hz0 = 9;  // Z開始（教室後方壁）
   var hx0 = -2; // X開始（左端）
 
-  var hallFloorMat = new THREE.MeshStandardMaterial({ color: 0xa89888, roughness: 0.7, emissive: 0x0a0808, emissiveIntensity: 0.15 });
-  var hallWallMat = new THREE.MeshStandardMaterial({ color: 0xd8d0c0, roughness: 0.6, emissive: 0x0a0a08, emissiveIntensity: 0.12 });
-  var hallCeilingMat = new THREE.MeshStandardMaterial({ color: 0xe8e8e8, roughness: 0.5, emissive: 0x0a0a0a, emissiveIntensity: 0.1 });
+  if (!PROC_TEX) PROC_TEX = generateProceduralTextures();
+  var T = PROC_TEX;
+  var hallFloorMat = new THREE.MeshStandardMaterial({ map: T.vinylFloor, color: 0xc8b8a0, roughness: 0.7, emissive: 0x060504, emissiveIntensity: 0.08 });
+  var hallWallMat = new THREE.MeshStandardMaterial({ map: T.wallPlaster, color: 0xe0d8c8, roughness: 0.65, emissive: 0x060604, emissiveIntensity: 0.06 });
+  var hallCeilingMat = new THREE.MeshStandardMaterial({ map: T.ceiling, color: 0xf0eeea, roughness: 0.55, emissive: 0x060606, emissiveIntensity: 0.05 });
   var wt = 0.2;
 
   // ====== 廊下本体（横長の通路）======
@@ -5413,43 +5724,58 @@ function buildHallway() {
   GAME._normalStairWarned = false;
 
   // ====== 非常口（正解ルート）— 廊下左端 ======
-  // 非常口ドア枠（出入り口をはっきり見せる）
-  var doorFrameMat = new THREE.MeshStandardMaterial({ color: 0x556655, roughness: 0.5, emissive: 0x112211, emissiveIntensity: 0.15 });
-  // 上枠
-  var doorTop = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.3, 2.2), doorFrameMat);
-  doorTop.position.set(hx0 + 0.07, HH - 0.15, hz0 + HD/2);
-  scene.add(doorTop);
-  // 左柱
-  var doorL = new THREE.Mesh(new THREE.BoxGeometry(0.15, HH, 0.15), doorFrameMat);
-  doorL.position.set(hx0 + 0.07, HH/2, hz0 + 0.5);
-  scene.add(doorL);
-  // 右柱
-  var doorR = new THREE.Mesh(new THREE.BoxGeometry(0.15, HH, 0.15), doorFrameMat);
-  doorR.position.set(hx0 + 0.07, HH/2, hz0 + HD - 0.5);
-  scene.add(doorR);
+  // 非常口ドア（金属製プッシュバードア）
+  var exitDoorMat = new THREE.MeshStandardMaterial({ color: 0x4a6a4a, roughness: 0.5, metalness: 0.3, emissive: 0x0a1a0a, emissiveIntensity: 0.12 });
+  var exitDoorFrameMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.4, metalness: 0.6, emissive: 0x080808, emissiveIntensity: 0.1 });
+  // ドア本体（両開き）
+  var edW = 0.9, edH = 2.2;
+  var exitDoor1 = new THREE.Mesh(new THREE.BoxGeometry(0.06, edH, edW), exitDoorMat);
+  exitDoor1.position.set(hx0 + 0.03, edH/2, hz0 + HD/2 - edW/2);
+  scene.add(exitDoor1);
+  var exitDoor2 = new THREE.Mesh(new THREE.BoxGeometry(0.06, edH, edW), exitDoorMat);
+  exitDoor2.position.set(hx0 + 0.03, edH/2, hz0 + HD/2 + edW/2);
+  scene.add(exitDoor2);
+  // プッシュバー（金属バー）
+  var pushBarMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.3, metalness: 0.8 });
+  var pushBar1 = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.04, edW * 0.8), pushBarMat);
+  pushBar1.position.set(hx0 + 0.07, 1.0, hz0 + HD/2 - edW/2);
+  scene.add(pushBar1);
+  var pushBar2 = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.04, edW * 0.8), pushBarMat);
+  pushBar2.position.set(hx0 + 0.07, 1.0, hz0 + HD/2 + edW/2);
+  scene.add(pushBar2);
+  // ドア枠（金属フレーム）
+  var dfTop = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.15, edW * 2 + 0.2), exitDoorFrameMat);
+  dfTop.position.set(hx0 + 0.06, edH + 0.07, hz0 + HD/2);
+  scene.add(dfTop);
+  var dfL = new THREE.Mesh(new THREE.BoxGeometry(0.12, edH + 0.15, 0.1), exitDoorFrameMat);
+  dfL.position.set(hx0 + 0.06, edH/2, hz0 + HD/2 - edW - 0.05);
+  scene.add(dfL);
+  var dfR = new THREE.Mesh(new THREE.BoxGeometry(0.12, edH + 0.15, 0.1), exitDoorFrameMat);
+  dfR.position.set(hx0 + 0.06, edH/2, hz0 + HD/2 + edW + 0.05);
+  scene.add(dfR);
 
-  // 非常口サイン（緑の光る看板 — 大きく目立つ）
-  var exitSignMat = new THREE.MeshStandardMaterial({ color: 0x00cc44, roughness: 0.3, emissive: 0x00ff44, emissiveIntensity: 0.8 });
-  var exitSign = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.4, 0.03), exitSignMat);
-  exitSign.position.set(hx0 + 0.5, HH - 0.25, hz0 + HD/2);
-  exitSign.rotation.y = Math.PI / 2;
-  scene.add(exitSign);
-  // 非常口テキスト
-  var esCanvas = document.createElement('canvas');
-  esCanvas.width = 200; esCanvas.height = 64;
-  var esCtx = esCanvas.getContext('2d');
-  esCtx.fillStyle = '#00aa33';
-  esCtx.fillRect(0, 0, 200, 64);
-  esCtx.fillStyle = '#ffffff';
-  esCtx.font = 'bold 36px sans-serif';
-  esCtx.textAlign = 'center';
-  esCtx.fillText('← 非常口', 100, 44);
-  var esTexture = new THREE.CanvasTexture(esCanvas);
-  var esText = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.38), new THREE.MeshBasicMaterial({ map: esTexture }));
-  esText.position.set(hx0 + 0.5, HH - 0.25, hz0 + HD/2);
-  esText.rotation.y = Math.PI / 2;
-  scene.add(esText);
-  // 非常口の緑ライト
+  // 「非常口」標識（ドアの上に設置 — 国際規格の緑サイン）
+  var exitSignTex = T.exitSign;
+  var exitSignMesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(1.2, 0.6),
+    new THREE.MeshBasicMaterial({ map: exitSignTex, transparent: false })
+  );
+  exitSignMesh.position.set(hx0 + 0.15, edH + 0.5, hz0 + HD/2);
+  exitSignMesh.rotation.y = Math.PI / 2;
+  scene.add(exitSignMesh);
+  // 廊下側にも同じ標識
+  var exitSignMesh2 = new THREE.Mesh(
+    new THREE.PlaneGeometry(1.2, 0.6),
+    new THREE.MeshBasicMaterial({ map: exitSignTex, transparent: false })
+  );
+  exitSignMesh2.position.set(hx0 + 0.15, edH + 0.5, hz0 + HD/2);
+  exitSignMesh2.rotation.y = -Math.PI / 2;
+  scene.add(exitSignMesh2);
+  // 標識バックライト（緑色発光）
+  var signLight = new THREE.PointLight(0x00ff44, 0.5, 6);
+  signLight.position.set(hx0 + 0.3, edH + 0.5, hz0 + HD/2);
+  scene.add(signLight);
+  // 非常口の緑ライト（床面照射）
   var exitLight = new THREE.PointLight(0x00ff44, 0.6, 12);
   exitLight.position.set(hx0, HH - 0.4, hz0 + HD/2);
   scene.add(exitLight);
@@ -5755,22 +6081,41 @@ var EVAC_POINT = { x: 0, z: 45, radius: 3 };
 
 function buildSchoolyard() {
   var scene = GAME.scene;
+  if (!PROC_TEX) PROC_TEX = generateProceduralTextures();
+  var T = PROC_TEX;
 
-  // 校庭の地面（大きな平面）
-  var groundMat = new THREE.MeshStandardMaterial({ color: 0xc8b898, roughness: 0.9, emissive: 0x0a0806, emissiveIntensity: 0.1 });
+  // 校庭の地面（土テクスチャ付き）
+  var groundMat = new THREE.MeshStandardMaterial({ map: T.ground, color: 0xd0b888, roughness: 0.92, emissive: 0x060402, emissiveIntensity: 0.05 });
   var ground = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), groundMat);
   ground.rotation.x = -Math.PI / 2;
   ground.position.set(0, GROUND_Y, 40);
   ground.receiveShadow = true;
   scene.add(ground);
 
-  // 校舎の外壁（プレイヤーの後ろ）
-  var extWallMat = new THREE.MeshStandardMaterial({ color: 0xccccbb, roughness: 0.7, emissive: 0x080808, emissiveIntensity: 0.1 });
+  // 校舎の外壁（コンクリートテクスチャ）
+  var extWallMat = new THREE.MeshStandardMaterial({ map: T.concrete, color: 0xd0ccbc, roughness: 0.75, emissive: 0x050505, emissiveIntensity: 0.05 });
   var extWall = new THREE.Mesh(new THREE.BoxGeometry(30, 12, 0.3), extWallMat);
   extWall.position.set(0, 6, 20);
   scene.add(extWall);
   GAME.cameraMeshes.push(extWall);
   GAME.walls.push({ minX: -15, maxX: 15, minZ: 19.85, maxZ: 20.15, minY: 0, maxY: 12 });
+
+  // 校舎の窓（外観）
+  var extWinMat = new THREE.MeshStandardMaterial({ color: 0x6699bb, roughness: 0.1, metalness: 0.1, transparent: true, opacity: 0.4, emissive: 0x334466, emissiveIntensity: 0.2 });
+  for (var ewi = 0; ewi < 8; ewi++) {
+    for (var ewr = 0; ewr < 3; ewr++) {
+      var extWin = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.2), extWinMat);
+      extWin.position.set(-12 + ewi * 3.5, 2.5 + ewr * 3.2, 20.16);
+      scene.add(extWin);
+    }
+  }
+
+  // 校庭ライン（白線 — 運動場のトラック風）
+  var lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 });
+  var outerLine = new THREE.Mesh(new THREE.RingGeometry(10, 10.15, 64), lineMat);
+  outerLine.rotation.x = -Math.PI / 2;
+  outerLine.position.set(0, GROUND_Y + 0.01, 42);
+  scene.add(outerLine);
 
   // 避難ポイントマーカー（校庭中央の円マーカー）
   var markerMat = new THREE.MeshStandardMaterial({ color: 0xff6b00, roughness: 0.5, emissive: 0xff6b00, emissiveIntensity: 0.4, transparent: true, opacity: 0.6 });
