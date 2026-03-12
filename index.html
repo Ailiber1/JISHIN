@@ -4705,6 +4705,13 @@ function initEventListeners() {
     const stageNum = parseInt(this.getAttribute('data-stage') || '1');
     SoundManager.playSE('click');
 
+    // 未実装ステージチェック
+    var implementedStages = [1]; // 実装済みステージ番号
+    if (implementedStages.indexOf(stageNum) === -1) {
+      alert('Stage ' + stageNum + ' は現在開発中です。\ncoming soon...');
+      return;
+    }
+
     // プレイのたびにセリフをランダム化
     NOVEL_SCRIPTS['stage' + stageNum] = generateNovelScripts(stageNum);
     // ノベルプロローグがあればノベル→3Dの順で開始
