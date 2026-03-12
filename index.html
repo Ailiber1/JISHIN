@@ -3241,10 +3241,36 @@ const SoundManager = {
     this._playAmbientFile('sounds/classroom-ambient.mp3', 0.25, true);
   },
 
-  // オフィスの環境音（日常パート — Stage 2）
+  // オフィスの環境音（日常パート — Stage 2）: Web Audio APIで生成
   startOfficeAmbient() {
-    // オフィス環境音がない場合、教室環境音を低音量で代用
-    this._playAmbientFile('sounds/classroom-ambient.mp3', 0.15, true);
+    try {
+      this.stopAmbient();
+      var ctx = this._getCtx();
+      if (!ctx) return;
+      // エアコンのハム音（低周波ノイズ）
+      var bufLen = ctx.sampleRate * 2;
+      var buf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
+      var data = buf.getChannelData(0);
+      for (var i = 0; i < bufLen; i++) data[i] = (Math.random() * 2 - 1);
+      var src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.loop = true;
+      // ローパスフィルター（こもったエアコン音）
+      var lp = ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = 200;
+      // ゲイン
+      var gain = ctx.createGain();
+      gain.gain.value = 0.06;
+      src.connect(lp);
+      lp.connect(gain);
+      gain.connect(ctx.destination);
+      src.start(0);
+      // 停止用に_ambientAudioとして保持
+      this._officeAmbientSrc = src;
+      this._officeAmbientGain = gain;
+      this._ambientAudio = { pause: function() { try { src.stop(); } catch(e){} }, volume: 0.06, _isWebAudio: true };
+    } catch(e) {}
   },
 
   // ビル前広場の環境音（Stage 2避難後）
@@ -5092,6 +5118,8 @@ function initEventListeners() {
 
     // プレイのたびにセリフをランダム化
     NOVEL_SCRIPTS['stage' + stageNum] = generateNovelScripts(stageNum);
+    // プロローグ中のキャラ画像パス解決用にstageNumを先行設定
+    GAME.stageNum = stageNum;
     // ノベルプロローグがあればノベル→3Dの順で開始
     if (NOVEL_SCRIPTS['stage' + stageNum] && NOVEL_SCRIPTS['stage' + stageNum].prologue) {
       SoundManager.stopBGM(500);
