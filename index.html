@@ -8072,6 +8072,7 @@ function updatePlayerModel() {
   }
 
   // 頭保護（腕を頭上に — 避難中の頭保護ポーズ）
+  // ※ return せず、脚の歩行アニメーションは後続で処理する
   if (p.isGuarding) {
     j.leftShoulder.rotation.x = -2.8;
     j.leftShoulder.rotation.z = 0.3;
@@ -8080,13 +8081,6 @@ function updatePlayerModel() {
     j.rightShoulder.rotation.z = -0.3;
     j.rightElbow.rotation.x = -0.8;
     j.neckPivot.rotation.x = 0.2;
-    j.torso.position.y = mesh.userData.baseY;
-    j.torso.rotation.x = 0;
-    j.leftHip.rotation.x = 0;
-    j.rightHip.rotation.x = 0;
-    j.leftKnee.rotation.x = 0;
-    j.rightKnee.rotation.x = 0;
-    return;
   }
 
   // 通常姿勢リセット
@@ -8116,17 +8110,19 @@ function updatePlayerModel() {
     j.leftKnee.rotation.x = Math.max(0, -Math.sin(cycle)) * 0.6;
     j.rightKnee.rotation.x = Math.max(0, -Math.sin(cycle + Math.PI)) * 0.6;
 
-    // 腕（脚と逆位相）
-    j.leftShoulder.rotation.x = Math.sin(cycle + Math.PI) * armSwing;
-    j.rightShoulder.rotation.x = Math.sin(cycle) * armSwing;
-    j.leftShoulder.rotation.z = 0;
-    j.rightShoulder.rotation.z = 0;
-    if (p.isSprinting) {
-      j.leftElbow.rotation.x = -0.8;
-      j.rightElbow.rotation.x = -0.8;
-    } else {
-      j.leftElbow.rotation.x = 0;
-      j.rightElbow.rotation.x = 0;
+    // 腕（脚と逆位相）— ガード中は腕ポーズを維持
+    if (!p.isGuarding) {
+      j.leftShoulder.rotation.x = Math.sin(cycle + Math.PI) * armSwing;
+      j.rightShoulder.rotation.x = Math.sin(cycle) * armSwing;
+      j.leftShoulder.rotation.z = 0;
+      j.rightShoulder.rotation.z = 0;
+      if (p.isSprinting) {
+        j.leftElbow.rotation.x = -0.8;
+        j.rightElbow.rotation.x = -0.8;
+      } else {
+        j.leftElbow.rotation.x = 0;
+        j.rightElbow.rotation.x = 0;
+      }
     }
 
     // バウンス
@@ -8135,12 +8131,14 @@ function updatePlayerModel() {
     // 待機アニメーション（微妙な呼吸）
     var t = GAME.totalTimer || 0;
     j.torso.position.y = mesh.userData.baseY + Math.sin(t * Math.PI) * 0.01;
-    j.leftShoulder.rotation.x = Math.sin(t * Math.PI * 0.7) * 0.04;
-    j.leftShoulder.rotation.z = 0;
-    j.rightShoulder.rotation.x = Math.sin(t * Math.PI * 0.7 + 0.5) * 0.04;
-    j.rightShoulder.rotation.z = 0;
-    j.leftElbow.rotation.x = 0;
-    j.rightElbow.rotation.x = 0;
+    if (!p.isGuarding) {
+      j.leftShoulder.rotation.x = Math.sin(t * Math.PI * 0.7) * 0.04;
+      j.leftShoulder.rotation.z = 0;
+      j.rightShoulder.rotation.x = Math.sin(t * Math.PI * 0.7 + 0.5) * 0.04;
+      j.rightShoulder.rotation.z = 0;
+      j.leftElbow.rotation.x = 0;
+      j.rightElbow.rotation.x = 0;
+    }
     j.leftHip.rotation.x = 0;
     j.rightHip.rotation.x = 0;
     j.leftKnee.rotation.x = 0;
