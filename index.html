@@ -7084,13 +7084,48 @@ function buildOfficeFloor() {
   }
 
   // --- 壁 ---
-  // 前壁 (Z=0)
-  var frontWall = new THREE.Mesh(new THREE.BoxGeometry(W, H, wallThick), wallMat);
-  frontWall.position.set(0, H / 2, 0);
-  frontWall.receiveShadow = true;
-  scene.add(frontWall);
-  GAME.cameraMeshes.push(frontWall);
+  // 前壁 (Z=0) — ガラスカーテンウォール（オフィスビルらしい大窓）
+  // 窓枠（上下左右のフレーム + 縦桟）
+  var frameMat = new THREE.MeshStandardMaterial({ color: 0x444455, roughness: 0.4, metalness: 0.6, emissive: 0x050508, emissiveIntensity: 0.1 });
+  var sillH = 0.8; // 窓の下端（腰壁の高さ）
+  var lintelH = H - 0.15; // 窓の上端
+  var winH = lintelH - sillH; // 窓ガラスの高さ
+  // 腰壁（下部）
+  var frontSill = new THREE.Mesh(new THREE.BoxGeometry(W, sillH, wallThick), wallMat);
+  frontSill.position.set(0, sillH / 2, 0);
+  frontSill.receiveShadow = true;
+  scene.add(frontSill);
+  // 幕板（上部）
+  var frontLintel = new THREE.Mesh(new THREE.BoxGeometry(W, H - lintelH, wallThick), wallMat);
+  frontLintel.position.set(0, (lintelH + H) / 2, 0);
+  scene.add(frontLintel);
+  // ガラスパネル（5枚 — 間に縦桟）
+  var panelCount = 5;
+  var panelW = (W - (panelCount + 1) * 0.08) / panelCount; // フレーム幅0.08を引く
+  for (var pi = 0; pi < panelCount; pi++) {
+    var px = -W / 2 + 0.08 + panelW / 2 + pi * (panelW + 0.08);
+    // ガラスパネル
+    var glass = new THREE.Mesh(new THREE.PlaneGeometry(panelW, winH), windowMat);
+    glass.position.set(px, sillH + winH / 2, 0.05);
+    scene.add(glass);
+    // 縦桟（フレーム）
+    if (pi < panelCount - 1) {
+      var mullion = new THREE.Mesh(new THREE.BoxGeometry(0.08, winH, wallThick), frameMat);
+      mullion.position.set(px + panelW / 2 + 0.04, sillH + winH / 2, 0);
+      scene.add(mullion);
+    }
+  }
+  // 左右端の縦フレーム
+  var endFrameL = new THREE.Mesh(new THREE.BoxGeometry(0.08, winH, wallThick), frameMat);
+  endFrameL.position.set(-W / 2 + 0.04, sillH + winH / 2, 0);
+  scene.add(endFrameL);
+  var endFrameR = new THREE.Mesh(new THREE.BoxGeometry(0.08, winH, wallThick), frameMat);
+  endFrameR.position.set(W / 2 - 0.04, sillH + winH / 2, 0);
+  scene.add(endFrameR);
+  // 衝突判定は壁全体として維持
   GAME.walls.push({ minX: -W / 2, maxX: W / 2, minZ: -wallThick / 2, maxZ: wallThick / 2, minY: 0, maxY: H });
+  // カメラ透過用メッシュ（腰壁を代表として登録）
+  GAME.cameraMeshes.push(frontSill);
 
   // 後壁 (Z=15) — 中央に非常階段ドア開口(幅2m)
   var backWallLeft = new THREE.Mesh(new THREE.BoxGeometry((W - 2) / 2, H, wallThick), wallMat);
@@ -7130,13 +7165,75 @@ function buildOfficeFloor() {
   GAME.cameraMeshes.push(rightWallTop);
   GAME.walls.push({ minX: W / 2 - wallThick / 2, maxX: W / 2 + wallThick / 2, minZ: 9, maxZ: D, minY: 0, maxY: H });
 
-  // --- 左壁の窓（3つ） ---
+  // --- 左壁の窓（3つ — 大型ガラス窓） ---
   for (var wi = 0; wi < 3; wi++) {
-    var win = new THREE.Mesh(new THREE.PlaneGeometry(0.05, 1.8, 3.5), windowMat);
-    win.position.set(-W / 2 + 0.12, H / 2 + 0.2, 3 + wi * 4.5);
-    win.rotation.y = Math.PI / 2;
-    scene.add(win);
+    var lwZ = 3 + wi * 4.5;
+    // 窓ガラス
+    var lWin = new THREE.Mesh(new THREE.PlaneGeometry(3.5, winH), windowMat);
+    lWin.position.set(-W / 2 + 0.12, sillH + winH / 2, lwZ);
+    lWin.rotation.y = Math.PI / 2;
+    scene.add(lWin);
+    // 窓枠（上下）
+    var lwFrameTop = new THREE.Mesh(new THREE.BoxGeometry(wallThick, 0.06, 3.5), frameMat);
+    lwFrameTop.position.set(-W / 2, sillH + winH + 0.03, lwZ);
+    scene.add(lwFrameTop);
+    var lwFrameBot = new THREE.Mesh(new THREE.BoxGeometry(wallThick, 0.06, 3.5), frameMat);
+    lwFrameBot.position.set(-W / 2, sillH - 0.03, lwZ);
+    scene.add(lwFrameBot);
   }
+
+  // --- 窓の外（12階からの景色 — 空とビル群） ---
+  (function() {
+    // 空の背景パネル（前壁の外側）
+    var skyCanvas = document.createElement('canvas');
+    skyCanvas.width = 512; skyCanvas.height = 256;
+    var skyCtx = skyCanvas.getContext('2d');
+    // グラデーション空
+    var grad = skyCtx.createLinearGradient(0, 0, 0, 256);
+    grad.addColorStop(0, '#5588cc');
+    grad.addColorStop(0.5, '#88bbee');
+    grad.addColorStop(0.8, '#aaddff');
+    grad.addColorStop(1, '#ccddee');
+    skyCtx.fillStyle = grad;
+    skyCtx.fillRect(0, 0, 512, 256);
+    // 雲
+    skyCtx.fillStyle = 'rgba(255,255,255,0.5)';
+    for (var ci = 0; ci < 8; ci++) {
+      var cx = Math.random() * 512, cy = 20 + Math.random() * 80;
+      skyCtx.beginPath();
+      skyCtx.ellipse(cx, cy, 40 + Math.random() * 60, 12 + Math.random() * 15, 0, 0, Math.PI * 2);
+      skyCtx.fill();
+    }
+    // ビルのシルエット（下部）
+    skyCtx.fillStyle = '#334455';
+    for (var bi = 0; bi < 20; bi++) {
+      var bx = bi * 28 - 10 + Math.random() * 10;
+      var bh = 40 + Math.random() * 100;
+      var bw = 12 + Math.random() * 20;
+      skyCtx.fillRect(bx, 256 - bh, bw, bh);
+      // ビルの窓（光る点）
+      skyCtx.fillStyle = '#ffeeaa';
+      for (var wy = 256 - bh + 5; wy < 252; wy += 8) {
+        for (var wx = bx + 3; wx < bx + bw - 3; wx += 5) {
+          if (Math.random() > 0.4) skyCtx.fillRect(wx, wy, 2, 3);
+        }
+      }
+      skyCtx.fillStyle = '#334455';
+    }
+    var skyTex = new THREE.CanvasTexture(skyCanvas);
+    var skyMat2 = new THREE.MeshBasicMaterial({ map: skyTex });
+
+    // 前面の空パネル（Z=-1.5、壁の外側）
+    var skyFront = new THREE.Mesh(new THREE.PlaneGeometry(W + 4, H + 2), skyMat2);
+    skyFront.position.set(0, H / 2 + 0.5, -1.5);
+    scene.add(skyFront);
+
+    // 左面の空パネル（X=-14.5、壁の外側）
+    var skyLeft = new THREE.Mesh(new THREE.PlaneGeometry(D + 4, H + 2), skyMat2);
+    skyLeft.position.set(-W / 2 - 1.5, H / 2 + 0.5, D / 2);
+    skyLeft.rotation.y = Math.PI / 2;
+    scene.add(skyLeft);
+  })();
 
   // --- デスク配列（4×5 = 20席） ---
   var startX = -8, startZ = 2, gapX = 4, gapZ = 2.5;
