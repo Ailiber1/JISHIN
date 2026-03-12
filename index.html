@@ -2460,8 +2460,8 @@ html, body {
 
     <div class="result-footer">
       <button class="btn btn-neon" id="result-retry-btn" data-i18n="RESULT_RETRY"></button>
-      <button class="btn btn-neon" id="result-next-stage-btn" style="display:none">次のステージへ進む ▶</button>
-      <button class="btn btn-thin" id="result-download-btn" style="display:none">📄 成績データをダウンロード</button>
+      <button class="btn btn-neon" id="result-next-stage-btn" style="display:none" data-i18n="RESULT_NEXT_STAGE"></button>
+      <button class="btn btn-thin" id="result-download-btn" style="display:none" data-i18n="RESULT_DOWNLOAD"></button>
       <button class="btn btn-thin" id="result-select-btn" data-i18n="RESULT_TO_SELECT"></button>
       <button class="btn btn-thin" id="result-title-btn" data-i18n="RESULT_TO_TITLE"></button>
     </div>
@@ -2883,6 +2883,8 @@ const I18N = {
     RESULT_RETRY: 'リトライ',
     RESULT_TO_SELECT: 'ステージ選択',
     RESULT_TO_TITLE: 'タイトル',
+    RESULT_NEXT_STAGE: '次のステージへ進む ▶',
+    RESULT_DOWNLOAD: '📄 成績データをダウンロード',
     RANK_S: '防災マスター',
     RANK_A: '冷静な判断力',
     RANK_B: '基本は押さえている',
@@ -3038,6 +3040,8 @@ const I18N = {
     RESULT_RETRY: 'RETRY',
     RESULT_TO_SELECT: 'STAGES',
     RESULT_TO_TITLE: 'TITLE',
+    RESULT_NEXT_STAGE: 'Next Stage ▶',
+    RESULT_DOWNLOAD: '📄 Download Report',
     RANK_S: 'Disaster Master',
     RANK_A: 'Calm & Decisive',
     RANK_B: 'Knows the Basics',
@@ -10464,11 +10468,12 @@ function calculateScore() {
 }
 
 function getRank(score) {
-  if (score >= 90) return { rank: 'S', title: '防災マスター' };
-  if (score >= 75) return { rank: 'A', title: '冷静な判断力' };
-  if (score >= 60) return { rank: 'B', title: '基本は押さえている' };
-  if (score >= 40) return { rank: 'C', title: 'もう少し知識が必要' };
-  return { rank: 'D', title: '危険な行動が多い' };
+  var en = (currentLang === 'en');
+  if (score >= 90) return { rank: 'S', title: en ? 'Disaster Preparedness Master' : '防災マスター' };
+  if (score >= 75) return { rank: 'A', title: en ? 'Calm Decision Maker' : '冷静な判断力' };
+  if (score >= 60) return { rank: 'B', title: en ? 'Basics Covered' : '基本は押さえている' };
+  if (score >= 40) return { rank: 'C', title: en ? 'Needs More Knowledge' : 'もう少し知識が必要' };
+  return { rank: 'D', title: en ? 'Too Many Risky Actions' : '危険な行動が多い' };
 }
 
 function showResult() {
@@ -10491,12 +10496,15 @@ function showResult() {
     var stageLabel = document.getElementById('result-stage-label');
     var titleEl = document.getElementById('result-title');
     if (rankEl) rankEl.textContent = r.rank;
-    if (rankNameEl) rankNameEl.textContent = '「' + r.title + '」';
+    if (rankNameEl) rankNameEl.textContent = en ? r.title : '「' + r.title + '」';
     if (scoreEl) scoreEl.textContent = GAME.score;
     if (timeEl) timeEl.textContent = min + ':' + (sec < 10 ? '0' : '') + sec;
-    var stageNames = { 1: '学校（教室）', 2: 'オフィスビル（12階）', 3: '一軒家', 4: 'マンション', 5: '地下街' };
+    var en = (currentLang === 'en');
+    var stageNames = en
+      ? { 1: 'School (Classroom)', 2: 'Office Building (12F)', 3: 'Detached House', 4: 'Apartment', 5: 'Underground Mall' }
+      : { 1: '学校（教室）', 2: 'オフィスビル（12階）', 3: '一軒家', 4: 'マンション', 5: '地下街' };
     if (stageLabel) stageLabel.textContent = 'Stage ' + GAME.stageNum + ': ' + (stageNames[GAME.stageNum] || '');
-    if (titleEl) titleEl.textContent = GAME.hitCount >= 3 ? '避難失敗' : '避難完了';
+    if (titleEl) titleEl.textContent = GAME.hitCount >= 3 ? (en ? 'EVACUATION FAILED' : '避難失敗') : (en ? 'EVACUATION COMPLETE' : '避難完了');
 
     // ランク色
     if (rankEl) {
@@ -10512,52 +10520,52 @@ function showResult() {
     var actionsEl = document.getElementById('result-actions');
     if (actionsEl) {
       actions = [
-        { done: s.crouchedIn3s, text: '地震発生後すぐにしゃがんだ', pts: '+10' },
-        { done: s.movedToSafe, text: '安全な場所に移動した', pts: '+10' },
-        { done: s.heldDeskLegs, text: '机の脚を掴んで揺れに耐えた（HOLD ON）', pts: s.heldDeskLegs ? '+' + (GAME._holdOnBonus || 0) : '0' },
-        { done: s.awayFromHazard, text: '危険物から離れた', pts: '+5' },
-        { done: s.didNotRunOutside, text: '揺れ中に外に飛び出さなかった', pts: '+5' },
-        { done: s.noHitByFalling, text: '落下物に当たらなかった', pts: '+5' },
+        { done: s.crouchedIn3s, text: en ? 'Crouched immediately after earthquake' : '地震発生後すぐにしゃがんだ', pts: '+10' },
+        { done: s.movedToSafe, text: en ? 'Moved to a safe spot' : '安全な場所に移動した', pts: '+10' },
+        { done: s.heldDeskLegs, text: en ? 'Held desk legs during shaking (HOLD ON)' : '机の脚を掴んで揺れに耐えた（HOLD ON）', pts: s.heldDeskLegs ? '+' + (GAME._holdOnBonus || 0) : '0' },
+        { done: s.awayFromHazard, text: en ? 'Stayed away from hazards' : '危険物から離れた', pts: '+5' },
+        { done: s.didNotRunOutside, text: en ? 'Did not rush outside during shaking' : '揺れ中に外に飛び出さなかった', pts: '+5' },
+        { done: s.noHitByFalling, text: en ? 'Avoided falling objects' : '落下物に当たらなかった', pts: '+5' },
       ];
       // ステージ別の揺れ後行動
       if (stg === 1) {
         // Stage1（学校）: 生徒としての行動チェック
-        actions.push({ done: s.openedDoor, text: 'ドアを開けて避難経路を確保した', pts: '+8' });
-        actions.push({ done: s.putOnShoes, text: '上履きを履いた（ガラス破片対策）', pts: '+7' });
-        actions.push({ done: s.checkedSafety, text: '友達に「大丈夫？」と声をかけた', pts: '+5' });
+        actions.push({ done: s.openedDoor, text: en ? 'Opened door to secure evacuation route' : 'ドアを開けて避難経路を確保した', pts: '+8' });
+        actions.push({ done: s.putOnShoes, text: en ? 'Put on shoes (glass shard protection)' : '上履きを履いた（ガラス破片対策）', pts: '+7' });
+        actions.push({ done: s.checkedSafety, text: en ? 'Asked friends "Are you okay?"' : '友達に「大丈夫？」と声をかけた', pts: '+5' });
         var novelPts = GAME._novelChoiceScore || 0;
-        actions.push({ done: novelPts > 0, text: 'ノベル選択肢で正しい判断をした', pts: novelPts > 0 ? '+' + novelPts : '0' });
+        actions.push({ done: novelPts > 0, text: en ? 'Made correct choices in novel scenes' : 'ノベル選択肢で正しい判断をした', pts: novelPts > 0 ? '+' + novelPts : '0' });
         if (GAME._oshimoViolations > 0) {
-          actions.push({ done: false, text: 'おはしも違反（走る・押す）' + GAME._oshimoViolations + '回', pts: '-' + (GAME._oshimoViolations * 3) });
+          actions.push({ done: false, text: (en ? 'Rule violations (running/pushing) x' : 'おはしも違反（走る・押す）') + GAME._oshimoViolations + (en ? '' : '回'), pts: '-' + (GAME._oshimoViolations * 3) });
         }
       } else if (stg === 2) {
         // Stage2（オフィス）: 社員としての行動チェック
-        actions.push({ done: s.turnedOffBreaker, text: 'ブレーカーを落とした（通電火災防止）', pts: '+6' });
-        actions.push({ done: s.checkedSafety, text: '同僚に「大丈夫？」と声をかけた', pts: '+5' });
-        actions.push({ done: s.noElevator, text: 'エレベーターに乗らなかった', pts: s.noElevator ? '+6' : '0' });
+        actions.push({ done: s.turnedOffBreaker, text: en ? 'Turned off breaker (fire prevention)' : 'ブレーカーを落とした（通電火災防止）', pts: '+6' });
+        actions.push({ done: s.checkedSafety, text: en ? 'Asked colleagues "Are you okay?"' : '同僚に「大丈夫？」と声をかけた', pts: '+5' });
+        actions.push({ done: s.noElevator, text: en ? 'Did not use the elevator' : 'エレベーターに乗らなかった', pts: s.noElevator ? '+6' : '0' });
         var novelPts2 = GAME._novelChoiceScore || 0;
-        actions.push({ done: novelPts2 > 0, text: 'ノベル選択肢で正しい判断をした', pts: novelPts2 > 0 ? '+' + novelPts2 : '0' });
+        actions.push({ done: novelPts2 > 0, text: en ? 'Made correct choices in novel scenes' : 'ノベル選択肢で正しい判断をした', pts: novelPts2 > 0 ? '+' + novelPts2 : '0' });
       } else if (stg === 3) {
-        actions.push({ done: s.turnedOffFire, text: 'ストーブの火を消した', pts: '+6' });
-        actions.push({ done: s.openedDoor, text: 'ドアを開けて避難経路を確保した', pts: '+6' });
-        actions.push({ done: s.turnedOffBreaker, text: 'ブレーカーを落とした', pts: '+6' });
-        actions.push({ done: s.putOnShoes, text: '靴を履いた', pts: '+6' });
+        actions.push({ done: s.turnedOffFire, text: en ? 'Turned off the heater' : 'ストーブの火を消した', pts: '+6' });
+        actions.push({ done: s.openedDoor, text: en ? 'Opened door to secure evacuation route' : 'ドアを開けて避難経路を確保した', pts: '+6' });
+        actions.push({ done: s.turnedOffBreaker, text: en ? 'Turned off the breaker' : 'ブレーカーを落とした', pts: '+6' });
+        actions.push({ done: s.putOnShoes, text: en ? 'Put on shoes' : '靴を履いた', pts: '+6' });
       } else {
-        actions.push({ done: s.turnedOffFire, text: 'ストーブの火を消した', pts: '+6' });
-        actions.push({ done: s.openedDoor, text: 'ドアを開けて避難経路を確保した', pts: '+6' });
-        actions.push({ done: s.turnedOffBreaker, text: 'ブレーカーを落とした', pts: '+6' });
-        actions.push({ done: s.putOnShoes, text: '靴を履いた', pts: '+6' });
-        actions.push({ done: s.checkedSafety, text: '周囲に「大丈夫？」と声をかけた', pts: '+6' });
+        actions.push({ done: s.turnedOffFire, text: en ? 'Turned off the heater' : 'ストーブの火を消した', pts: '+6' });
+        actions.push({ done: s.openedDoor, text: en ? 'Opened door to secure evacuation route' : 'ドアを開けて避難経路を確保した', pts: '+6' });
+        actions.push({ done: s.turnedOffBreaker, text: en ? 'Turned off the breaker' : 'ブレーカーを落とした', pts: '+6' });
+        actions.push({ done: s.putOnShoes, text: en ? 'Put on shoes' : '靴を履いた', pts: '+6' });
+        actions.push({ done: s.checkedSafety, text: en ? 'Asked people around "Are you okay?"' : '周囲に「大丈夫？」と声をかけた', pts: '+6' });
       }
       // 避難行動（全ステージ共通）
-      actions.push({ done: s.guardedHead, text: '頭を守りながら避難した', pts: s.guardedHead ? '+' + (GAME._guardEvacBonus || 0) : '0' });
+      actions.push({ done: s.guardedHead, text: en ? 'Evacuated while protecting head' : '頭を守りながら避難した', pts: s.guardedHead ? '+' + (GAME._guardEvacBonus || 0) : '0' });
       if (stg === 1) {
-        actions.push({ done: s.usedEmergencyExit, text: '非常口から避難した（普通の階段を避けた）', pts: '+5' });
+        actions.push({ done: s.usedEmergencyExit, text: en ? 'Used emergency exit (avoided regular stairs)' : '非常口から避難した（普通の階段を避けた）', pts: '+5' });
       }
-      actions.push({ done: s.usedStairs, text: '階段で避難した', pts: '+5' });
-      actions.push({ done: s.avoidedBlockWall, text: 'ブロック塀から離れて移動した', pts: '+5' });
-      actions.push({ done: s.reachedEvacPoint, text: '避難場所に到達した', pts: '+10' });
-      actions.push({ done: s.withinTimeLimit, text: '制限時間内に避難完了', pts: '+5' });
+      actions.push({ done: s.usedStairs, text: en ? 'Evacuated via stairs' : '階段で避難した', pts: '+5' });
+      actions.push({ done: s.avoidedBlockWall, text: en ? 'Stayed away from block walls' : 'ブロック塀から離れて移動した', pts: '+5' });
+      actions.push({ done: s.reachedEvacPoint, text: en ? 'Reached evacuation point' : '避難場所に到達した', pts: '+10' });
+      actions.push({ done: s.withinTimeLimit, text: en ? 'Evacuated within time limit' : '制限時間内に避難完了', pts: '+5' });
 
       var html = '';
       for (var i = 0; i < actions.length; i++) {
@@ -10573,11 +10581,11 @@ function showResult() {
       }
       if (GAME.hitCount > 0) {
         var hitReasons = [];
-        if (GAME._glassWarned && !GAME.scoring.putOnShoes) hitReasons.push('裸足でガラス破片の上を歩いた');
-        if (GAME.hitCount > (GAME._glassWarned ? 1 : 0)) hitReasons.push('落下物に被弾した');
+        if (GAME._glassWarned && !GAME.scoring.putOnShoes) hitReasons.push(en ? 'Walked on glass shards barefoot' : '裸足でガラス破片の上を歩いた');
+        if (GAME.hitCount > (GAME._glassWarned ? 1 : 0)) hitReasons.push(en ? 'Hit by falling objects' : '落下物に被弾した');
         html += '<div class="result-action-row action-bad">'
           + '<span class="action-icon">×</span>'
-          + '<span class="action-text">' + escapeHTML(hitReasons.join('・')) + '（' + GAME.hitCount + '回ダメージ）</span>'
+          + '<span class="action-text">' + escapeHTML(hitReasons.join(en ? ' / ' : '・')) + (en ? ' (' + GAME.hitCount + ' hits)' : '（' + GAME.hitCount + '回ダメージ）') + '</span>'
           + '<span class="action-pts">-' + (GAME.hitCount * 5) + '</span>'
           + '</div>';
       }
@@ -10588,20 +10596,20 @@ function showResult() {
     var tipBox = document.getElementById('result-tip-box');
     if (tipBox) {
       var tips = [];
-      if (!GAME.scoring.crouchedIn3s) tips.push('地震が来たらまず「低く！頭を守って！動かないで！」（シェイクアウト）が基本です。');
-      if (!GAME.scoring.guardedHead) tips.push('避難中も頭を守ることが重要です。カバンや本で頭を覆いながら移動しましょう（Gキー長押し）。');
-      if (!GAME.scoring.heldDeskLegs) tips.push('机の下に入ったら脚をしっかり掴みましょう。揺れで机が動いても一緒に移動でき、頭を守り続けることができます（ShakeOut: Hold On）。');
-      if (stg !== 1 && !GAME.scoring.turnedOffFire) tips.push('揺れが収まったらまず火の元を確認！ストーブやガスコンロの火を消しましょう。');
-      if (!GAME.scoring.openedDoor) tips.push('揺れが収まったらドアを開けて避難経路を確保しましょう。地震で建物が歪むとドアが開かなくなることがあります。');
-      if (stg !== 1 && !GAME.scoring.turnedOffBreaker) tips.push('避難前にブレーカーを落としましょう。通電火災（停電復旧時に発生する火災）を防げます。');
-      if (!GAME.scoring.putOnShoes) tips.push('ガラスの破片が散乱している可能性があります。必ず靴を履いてから避難しましょう。');
-      if (!GAME.scoring.noHitByFalling) tips.push('「落ちてこない・倒れてこない・移動してこない」場所に身を寄せましょう。');
-      if (!GAME.scoring.usedStairs) tips.push('避難時は必ず階段を使いましょう。エレベーターは余震で停止し、閉じ込められる危険があります。');
-      if (!GAME.scoring.avoidedBlockWall) tips.push('ブロック塀や自動販売機の近くは倒壊の危険があります。離れて避難しましょう。');
-      if (!GAME.scoring.reachedEvacPoint) tips.push('避難場所（学校の校庭など広い場所）まで移動しましょう。建物の近くは落下物の危険があります。');
-      if (stg === 1 && !GAME.scoring.checkedSafety) tips.push('揺れが収まったら周囲の友達に「大丈夫？」と声をかけましょう（Eキーで声かけ）。一声が命を救うこともあります。');
-      if (stg === 1 && (GAME._novelChoiceScore || 0) <= 0) tips.push('地震の時は先生の指示に従い、机の下に入って頭を守りましょう。窓や廊下に飛び出すのは危険です。');
-      if (tips.length === 0) tips.push('素晴らしい避難行動でした！この知識を周りの人にも伝えましょう。');
+      if (!GAME.scoring.crouchedIn3s) tips.push(en ? 'When an earthquake strikes, remember: "Drop! Cover! Hold On!" (ShakeOut drill basics).' : '地震が来たらまず「低く！頭を守って！動かないで！」（シェイクアウト）が基本です。');
+      if (!GAME.scoring.guardedHead) tips.push(en ? 'Protect your head even while evacuating. Cover your head with a bag or book while moving (hold G key).' : '避難中も頭を守ることが重要です。カバンや本で頭を覆いながら移動しましょう（Gキー長押し）。');
+      if (!GAME.scoring.heldDeskLegs) tips.push(en ? 'Once under a desk, hold its legs firmly. Even if the desk moves during shaking, you\'ll move with it and stay protected (ShakeOut: Hold On).' : '机の下に入ったら脚をしっかり掴みましょう。揺れで机が動いても一緒に移動でき、頭を守り続けることができます（ShakeOut: Hold On）。');
+      if (stg !== 1 && !GAME.scoring.turnedOffFire) tips.push(en ? 'After shaking stops, check for fire hazards first! Turn off heaters and gas stoves.' : '揺れが収まったらまず火の元を確認！ストーブやガスコンロの火を消しましょう。');
+      if (!GAME.scoring.openedDoor) tips.push(en ? 'Open doors after shaking to secure evacuation routes. Earthquakes can warp buildings, jamming doors shut.' : '揺れが収まったらドアを開けて避難経路を確保しましょう。地震で建物が歪むとドアが開かなくなることがあります。');
+      if (stg !== 1 && !GAME.scoring.turnedOffBreaker) tips.push(en ? 'Turn off the breaker before evacuating. This prevents electrical fires when power is restored.' : '避難前にブレーカーを落としましょう。通電火災（停電復旧時に発生する火災）を防げます。');
+      if (!GAME.scoring.putOnShoes) tips.push(en ? 'There may be scattered glass shards. Always put on shoes before evacuating.' : 'ガラスの破片が散乱している可能性があります。必ず靴を履いてから避難しましょう。');
+      if (!GAME.scoring.noHitByFalling) tips.push(en ? 'Stay near areas where nothing can fall on you, collapse onto you, or slide into you.' : '「落ちてこない・倒れてこない・移動してこない」場所に身を寄せましょう。');
+      if (!GAME.scoring.usedStairs) tips.push(en ? 'Always use stairs when evacuating. Elevators can stop during aftershocks, trapping you inside.' : '避難時は必ず階段を使いましょう。エレベーターは余震で停止し、閉じ込められる危険があります。');
+      if (!GAME.scoring.avoidedBlockWall) tips.push(en ? 'Block walls and vending machines may collapse. Keep your distance while evacuating.' : 'ブロック塀や自動販売機の近くは倒壊の危険があります。離れて避難しましょう。');
+      if (!GAME.scoring.reachedEvacPoint) tips.push(en ? 'Move to an evacuation point (open area like a schoolyard). Staying near buildings risks falling debris.' : '避難場所（学校の校庭など広い場所）まで移動しましょう。建物の近くは落下物の危険があります。');
+      if (stg === 1 && !GAME.scoring.checkedSafety) tips.push(en ? 'After shaking stops, ask friends around you "Are you okay?" (E key). A single call can save a life.' : '揺れが収まったら周囲の友達に「大丈夫？」と声をかけましょう（Eキーで声かけ）。一声が命を救うこともあります。');
+      if (stg === 1 && (GAME._novelChoiceScore || 0) <= 0) tips.push(en ? 'During an earthquake, follow your teacher\'s instructions. Get under a desk and protect your head. Never rush to windows or hallways.' : '地震の時は先生の指示に従い、机の下に入って頭を守りましょう。窓や廊下に飛び出すのは危険です。');
+      if (tips.length === 0) tips.push(en ? 'Excellent evacuation! Share this knowledge with the people around you.' : '素晴らしい避難行動でした！この知識を周りの人にも伝えましょう。');
       // 全tipを箇条書きで表示
       var tipHtml = '';
       for (var ti = 0; ti < Math.min(tips.length, 4); ti++) {
@@ -10609,12 +10617,21 @@ function showResult() {
       }
       // Stage1: ストーブ・ブレーカーの知識を必ず伝える（先生の役割だがお知識として重要）
       if (stg === 1) {
-        tipHtml += '<div style="margin-top:14px;padding:12px;background:rgba(255,107,0,0.08);border:1px solid rgba(255,107,0,0.2);border-radius:8px;">'
-          + '<div style="color:#ff6b00;font-weight:bold;margin-bottom:6px;">💡 覚えておこう（大人がやること）</div>'
-          + '<div style="margin-bottom:6px;padding-left:16px;text-indent:-16px;">🔥 揺れが収まったら<b>ストーブやガスコンロの火を消す</b>。地震後の火災は二次災害として最も危険です。阪神淡路大震災では火災が大きな被害をもたらしました。</div>'
-          + '<div style="margin-bottom:6px;padding-left:16px;text-indent:-16px;">⚡ 避難前に<b>ブレーカーを落とす</b>。停電が復旧した時、倒れた電気ストーブや損傷した配線から「通電火災」が発生します。阪神淡路大震災の火災の約6割が通電火災でした。</div>'
-          + '<div style="color:#aaa;font-size:12px;">※学校では先生が対応しますが、自宅では家族みんなで確認しましょう。</div>'
-          + '</div>';
+        if (en) {
+          tipHtml += '<div style="margin-top:14px;padding:12px;background:rgba(255,107,0,0.08);border:1px solid rgba(255,107,0,0.2);border-radius:8px;">'
+            + '<div style="color:#ff6b00;font-weight:bold;margin-bottom:6px;">💡 Good to Know (What Adults Do)</div>'
+            + '<div style="margin-bottom:6px;padding-left:16px;text-indent:-16px;">🔥 After shaking stops, <b>turn off heaters and gas stoves</b>. Post-earthquake fires are the most dangerous secondary disaster. In the 1995 Kobe earthquake, fires caused massive damage.</div>'
+            + '<div style="margin-bottom:6px;padding-left:16px;text-indent:-16px;">⚡ <b>Turn off the breaker</b> before evacuating. When power is restored, knocked-over electric heaters and damaged wiring can cause "reconnection fires." About 60% of fires in the 1995 Kobe earthquake were reconnection fires.</div>'
+            + '<div style="color:#aaa;font-size:12px;">*At school, teachers handle this, but at home, the whole family should check together.</div>'
+            + '</div>';
+        } else {
+          tipHtml += '<div style="margin-top:14px;padding:12px;background:rgba(255,107,0,0.08);border:1px solid rgba(255,107,0,0.2);border-radius:8px;">'
+            + '<div style="color:#ff6b00;font-weight:bold;margin-bottom:6px;">💡 覚えておこう（大人がやること）</div>'
+            + '<div style="margin-bottom:6px;padding-left:16px;text-indent:-16px;">🔥 揺れが収まったら<b>ストーブやガスコンロの火を消す</b>。地震後の火災は二次災害として最も危険です。阪神淡路大震災では火災が大きな被害をもたらしました。</div>'
+            + '<div style="margin-bottom:6px;padding-left:16px;text-indent:-16px;">⚡ 避難前に<b>ブレーカーを落とす</b>。停電が復旧した時、倒れた電気ストーブや損傷した配線から「通電火災」が発生します。阪神淡路大震災の火災の約6割が通電火災でした。</div>'
+            + '<div style="color:#aaa;font-size:12px;">※学校では先生が対応しますが、自宅では家族みんなで確認しましょう。</div>'
+            + '</div>';
+        }
       }
       tipBox.innerHTML = tipHtml;
     }
@@ -10623,11 +10640,11 @@ function showResult() {
     var catEl = document.getElementById('result-categories');
     if (catEl) {
       categories = [
-        { label: '初動対応', score: (s.crouchedIn3s ? 10 : 0) + (s.movedToSafe ? 10 : 0), max: 20 },
-        { label: '揺れ中の判断', score: (s.awayFromHazard ? 5 : 0) + (s.didNotRunOutside ? 5 : 0) + (s.noHitByFalling ? 5 : 0) + (GAME._holdOnBonus || 0), max: 23 },
-        { label: '安全確保行動', score: (s.putOnShoes ? 7 : 0) + (s.openedDoor ? 8 : 0) + (s.checkedSafety ? 5 : 0), max: 20 },
-        { label: '避難行動', score: (GAME._guardEvacBonus || 0) + (s.usedEmergencyExit ? 5 : 0) + (s.usedStairs ? 5 : 0) + (s.avoidedBlockWall ? 5 : 0) + (s.reachedEvacPoint ? 10 : 0) + (s.withinTimeLimit ? 5 : 0), max: 40 },
-        { label: '知識・判断力', score: Math.max(0, GAME._novelChoiceScore || 0), max: 20 }
+        { label: en ? 'Initial Response' : '初動対応', score: (s.crouchedIn3s ? 10 : 0) + (s.movedToSafe ? 10 : 0), max: 20 },
+        { label: en ? 'During Shaking' : '揺れ中の判断', score: (s.awayFromHazard ? 5 : 0) + (s.didNotRunOutside ? 5 : 0) + (s.noHitByFalling ? 5 : 0) + (GAME._holdOnBonus || 0), max: 23 },
+        { label: en ? 'Safety Actions' : '安全確保行動', score: (s.putOnShoes ? 7 : 0) + (s.openedDoor ? 8 : 0) + (s.checkedSafety ? 5 : 0), max: 20 },
+        { label: en ? 'Evacuation' : '避難行動', score: (GAME._guardEvacBonus || 0) + (s.usedEmergencyExit ? 5 : 0) + (s.usedStairs ? 5 : 0) + (s.avoidedBlockWall ? 5 : 0) + (s.reachedEvacPoint ? 10 : 0) + (s.withinTimeLimit ? 5 : 0), max: 40 },
+        { label: en ? 'Knowledge' : '知識・判断力', score: Math.max(0, GAME._novelChoiceScore || 0), max: 20 }
       ];
       var catHtml = '';
       for (var ci = 0; ci < categories.length; ci++) {
@@ -10652,8 +10669,8 @@ function showResult() {
       var qColor = qPct >= 80 ? '#00ff41' : qPct >= 60 ? '#ffaa00' : '#ff4444';
       quizDetail.innerHTML = '<div style="text-align:center;margin-bottom:10px">'
         + '<span style="font-size:28px;color:' + qColor + ';font-family:Share Tech Mono,monospace">' + GAME._quizScore + ' / ' + GAME._quizTotal + '</span>'
-        + '<span style="color:#999;margin-left:8px">正解</span></div>'
-        + '<div class="report-category"><span class="report-category-label">理解度</span>'
+        + '<span style="color:#999;margin-left:8px">' + (en ? 'correct' : '正解') + '</span></div>'
+        + '<div class="report-category"><span class="report-category-label">' + (en ? 'Comprehension' : '理解度') + '</span>'
         + '<div class="report-category-bar"><div class="report-category-fill" style="width:' + qPct + '%;background:' + qColor + '"></div></div>'
         + '<span class="report-category-score">' + qPct + '%</span></div>';
     }
@@ -10681,31 +10698,32 @@ function showResult() {
 
     if (unlockBox) {
       unlockBox.style.display = 'block';
-      var breakdownText = '行動スコア ' + GAME.score + '点 × 70% + 知識テスト '
-        + (GAME._quizScore || 0) + '/' + (GAME._quizTotal || 0) + ' × 30%';
+      var breakdownText = en
+        ? 'Action Score ' + GAME.score + ' × 70% + Quiz ' + (GAME._quizScore || 0) + '/' + (GAME._quizTotal || 0) + ' × 30%'
+        : '行動スコア ' + GAME.score + '点 × 70% + 知識テスト ' + (GAME._quizScore || 0) + '/' + (GAME._quizTotal || 0) + ' × 30%';
 
       if (isUnlocked && stageNum < 5) {
         unlockBox.className = 'result-unlock-box unlocked';
         unlockBox.innerHTML = '<span class="unlock-total-score">' + totalScore + ' / 100</span>'
           + '<div class="unlock-breakdown">' + escapeHTML(breakdownText) + '</div>'
-          + '<div class="unlock-message">🎉 Stage ' + (stageNum + 1) + ' 解放！</div>';
+          + '<div class="unlock-message">🎉 ' + (en ? 'Stage ' + (stageNum + 1) + ' Unlocked!' : 'Stage ' + (stageNum + 1) + ' 解放！') + '</div>';
         if (nextBtn) nextBtn.style.display = 'inline-block';
       } else if (isUnlocked && stageNum >= 5) {
         unlockBox.className = 'result-unlock-box unlocked';
         unlockBox.innerHTML = '<span class="unlock-total-score">' + totalScore + ' / 100</span>'
           + '<div class="unlock-breakdown">' + escapeHTML(breakdownText) + '</div>'
-          + '<div class="unlock-message">🏆 全ステージクリア！</div>';
+          + '<div class="unlock-message">🏆 ' + (en ? 'All Stages Cleared!' : '全ステージクリア！') + '</div>';
         if (nextBtn) nextBtn.style.display = 'none';
       } else {
         unlockBox.className = 'result-unlock-box locked';
         var lockReasons = [];
-        if (totalScore < UNLOCK_THRESHOLD) lockReasons.push('総合スコア' + UNLOCK_THRESHOLD + '点以上');
-        if (!quizPassed) lockReasons.push('理解度テスト90%以上正解');
-        if (GAME.hitCount >= 3) lockReasons.push('被弾3回未満');
+        if (totalScore < UNLOCK_THRESHOLD) lockReasons.push(en ? 'Total score ' + UNLOCK_THRESHOLD + '+' : '総合スコア' + UNLOCK_THRESHOLD + '点以上');
+        if (!quizPassed) lockReasons.push(en ? 'Quiz 90%+ correct' : '理解度テスト90%以上正解');
+        if (GAME.hitCount >= 3) lockReasons.push(en ? 'Less than 3 hits' : '被弾3回未満');
         unlockBox.innerHTML = '<span class="unlock-total-score">' + totalScore + ' / 100</span>'
           + '<div class="unlock-breakdown">' + escapeHTML(breakdownText) + '</div>'
-          + '<div class="unlock-message">🔒 次のステージ解放条件を満たしていません</div>'
-          + '<div style="font-size:12px;color:#ffaa44;margin-top:4px">必要条件: ' + escapeHTML(lockReasons.join(' / ')) + '</div>';
+          + '<div class="unlock-message">🔒 ' + (en ? 'Stage unlock conditions not met' : '次のステージ解放条件を満たしていません') + '</div>'
+          + '<div style="font-size:12px;color:#ffaa44;margin-top:4px">' + (en ? 'Required: ' : '必要条件: ') + escapeHTML(lockReasons.join(' / ')) + '</div>';
         if (nextBtn) nextBtn.style.display = 'none';
       }
     }
@@ -10734,12 +10752,15 @@ function showResult() {
 // 成績データダウンロード（CSV形式 — Excel/スプレッドシート対応）
 // 1人1行。複数ファイルを結合すれば一覧表になる。ヘッダー行付き。
 function downloadResultData(totalScore, categories, actions) {
-  var name = getUsername() || '未登録';
+  var en = (currentLang === 'en');
+  var name = getUsername() || (en ? 'Unregistered' : '未登録');
   var now = new Date();
   var pad2 = function(n) { return n < 10 ? '0' + n : '' + n; };
   var dateStr = now.getFullYear() + '/' + pad2(now.getMonth()+1) + '/' + pad2(now.getDate())
     + ' ' + pad2(now.getHours()) + ':' + pad2(now.getMinutes());
-  var stageNames = { 1: '学校（教室）', 2: 'オフィスビル', 3: '木造住宅', 4: '高層マンション', 5: '屋外（繁華街）' };
+  var stageNames = en
+    ? { 1: 'School (Classroom)', 2: 'Office Building', 3: 'Wooden House', 4: 'High-rise Apartment', 5: 'Outdoor (Downtown)' }
+    : { 1: '学校（教室）', 2: 'オフィスビル', 3: '木造住宅', 4: '高層マンション', 5: '屋外（繁華街）' };
   var stageName = stageNames[GAME.stageNum] || 'Stage ' + GAME.stageNum;
   var r = getRank(GAME.score);
   var totalSec = Math.floor(GAME.totalTimer);
@@ -10757,10 +10778,11 @@ function downloadResultData(totalScore, categories, actions) {
   }
 
   // --- ヘッダー行 ---
-  var headers = [
-    '氏名', '実施日時', 'ステージ', 'クリア時間', 'ダメージ回数',
-    '行動スコア', '知識テスト正解数', '知識テスト問題数', '総合スコア', 'ランク'
-  ];
+  var headers = en
+    ? ['Name', 'Date/Time', 'Stage', 'Clear Time', 'Hits',
+       'Action Score', 'Quiz Correct', 'Quiz Total', 'Total Score', 'Rank']
+    : ['氏名', '実施日時', 'ステージ', 'クリア時間', 'ダメージ回数',
+       '行動スコア', '知識テスト正解数', '知識テスト問題数', '総合スコア', 'ランク'];
   // カテゴリ列
   if (categories) {
     for (var ci = 0; ci < categories.length; ci++) {
