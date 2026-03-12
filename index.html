@@ -5932,8 +5932,19 @@ function buildHallway() {
     scene.add(guideArrow);
   }
 
-  // 非常口トリガーゾーン
-  GAME._emergencyExitZone = { minX: hx0 + 0.5, maxX: hx0 + HW - 0.5, minZ: exitZ - 0.5, maxZ: exitZ + 1 };
+  // 非常口ドアのコリジョン（ボタンを押すまで通れない）
+  GAME._emergencyExitDoorCollision = { minX: exitCenterX - edW - 0.1, maxX: exitCenterX + edW + 0.1, minZ: exitZ - 0.1, maxZ: exitZ + 0.15, minY: 0, maxY: edH };
+  GAME.walls.push(GAME._emergencyExitDoorCollision);
+  GAME._emergencyExitDoorOpen = false;
+  // ドアメッシュを保存（開閉アニメーション用）
+  GAME._exitDoor1 = exitDoor1;
+  GAME._exitDoor2 = exitDoor2;
+  GAME._exitPushBar1 = pushBar1;
+  GAME._exitPushBar2 = pushBar2;
+  GAME._exitDoorCenterX = exitCenterX;
+  GAME._exitDoorEdW = edW;
+  // 非常口トリガーゾーン（ボタン表示用）
+  GAME._emergencyExitZone = { minX: hx0 + 0.5, maxX: hx0 + HW - 0.5, minZ: exitZ - 1.5, maxZ: exitZ + 0.5 };
 
   // ====== 非常口の先：避難通路（L字型）======
   // 新しいレイアウト: 廊下後端(Z=11)から+Z方向に延びてL字で-X方向に曲がる
@@ -6434,8 +6445,42 @@ function checkStairTrigger() {
       btn.addEventListener('click', function() {
         btn.remove();
         GAME.scoring.usedEmergencyExit = true;
-        showAdvisor('避難通路に入った！階段を目指せ！', 'normal');
         SoundManager.playSE('click');
+        // ドアのコリジョンを除去
+        if (GAME._emergencyExitDoorCollision) {
+          var idx = GAME.walls.indexOf(GAME._emergencyExitDoorCollision);
+          if (idx >= 0) GAME.walls.splice(idx, 1);
+          GAME._emergencyExitDoorOpen = true;
+        }
+        // ドア開閉アニメーション（両開きドアが外側に開く）
+        var door1 = GAME._exitDoor1;
+        var door2 = GAME._exitDoor2;
+        var bar1 = GAME._exitPushBar1;
+        var bar2 = GAME._exitPushBar2;
+        var cx = GAME._exitDoorCenterX;
+        var ew = GAME._exitDoorEdW;
+        if (door1 && door2) {
+          var startTime = Date.now();
+          var duration = 600; // 0.6秒
+          var animId = setInterval(function() {
+            var elapsed = Date.now() - startTime;
+            var t = Math.min(elapsed / duration, 1);
+            var ease = 1 - Math.pow(1 - t, 3); // easeOutCubic
+            var angle = ease * Math.PI / 2; // 90度開く
+            // 左ドア: 左端を軸に-Z方向に開く
+            door1.rotation.y = -angle;
+            door1.position.x = cx - ew + Math.sin(angle) * ew/2;
+            door1.position.z = door1.position.z;
+            // 右ドア: 右端を軸に+Z方向に開く
+            door2.rotation.y = angle;
+            door2.position.x = cx + ew - Math.sin(angle) * ew/2;
+            // プッシュバーもドアに追随
+            if (bar1) { bar1.rotation.y = -angle; bar1.position.x = door1.position.x; }
+            if (bar2) { bar2.rotation.y = angle; bar2.position.x = door2.position.x; }
+            if (t >= 1) clearInterval(animId);
+          }, 16);
+        }
+        showAdvisor('非常口を開けた！避難通路を進め！', 'normal');
       });
       document.getElementById('game-container').appendChild(btn);
     } else if (!inZone && exitBtn) {
@@ -7295,7 +7340,7 @@ function updateSingleNPC(npc, dtSec) {
               if (dr && dr.children[0]) dr.children[0].rotation.x = 0;
             }
             npc.targetX = 3.5;
-            npc.targetZ = 8.0;
+            npc.targetZ = 6.6;
           }
           var tdx = npc.targetX - npc.x;
           var tdz = npc.targetZ - npc.z;
@@ -7345,7 +7390,7 @@ function updateSingleNPC(npc, dtSec) {
           if (rur && rur.children[0]) rur.children[0].rotation.x = 0;
         }
         npc.targetX = 4.2;
-        npc.targetZ = 8.5;
+        npc.targetZ = 6.6;
       }
 
       // ドアへ移動
@@ -7400,7 +7445,7 @@ function updateSingleNPC(npc, dtSec) {
           }
           // ウェイポイント: ドア出口(廊下内) → 廊下左端(非常口)
           npc._waypoints = [
-            { x: 6.0, z: 6.6 },   // 廊下に出る（右壁ドアの先）
+            { x: 5.5, z: 6.6 },   // ドアを通って廊下に出る
             { x: 6.0, z: 9.0 },   // 廊下を非常口方向へ
             { x: 6.0, z: 11.0 },  // 非常口
           ];
@@ -9147,9 +9192,8 @@ function updatePlayer(dt) {
   let blocked = false;
   for (let i = 0; i < GAME.walls.length; i++) {
     const w = GAME.walls[i];
-    // しゃがみ時 or 避難開始後は家具（机: maxY<=0.65）の衝突を無視
-    var ignoreFurniture = p.isCrouching || GAME._evacuationStarted;
-    if (ignoreFurniture && w.maxY !== undefined && w.maxY <= 0.65) continue;
+    // しゃがみ時のみ家具（机: maxY<=0.65）の衝突を無視（机の下に潜り込むため）
+    if (p.isCrouching && w.maxY !== undefined && w.maxY <= 0.65) continue;
     if (newX + R > w.minX && newX - R < w.maxX && p.z + R > w.minZ && p.z - R < w.maxZ) {
       blocked = true; break;
     }
@@ -9160,8 +9204,7 @@ function updatePlayer(dt) {
   blocked = false;
   for (let i = 0; i < GAME.walls.length; i++) {
     const w = GAME.walls[i];
-    var ignoreFurniture2 = p.isCrouching || GAME._evacuationStarted;
-    if (ignoreFurniture2 && w.maxY !== undefined && w.maxY <= 0.65) continue;
+    if (p.isCrouching && w.maxY !== undefined && w.maxY <= 0.65) continue;
     if (p.x + R > w.minX && p.x - R < w.maxX && newZ + R > w.minZ && newZ - R < w.maxZ) {
       blocked = true; break;
     }
