@@ -2724,8 +2724,8 @@ html, body {
   <div id="daily-class-label"></div>
   <div id="interact-prompt"><span class="prompt-key">E</span><span class="prompt-label"></span></div>
   <div id="holdon-prompt"></div>
-  <div id="holdon-indicator"><div class="holdon-title">🤲 HOLD ON!</div><div class="holdon-sub">机の脚を掴んでいる…</div></div>
-  <div id="guard-evac-indicator" style="display:none;"><div class="holdon-title">🛡️ 頭を保護中</div><div class="holdon-sub">頭を守りながら避難中…</div></div>
+  <div id="holdon-indicator"><div class="holdon-title">🤲 HOLD ON!</div><div class="holdon-sub" data-i18n="HUD_HOLDON_SUB">机の脚を掴んでいる…</div></div>
+  <div id="guard-evac-indicator" style="display:none;"><div class="holdon-title" data-i18n="HUD_GUARD_TITLE">🛡️ 頭を保護中</div><div class="holdon-sub" data-i18n="HUD_GUARD_SUB">頭を守りながら避難中…</div></div>
   <div id="item-get-overlay"></div>
   <div id="item-get-text"></div>
   <div id="game-hud">
@@ -2749,42 +2749,42 @@ html, body {
   <div id="mobile-buttons">
     <button class="mob-btn" id="mob-dash">走る</button>
     <button class="mob-btn" id="mob-crouch">しゃがむ</button>
-    <button class="mob-btn" id="mob-guard">頭を守る</button>
+    <button class="mob-btn" id="mob-guard" data-i18n="MOB_GUARD">頭を守る</button>
   </div>
-  <button id="mob-interact">操作</button>
+  <button id="mob-interact" data-i18n="MOB_INTERACT">操作</button>
   <button id="mob-pause">⏸</button>
   <div id="pause-overlay">
     <div class="pause-panel ui-panel">
       <h2>PAUSED</h2>
-      <div class="pause-btn" id="btn-resume">再開</div>
-      <div class="pause-btn" id="btn-controls">操作説明</div>
-      <div class="pause-btn" id="btn-quit-game">タイトルに戻る</div>
+      <div class="pause-btn" id="btn-resume" data-i18n="PAUSE_RESUME">再開</div>
+      <div class="pause-btn" id="btn-controls" data-i18n="PAUSE_CONTROLS">操作説明</div>
+      <div class="pause-btn" id="btn-quit-game" data-i18n="PAUSE_QUIT">タイトルに戻る</div>
     </div>
   </div>
   <div id="controls-overlay">
     <div class="controls-panel ui-panel">
-      <h2 style="font-family:'Share Tech Mono',monospace;font-size:20px;color:var(--safety-orange);text-align:center;margin-bottom:16px;letter-spacing:3px;">操作説明</h2>
-      <h3 style="color:var(--safety-orange);margin:0 0 8px;font-size:14px;">PC操作</h3>
+      <h2 data-i18n="CONTROLS_TITLE" style="font-family:'Share Tech Mono',monospace;font-size:20px;color:var(--safety-orange);text-align:center;margin-bottom:16px;letter-spacing:3px;">操作説明</h2>
+      <h3 data-i18n="CONTROLS_PC" style="color:var(--safety-orange);margin:0 0 8px;font-size:14px;">PC操作</h3>
       <table class="controls-table">
-        <tr><th>操作</th><th>キー</th></tr>
-        <tr><td>移動</td><td>W A S D / 矢印キー</td></tr>
-        <tr><td>視点回転</td><td>マウス移動</td></tr>
-        <tr><td>しゃがむ</td><td>C</td></tr>
-        <tr><td>ダッシュ</td><td>Shift</td></tr>
-        <tr><td>頭を守る</td><td>G（トグル：1回押してON/OFF）</td></tr>
-        <tr><td>アクション / 声かけ</td><td>E / F / Space</td></tr>
-        <tr><td>ポーズ</td><td>Esc</td></tr>
+        <tr><th data-i18n="CONTROLS_TH_ACTION">操作</th><th data-i18n="CONTROLS_TH_KEY">キー</th></tr>
+        <tr><td data-i18n="CTRL_TD_MOVE">移動</td><td>W A S D / 矢印キー</td></tr>
+        <tr><td data-i18n="CTRL_TD_CAMERA">視点回転</td><td>マウス移動</td></tr>
+        <tr><td data-i18n="CTRL_TD_CROUCH">しゃがむ</td><td>C</td></tr>
+        <tr><td data-i18n="CTRL_TD_DASH">ダッシュ</td><td>Shift</td></tr>
+        <tr><td data-i18n="CTRL_TD_GUARD">頭を守る</td><td>G（トグル：1回押してON/OFF）</td></tr>
+        <tr><td data-i18n="CTRL_TD_ACTION">アクション / 声かけ</td><td>E / F / Space</td></tr>
+        <tr><td data-i18n="CTRL_TD_PAUSE">ポーズ</td><td>Esc</td></tr>
       </table>
-      <h3 style="color:var(--safety-orange);margin:14px 0 8px;font-size:14px;">スマホ操作</h3>
+      <h3 data-i18n="CONTROLS_MOBILE" style="color:var(--safety-orange);margin:14px 0 8px;font-size:14px;">スマホ操作</h3>
       <table class="controls-table">
-        <tr><th>操作</th><th>方法</th></tr>
-        <tr><td>移動</td><td>左側スティック</td></tr>
-        <tr><td>視点回転</td><td>右側スワイプ</td></tr>
-        <tr><td>しゃがむ</td><td>しゃがむボタン</td></tr>
-        <tr><td>ダッシュ</td><td>走るボタン</td></tr>
-        <tr><td>頭を守る</td><td>頭を守るボタン（トグル）</td></tr>
-        <tr><td>アクション / 声かけ</td><td>操作ボタン</td></tr>
-        <tr><td>ポーズ</td><td>⏸ボタン</td></tr>
+        <tr><th data-i18n="CONTROLS_TH_ACTION2">操作</th><th data-i18n="CONTROLS_TH_METHOD">方法</th></tr>
+        <tr><td data-i18n="CTRL_TD_MOVE">移動</td><td data-i18n="CTRL_TD_LSTICK">左側スティック</td></tr>
+        <tr><td data-i18n="CTRL_TD_CAMERA">視点回転</td><td data-i18n="CTRL_TD_RSWIPE">右側スワイプ</td></tr>
+        <tr><td data-i18n="CTRL_TD_CROUCH">しゃがむ</td><td>しゃがむボタン</td></tr>
+        <tr><td data-i18n="CTRL_TD_DASH">ダッシュ</td><td data-i18n="CTRL_TD_RUNBTN">走るボタン</td></tr>
+        <tr><td data-i18n="CTRL_TD_GUARD">頭を守る</td><td data-i18n="CTRL_TD_GUARDBTN">頭を守るボタン（トグル）</td></tr>
+        <tr><td data-i18n="CTRL_TD_ACTION">アクション / 声かけ</td><td data-i18n="CTRL_TD_ACTBTN">操作ボタン</td></tr>
+        <tr><td data-i18n="CTRL_TD_PAUSE">ポーズ</td><td data-i18n="CTRL_TD_PAUSEBTN">⏸ボタン</td></tr>
       </table>
       <h3 style="color:#ff6b00;margin:14px 0 8px;font-size:14px;">ゲームのコツ</h3>
       <ul class="controls-tips">
@@ -2795,7 +2795,7 @@ html, body {
         <li>避難中はGを1回押して頭を守りながら移動</li>
         <li>廊下の落下物を避けて進む</li>
       </ul>
-      <div class="pause-btn" id="btn-controls-back">戻る</div>
+      <div class="pause-btn" id="btn-controls-back" data-i18n="PAUSE_BACK">戻る</div>
     </div>
   </div>
   <div id="game-loading">
@@ -2973,7 +2973,36 @@ const I18N = {
     SRC_REF3: '東京消防庁「地震 その時10のポイント」',
     SRC_REF4: '文部科学省「学校防災マニュアル」',
     SRC_REF5: '政府広報オンライン「防災特集」',
-    SRC_DATE: '（2026年3月時点の情報に基づく）'
+    SRC_DATE: '（2026年3月時点の情報に基づく）',
+    PAUSE_RESUME: '再開',
+    PAUSE_CONTROLS: '操作説明',
+    PAUSE_QUIT: 'タイトルに戻る',
+    PAUSE_BACK: '戻る',
+    HUD_GUARD_TITLE: '🛡️ 頭を保護中',
+    HUD_GUARD_SUB: '頭を守りながら避難中…',
+    HUD_HOLDON_SUB: '机の脚を掴んでいる…',
+    MOB_GUARD: '頭を守る',
+    MOB_INTERACT: '操作',
+    CONTROLS_TITLE: '操作説明',
+    CONTROLS_PC: 'PC操作',
+    CONTROLS_TH_ACTION: '操作',
+    CONTROLS_TH_KEY: 'キー',
+    CONTROLS_MOBILE: 'スマホ操作',
+    CONTROLS_TH_ACTION2: '操作',
+    CONTROLS_TH_METHOD: '方法',
+    CTRL_TD_MOVE: '移動',
+    CTRL_TD_CAMERA: '視点回転',
+    CTRL_TD_CROUCH: 'しゃがむ',
+    CTRL_TD_DASH: 'ダッシュ',
+    CTRL_TD_GUARD: '頭を守る',
+    CTRL_TD_ACTION: 'アクション / 声かけ',
+    CTRL_TD_PAUSE: 'ポーズ',
+    CTRL_TD_LSTICK: '左側スティック',
+    CTRL_TD_RSWIPE: '右側スワイプ',
+    CTRL_TD_RUNBTN: '走るボタン',
+    CTRL_TD_GUARDBTN: '頭を守るボタン（トグル）',
+    CTRL_TD_ACTBTN: '操作ボタン',
+    CTRL_TD_PAUSEBTN: '⏸ボタン'
   },
   en: {
     SUBTITLE: 'Shake. Judge. Survive.',
@@ -3099,7 +3128,36 @@ const I18N = {
     SRC_REF3: 'Tokyo Fire Department — "10 Points During an Earthquake"',
     SRC_REF4: 'Ministry of Education — "School Disaster Prevention Manual"',
     SRC_REF5: 'Government Public Relations — Disaster Prevention',
-    SRC_DATE: '(Based on information as of March 2026)'
+    SRC_DATE: '(Based on information as of March 2026)',
+    PAUSE_RESUME: 'Resume',
+    PAUSE_CONTROLS: 'Controls',
+    PAUSE_QUIT: 'Back to Title',
+    PAUSE_BACK: 'Back',
+    HUD_GUARD_TITLE: '🛡️ Guarding Head',
+    HUD_GUARD_SUB: 'Protecting head while evacuating...',
+    HUD_HOLDON_SUB: 'Holding desk legs...',
+    MOB_GUARD: 'Guard',
+    MOB_INTERACT: 'Action',
+    CONTROLS_TITLE: 'CONTROLS',
+    CONTROLS_PC: 'PC Controls',
+    CONTROLS_TH_ACTION: 'Action',
+    CONTROLS_TH_KEY: 'Key',
+    CONTROLS_MOBILE: 'Mobile Controls',
+    CONTROLS_TH_ACTION2: 'Action',
+    CONTROLS_TH_METHOD: 'Method',
+    CTRL_TD_MOVE: 'Move',
+    CTRL_TD_CAMERA: 'Look Around',
+    CTRL_TD_CROUCH: 'Crouch',
+    CTRL_TD_DASH: 'Dash',
+    CTRL_TD_GUARD: 'Guard Head',
+    CTRL_TD_ACTION: 'Action / Call Out',
+    CTRL_TD_PAUSE: 'Pause',
+    CTRL_TD_LSTICK: 'Left Stick',
+    CTRL_TD_RSWIPE: 'Right Swipe',
+    CTRL_TD_RUNBTN: 'Run Button',
+    CTRL_TD_GUARDBTN: 'Guard Button (Toggle)',
+    CTRL_TD_ACTBTN: 'Action Button',
+    CTRL_TD_PAUSEBTN: '⏸ Button'
   }
 };
 
@@ -5345,14 +5403,14 @@ function initGame(stageNum) {
   }
 
   document.getElementById('hud-score').textContent = 'SCORE: 0';
-  document.getElementById('hud-phase').textContent = GAME.phase === 'daily' ? '授業中' : '';
+  document.getElementById('hud-phase').textContent = GAME.phase === 'daily' ? (currentLang === 'en' ? 'In Class' : '授業中') : '';
   document.getElementById('hud-timer').textContent = '--:--';
   // 日常ラベル表示（ステージ別）
   var dclEl = document.getElementById('daily-class-label');
   if (stageNum === 2) {
-    dclEl.innerHTML = '<div class="dcl-main">💼 業務中</div>';
+    dclEl.innerHTML = '<div class="dcl-main">💼 ' + (currentLang === 'en' ? 'Working' : '業務中') + '</div>';
   } else {
-    dclEl.innerHTML = '<div class="dcl-main">📚 授業中</div>';
+    dclEl.innerHTML = '<div class="dcl-main">📚 ' + (currentLang === 'en' ? 'In Class' : '授業中') + '</div>';
   }
   dclEl.className = 'active';
   document.getElementById('hud-safety-indicator').className = 'safe';
@@ -5929,7 +5987,7 @@ function buildClassroom() {
     x: doorPosX - 0.5, z: doorCenterZ,
     radius: 1.8,
     action: 'openDoor',
-    label: 'ドアを開ける',
+    label: {ja: 'ドアを開ける', en: 'Open Door'},
     used: false,
     phases: ['aftershake', 'evacuation'],
   });
@@ -5954,7 +6012,7 @@ function buildClassroom() {
     x: W/2 - 0.5, z: -0.88,
     radius: 1.2,
     action: 'turnOffBreaker',
-    label: '⚡ ブレーカーを落とす（通電火災防止）',
+    label: {ja: '⚡ ブレーカーを落とす（通電火災防止）', en: '⚡ Turn Off Breaker (Prevent Fire)'},
     used: false,
     phases: ['aftershake'],
   });
@@ -5976,7 +6034,7 @@ function buildClassroom() {
     x: W/2 - 1.5, z: D - 1 - 0.3,
     radius: 1.0,
     action: 'putOnShoes',
-    label: '👟 上履きを履く（ガラス対策）',
+    label: {ja: '👟 上履きを履く（ガラス対策）', en: '👟 Put On Shoes (Glass Protection)'},
     used: false,
     phases: ['aftershake', 'evacuation'],
   });
@@ -6010,7 +6068,7 @@ function buildClassroom() {
     x: -3.5, z: D - 1 - 0.3,
     radius: 1.2,
     action: 'turnOffFire',
-    label: '🔥 ストーブの火を消す（火災防止）',
+    label: {ja: '🔥 ストーブの火を消す（火災防止）', en: '🔥 Turn Off Heater (Fire Prevention)'},
     used: false,
     phases: ['aftershake'],
   });
@@ -6343,7 +6401,7 @@ function buildHallway() {
     x: exitCenterX, z: exitZ - 0.5,
     radius: 2.5,
     action: 'openEmergencyExit',
-    label: '🚪 非常口を開ける',
+    label: {ja: '🚪 非常口を開ける', en: '🚪 Open Emergency Exit'},
     used: false,
     phases: ['evacuation'],
   });
@@ -6689,7 +6747,7 @@ function updateAftershocks(dtSec) {
 }
 
 function triggerAftershock() {
-  showAdvisor('余震だ！頭を守りながら進め！', 'warning');
+  showAdvisor({ja: '余震だ！頭を守りながら進め！', en: 'Aftershock! Protect your head and keep moving!'}, 'warning');
   SoundManager.playSE('hit');
 
   // 画面揺れ（2秒間）
@@ -7132,13 +7190,13 @@ function buildOfficeFloor() {
 
   // --- インタラクタブル ---
   // デスク（机の下に潜る）
-  GAME.interactables.push({ x: playerDeskX, z: playerDeskZ, radius: 1.5, action: 'hideUnderDesk', label: 'デスクの下に潜る', phases: ['earthquake', 'shaking'], used: false });
+  GAME.interactables.push({ x: playerDeskX, z: playerDeskZ, radius: 1.5, action: 'hideUnderDesk', label: {ja: 'デスクの下に潜る', en: 'Hide Under Desk'}, phases: ['earthquake', 'shaking'], used: false });
 
   // ブレーカー
-  GAME.interactables.push({ x: -12, z: 1, radius: 1.5, action: 'turnOffBreaker', label: 'ブレーカーを落とす', phases: ['aftershake', 'evacuation'], used: false, mesh: breakerLever });
+  GAME.interactables.push({ x: -12, z: 1, radius: 1.5, action: 'turnOffBreaker', label: {ja: '⚡ ブレーカーを落とす', en: '⚡ Turn Off Breaker'}, phases: ['aftershake', 'evacuation'], used: false, mesh: breakerLever });
 
   // 非常階段ドア
-  GAME.interactables.push({ x: 0, z: 14.5, radius: 2.0, action: 'openStairDoor', label: '非常階段のドアを開ける', phases: ['aftershake', 'evacuation'], used: false, mesh: stairDoorMesh });
+  GAME.interactables.push({ x: 0, z: 14.5, radius: 2.0, action: 'openStairDoor', label: {ja: '🚪 非常階段のドアを開ける', en: '🚪 Open Stair Door'}, phases: ['aftershake', 'evacuation'], used: false, mesh: stairDoorMesh });
 
   // 参照保存
   GAME._stairDoorS2 = stairDoorMesh;
@@ -7231,7 +7289,7 @@ function buildElevatorHall() {
   scene.add(hallLight);
 
   // インタラクタブル — エレベーターボタン
-  GAME.interactables.push({ x: 14.5, z: 7, radius: 1.5, action: 'pressElevatorButton', label: 'エレベーターを呼ぶ', phases: ['aftershake', 'evacuation'], used: false });
+  GAME.interactables.push({ x: 14.5, z: 7, radius: 1.5, action: 'pressElevatorButton', label: {ja: '🛗 エレベーターを呼ぶ', en: '🛗 Call Elevator'}, phases: ['aftershake', 'evacuation'], used: false });
 }
 
 // ============================================================
@@ -7456,7 +7514,7 @@ function checkStairTrigger() {
       GAME._normalStairWarned = true;
       GAME.score = Math.max(0, GAME.score - 5);
       SoundManager.playSE('hit');
-      showAdvisor('天井材が崩落して通れない！\n廊下の反対側（左側）に非常口がある！', 'warning');
+      showAdvisor({ja: '天井材が崩落して通れない！\n廊下の反対側（左側）に非常口がある！', en: 'Ceiling collapsed and blocked the way!\nThe emergency exit is on the other side (left) of the hallway!'}, 'warning');
       if (GAME.camera) {
         var origY = GAME.camera.position.y;
         GAME.camera.position.y += 0.1;
@@ -7543,7 +7601,7 @@ function teleportToSchoolyard() {
     }
   });
 
-  showAdvisor('校庭の避難ポイント（オレンジ）に集合しよう！', 'normal');
+  showAdvisor({ja: '校庭の避難ポイント（オレンジ）に集合しよう！', en: 'Gather at the evacuation point (orange) in the schoolyard!'}, 'normal');
 
   // 校庭にNPC群（先に避難した生徒＋先生）を配置
   spawnSchoolyardNPCs();
@@ -7631,7 +7689,7 @@ function teleportToBuildingPlaza() {
     }
   });
 
-  showAdvisor('ビル前広場の避難ポイント（オレンジ）に集合しよう！', 'normal');
+  showAdvisor({ja: 'ビル前広場の避難ポイント（オレンジ）に集合しよう！', en: 'Gather at the evacuation point (orange) in the plaza!'}, 'normal');
 
   // 広場にNPC群（先に避難した同僚）を配置
   spawnPlazaNPCs();
@@ -7721,7 +7779,7 @@ function checkBlockWallProximity() {
   if (p.x > z.minX && p.x < z.maxX && p.z > z.minZ && p.z < z.maxZ) {
     if (GAME.scoring.avoidedBlockWall) {
       GAME.scoring.avoidedBlockWall = false;
-      showAdvisor('ブロック塀に近づかないで！倒壊の危険があります！', 'warning');
+      showAdvisor({ja: 'ブロック塀に近づかないで！倒壊の危険があります！', en: 'Stay away from the block wall! It could collapse!'}, 'warning');
     }
   }
 }
@@ -7908,7 +7966,7 @@ function createPlayerModel(stageNum) {
   lctx.fillStyle = '#ffffff';
   lctx.font = 'bold 28px sans-serif';
   lctx.textAlign = 'center';
-  var playerDisplayName = getUsername() || 'プレイヤー';
+  var playerDisplayName = getUsername() || (currentLang === 'en' ? 'Player' : 'プレイヤー');
   lctx.fillText('▼ ' + playerDisplayName, 128, 38);
   var labelTex = new THREE.CanvasTexture(labelCanvas);
   var labelMat = new THREE.SpriteMaterial({ map: labelTex, transparent: true, depthTest: false });
@@ -8773,9 +8831,9 @@ function updateSingleNPC(npc, dtSec) {
           GAME._exitedNPCs = (GAME._exitedNPCs || 0) + 1;
           if (GAME.stageNum === 2) {
             if (GAME._exitedNPCs === 3) {
-              showAdvisor('同僚たちが非常階段へ向かっている！君も急ごう！', 'normal');
+              showAdvisor({ja: '同僚たちが非常階段へ向かっている！君も急ごう！', en: 'Colleagues are heading for the stairs! Hurry up!'}, 'normal');
             } else if (GAME._exitedNPCs >= 12) {
-              showAdvisor('ほとんどの社員が避難完了！急いで！', 'warning');
+              showAdvisor({ja: 'ほとんどの社員が避難完了！急いで！', en: 'Most employees have evacuated! Hurry!'}, 'warning');
             }
             // Stage 2 ウェイポイント: 非常階段ドア → 退出
             npc._waypoints = [
@@ -8784,9 +8842,9 @@ function updateSingleNPC(npc, dtSec) {
             ];
           } else {
             if (GAME._exitedNPCs === 3) {
-              showAdvisor('生徒たちが避難を始めた！君も廊下へ向かおう！', 'normal');
+              showAdvisor({ja: '生徒たちが避難を始めた！君も廊下へ向かおう！', en: 'Students are starting to evacuate! Head to the hallway!'}, 'normal');
             } else if (GAME._exitedNPCs >= 20) {
-              showAdvisor('ほとんどの生徒が避難完了！急いで！', 'warning');
+              showAdvisor({ja: 'ほとんどの生徒が避難完了！急いで！', en: 'Most students have evacuated! Hurry!'}, 'warning');
             }
             // Stage 1 ウェイポイント: ドア出口(廊下内) → 廊下左端(非常口)
             npc._waypoints = [
@@ -8850,7 +8908,7 @@ function tryHelpInjuredNPC() {
       GAME.scoring.checkedSafety = true;
       GAME.score += 6;
       SoundManager.playSE('rescue');
-      showAdvisor('動けない生徒を助けた！素晴らしい！', 'praise');
+      showAdvisor({ja: '動けない生徒を助けた！素晴らしい！', en: 'You helped a student who couldn\'t move! Great job!'}, 'praise');
       SoundManager.playSE('click');
       return true;
     }
@@ -8871,7 +8929,7 @@ function trySafetyCheck() {
       GAME.scoring.checkedSafety = true;
       GAME.score += 5;
       SoundManager.playSE('click');
-      showAdvisor('「大丈夫？」— 周囲への声かけ、大切な行動です！', 'praise');
+      showAdvisor({ja: '「大丈夫？」— 周囲への声かけ、大切な行動です！', en: '"Are you okay?" — Checking on others is an important action!'}, 'praise');
       showItemGet('🗣️ 安否確認！ — 「大丈夫？」');
       return true;
     }
@@ -8922,7 +8980,7 @@ function performInteract() {
       GAME.scoring.openedDoor = true;
       GAME.score += 5;
       SoundManager.playSE('door');
-      showAdvisor('ドアを開けた！廊下に出て、非常口（緑の看板）を目指そう！', 'praise');
+      showAdvisor({ja: 'ドアを開けた！廊下に出て、非常口（緑の看板）を目指そう！', en: 'Door opened! Head to the hallway and find the emergency exit (green sign)!'}, 'praise');
       showItemGet('🚪 ドアを開けた！ — 避難経路確保');
       // ドアを開く演出（引き戸 — Z方向にスライド）
       if (target.mesh) {
@@ -8941,7 +8999,7 @@ function performInteract() {
       GAME.scoring.turnedOffBreaker = true;
       GAME.score += 5;
       SoundManager.playSE('breaker');
-      showAdvisor('ブレーカーを落とした！停電が復旧した時の通電火災を防げるよ。', 'praise');
+      showAdvisor({ja: 'ブレーカーを落とした！停電が復旧した時の通電火災を防げるよ。', en: 'Breaker switched off! This prevents electrical fires when power returns.'}, 'praise');
       showItemGet('⚡ ブレーカーOFF！ — 通電火災を防止');
       // ブレーカーの色を変える（OFF状態）+ ランプ消灯
       if (target.mesh) {
@@ -8957,7 +9015,7 @@ function performInteract() {
     case 'putOnShoes':
       GAME.scoring.putOnShoes = true;
       GAME.score += 5;
-      showAdvisor('上履きを履いた！ガラスや瓦礫の上も安全に歩けるよ。', 'praise');
+      showAdvisor({ja: '上履きを履いた！ガラスや瓦礫の上も安全に歩けるよ。', en: 'Shoes on! You can safely walk over glass and debris now.'}, 'praise');
       showItemGet('👟 上履きを装備！ — ガラス破片から足を保護');
       // 靴箱の上履きを非表示（取得済み）
       if (target.mesh) target.mesh.visible = false;
@@ -8968,7 +9026,7 @@ function performInteract() {
     case 'turnOffFire':
       GAME.scoring.turnedOffFire = true;
       GAME.score += 5;
-      showAdvisor('ストーブの火を消した！地震後の火災は非常に危険。必ず消火しよう！', 'praise');
+      showAdvisor({ja: 'ストーブの火を消した！地震後の火災は非常に危険。必ず消火しよう！', en: 'Heater turned off! Post-earthquake fires are extremely dangerous.'}, 'praise');
       showItemGet('🔥 消火完了！ — 二次災害（火災）を防止');
       // ストーブの色を暗くする（消火状態）
       if (target.mesh) {
@@ -8985,7 +9043,7 @@ function performInteract() {
     case 'openEmergencyExit':
       GAME.scoring.usedEmergencyExit = true;
       GAME.score += 8;
-      showAdvisor('非常口を開けた！避難通路を進め！', 'praise');
+      showAdvisor({ja: '非常口を開けた！避難通路を進め！', en: 'Emergency exit opened! Proceed through the evacuation route!'}, 'praise');
       showItemGet('🚪 非常口を開放！ — 避難通路へ');
       // ドアのコリジョンを除去
       if (GAME._emergencyExitDoorCollision) {
@@ -9031,7 +9089,7 @@ function performInteract() {
       // Stage 2: 非常階段ドアを開ける
       GAME.scoring.usedStairs = true;
       GAME.score += 5;
-      showAdvisor('非常階段のドアを開けた！12階から1階まで、階段で避難しよう！', 'praise');
+      showAdvisor({ja: '非常階段のドアを開けた！12階から1階まで、階段で避難しよう！', en: 'Stair door opened! Evacuate from the 12th to the 1st floor via stairs!'}, 'praise');
       showItemGet('🚪 非常階段のドアを開放！ — 正しい避難ルート');
       // ドアのコリジョン除去
       if (GAME._stairDoorCollision) {
@@ -9065,19 +9123,17 @@ function startElevatorTrap() {
 
   // 1.5秒後: エレベーター内テキスト表示
   setTimeout(function() {
-    overlay.innerHTML = '<div style="color:#ff4444;font-family:Share Tech Mono,monospace;font-size:clamp(18px,4vw,28px);text-align:center;animation:pulse 1s infinite">'
-      + '⚠️ エレベーターが停止しました<br>'
-      + '<span style="font-size:0.7em;color:#999">余震により完全停止…閉じ込められた</span></div>';
+    overlay.innerHTML = currentLang === 'en'
+      ? '<div style="color:#ff4444;font-family:Share Tech Mono,monospace;font-size:clamp(18px,4vw,28px);text-align:center;animation:pulse 1s infinite">⚠️ Elevator has stopped<br><span style="font-size:0.7em;color:#999">Aftershock caused a full stop... You\'re trapped</span></div>'
+      : '<div style="color:#ff4444;font-family:Share Tech Mono,monospace;font-size:clamp(18px,4vw,28px);text-align:center;animation:pulse 1s infinite">⚠️ エレベーターが停止しました<br><span style="font-size:0.7em;color:#999">余震により完全停止…閉じ込められた</span></div>';
     SoundManager.playSE('alarm');
   }, 1500);
 
   // 4秒後: 防災クンの警告
   setTimeout(function() {
-    overlay.innerHTML += '<div style="color:#ffaa00;font-family:Noto Sans JP,sans-serif;font-size:clamp(14px,3vw,20px);margin-top:30px;padding:20px;max-width:600px;text-align:center;">'
-      + '地震の後にエレベーターに乗ってはいけません。<br>'
-      + '余震や停電で閉じ込められる危険があります。<br>'
-      + '必ず非常階段を使って避難しましょう。<br>'
-      + '<span style="font-size:0.8em;color:#888">東日本大震災では約14,000件のエレベーター閉じ込めが発生</span></div>';
+    overlay.innerHTML += currentLang === 'en'
+      ? '<div style="color:#ffaa00;font-family:Noto Sans JP,sans-serif;font-size:clamp(14px,3vw,20px);margin-top:30px;padding:20px;max-width:600px;text-align:center;">Never take the elevator after an earthquake.<br>Aftershocks or power outages can trap you inside.<br>Always use the emergency stairs.<br><span style="font-size:0.8em;color:#888">~14,000 elevator entrapments occurred during the 2011 earthquake</span></div>'
+      : '<div style="color:#ffaa00;font-family:Noto Sans JP,sans-serif;font-size:clamp(14px,3vw,20px);margin-top:30px;padding:20px;max-width:600px;text-align:center;">地震の後にエレベーターに乗ってはいけません。<br>余震や停電で閉じ込められる危険があります。<br>必ず非常階段を使って避難しましょう。<br><span style="font-size:0.8em;color:#888">東日本大震災では約14,000件のエレベーター閉じ込めが発生</span></div>';
   }, 4000);
 
   // 8秒後: ゲームオーバー
@@ -9102,18 +9158,18 @@ function updateInteractPrompt() {
     if (prompt) {
       prompt.style.display = 'block';
       if (promptKey) promptKey.textContent = GAME.isMobile ? 'TAP' : 'E';
-      if (promptLabel) promptLabel.textContent = target.label || '操作';
+      if (promptLabel) promptLabel.textContent = resolveNovelText(target.label) || (currentLang === 'en' ? 'Action' : '操作');
     }
     // モバイル: インタラクトボタンをハイライト
     if (GAME.isMobile && mobInteract) {
       mobInteract.style.boxShadow = '0 0 20px rgba(0,255,65,0.6)';
-      mobInteract.textContent = target.label || '操作';
+      mobInteract.textContent = resolveNovelText(target.label) || (currentLang === 'en' ? 'Action' : '操作');
     }
   } else {
     if (prompt) prompt.style.display = 'none';
     if (GAME.isMobile && mobInteract) {
       mobInteract.style.boxShadow = '0 0 12px rgba(0,255,65,0.3)';
-      mobInteract.textContent = '操作';
+      mobInteract.textContent = currentLang === 'en' ? 'Action' : '操作';
     }
   }
 }
@@ -9508,7 +9564,7 @@ function updatePhase(dtSec) {
       if (!GAME._aftershockDone && GAME.phaseTimer > 15 && GAME.phaseTimer < 15.5) {
         GAME._aftershockDone = true;
         GAME.quake.shaking = true;
-        showAdvisor('余震だ！その場でしゃがんで！', 'warning');
+        showAdvisor({ja: '余震だ！その場でしゃがんで！', en: 'Aftershock! Crouch where you are!'}, 'warning');
         SoundManager.playSE('alarm');
         var vig3 = document.getElementById('danger-vignette');
         if (vig3) vig3.style.boxShadow = 'inset 0 0 60px rgba(255,0,64,0.3)';
@@ -9517,7 +9573,7 @@ function updatePhase(dtSec) {
           GAME.quake.shaking = false;
           var vig4 = document.getElementById('danger-vignette');
           if (vig4) vig4.style.boxShadow = 'inset 0 0 80px rgba(255,0,64,0)';
-          showAdvisor('余震が収まった。落ち着いて避難を続けよう。', 'normal');
+          showAdvisor({ja: '余震が収まった。落ち着いて避難を続けよう。', en: 'Aftershock over. Stay calm and continue evacuating.'}, 'normal');
         }, 3000);
       }
 
@@ -9526,7 +9582,7 @@ function updatePhase(dtSec) {
         if (GAME.totalTimer - (GAME._oshimoLastWarn || 0) > 5) {
           GAME._oshimoViolations = (GAME._oshimoViolations || 0) + 1;
           GAME._oshimoLastWarn = GAME.totalTimer;
-          showAdvisor('走らない！「おはしも」を守ろう！（-3点）', 'warning');
+          showAdvisor({ja: '走らない！「おはしも」を守ろう！（-3点）', en: 'Don\'t run! Follow the rules! (-3 pts)'}, 'warning');
           SoundManager.playSE('hit');
         }
       }
@@ -9542,7 +9598,7 @@ function updatePhase(dtSec) {
           if (!GAME._glassWarned) {
             GAME._glassWarned = true;
             GAME._glassDamageCount = 0;
-            showAdvisor('痛っ！ガラスの破片で足を怪我した！上履きを履いていれば…', 'warning');
+            showAdvisor({ja: '痛っ！ガラスの破片で足を怪我した！上履きを履いていれば…', en: 'Ouch! You cut your foot on glass! If only you had shoes...'}, 'warning');
             SoundManager.playSE('hit');
             GAME.hitCount++; // ダメージ1回分
           }
@@ -9556,7 +9612,7 @@ function updatePhase(dtSec) {
         } else if (inGlass && GAME.scoring.putOnShoes && !GAME._glassShoeMsg) {
           // 靴を履いている場合 — 安全に通過
           GAME._glassShoeMsg = true;
-          showAdvisor('上履きのおかげでガラスの上も安全に歩ける！', 'praise');
+          showAdvisor({ja: '上履きのおかげでガラスの上も安全に歩ける！', en: 'Your shoes protect you from the glass on the floor!'}, 'praise');
         } else if (!inGlass) {
           // ガラスエリア外に出たら速度を戻す
           GAME.player.speed = 0.06;
@@ -9668,7 +9724,7 @@ function _doTransitionPhase(newPhase) {
         SoundManager.playBGM('BGM/JISHIN_earthquake.mp3', 0.35, false);
         SoundManager.playSE('alarm');
       }
-      showAdvisor('地震だ！低い姿勢を取って！', 'warning');
+      showAdvisor({ja: '地震だ！低い姿勢を取って！', en: 'Earthquake! Get low!'}, 'warning');
       break;
 
     case 'shaking':
@@ -9694,7 +9750,7 @@ function _doTransitionPhase(newPhase) {
       SoundManager.startAftershakeAmbient();
       var vig2 = document.getElementById('danger-vignette');
       if (vig2) vig2.style.boxShadow = 'inset 0 0 80px rgba(255,0,64,0)';
-      showAdvisor('揺れが収まった。靴を確認し、避難の準備をしよう。', 'normal');
+      showAdvisor({ja: '揺れが収まった。靴を確認し、避難の準備をしよう。', en: 'Shaking stopped. Check your shoes and prepare to evacuate.'}, 'normal');
       // HOLD ON UIを非表示
       GAME.player.isHoldingDesk = false; GAME._holdOnActive = false;
       var hp = document.getElementById('holdon-prompt'); if (hp) hp.style.display = 'none';
@@ -9728,20 +9784,20 @@ function _doTransitionPhase(newPhase) {
         // Stage 2: オフィス — プレイヤーを通路に移動
         GAME.player.x = 0;
         GAME.player.z = 7;
-        showAdvisor('避難開始！非常階段を目指そう！エレベーターは使うな！', 'normal');
+        showAdvisor({ja: '避難開始！非常階段を目指そう！エレベーターは使うな！', en: 'Start evacuating! Head for the emergency stairs! Don\'t use the elevator!'}, 'normal');
       } else {
         // Stage 1: 学校
         GAME.player.x = 3.5;
         GAME.player.z = 4;
-        showAdvisor('避難開始！教室のドアから廊下へ出よう！', 'normal');
+        showAdvisor({ja: '避難開始！教室のドアから廊下へ出よう！', en: 'Start evacuating! Exit through the classroom door to the hallway!'}, 'normal');
         // Stage1: 先生が自動で火・ブレーカーを処理する演出
         setTimeout(function() {
-          showAdvisor('田中先生がストーブの火を消した！', 'normal');
+          showAdvisor({ja: '田中先生がストーブの火を消した！', en: 'Mr. Tanaka turned off the heater!'}, 'normal');
           if (GAME._stoveFlame) GAME._stoveFlame.visible = false;
           if (GAME._stoveLight) GAME._stoveLight.intensity = 0;
         }, 2000);
         setTimeout(function() {
-          showAdvisor('田中先生がブレーカーを落とした！通電火災を防止！', 'normal');
+          showAdvisor({ja: '田中先生がブレーカーを落とした！通電火災を防止！', en: 'Mr. Tanaka switched off the breaker! Preventing electrical fires!'}, 'normal');
           if (GAME._breakerLight) GAME._breakerLight.material.emissiveIntensity = 0;
         }, 5000);
       }
@@ -9764,7 +9820,11 @@ function _doTransitionPhase(newPhase) {
 function updatePhaseDisplay() {
   var phaseEl = document.getElementById('hud-phase');
   var safetyEl = document.getElementById('hud-safety-indicator');
-  var phaseNames = {
+  var phaseNames = currentLang === 'en' ? {
+    daily: 'In Class', earthquake: 'Earthquake!',
+    shaking: 'Shaking!', aftershake: 'After Shock',
+    evacuation: 'Evacuating', result: 'Result'
+  } : {
     daily: '授業中', earthquake: '地震発生！',
     shaking: '揺れ中！', aftershake: '揺れ収束',
     evacuation: '避難中', result: '結果'
@@ -9984,9 +10044,9 @@ function onPlayerHit(type) {
   // 頭保護中ならダメージ軽減
   if (GAME.player.isGuarding) {
     GAME.score += 2; // 軽減ボーナス（減点-5だが+2回復）
-    showAdvisor('頭を守っていたから軽傷で済んだ！', 'praise');
+    showAdvisor({ja: '頭を守っていたから軽傷で済んだ！', en: 'Protecting your head saved you from serious injury!'}, 'praise');
   } else {
-    showAdvisor('落下物に当たった！Gキーで頭を守ろう！', 'warning');
+    showAdvisor({ja: '落下物に当たった！Gキーで頭を守ろう！', en: 'Hit by falling debris! Press G to protect your head!'}, 'warning');
   }
 
   // 移動速度一時低下（3秒間）
@@ -10002,7 +10062,7 @@ function onPlayerHit(type) {
 
   // 3回被弾でゲームオーバー
   if (GAME.hitCount >= 3) {
-    showAdvisor('動けなくなりました...避難失敗', 'warning');
+    showAdvisor({ja: '動けなくなりました...避難失敗', en: 'You can\'t move anymore... Evacuation failed'}, 'warning');
     setTimeout(function() {
       transitionPhase('result');
     }, 2000);
@@ -10824,7 +10884,7 @@ function checkScoringTriggers() {
     if (!s.crouchedIn3s && p.isCrouching && timeSinceQuake <= 3) {
       s.crouchedIn3s = true;
       GAME.score += 10;
-      showAdvisor('すごい！素早く姿勢を低くできたね！', 'praise');
+      showAdvisor({ja: 'すごい！素早く姿勢を低くできたね！', en: 'Great! You got low quickly!'}, 'praise');
     }
 
     // （頭を守る行動は避難フェーズに移動 — HOLD ONで代替済み）
@@ -10834,8 +10894,8 @@ function checkScoringTriggers() {
       s.movedToSafe = true;
       GAME.score += 10;
       var deskMsg = GAME.stageNum === 2
-        ? 'デスクの下に入れた！Eキー長押しで脚を掴もう！'
-        : '机の下に入れた！Eキー長押しで脚を掴もう！';
+        ? {ja: 'デスクの下に入れた！Eキー長押しで脚を掴もう！', en: 'You got under the desk! Hold E to grab the leg!'}
+        : {ja: '机の下に入れた！Eキー長押しで脚を掴もう！', en: 'You got under the desk! Hold E to grab the leg!'};
       showAdvisor(deskMsg, 'praise');
     }
 
@@ -10845,7 +10905,11 @@ function checkScoringTriggers() {
     var canHoldOn = p.isCrouching && isUnderDesk(p.x, p.z);
     if (canHoldOn && !p.isHoldingDesk && holdOnPrompt) {
       // プロンプト表示（Eキー長押し案内）
-      holdOnPrompt.textContent = GAME.isMobile ? '🤲 インタラクトボタン長押し: 机の脚を掴む' : '🤲 E長押し: 机の脚を掴む';
+      if (currentLang === 'en') {
+        holdOnPrompt.textContent = GAME.isMobile ? '🤲 Hold interact: Grab desk legs' : '🤲 Hold E: Grab desk legs';
+      } else {
+        holdOnPrompt.textContent = GAME.isMobile ? '🤲 インタラクトボタン長押し: 机の脚を掴む' : '🤲 E長押し: 机の脚を掴む';
+      }
       holdOnPrompt.style.display = 'block';
     } else if (holdOnPrompt) {
       holdOnPrompt.style.display = 'none';
@@ -10859,7 +10923,7 @@ function checkScoringTriggers() {
       // 初回HOLD ON達成
       if (!s.heldDeskLegs && GAME._holdOnTime >= 1.0) {
         s.heldDeskLegs = true;
-        showAdvisor(GAME.stageNum === 2 ? 'デスクの脚をしっかり掴んだ！揺れが収まるまで離すな！' : '机の脚をしっかり掴んだ！揺れが収まるまで離すな！', 'praise');
+        showAdvisor(GAME.stageNum === 2 ? {ja: 'デスクの脚をしっかり掴んだ！揺れが収まるまで離すな！', en: 'You\'re gripping the desk leg! Don\'t let go until the shaking stops!'} : {ja: '机の脚をしっかり掴んだ！揺れが収まるまで離すな！', en: 'You\'re gripping the desk leg! Don\'t let go until the shaking stops!'}, 'praise');
       }
     } else {
       GAME._holdOnActive = false;
@@ -10877,7 +10941,7 @@ function checkScoringTriggers() {
       var outsideThreshold = GAME.stageNum === 2 ? 14.0 : 9.5;
       if (p.z > outsideThreshold) {
         s.didNotRunOutside = false;
-        showAdvisor('揺れている最中に外に出るのは危険！落下物に注意！', 'warning');
+        showAdvisor({ja: '揺れている最中に外に出るのは危険！落下物に注意！', en: 'Going outside during shaking is dangerous! Watch for falling objects!'}, 'warning');
       }
     }
 
@@ -10886,7 +10950,7 @@ function checkScoringTriggers() {
       var nearWindow = GAME.stageNum === 2 ? (p.x < -10.5) : (p.x < -3.5);
       if (nearWindow) {
         GAME._windowWarned = true;
-        showAdvisor('窓から離れて！ガラスが割れて飛び散るよ！', 'warning');
+        showAdvisor({ja: '窓から離れて！ガラスが割れて飛び散るよ！', en: 'Get away from the window! The glass could shatter!'}, 'warning');
       }
     }
   }
@@ -10899,7 +10963,7 @@ function checkScoringTriggers() {
     if (dt2 > 0) GAME._guardEvacTime += dt2;
     if (!s.guardedHead && GAME._guardEvacTime >= 1.0) {
       s.guardedHead = true;
-      showAdvisor('頭を守りながら避難、素晴らしい！', 'praise');
+      showAdvisor({ja: '頭を守りながら避難、素晴らしい！', en: 'Evacuating while protecting your head — excellent!'}, 'praise');
     }
     if (guardEvacInd) guardEvacInd.style.display = 'block';
   } else {
@@ -10916,7 +10980,7 @@ function checkScoringTriggers() {
     }
     if (nearNPC && !GAME._safetyCheckPrompted) {
       GAME._safetyCheckPrompted = true;
-      showAdvisor(GAME.isMobile ? '操作ボタン: 「大丈夫？」と声をかけよう' : 'Eキー: 「大丈夫？」と声をかけよう', 'info');
+      showAdvisor(GAME.isMobile ? {ja: '操作ボタン: 「大丈夫？」と声をかけよう', en: 'Tap the button: Ask "Are you okay?"'} : {ja: 'Eキー: 「大丈夫？」と声をかけよう', en: 'Press E: Ask "Are you okay?"'}, 'info');
     }
   }
 }
