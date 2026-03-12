@@ -6199,6 +6199,41 @@ function buildEvacCorridor(scene, hx0, hz0, HD, HH, floorMat, wallMat, ceilMat, 
     scene.add(lp2);
   }
 
+  // ====== L字曲がり角の誘導サイン（←方向に階段があることを示す）======
+  // 壁の矢印サイン（セクション1奥壁に「← 階段」）
+  var turnSignCanvas = document.createElement('canvas');
+  turnSignCanvas.width = 256; turnSignCanvas.height = 128;
+  var tsCtx = turnSignCanvas.getContext('2d');
+  tsCtx.fillStyle = '#004422';
+  tsCtx.fillRect(0, 0, 256, 128);
+  tsCtx.fillStyle = '#00ff44';
+  tsCtx.font = 'bold 48px sans-serif';
+  tsCtx.textAlign = 'center';
+  tsCtx.fillText('← 階段', 128, 55);
+  tsCtx.font = 'bold 28px sans-serif';
+  tsCtx.fillText('EXIT', 128, 100);
+  var turnSignTex = new THREE.CanvasTexture(turnSignCanvas);
+  var turnSign = new THREE.Mesh(
+    new THREE.PlaneGeometry(1.2, 0.6),
+    new THREE.MeshBasicMaterial({ map: turnSignTex })
+  );
+  // セクション1の奥壁に設置（プレイヤーに見える向き = -Z方向）
+  turnSign.position.set(c1x0 + c1w/2, 2.2, c1z0 + c1d - 0.12);
+  scene.add(turnSign);
+  // L字曲がり角の床に緑の誘導ライン（左方向を指す矢印）
+  var guideFloorMat = new THREE.MeshStandardMaterial({ color: 0x00ff44, emissive: 0x00ff44, emissiveIntensity: 0.6, transparent: true, opacity: 0.7 });
+  for (var gi2 = 0; gi2 < 3; gi2++) {
+    var gArrow = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.3), guideFloorMat);
+    gArrow.rotation.x = -Math.PI / 2;
+    gArrow.rotation.z = Math.PI / 2; // 左向き
+    gArrow.position.set(c1x0 - 0.5 - gi2 * 1.5, 0.02, c1z0 + c1d - 1.5);
+    scene.add(gArrow);
+  }
+  // L字曲がり角の緑ライト
+  var turnLight = new THREE.PointLight(0x00ff44, 0.8, 8);
+  turnLight.position.set(c1x0 - 0.5, HH - 0.3, c1z0 + c1d - 1.5);
+  scene.add(turnLight);
+
   // ====== 障害物（倒れた棚・瓦礫・散乱物）======
   // 倒れたロッカー（通路1、通行を狭める）
   var lockerMat = new THREE.MeshStandardMaterial({ color: 0x889999, roughness: 0.6, metalness: 0.3, emissive: 0x050606 });
@@ -6324,7 +6359,9 @@ function triggerAftershock() {
 // これによりprogress計算・踊り場・Y座標管理のバグを完全に回避。
 
 // 階段室のトリガーゾーン定数（避難通路の奥）
-var STAIR_TRIGGER = { minX: -5.4, maxX: -3.0, minZ: 17.4, maxZ: 20.6 };
+// 階段トリガー: セクション1奥＋セクション2左端のどちらでも発動
+var STAIR_TRIGGER_S1 = { minX: 4.0, maxX: 7.5, minZ: 19.0, maxZ: 21.0 };  // セクション1奥
+var STAIR_TRIGGER_S2 = { minX: -5.4, maxX: -3.0, minZ: 17.4, maxZ: 20.6 }; // セクション2左端
 // 校庭のY座標（地面レベル）
 var GROUND_Y = 0;
 // 校庭のプレイヤー出現位置
@@ -6526,8 +6563,11 @@ function checkStairTrigger() {
   // ※非常口はインタラクトシステム（Eキー/モバイルタップ）で操作
 
   // 避難通路の奥（階段入口）に到達 → カットシーン開始
-  if (p.x > STAIR_TRIGGER.minX && p.x < STAIR_TRIGGER.maxX &&
-      p.z > STAIR_TRIGGER.minZ && p.z < STAIR_TRIGGER.maxZ) {
+  var inS1 = p.x > STAIR_TRIGGER_S1.minX && p.x < STAIR_TRIGGER_S1.maxX &&
+             p.z > STAIR_TRIGGER_S1.minZ && p.z < STAIR_TRIGGER_S1.maxZ;
+  var inS2 = p.x > STAIR_TRIGGER_S2.minX && p.x < STAIR_TRIGGER_S2.maxX &&
+             p.z > STAIR_TRIGGER_S2.minZ && p.z < STAIR_TRIGGER_S2.maxZ;
+  if (inS1 || inS2) {
     startStairCutscene();
   }
 }
