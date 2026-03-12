@@ -4839,9 +4839,6 @@ function initGame(stageNum) {
   GAME.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   GAME.renderer.shadowMap.enabled = true;
   GAME.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  GAME.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  GAME.renderer.toneMappingExposure = 1.1;
-  GAME.renderer.outputEncoding = THREE.sRGBEncoding;
   GAME.renderer.setClearColor(0x1a1a2e);
   container.appendChild(GAME.renderer.domElement);
 
@@ -5279,13 +5276,17 @@ function buildClassroom() {
   var baseboardMat = new THREE.MeshStandardMaterial({ color: 0x6b5b3a, roughness: 0.65, emissive: 0x030201, emissiveIntensity: 0.05 });
   var bbH = 0.08;
   // 前壁
-  scene.add(Object.assign(new THREE.Mesh(new THREE.BoxGeometry(W, bbH, 0.03), baseboardMat), { position: new THREE.Vector3(0, bbH/2, -1 + 0.015) }));
+  var bb1 = new THREE.Mesh(new THREE.BoxGeometry(W, bbH, 0.03), baseboardMat);
+  bb1.position.set(0, bbH/2, -1 + 0.015); scene.add(bb1);
   // 後壁
-  scene.add(Object.assign(new THREE.Mesh(new THREE.BoxGeometry(W, bbH, 0.03), baseboardMat), { position: new THREE.Vector3(0, bbH/2, D - 1 - 0.015) }));
+  var bb2 = new THREE.Mesh(new THREE.BoxGeometry(W, bbH, 0.03), baseboardMat);
+  bb2.position.set(0, bbH/2, D - 1 - 0.015); scene.add(bb2);
   // 左壁
-  scene.add(Object.assign(new THREE.Mesh(new THREE.BoxGeometry(0.03, bbH, D), baseboardMat), { position: new THREE.Vector3(-W/2 + 0.015, bbH/2, D/2 - 1) }));
+  var bb3 = new THREE.Mesh(new THREE.BoxGeometry(0.03, bbH, D), baseboardMat);
+  bb3.position.set(-W/2 + 0.015, bbH/2, D/2 - 1); scene.add(bb3);
   // 右壁
-  scene.add(Object.assign(new THREE.Mesh(new THREE.BoxGeometry(0.03, bbH, D), baseboardMat), { position: new THREE.Vector3(W/2 - 0.015, bbH/2, D/2 - 1) }));
+  var bb4 = new THREE.Mesh(new THREE.BoxGeometry(0.03, bbH, D), baseboardMat);
+  bb4.position.set(W/2 - 0.015, bbH/2, D/2 - 1); scene.add(bb4);
 
   const kyoutaku = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.7, 0.6), deskMat);
   kyoutaku.position.set(0, 0.35, -0.3);
@@ -5663,7 +5664,7 @@ function buildHallway() {
   var stairW = 3, stairD = 2; // 3m x 2m
   var stairZ0 = hz0 + 0.5, stairZ1 = hz0 + HD - 0.5;
   // 床・天井
-  scene.add(Object.assign(new THREE.Mesh(new THREE.PlaneGeometry(stairW, stairD), hallFloorMat), { rotation: { x: -Math.PI/2 }, position: { x: stairX + stairW/2, y: 0, z: (stairZ0+stairZ1)/2 } }));
+  // (重複床メッシュ削除 — 下のsrFで正しく作成済み)
   var srF = new THREE.Mesh(new THREE.PlaneGeometry(stairW, stairD), hallFloorMat);
   srF.rotation.x = -Math.PI / 2;
   srF.position.set(stairX + stairW/2, 0, (stairZ0+stairZ1)/2);
