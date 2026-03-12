@@ -5012,7 +5012,7 @@ function initGame(stageNum) {
   document.getElementById('hud-timer').textContent = '--:--';
   // 「授業中」ラベル表示
   var dclEl = document.getElementById('daily-class-label');
-  dclEl.innerHTML = '<div class="dcl-main">📚 授業中</div><div class="dcl-sub">まもなく地震が発生します</div>';
+  dclEl.innerHTML = '<div class="dcl-main">📚 授業中</div>';
   dclEl.className = 'active';
   document.getElementById('hud-safety-indicator').className = 'safe';
   document.getElementById('hud-safety-indicator').textContent = 'SAFE';
@@ -7270,15 +7270,15 @@ function updateSingleNPC(npc, dtSec) {
         mesh.position.y = seatY + Math.sin(npc.phase * 2) * 0.003;
         mesh.rotation.y = Math.PI; // 黒板方向（-Z）を向く
         // 生徒の微動作：時々ノートを書く仕草（頭を少し下げる）
-        var studentBob = Math.sin(npc.phase * 1.5 + i * 1.7) * 0.02;
+        var seed = (npc.deskX || 0) * 7 + (npc.deskZ || 0) * 3; // NPC固有のシード
         var headNode = mesh.userData.head;
         if (headNode) {
-          headNode.rotation.x = 0.1 + Math.sin(npc.phase * 0.8 + i * 2.3) * 0.05;
+          headNode.rotation.x = 0.1 + Math.sin(npc.phase * 0.8 + seed) * 0.05;
         }
         // 体の微揺れ（呼吸＋ペンを動かす仕草）
         var bodyN = mesh.userData.body;
         if (bodyN) {
-          bodyN.rotation.z = Math.sin(npc.phase * 1.2 + i * 3.1) * 0.02;
+          bodyN.rotation.z = Math.sin(npc.phase * 1.2 + seed * 1.3) * 0.02;
         }
       } else {
         // ====== 先生の授業アニメーション ======
@@ -7292,14 +7292,13 @@ function updateSingleNPC(npc, dtSec) {
           mesh.rotation.y = 0; // 生徒方向
           // 話すジェスチャー（右手を少し上げる）
           var bodyT = mesh.userData.body;
-          if (bodyT && bodyT.children) {
-            // 右腕(children[3])をジェスチャー
-            var rShoulder = bodyT.children[3];
+          if (bodyT && bodyT.children && bodyT.children.length >= 3) {
+            var lShoulder = bodyT.children[1]; // 左腕
+            var rShoulder = bodyT.children[2]; // 右腕
             if (rShoulder) {
               rShoulder.rotation.x = -0.3 + Math.sin(t * 4) * 0.15;
               rShoulder.rotation.z = -0.2;
             }
-            var lShoulder = bodyT.children[2];
             if (lShoulder) {
               lShoulder.rotation.x = 0;
               lShoulder.rotation.z = 0.1;
@@ -7330,13 +7329,13 @@ function updateSingleNPC(npc, dtSec) {
           if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = 0;
           // 右手を上げて書く動作
           var bodyW = mesh.userData.body;
-          if (bodyW && bodyW.children) {
-            var rArmW = bodyW.children[3];
+          if (bodyW && bodyW.children && bodyW.children.length >= 3) {
+            var lArmW = bodyW.children[1]; // 左腕
+            var rArmW = bodyW.children[2]; // 右腕
             if (rArmW) {
               rArmW.rotation.x = -2.2 + Math.sin(t * 5) * 0.15; // 腕を高く上げる
               rArmW.rotation.z = -0.3 + Math.sin(t * 3.7) * 0.1; // 横に振る（書く動作）
             }
-            var lArmW = bodyW.children[2];
             if (lArmW) {
               lArmW.rotation.x = -0.3; // 左手は下ろし気味
               lArmW.rotation.z = 0.2;
@@ -7357,10 +7356,10 @@ function updateSingleNPC(npc, dtSec) {
           mesh.position.set(npc.x, Math.sin(npc.phase * 2) * 0.005, npc.z);
           // 腕リセット
           var bodyF = mesh.userData.body;
-          if (bodyF && bodyF.children) {
-            var rArmF = bodyF.children[3];
+          if (bodyF && bodyF.children && bodyF.children.length >= 3) {
+            var lArmF = bodyF.children[1]; // 左腕
+            var rArmF = bodyF.children[2]; // 右腕
             if (rArmF) { rArmF.rotation.x = 0; rArmF.rotation.z = -0.1; }
-            var lArmF = bodyF.children[2];
             if (lArmF) { lArmF.rotation.x = 0; lArmF.rotation.z = 0.1; }
           }
           if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = 0;
