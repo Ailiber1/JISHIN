@@ -5341,7 +5341,7 @@ function buildHallway() {
     var hlTube = new THREE.Mesh(new THREE.BoxGeometry(2, 0.02, 0.06), hallLightMat);
     hlTube.position.set(hx0 + 2 + hli * 4, HH - 0.04, hz0 + HD/2);
     scene.add(hlTube);
-    var hpl = new THREE.PointLight(0xffeedd, 0.3, 6);
+    var hpl = new THREE.PointLight(0xffeedd, 0.6, 10);
     hpl.position.set(hx0 + 2 + hli * 4, HH - 0.1, hz0 + HD/2);
     scene.add(hpl);
   }
@@ -5565,6 +5565,30 @@ function buildSchoolyard() {
   evacBoard.position.set(EVAC_POINT.x, 2.3, EVAC_POINT.z - EVAC_POINT.radius - 0.5);
   scene.add(evacBoard);
 
+  // 避難ポイントテキストラベル（Canvas）
+  var evacLabelCanvas = document.createElement('canvas');
+  evacLabelCanvas.width = 256; evacLabelCanvas.height = 64;
+  var ectx = evacLabelCanvas.getContext('2d');
+  ectx.fillStyle = '#ff6b00';
+  ectx.fillRect(0, 0, 256, 64);
+  ectx.fillStyle = '#ffffff';
+  ectx.font = 'bold 30px sans-serif';
+  ectx.textAlign = 'center';
+  ectx.fillText('▼ 避難場所', 128, 42);
+  var evacLabelTex = new THREE.CanvasTexture(evacLabelCanvas);
+  var evacLabel = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 0.5), new THREE.MeshBasicMaterial({ map: evacLabelTex, transparent: true }));
+  evacLabel.position.set(EVAC_POINT.x, 4.0, EVAC_POINT.z);
+  scene.add(evacLabel);
+  GAME._evacLabel = evacLabel;
+
+  // 上空からの矢印（コーン）
+  var arrowMat = new THREE.MeshStandardMaterial({ color: 0xff6b00, emissive: 0xff6b00, emissiveIntensity: 0.6 });
+  var arrow = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1.0, 8), arrowMat);
+  arrow.position.set(EVAC_POINT.x, 3.2, EVAC_POINT.z);
+  arrow.rotation.x = Math.PI; // 下向き
+  scene.add(arrow);
+  GAME._evacArrow = arrow;
+
   // 校庭のフェンス（外周）
   var fenceMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.4, metalness: 0.5, emissive: 0x050505, emissiveIntensity: 0.1, transparent: true, opacity: 0.4 });
   // 左
@@ -5732,6 +5756,51 @@ function teleportToSchoolyard() {
   });
 
   showAdvisor('校庭の避難ポイント（オレンジ）に集合しよう！', 'normal');
+
+  // 校庭にNPC群（先に避難した生徒＋先生）を配置
+  spawnSchoolyardNPCs();
+}
+
+function spawnSchoolyardNPCs() {
+  GAME._schoolyardNPCs = [];
+  // 先生（避難ポイント手前で待機・誘導）
+  var teacherModel = createNPCModel(0xf0f0f0, 1.7, 0xf5c6a0);
+  teacherModel.position.set(EVAC_POINT.x + 2, 0, EVAC_POINT.z - 2);
+  teacherModel.rotation.y = Math.PI; // プレイヤー方向を向く
+  GAME.scene.add(teacherModel);
+  GAME._schoolyardNPCs.push({ mesh: teacherModel, role: 'teacher', phase: 0 });
+
+  // 生徒NPC（8〜12名が避難ポイント付近に集合済み）
+  var colors = [0x4488cc, 0xcc4466, 0x44aa66, 0xcc8844, 0x8866cc, 0x44cccc];
+  for (var i = 0; i < 10; i++) {
+    var angle = (i / 10) * Math.PI * 2;
+    var r = 1.0 + Math.random() * 1.5;
+    var sx = EVAC_POINT.x + Math.cos(angle) * r;
+    var sz = EVAC_POINT.z + Math.sin(angle) * r;
+    var sModel = createNPCModel(colors[i % colors.length], 1.2 + Math.random() * 0.3, 0xf5c6a0);
+    sModel.position.set(sx, 0, sz);
+    sModel.rotation.y = Math.random() * Math.PI * 2;
+    GAME.scene.add(sModel);
+    GAME._schoolyardNPCs.push({ mesh: sModel, role: 'student', phase: Math.random() * 6 });
+  }
+}
+
+// 校庭NPCの微動アニメーション
+function updateSchoolyardNPCs(dtSec) {
+  if (!GAME._schoolyardNPCs) return;
+  for (var i = 0; i < GAME._schoolyardNPCs.length; i++) {
+    var npc = GAME._schoolyardNPCs[i];
+    npc.phase += dtSec;
+    // 待機中の微小な揺れ（呼吸感）
+    npc.mesh.position.y = Math.sin(npc.phase * 2) * 0.005;
+    if (npc.role === 'teacher') {
+      // 先生は手を振るように腕を動かす（誘導ポーズ）
+      var body = npc.mesh.userData.body;
+      if (body) {
+        body.rotation.z = Math.sin(npc.phase * 3) * 0.1;
+      }
+    }
+  }
 }
 
 function checkEvacPointReached() {
@@ -6554,14 +6623,45 @@ function updateSingleNPC(npc, dtSec) {
           mesh.position.y = Math.abs(Math.sin(npc.phase * 2)) * 0.03;
         }
       } else {
-        // ドア到達 → 退出（フェードアウトして消える）
-        npc.exited = true;
-        mesh.visible = false;
-        GAME._exitedNPCs = (GAME._exitedNPCs || 0) + 1;
-        if (GAME._exitedNPCs === 3) {
-          showAdvisor('生徒たちが避難を始めた！君も廊下へ向かおう！', 'normal');
-        } else if (GAME._exitedNPCs >= 20) {
-          showAdvisor('ほとんどの生徒が避難完了！急いで！', 'warning');
+        // ドア到達 → 廊下を通って非常口へ移動
+        if (!npc._hallwayPhase) {
+          npc._hallwayPhase = 1;
+          GAME._exitedNPCs = (GAME._exitedNPCs || 0) + 1;
+          if (GAME._exitedNPCs === 3) {
+            showAdvisor('生徒たちが避難を始めた！君も廊下へ向かおう！', 'normal');
+          } else if (GAME._exitedNPCs >= 20) {
+            showAdvisor('ほとんどの生徒が避難完了！急いで！', 'warning');
+          }
+          // 廊下を左（非常口方向）へ移動
+          npc.targetX = -2.5;
+          npc.targetZ = 10.5;
+        }
+        if (npc._hallwayPhase === 1) {
+          // 非常口方向へ歩く
+          var hdx = npc.targetX - npc.x;
+          var hdz = npc.targetZ - npc.z;
+          var hdist = Math.sqrt(hdx * hdx + hdz * hdz);
+          if (hdist > 0.5) {
+            var hspd = npc.speed * 1.5;
+            npc.x += (hdx / hdist) * hspd;
+            npc.z += (hdz / hdist) * hspd;
+            mesh.position.x = npc.x;
+            mesh.position.z = npc.z;
+            mesh.rotation.y = Math.atan2(hdx, hdz);
+            npc.phase += dtSec * 7;
+            if (mesh.userData.leftLeg) {
+              mesh.userData.leftLeg.rotation.x = Math.sin(npc.phase) * 0.55;
+            }
+            if (mesh.userData.rightLeg) {
+              mesh.userData.rightLeg.rotation.x = -Math.sin(npc.phase) * 0.55;
+            }
+            mesh.position.y = Math.abs(Math.sin(npc.phase * 2)) * 0.03;
+          } else {
+            // 非常口に到達 → 退出（消える）
+            npc._hallwayPhase = 2;
+            npc.exited = true;
+            mesh.visible = false;
+          }
         }
       }
       break;
@@ -6984,6 +7084,19 @@ function gameLoop(timestamp) {
   // 避難ポイントマーカーの点滅演出
   if (GAME._evacMarker && GAME._inSchoolyard) {
     GAME._evacMarker.material.emissiveIntensity = 0.3 + Math.sin(GAME.totalTimer * 3) * 0.2;
+    GAME._evacMarker.material.opacity = 0.4 + Math.sin(GAME.totalTimer * 2) * 0.2;
+  }
+  // 避難ポイント矢印の上下動
+  if (GAME._evacArrow && GAME._inSchoolyard) {
+    GAME._evacArrow.position.y = 3.0 + Math.sin(GAME.totalTimer * 2) * 0.4;
+  }
+  // 避難ラベルを常にカメラ方向に向ける
+  if (GAME._evacLabel && GAME._inSchoolyard) {
+    GAME._evacLabel.lookAt(GAME.camera.position);
+  }
+  // 校庭NPC更新
+  if (GAME._inSchoolyard) {
+    updateSchoolyardNPCs(dtSec);
   }
 
   // ミニマップ更新
