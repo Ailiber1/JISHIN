@@ -5301,18 +5301,17 @@ function buildClassroom() {
   GAME.cameraMeshes.push(frontWall);
   GAME.walls.push({ minX: -W/2, maxX: W/2, minZ: -1 - wallThick/2, maxZ: -1 + wallThick/2, minY: 0, maxY: H });
 
-  // 後方壁 — ドア部分を除く左右2枚に分割可能にする
-  var doorOpeningX = W/2 - 0.05; // ドアのX位置
-  var doorOpeningW = 1.2; // ドア開口幅
+  // 後方壁（完全な壁 — ドア開口なし）
   const backWall = new THREE.Mesh(new THREE.BoxGeometry(W, H, wallThick), wallMat);
   backWall.position.set(0, H / 2, D - 1);
   backWall.receiveShadow = true;
   scene.add(backWall);
   GAME.cameraMeshes.push(backWall);
-  GAME._backWall = backWall;
+  GAME._backWall = null; // ドアは右壁側に移動
   GAME._backWallMat = wallMat;
   GAME.walls.push({ minX: -W/2, maxX: W/2, minZ: D-1-wallThick/2, maxZ: D-1+wallThick/2, minY: 0, maxY: H });
 
+  // 左壁（窓側 — 完全な壁）
   const leftWall = new THREE.Mesh(new THREE.BoxGeometry(wallThick, H, D), wallMat);
   leftWall.position.set(-W / 2, H / 2, D / 2 - 1);
   leftWall.receiveShadow = true;
@@ -5320,12 +5319,34 @@ function buildClassroom() {
   GAME.cameraMeshes.push(leftWall);
   GAME.walls.push({ minX: -W/2-wallThick/2, maxX: -W/2+wallThick/2, minZ: -1, maxZ: D-1, minY: 0, maxY: H });
 
-  const rightWall = new THREE.Mesh(new THREE.BoxGeometry(wallThick, H, D), wallMat);
-  rightWall.position.set(W / 2, H / 2, D / 2 - 1);
-  rightWall.receiveShadow = true;
-  scene.add(rightWall);
-  GAME.cameraMeshes.push(rightWall);
-  GAME.walls.push({ minX: W/2-wallThick/2, maxX: W/2+wallThick/2, minZ: -1, maxZ: D-1, minY: 0, maxY: H });
+  // 右壁（廊下側）— ドア開口部あり（Z=6〜7.2の位置）
+  var rDoorZ = 6.0; // ドア開口のZ開始
+  var rDoorW = 1.2; // ドア開口幅
+  // 右壁前部分（Z=-1〜rDoorZ）
+  var rw1Len = rDoorZ - (-1);
+  var rw1 = new THREE.Mesh(new THREE.BoxGeometry(wallThick, H, rw1Len), wallMat);
+  rw1.position.set(W/2, H/2, -1 + rw1Len/2);
+  rw1.receiveShadow = true;
+  scene.add(rw1);
+  GAME.cameraMeshes.push(rw1);
+  GAME.walls.push({ minX: W/2-wallThick/2, maxX: W/2+wallThick/2, minZ: -1, maxZ: rDoorZ, minY: 0, maxY: H });
+  // 右壁後部分（rDoorZ+rDoorW〜D-1）
+  var rw2Start = rDoorZ + rDoorW;
+  var rw2Len = (D - 1) - rw2Start;
+  var rw2 = new THREE.Mesh(new THREE.BoxGeometry(wallThick, H, rw2Len), wallMat);
+  rw2.position.set(W/2, H/2, rw2Start + rw2Len/2);
+  rw2.receiveShadow = true;
+  scene.add(rw2);
+  GAME.cameraMeshes.push(rw2);
+  GAME.walls.push({ minX: W/2-wallThick/2, maxX: W/2+wallThick/2, minZ: rw2Start, maxZ: D-1, minY: 0, maxY: H });
+  // 右壁ドア上部（まぐさ）
+  var rw3 = new THREE.Mesh(new THREE.BoxGeometry(wallThick, H - 2.1, rDoorW), wallMat);
+  rw3.position.set(W/2, 2.1 + (H - 2.1)/2, rDoorZ + rDoorW/2);
+  scene.add(rw3);
+  // ドア開口コリジョン用フラグ
+  GAME._rightWallDoorOpen = false;
+  GAME._rightWallDoorCollision = { minX: W/2-wallThick/2, maxX: W/2+wallThick/2, minZ: rDoorZ, maxZ: rDoorZ + rDoorW, minY: 0, maxY: H };
+  GAME.walls.push(GAME._rightWallDoorCollision);
 
   const blackboard = new THREE.Mesh(new THREE.BoxGeometry(4, 1.2, 0.05), blackboardMat);
   blackboard.position.set(0, 1.6, -0.85);
@@ -5444,79 +5465,75 @@ function buildClassroom() {
   var interactMat = new THREE.MeshStandardMaterial({ color: 0x886644, roughness: 0.6, emissive: 0x0a0806, emissiveIntensity: 0.1 });
 
   // ============================================================
-  // 教室後方のドア（廊下への出入口）— 日本の学校風引き戸
+  // 教室のドア（右壁・廊下側）— 日本の学校風引き戸
   // ============================================================
-  var doorX = W/2 - 0.05;
-  var doorZ = D - 1;
-  var doorW = 1.0, doorH = 2.1, doorD = 0.12;
+  var doorCenterZ = rDoorZ + rDoorW / 2; // ドア中心Z = 6.6
+  var doorPosX = W / 2; // X = 4.5（右壁位置）
+  var classDoorW = 1.1, classDoorH = 2.1, classDoorD = 0.12;
 
-  // ドア枠（濃茶色 — 壁より手前に突出させて目立たせる）
+  // ドア枠（濃茶色 — 壁の開口部に設置）
   var frameMat = new THREE.MeshStandardMaterial({ color: 0x4a3520, roughness: 0.5, emissive: 0x1a0e05, emissiveIntensity: 0.15 });
   // 枠上
-  var dFT = new THREE.Mesh(new THREE.BoxGeometry(doorW + 0.2, 0.12, 0.2), frameMat);
-  dFT.position.set(doorX, doorH + 0.06, doorZ); scene.add(dFT);
-  // 枠左
-  var dFL = new THREE.Mesh(new THREE.BoxGeometry(0.1, doorH + 0.12, 0.2), frameMat);
-  dFL.position.set(doorX - doorW/2 - 0.05, doorH/2, doorZ); scene.add(dFL);
-  // 枠右
-  var dFR = new THREE.Mesh(new THREE.BoxGeometry(0.1, doorH + 0.12, 0.2), frameMat);
-  dFR.position.set(doorX + doorW/2 + 0.05, doorH/2, doorZ); scene.add(dFR);
+  var dFT = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.12, rDoorW + 0.15), frameMat);
+  dFT.position.set(doorPosX, classDoorH + 0.06, doorCenterZ); scene.add(dFT);
+  // 枠前（Z小さい側）
+  var dFF = new THREE.Mesh(new THREE.BoxGeometry(0.2, classDoorH + 0.12, 0.08), frameMat);
+  dFF.position.set(doorPosX, classDoorH/2, rDoorZ - 0.04); scene.add(dFF);
+  // 枠後（Z大きい側）
+  var dFB = new THREE.Mesh(new THREE.BoxGeometry(0.2, classDoorH + 0.12, 0.08), frameMat);
+  dFB.position.set(doorPosX, classDoorH/2, rDoorZ + rDoorW + 0.04); scene.add(dFB);
 
-  // ドア本体（明るい茶色 — 壁色と差をつける）
+  // ドア本体（引き戸 — Z方向にスライド）
   var doorMat = new THREE.MeshStandardMaterial({ color: 0xb8894a, roughness: 0.55, emissive: 0x1a0e05, emissiveIntensity: 0.15 });
   var doorGroup = new THREE.Group();
-  // メインパネル
-  var doorPanel = new THREE.Mesh(new THREE.BoxGeometry(doorW, doorH, doorD), doorMat);
-  doorPanel.position.set(0, doorH/2, 0);
+  // メインパネル（X方向が厚み、Z方向が幅）
+  var doorPanel = new THREE.Mesh(new THREE.BoxGeometry(classDoorD, classDoorH, classDoorW), doorMat);
+  doorPanel.position.set(0, classDoorH/2, 0);
   doorGroup.add(doorPanel);
-  // 上パネル（ガラス窓部分 — すりガラス風）
+  // 上パネル（すりガラス窓）
   var doorGlassMat = new THREE.MeshStandardMaterial({ color: 0xaaccdd, roughness: 0.2, metalness: 0.05, transparent: true, opacity: 0.5, emissive: 0x334455, emissiveIntensity: 0.2 });
-  var doorGlass = new THREE.Mesh(new THREE.BoxGeometry(doorW - 0.18, 0.6, 0.02), doorGlassMat);
-  doorGlass.position.set(0, doorH - 0.45, -doorD/2 - 0.01);
+  var doorGlass = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.6, classDoorW - 0.18), doorGlassMat);
+  doorGlass.position.set(-classDoorD/2 - 0.01, classDoorH - 0.45, 0);
   doorGroup.add(doorGlass);
-  // ガラス枠（細い木枠）
+  // ガラス枠
   var glFrameMat = new THREE.MeshStandardMaterial({ color: 0x5a4020, roughness: 0.5 });
-  // 上下
-  var gfT = new THREE.Mesh(new THREE.BoxGeometry(doorW - 0.14, 0.04, 0.04), glFrameMat);
-  gfT.position.set(0, doorH - 0.12, -doorD/2 - 0.01); doorGroup.add(gfT);
-  var gfB = new THREE.Mesh(new THREE.BoxGeometry(doorW - 0.14, 0.04, 0.04), glFrameMat);
-  gfB.position.set(0, doorH - 0.78, -doorD/2 - 0.01); doorGroup.add(gfB);
-  // 左右
-  var gfL = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.7, 0.04), glFrameMat);
-  gfL.position.set(-(doorW/2 - 0.11), doorH - 0.45, -doorD/2 - 0.01); doorGroup.add(gfL);
-  var gfR = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.7, 0.04), glFrameMat);
-  gfR.position.set((doorW/2 - 0.11), doorH - 0.45, -doorD/2 - 0.01); doorGroup.add(gfR);
-  // 下パネルの溝（2つの凹み表現）
+  var gfT = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, classDoorW - 0.14), glFrameMat);
+  gfT.position.set(-classDoorD/2 - 0.01, classDoorH - 0.12, 0); doorGroup.add(gfT);
+  var gfB2 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, classDoorW - 0.14), glFrameMat);
+  gfB2.position.set(-classDoorD/2 - 0.01, classDoorH - 0.78, 0); doorGroup.add(gfB2);
+  var gfL2 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.7, 0.04), glFrameMat);
+  gfL2.position.set(-classDoorD/2 - 0.01, classDoorH - 0.45, -(classDoorW/2 - 0.11)); doorGroup.add(gfL2);
+  var gfR2 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.7, 0.04), glFrameMat);
+  gfR2.position.set(-classDoorD/2 - 0.01, classDoorH - 0.45, (classDoorW/2 - 0.11)); doorGroup.add(gfR2);
+  // 下パネルの溝
   var grooveMat = new THREE.MeshStandardMaterial({ color: 0xa07838, roughness: 0.6 });
-  var groove1 = new THREE.Mesh(new THREE.BoxGeometry(doorW - 0.2, 0.5, 0.02), grooveMat);
-  groove1.position.set(0, 0.8, -doorD/2 - 0.01); doorGroup.add(groove1);
-  var groove2 = new THREE.Mesh(new THREE.BoxGeometry(doorW - 0.2, 0.5, 0.02), grooveMat);
-  groove2.position.set(0, 0.2, -doorD/2 - 0.01); doorGroup.add(groove2);
-  // ドアハンドル（レバー式 — 金属）
+  var groove1 = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.5, classDoorW - 0.2), grooveMat);
+  groove1.position.set(-classDoorD/2 - 0.01, 0.8, 0); doorGroup.add(groove1);
+  var groove2 = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.5, classDoorW - 0.2), grooveMat);
+  groove2.position.set(-classDoorD/2 - 0.01, 0.2, 0); doorGroup.add(groove2);
+  // ドアハンドル（レバー式）
   var handleMat = new THREE.MeshStandardMaterial({ color: 0xccccbb, roughness: 0.25, metalness: 0.85, emissive: 0x222222, emissiveIntensity: 0.1 });
-  // ハンドル台座
   var handleBase = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.04, 8), handleMat);
-  handleBase.rotation.x = Math.PI / 2;
-  handleBase.position.set(-doorW/2 + 0.15, 1.0, -doorD/2 - 0.03);
+  handleBase.rotation.z = Math.PI / 2;
+  handleBase.position.set(-classDoorD/2 - 0.03, 1.0, -classDoorW/2 + 0.15);
   doorGroup.add(handleBase);
-  // レバー
-  var lever = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.025, 0.025), handleMat);
-  lever.position.set(-doorW/2 + 0.21, 1.0, -doorD/2 - 0.04);
+  var lever = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.025, 0.12), handleMat);
+  lever.position.set(-classDoorD/2 - 0.04, 1.0, -classDoorW/2 + 0.21);
   doorGroup.add(lever);
 
-  doorGroup.position.set(doorX, 0, doorZ);
+  doorGroup.position.set(doorPosX, 0, doorCenterZ);
   scene.add(doorGroup);
   GAME.cameraMeshes.push(doorPanel);
 
-  // ドア横の照明（ドアを目立たせる）
+  // ドア横の照明
   var doorLight = new THREE.PointLight(0xffeedd, 0.4, 4);
-  doorLight.position.set(doorX, doorH + 0.3, doorZ - 0.3);
+  doorLight.position.set(doorPosX - 0.3, classDoorH + 0.3, doorCenterZ);
   scene.add(doorLight);
 
   GAME.interactables.push({
     id: 'door', mesh: doorGroup,
-    x: doorX, z: doorZ,
-    radius: 1.5,
+    x: doorPosX - 0.5, z: doorCenterZ,
+    radius: 1.8,
     action: 'openDoor',
     label: 'ドアを開ける',
     used: false,
@@ -5696,11 +5713,11 @@ function buildClassroom() {
 // ============================================================
 function buildHallway() {
   var scene = GAME.scene;
-  // 廊下: 教室ドア（X≈4.4, Z=9）から出て左右に延びる学校の廊下
-  // 廊下はX方向に延び（教室の後方壁Z=9沿い）、幅3m（Z=9〜12）
-  var HW = 12, HD = 3, HH = 3; // 廊下: 横12m x 奥行き3m
-  var hz0 = 9;  // Z開始（教室後方壁）
-  var hx0 = -2; // X開始（左端）
+  // 廊下: 教室右壁の外側をZ方向に延びる（日本の学校の廊下配置）
+  // 廊下はZ方向に延び（教室の右壁X=4.5沿い）、幅3m（X=4.5〜7.5）
+  var HW = 3, HL = 12, HH = 3; // 廊下: 幅3m x 長さ12m
+  var hx0 = 4.5;  // X開始（教室右壁）
+  var hz0 = -1;    // Z開始（教室前壁と同じ）
 
   if (!PROC_TEX) PROC_TEX = generateProceduralTextures();
   var T = PROC_TEX;
@@ -5709,126 +5726,127 @@ function buildHallway() {
   var hallCeilingMat = new THREE.MeshStandardMaterial({ map: T.ceiling, color: 0xf0eeea, roughness: 0.55, emissive: 0x060606, emissiveIntensity: 0.05 });
   var wt = 0.2;
 
-  // ====== 廊下本体（横長の通路）======
+  // ====== 廊下本体（Z方向に延びる通路）======
   // 床
-  var hallFloor = new THREE.Mesh(new THREE.PlaneGeometry(HW, HD), hallFloorMat);
+  var hallFloor = new THREE.Mesh(new THREE.PlaneGeometry(HW, HL), hallFloorMat);
   hallFloor.rotation.x = -Math.PI / 2;
-  hallFloor.position.set(hx0 + HW/2, 0, hz0 + HD/2);
+  hallFloor.position.set(hx0 + HW/2, 0, hz0 + HL/2);
   hallFloor.receiveShadow = true;
   scene.add(hallFloor);
   // 天井
-  var hallCeiling = new THREE.Mesh(new THREE.PlaneGeometry(HW, HD), hallCeilingMat);
+  var hallCeiling = new THREE.Mesh(new THREE.PlaneGeometry(HW, HL), hallCeilingMat);
   hallCeiling.rotation.x = Math.PI / 2;
-  hallCeiling.position.set(hx0 + HW/2, HH, hz0 + HD/2);
+  hallCeiling.position.set(hx0 + HW/2, HH, hz0 + HL/2);
   scene.add(hallCeiling);
 
-  // 廊下奥壁（窓側 — 校庭側、Z=12）
-  var hallBackWall = new THREE.Mesh(new THREE.BoxGeometry(HW, HH, wt), hallWallMat);
-  hallBackWall.position.set(hx0 + HW/2, HH/2, hz0 + HD);
-  scene.add(hallBackWall);
-  GAME.cameraMeshes.push(hallBackWall);
-  GAME.walls.push({ minX: hx0, maxX: hx0 + HW, minZ: hz0 + HD - wt/2, maxZ: hz0 + HD + wt/2, minY: 0, maxY: HH });
-  // 窓（校庭側の窓を奥壁に）
+  // 廊下外壁（校庭側 X=hx0+HW=7.5）— 窓あり
+  var hallOuterWall = new THREE.Mesh(new THREE.BoxGeometry(wt, HH, HL), hallWallMat);
+  hallOuterWall.position.set(hx0 + HW, HH/2, hz0 + HL/2);
+  scene.add(hallOuterWall);
+  GAME.cameraMeshes.push(hallOuterWall);
+  GAME.walls.push({ minX: hx0+HW-wt/2, maxX: hx0+HW+wt/2, minZ: hz0, maxZ: hz0+HL, minY: 0, maxY: HH });
+  // 窓（外壁側）
   var hallWindowMat = new THREE.MeshStandardMaterial({ color: 0x88ccee, roughness: 0.1, transparent: true, opacity: 0.25, emissive: 0x224466, emissiveIntensity: 0.3 });
   for (var wi = 0; wi < 3; wi++) {
-    var win = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 1.5), hallWindowMat);
-    win.position.set(hx0 + 2 + wi * 4, 1.6, hz0 + HD - 0.01);
+    var win = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.5), hallWindowMat);
+    win.position.set(hx0 + HW - 0.01, 1.6, hz0 + 2 + wi * 3.5);
+    win.rotation.y = -Math.PI / 2;
     scene.add(win);
   }
 
-  // 廊下手前壁（教室側Z=9）— 教室ドアの開口部を除く
-  // ドア位置: X≈3.5〜5.0（教室のW/2-0.05 = 4.45付近、幅1.2m）
-  var doorMinX = 3.8, doorMaxX = 5.1;
-  // 左部分（hx0〜doorMinX）
-  var fwL_w = doorMinX - hx0;
-  var fwL = new THREE.Mesh(new THREE.BoxGeometry(fwL_w, HH, wt), hallWallMat);
-  fwL.position.set(hx0 + fwL_w/2, HH/2, hz0);
-  scene.add(fwL);
-  GAME.cameraMeshes.push(fwL);
-  GAME.walls.push({ minX: hx0, maxX: doorMinX, minZ: hz0 - wt/2, maxZ: hz0 + wt/2, minY: 0, maxY: HH });
-  // 右部分（doorMaxX〜hx0+HW）
-  var fwR_w = (hx0 + HW) - doorMaxX;
-  var fwR = new THREE.Mesh(new THREE.BoxGeometry(fwR_w, HH, wt), hallWallMat);
-  fwR.position.set(doorMaxX + fwR_w/2, HH/2, hz0);
-  scene.add(fwR);
-  GAME.cameraMeshes.push(fwR);
-  GAME.walls.push({ minX: doorMaxX, maxX: hx0 + HW, minZ: hz0 - wt/2, maxZ: hz0 + wt/2, minY: 0, maxY: HH });
+  // 廊下内壁（教室側 X=hx0=4.5）— 教室ドア開口部を除く
+  // ドア開口: Z=6.0〜7.2
+  var rDoorZ = 6.0, rDoorW = 1.2;
+  // 前部分（hz0〜rDoorZ）
+  var iw1Len = rDoorZ - hz0;
+  var iw1 = new THREE.Mesh(new THREE.BoxGeometry(wt, HH, iw1Len), hallWallMat);
+  iw1.position.set(hx0, HH/2, hz0 + iw1Len/2);
+  scene.add(iw1);
+  GAME.cameraMeshes.push(iw1);
+  GAME.walls.push({ minX: hx0-wt/2, maxX: hx0+wt/2, minZ: hz0, maxZ: rDoorZ, minY: 0, maxY: HH });
+  // 後部分（rDoorZ+rDoorW〜hz0+HL）
+  var iw2Start = rDoorZ + rDoorW;
+  var iw2Len = (hz0 + HL) - iw2Start;
+  var iw2 = new THREE.Mesh(new THREE.BoxGeometry(wt, HH, iw2Len), hallWallMat);
+  iw2.position.set(hx0, HH/2, iw2Start + iw2Len/2);
+  scene.add(iw2);
+  GAME.cameraMeshes.push(iw2);
+  GAME.walls.push({ minX: hx0-wt/2, maxX: hx0+wt/2, minZ: iw2Start, maxZ: hz0+HL, minY: 0, maxY: HH });
 
-  // 廊下右端壁（X=hx0+HW=10） — 通行止めの階段入口あり
-  // 開口部: Z=9.5〜11.5（階段入口）
-  var rEndTop = new THREE.Mesh(new THREE.BoxGeometry(wt, HH, 0.5), hallWallMat);
-  rEndTop.position.set(hx0 + HW, HH/2, hz0 + 0.25);
-  scene.add(rEndTop);
-  GAME.walls.push({ minX: hx0+HW-wt/2, maxX: hx0+HW+wt/2, minZ: hz0, maxZ: hz0 + 0.5, minY: 0, maxY: HH });
-  var rEndBot = new THREE.Mesh(new THREE.BoxGeometry(wt, HH, 0.5), hallWallMat);
-  rEndBot.position.set(hx0 + HW, HH/2, hz0 + HD - 0.25);
-  scene.add(rEndBot);
-  GAME.walls.push({ minX: hx0+HW-wt/2, maxX: hx0+HW+wt/2, minZ: hz0+HD-0.5, maxZ: hz0+HD, minY: 0, maxY: HH });
+  // 廊下前端壁（Z=hz0=-1）— 通行止めの階段入口あり
+  // 開口部: X=5〜7（階段入口）
+  var fEndL = new THREE.Mesh(new THREE.BoxGeometry(0.5, HH, wt), hallWallMat);
+  fEndL.position.set(hx0 + 0.25, HH/2, hz0);
+  scene.add(fEndL);
+  GAME.walls.push({ minX: hx0, maxX: hx0+0.5, minZ: hz0-wt/2, maxZ: hz0+wt/2, minY: 0, maxY: HH });
+  var fEndR = new THREE.Mesh(new THREE.BoxGeometry(0.5, HH, wt), hallWallMat);
+  fEndR.position.set(hx0 + HW - 0.25, HH/2, hz0);
+  scene.add(fEndR);
+  GAME.walls.push({ minX: hx0+HW-0.5, maxX: hx0+HW, minZ: hz0-wt/2, maxZ: hz0+wt/2, minY: 0, maxY: HH });
 
-  // 廊下左端壁（X=hx0=-2） — 非常口開口部あり
-  // 開口部: Z=9.5〜11.5（非常口 = 正解ルート）
-  var lEndTop = new THREE.Mesh(new THREE.BoxGeometry(wt, HH, 0.5), hallWallMat);
-  lEndTop.position.set(hx0, HH/2, hz0 + 0.25);
-  scene.add(lEndTop);
-  GAME.walls.push({ minX: hx0-wt/2, maxX: hx0+wt/2, minZ: hz0, maxZ: hz0+0.5, minY: 0, maxY: HH });
-  var lEndBot = new THREE.Mesh(new THREE.BoxGeometry(wt, HH, 0.5), hallWallMat);
-  lEndBot.position.set(hx0, HH/2, hz0 + HD - 0.25);
-  scene.add(lEndBot);
-  GAME.walls.push({ minX: hx0-wt/2, maxX: hx0+wt/2, minZ: hz0+HD-0.5, maxZ: hz0+HD, minY: 0, maxY: HH });
+  // 廊下後端壁（Z=hz0+HL=11）— 非常口開口部あり
+  // 開口部: X=5〜7（非常口 = 正解ルート）
+  var bEndL = new THREE.Mesh(new THREE.BoxGeometry(0.5, HH, wt), hallWallMat);
+  bEndL.position.set(hx0 + 0.25, HH/2, hz0 + HL);
+  scene.add(bEndL);
+  GAME.walls.push({ minX: hx0, maxX: hx0+0.5, minZ: hz0+HL-wt/2, maxZ: hz0+HL+wt/2, minY: 0, maxY: HH });
+  var bEndR = new THREE.Mesh(new THREE.BoxGeometry(0.5, HH, wt), hallWallMat);
+  bEndR.position.set(hx0 + HW - 0.25, HH/2, hz0 + HL);
+  scene.add(bEndR);
+  GAME.walls.push({ minX: hx0+HW-0.5, maxX: hx0+HW, minZ: hz0+HL-wt/2, maxZ: hz0+HL+wt/2, minY: 0, maxY: HH });
 
-  // ====== 蛍光灯 ======
+  // ====== 蛍光灯（Z方向に配置）======
   var hallLightMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffdd, emissiveIntensity: 0.7, roughness: 0.3 });
   for (var hli = 0; hli < 3; hli++) {
-    var hlTube = new THREE.Mesh(new THREE.BoxGeometry(2, 0.02, 0.06), hallLightMat);
-    hlTube.position.set(hx0 + 2 + hli * 4, HH - 0.04, hz0 + HD/2);
+    var hlTube = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.02, 2), hallLightMat);
+    hlTube.position.set(hx0 + HW/2, HH - 0.04, hz0 + 2 + hli * 3.5);
     scene.add(hlTube);
     var hpl = new THREE.PointLight(0xffeedd, 0.6, 10);
-    hpl.position.set(hx0 + 2 + hli * 4, HH - 0.1, hz0 + HD/2);
+    hpl.position.set(hx0 + HW/2, HH - 0.1, hz0 + 2 + hli * 3.5);
     scene.add(hpl);
   }
 
-  // ====== 普通の階段（不正解ルート）— 廊下右端 ======
-  // 階段小部屋（廊下右端の開口部の先）
-  var stairX = hx0 + HW; // X=10
-  var stairW = 3, stairD = 2; // 3m x 2m
-  var stairZ0 = hz0 + 0.5, stairZ1 = hz0 + HD - 0.5;
+  // ====== 普通の階段（不正解ルート）— 廊下前端 ======
+  // 階段小部屋（Z=-1の開口部の先 → Z=-1～-4）
+  var stairZ = hz0; // Z=-1
+  var stairW = 2, stairD = 3; // 2m x 3m
+  var stairX0 = hx0 + 0.5, stairX1 = hx0 + HW - 0.5;
+  var stairZEnd = stairZ - stairD; // Z=-4
   // 床・天井
-  // (重複床メッシュ削除 — 下のsrFで正しく作成済み)
   var srF = new THREE.Mesh(new THREE.PlaneGeometry(stairW, stairD), hallFloorMat);
   srF.rotation.x = -Math.PI / 2;
-  srF.position.set(stairX + stairW/2, 0, (stairZ0+stairZ1)/2);
+  srF.position.set((stairX0+stairX1)/2, 0, stairZ - stairD/2);
   scene.add(srF);
   var srC = new THREE.Mesh(new THREE.PlaneGeometry(stairW, stairD), hallCeilingMat);
   srC.rotation.x = Math.PI / 2;
-  srC.position.set(stairX + stairW/2, HH, (stairZ0+stairZ1)/2);
+  srC.position.set((stairX0+stairX1)/2, HH, stairZ - stairD/2);
   scene.add(srC);
   // 側壁
-  var srWF = new THREE.Mesh(new THREE.BoxGeometry(stairW, HH, wt), hallWallMat);
-  srWF.position.set(stairX + stairW/2, HH/2, stairZ0);
-  scene.add(srWF);
-  GAME.walls.push({ minX: stairX, maxX: stairX+stairW, minZ: stairZ0-wt/2, maxZ: stairZ0+wt/2, minY: 0, maxY: HH });
-  var srWB = new THREE.Mesh(new THREE.BoxGeometry(stairW, HH, wt), hallWallMat);
-  srWB.position.set(stairX + stairW/2, HH/2, stairZ1);
-  scene.add(srWB);
-  GAME.walls.push({ minX: stairX, maxX: stairX+stairW, minZ: stairZ1-wt/2, maxZ: stairZ1+wt/2, minY: 0, maxY: HH });
-  // 奥壁
+  var srWL = new THREE.Mesh(new THREE.BoxGeometry(wt, HH, stairD), hallWallMat);
+  srWL.position.set(stairX0, HH/2, stairZ - stairD/2);
+  scene.add(srWL);
+  GAME.walls.push({ minX: stairX0-wt/2, maxX: stairX0+wt/2, minZ: stairZEnd, maxZ: stairZ, minY: 0, maxY: HH });
   var srWR = new THREE.Mesh(new THREE.BoxGeometry(wt, HH, stairD), hallWallMat);
-  srWR.position.set(stairX + stairW, HH/2, (stairZ0+stairZ1)/2);
+  srWR.position.set(stairX1, HH/2, stairZ - stairD/2);
   scene.add(srWR);
-  GAME.walls.push({ minX: stairX+stairW-wt/2, maxX: stairX+stairW+wt/2, minZ: stairZ0, maxZ: stairZ1, minY: 0, maxY: HH });
+  GAME.walls.push({ minX: stairX1-wt/2, maxX: stairX1+wt/2, minZ: stairZEnd, maxZ: stairZ, minY: 0, maxY: HH });
+  // 奥壁
+  var srWB = new THREE.Mesh(new THREE.BoxGeometry(stairW, HH, wt), hallWallMat);
+  srWB.position.set((stairX0+stairX1)/2, HH/2, stairZEnd);
+  scene.add(srWB);
+  GAME.walls.push({ minX: stairX0, maxX: stairX1, minZ: stairZEnd-wt/2, maxZ: stairZEnd+wt/2, minY: 0, maxY: HH });
 
-  // 崩壊した瓦礫（階段を完全にブロック）— 入口からすぐ見える位置
+  // 崩壊した瓦礫
   var blockMat = new THREE.MeshStandardMaterial({ color: 0x777770, roughness: 0.9, emissive: 0x050505, emissiveIntensity: 0.1 });
-  var block1 = new THREE.Mesh(new THREE.BoxGeometry(2.5, 1.2, 1.5), blockMat);
-  block1.position.set(stairX + 1.0, 0.6, (stairZ0+stairZ1)/2);
+  var block1 = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.2, 2.0), blockMat);
+  block1.position.set((stairX0+stairX1)/2, 0.6, stairZ - 1.5);
   block1.rotation.z = 0.1;
   scene.add(block1);
-  var block2 = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.8, 1.2), blockMat);
-  block2.position.set(stairX + 2.0, 1.5, (stairZ0+stairZ1)/2 + 0.2);
+  var block2 = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.8, 1.0), blockMat);
+  block2.position.set((stairX0+stairX1)/2 + 0.3, 1.5, stairZ - 2.0);
   block2.rotation.y = 0.3; block2.rotation.z = -0.15;
   scene.add(block2);
-  // 崩壊コリジョン（入口から0.3mで即ブロック）
-  GAME.walls.push({ minX: stairX + 0.3, maxX: stairX + stairW, minZ: stairZ0, maxZ: stairZ1, minY: 0, maxY: 2.0 });
+  GAME.walls.push({ minX: stairX0, maxX: stairX1, minZ: stairZEnd, maxZ: stairZ - 0.3, minY: 0, maxY: 2.0 });
 
   // 「階段」看板 + 「通行止め」看板
   var nsCanvas = document.createElement('canvas');
@@ -5839,144 +5857,140 @@ function buildHallway() {
   nsCtx.fillStyle = '#ffffff';
   nsCtx.font = 'bold 28px sans-serif';
   nsCtx.textAlign = 'center';
-  nsCtx.fillText('階段 →', 100, 28);
+  nsCtx.fillText('↓ 階段', 100, 28);
   nsCtx.fillStyle = '#ff3333';
   nsCtx.font = 'bold 20px sans-serif';
   nsCtx.fillText('⚠ 崩落 通行止め', 100, 56);
   var nsTexture = new THREE.CanvasTexture(nsCanvas);
   var nsTextMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 0.32), new THREE.MeshBasicMaterial({ map: nsTexture }));
-  nsTextMesh.position.set(hx0 + HW - 0.5, HH - 0.25, hz0 + HD/2);
-  nsTextMesh.rotation.y = -Math.PI / 2;
+  nsTextMesh.position.set(hx0 + HW/2, HH - 0.25, hz0 + 0.5);
   scene.add(nsTextMesh);
 
   // 普通階段トリガーゾーン
-  GAME._normalStairZone = { minX: stairX - 0.5, maxX: stairX + 1.5, minZ: stairZ0, maxZ: stairZ1 };
+  GAME._normalStairZone = { minX: stairX0, maxX: stairX1, minZ: stairZEnd, maxZ: stairZ + 0.5 };
   GAME._normalStairWarned = false;
 
-  // ====== 非常口（正解ルート）— 廊下左端 ======
-  // 非常口ドア（金属製プッシュバードア）
+  // ====== 非常口（正解ルート）— 廊下後端（Z=11）======
+  var exitZ = hz0 + HL; // Z=11
+  var exitCenterX = hx0 + HW/2; // X=6
   var exitDoorMat = new THREE.MeshStandardMaterial({ color: 0x4a6a4a, roughness: 0.5, metalness: 0.3, emissive: 0x0a1a0a, emissiveIntensity: 0.12 });
   var exitDoorFrameMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.4, metalness: 0.6, emissive: 0x080808, emissiveIntensity: 0.1 });
   // ドア本体（両開き）
   var edW = 0.9, edH = 2.2;
-  var exitDoor1 = new THREE.Mesh(new THREE.BoxGeometry(0.06, edH, edW), exitDoorMat);
-  exitDoor1.position.set(hx0 + 0.03, edH/2, hz0 + HD/2 - edW/2);
+  var exitDoor1 = new THREE.Mesh(new THREE.BoxGeometry(edW, edH, 0.06), exitDoorMat);
+  exitDoor1.position.set(exitCenterX - edW/2, edH/2, exitZ + 0.03);
   scene.add(exitDoor1);
-  var exitDoor2 = new THREE.Mesh(new THREE.BoxGeometry(0.06, edH, edW), exitDoorMat);
-  exitDoor2.position.set(hx0 + 0.03, edH/2, hz0 + HD/2 + edW/2);
+  var exitDoor2 = new THREE.Mesh(new THREE.BoxGeometry(edW, edH, 0.06), exitDoorMat);
+  exitDoor2.position.set(exitCenterX + edW/2, edH/2, exitZ + 0.03);
   scene.add(exitDoor2);
-  // プッシュバー（金属バー）
+  // プッシュバー
   var pushBarMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.3, metalness: 0.8 });
-  var pushBar1 = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.04, edW * 0.8), pushBarMat);
-  pushBar1.position.set(hx0 + 0.07, 1.0, hz0 + HD/2 - edW/2);
+  var pushBar1 = new THREE.Mesh(new THREE.BoxGeometry(edW * 0.8, 0.04, 0.03), pushBarMat);
+  pushBar1.position.set(exitCenterX - edW/2, 1.0, exitZ - 0.01);
   scene.add(pushBar1);
-  var pushBar2 = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.04, edW * 0.8), pushBarMat);
-  pushBar2.position.set(hx0 + 0.07, 1.0, hz0 + HD/2 + edW/2);
+  var pushBar2 = new THREE.Mesh(new THREE.BoxGeometry(edW * 0.8, 0.04, 0.03), pushBarMat);
+  pushBar2.position.set(exitCenterX + edW/2, 1.0, exitZ - 0.01);
   scene.add(pushBar2);
-  // ドア枠（金属フレーム）
-  var dfTop = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.15, edW * 2 + 0.2), exitDoorFrameMat);
-  dfTop.position.set(hx0 + 0.06, edH + 0.07, hz0 + HD/2);
+  // ドア枠
+  var dfTop = new THREE.Mesh(new THREE.BoxGeometry(edW * 2 + 0.2, 0.15, 0.12), exitDoorFrameMat);
+  dfTop.position.set(exitCenterX, edH + 0.07, exitZ + 0.06);
   scene.add(dfTop);
-  var dfL = new THREE.Mesh(new THREE.BoxGeometry(0.12, edH + 0.15, 0.1), exitDoorFrameMat);
-  dfL.position.set(hx0 + 0.06, edH/2, hz0 + HD/2 - edW - 0.05);
+  var dfL = new THREE.Mesh(new THREE.BoxGeometry(0.1, edH + 0.15, 0.12), exitDoorFrameMat);
+  dfL.position.set(exitCenterX - edW - 0.05, edH/2, exitZ + 0.06);
   scene.add(dfL);
-  var dfR = new THREE.Mesh(new THREE.BoxGeometry(0.12, edH + 0.15, 0.1), exitDoorFrameMat);
-  dfR.position.set(hx0 + 0.06, edH/2, hz0 + HD/2 + edW + 0.05);
+  var dfR = new THREE.Mesh(new THREE.BoxGeometry(0.1, edH + 0.15, 0.12), exitDoorFrameMat);
+  dfR.position.set(exitCenterX + edW + 0.05, edH/2, exitZ + 0.06);
   scene.add(dfR);
 
-  // 「非常口」標識（ドアの上に設置 — 国際規格の緑サイン）
+  // 「非常口」標識
   var exitSignTex = T.exitSign;
   var exitSignMesh = new THREE.Mesh(
     new THREE.PlaneGeometry(1.2, 0.6),
     new THREE.MeshBasicMaterial({ map: exitSignTex, transparent: false })
   );
-  exitSignMesh.position.set(hx0 + 0.15, edH + 0.5, hz0 + HD/2);
-  exitSignMesh.rotation.y = Math.PI / 2;
+  exitSignMesh.position.set(exitCenterX, edH + 0.5, exitZ - 0.01);
   scene.add(exitSignMesh);
-  // 廊下側にも同じ標識
-  var exitSignMesh2 = new THREE.Mesh(
-    new THREE.PlaneGeometry(1.2, 0.6),
-    new THREE.MeshBasicMaterial({ map: exitSignTex, transparent: false })
-  );
-  exitSignMesh2.position.set(hx0 + 0.15, edH + 0.5, hz0 + HD/2);
-  exitSignMesh2.rotation.y = -Math.PI / 2;
+  // 廊下側にも
+  var exitSignMesh2 = exitSignMesh.clone();
+  exitSignMesh2.position.set(exitCenterX, edH + 0.5, exitZ + 0.15);
+  exitSignMesh2.rotation.y = Math.PI;
   scene.add(exitSignMesh2);
-  // 標識バックライト（緑色発光）
+  // 標識バックライト
   var signLight = new THREE.PointLight(0x00ff44, 0.5, 6);
-  signLight.position.set(hx0 + 0.3, edH + 0.5, hz0 + HD/2);
+  signLight.position.set(exitCenterX, edH + 0.5, exitZ - 0.2);
   scene.add(signLight);
-  // 非常口の緑ライト（床面照射）
+  // 非常口の緑ライト
   var exitLight = new THREE.PointLight(0x00ff44, 0.6, 12);
-  exitLight.position.set(hx0, HH - 0.4, hz0 + HD/2);
+  exitLight.position.set(exitCenterX, HH - 0.4, exitZ);
   scene.add(exitLight);
-  // 床の誘導ライン（緑の矢印→非常口方向 = 左方向）
+  // 床の誘導ライン（緑の矢印→非常口方向 = +Z方向）
   var guideMat = new THREE.MeshStandardMaterial({ color: 0x00ff44, emissive: 0x00ff44, emissiveIntensity: 0.5, transparent: true, opacity: 0.7 });
-  for (var gi = 0; gi < 5; gi++) {
-    var guideArrow = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.3), guideMat);
+  for (var gi = 0; gi < 3; gi++) {
+    var guideArrow = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.5), guideMat);
     guideArrow.rotation.x = -Math.PI / 2;
-    guideArrow.rotation.z = Math.PI / 2; // 左向き矢印
-    guideArrow.position.set(hx0 + 1 + gi * 2.2, 0.02, hz0 + HD/2);
+    guideArrow.position.set(exitCenterX, 0.02, hz0 + 4 + gi * 2.5);
     scene.add(guideArrow);
   }
 
-  // 非常口トリガーゾーン（廊下左端の開口部）
-  GAME._emergencyExitZone = { minX: hx0 - 1, maxX: hx0 + 0.5, minZ: hz0 + 0.5, maxZ: hz0 + HD - 0.5 };
+  // 非常口トリガーゾーン
+  GAME._emergencyExitZone = { minX: hx0 + 0.5, maxX: hx0 + HW - 0.5, minZ: exitZ - 0.5, maxZ: exitZ + 1 };
 
   // ====== 非常口の先：避難通路（L字型）======
-  buildEvacCorridor(scene, hx0, hz0, HD, HH, hallFloorMat, hallWallMat, hallCeilingMat, hallLightMat, debrisMat, wt);
+  // 新しいレイアウト: 廊下後端(Z=11)から+Z方向に延びてL字で-X方向に曲がる
+  var debrisMat = new THREE.MeshStandardMaterial({ color: 0x888880, roughness: 0.9, emissive: 0x050505, emissiveIntensity: 0.1 });
+  buildEvacCorridor(scene, hx0, hz0 + HL - 1, HW, HH, hallFloorMat, hallWallMat, hallCeilingMat, hallLightMat, debrisMat, wt);
 
   // ====== 消火器 ======
   var extinguisherMat = new THREE.MeshStandardMaterial({ color: 0xcc2222, roughness: 0.4, metalness: 0.3, emissive: 0x220000, emissiveIntensity: 0.15 });
   var extinguisher = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.4, 8), extinguisherMat);
-  extinguisher.position.set(hx0 + 2, 0.2, hz0 + HD - 0.2);
+  extinguisher.position.set(hx0 + HW - 0.2, 0.2, hz0 + 8);
   scene.add(extinguisher);
 
   // ====== 廊下の障害物（地震後に出現）======
-  var debrisMat = new THREE.MeshStandardMaterial({ color: 0x888880, roughness: 0.9, emissive: 0x050505, emissiveIntensity: 0.1 });
   var glassMat = new THREE.MeshStandardMaterial({ color: 0x88ccee, roughness: 0.1, transparent: true, opacity: 0.5, emissive: 0x224466, emissiveIntensity: 0.2 });
 
   GAME._hallwayDebris = [];
 
   // 1. 天井板の落下（廊下中央付近）
-  var ceilingTile = new THREE.Mesh(new THREE.BoxGeometry(2, 0.15, 1.5), debrisMat);
-  ceilingTile.position.set(hx0 + HW/2, 0.08, hz0 + HD/2);
+  var ceilingTile = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.15, 2), debrisMat);
+  ceilingTile.position.set(hx0 + HW/2, 0.08, hz0 + HL/2);
   ceilingTile.rotation.z = 0.15;
   ceilingTile.visible = false;
   scene.add(ceilingTile);
   GAME._hallwayDebris.push(ceilingTile);
   GAME._debrisWalls = [];
-  GAME._debrisWalls.push({ minX: hx0+HW/2-1.2, maxX: hx0+HW/2+1.2, minZ: hz0+0.5, maxZ: hz0+HD-0.5, minY: 0, maxY: 0.3 });
+  GAME._debrisWalls.push({ minX: hx0+0.5, maxX: hx0+HW-0.5, minZ: hz0+HL/2-1, maxZ: hz0+HL/2+1, minY: 0, maxY: 0.3 });
 
   // 2. ガラス破片エリア（廊下の窓下）
-  var glassArea = new THREE.Mesh(new THREE.PlaneGeometry(2, 1.5), glassMat);
+  var glassArea = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 2), glassMat);
   glassArea.rotation.x = -Math.PI / 2;
-  glassArea.position.set(hx0 + 3, 0.01, hz0 + HD - 0.3);
+  glassArea.position.set(hx0 + HW - 0.3, 0.01, hz0 + 3);
   glassArea.visible = false;
   scene.add(glassArea);
   GAME._hallwayDebris.push(glassArea);
-  GAME._glassZone = { minX: hx0 + 2, maxX: hx0 + 4, minZ: hz0 + HD - 1.2, maxZ: hz0 + HD };
+  GAME._glassZone = { minX: hx0 + HW - 1.2, maxX: hx0 + HW, minZ: hz0 + 2, maxZ: hz0 + 4 };
 
-  // 4. 散乱した教材・本（廊下に散乱）
+  // 4. 散乱した教材・本
   for (var bi = 0; bi < 5; bi++) {
     var book = new THREE.Mesh(
-      new THREE.BoxGeometry(0.2 + Math.random() * 0.15, 0.05, 0.15 + Math.random() * 0.1),
+      new THREE.BoxGeometry(0.15 + Math.random() * 0.1, 0.05, 0.2 + Math.random() * 0.15),
       new THREE.MeshStandardMaterial({ color: 0x886644 + Math.floor(Math.random() * 0x222222), roughness: 0.8 })
     );
-    book.position.set(hx0 + 1 + Math.random() * (HW - 2), 0.025, hz0 + 0.5 + Math.random() * (HD - 1));
+    book.position.set(hx0 + 0.5 + Math.random() * (HW - 1), 0.025, hz0 + 1 + Math.random() * (HL - 2));
     book.rotation.y = Math.random() * Math.PI;
     book.visible = false;
     scene.add(book);
     GAME._hallwayDebris.push(book);
   }
 
-  // 5. 粉塵パーティクル（廊下全体の雰囲気 — 半透明の浮遊物）
+  // 5. 粉塵パーティクル
   var dustGeo = new THREE.BufferGeometry();
   var dustCount = 80;
   var dustPositions = new Float32Array(dustCount * 3);
   for (var di = 0; di < dustCount; di++) {
     dustPositions[di * 3] = hx0 + Math.random() * HW;
     dustPositions[di * 3 + 1] = Math.random() * HH;
-    dustPositions[di * 3 + 2] = hz0 + Math.random() * HD;
+    dustPositions[di * 3 + 2] = hz0 + Math.random() * HL;
   }
   dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPositions, 3));
   var dustParticles = new THREE.Points(dustGeo, new THREE.PointsMaterial({
@@ -5992,11 +6006,12 @@ function buildHallway() {
 // SECTION: 避難通路（非常口→階段入口までのL字型通路）
 // ============================================================
 function buildEvacCorridor(scene, hx0, hz0, HD, HH, floorMat, wallMat, ceilMat, lightMat, debrisMat, wt) {
-  // 通路1: 非常口から下方向（-X方向→+Z方向のL字）
-  // セクション1: 非常口から左（-X方向）に伸びる通路
-  var c1x0 = hx0 - 10; // X=-12 ～ X=-2（10m）
-  var c1z0 = hz0 + 0.5; // Z=9.5
-  var c1w = 10, c1d = 2.5;
+  // 新レイアウト: 非常口(Z=11)から+Z方向に伸び、L字で-X方向に曲がる避難通路
+  // セクション1: +Z方向（非常口から奥へ）
+  var c1w = 2.5; // 通路幅（X方向）
+  var c1d = 10;  // 通路長さ（Z方向）
+  var c1x0 = hx0 + (HD - c1w) / 2; // 廊下の中央寄せ (4.75)
+  var c1z0 = hz0 + 0.5; // 非常口の少し先 (10.5)
 
   // 床
   var f1 = new THREE.Mesh(new THREE.PlaneGeometry(c1w, c1d), floorMat);
@@ -6009,36 +6024,38 @@ function buildEvacCorridor(scene, hx0, hz0, HD, HH, floorMat, wallMat, ceilMat, 
   ce1.rotation.x = Math.PI / 2;
   ce1.position.set(c1x0 + c1w/2, HH, c1z0 + c1d/2);
   scene.add(ce1);
-  // 壁（上側 Z=c1z0）
-  var w1t = new THREE.Mesh(new THREE.BoxGeometry(c1w, HH, wt), wallMat);
-  w1t.position.set(c1x0 + c1w/2, HH/2, c1z0);
-  scene.add(w1t);
-  GAME.walls.push({ minX: c1x0, maxX: c1x0 + c1w, minZ: c1z0 - wt/2, maxZ: c1z0 + wt/2, minY: 0, maxY: HH });
-  // 壁（下側 Z=c1z0+c1d）※L字の曲がり角は開ける
-  var w1b1 = new THREE.Mesh(new THREE.BoxGeometry(c1w - 3, HH, wt), wallMat);
-  w1b1.position.set(c1x0 + (c1w-3)/2, HH/2, c1z0 + c1d);
-  scene.add(w1b1);
-  GAME.walls.push({ minX: c1x0, maxX: c1x0 + c1w - 3, minZ: c1z0+c1d-wt/2, maxZ: c1z0+c1d+wt/2, minY: 0, maxY: HH });
-  // 左端壁
-  var w1l = new THREE.Mesh(new THREE.BoxGeometry(wt, HH, c1d), wallMat);
-  w1l.position.set(c1x0, HH/2, c1z0 + c1d/2);
+  // 右壁 (X=c1x0+c1w=7.25)
+  var w1r = new THREE.Mesh(new THREE.BoxGeometry(wt, HH, c1d), wallMat);
+  w1r.position.set(c1x0 + c1w, HH/2, c1z0 + c1d/2);
+  scene.add(w1r);
+  GAME.walls.push({ minX: c1x0+c1w-wt/2, maxX: c1x0+c1w+wt/2, minZ: c1z0, maxZ: c1z0 + c1d, minY: 0, maxY: HH });
+  // 左壁 (X=c1x0=4.75) — L字曲がり角を開ける（奥3m分）
+  var w1lLen = c1d - 3;
+  var w1l = new THREE.Mesh(new THREE.BoxGeometry(wt, HH, w1lLen), wallMat);
+  w1l.position.set(c1x0, HH/2, c1z0 + w1lLen/2);
   scene.add(w1l);
-  GAME.walls.push({ minX: c1x0 - wt/2, maxX: c1x0 + wt/2, minZ: c1z0, maxZ: c1z0 + c1d, minY: 0, maxY: HH });
+  GAME.walls.push({ minX: c1x0 - wt/2, maxX: c1x0 + wt/2, minZ: c1z0, maxZ: c1z0 + w1lLen, minY: 0, maxY: HH });
+  // 奥壁 (Z=c1z0+c1d=20.5)
+  var w1b = new THREE.Mesh(new THREE.BoxGeometry(c1w, HH, wt), wallMat);
+  w1b.position.set(c1x0 + c1w/2, HH/2, c1z0 + c1d);
+  scene.add(w1b);
+  GAME.walls.push({ minX: c1x0, maxX: c1x0 + c1w, minZ: c1z0+c1d-wt/2, maxZ: c1z0+c1d+wt/2, minY: 0, maxY: HH });
 
   // 蛍光灯（通路1）
   for (var li = 0; li < 2; li++) {
-    var lt = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.02, 0.06), lightMat);
-    lt.position.set(c1x0 + 2 + li * 4, HH - 0.04, c1z0 + c1d/2);
+    var lt = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.02, 1.5), lightMat);
+    lt.position.set(c1x0 + c1w/2, HH - 0.04, c1z0 + 2 + li * 4);
     scene.add(lt);
     var lp = new THREE.PointLight(0xffeedd, 1.0, 12);
-    lp.position.set(c1x0 + 2 + li * 4, HH - 0.1, c1z0 + c1d/2);
+    lp.position.set(c1x0 + c1w/2, HH - 0.1, c1z0 + 2 + li * 4);
     scene.add(lp);
   }
 
-  // セクション2: 曲がり角から+Z方向に伸びる通路（階段入口へ）
-  var c2x0 = hx0 - 5; // X=-7
-  var c2z0 = c1z0 + c1d; // Z=12
-  var c2w = 2.5, c2d = 13; // 13m（Z=12～25で階段トリガーに到達）
+  // セクション2: L字曲がり角から-X方向に伸びる通路（階段入口へ）
+  var c2d = 3;                           // 通路幅（Z方向）
+  var c2z0 = c1z0 + c1d - c2d;          // Z=17.5（セクション1の左壁の隙間位置）
+  var c2w = 10;                          // 通路長さ（X方向、-X方向に10m）
+  var c2x0 = c1x0 - c2w;                // X=-5.25
 
   // 床
   var f2 = new THREE.Mesh(new THREE.PlaneGeometry(c2w, c2d), floorMat);
@@ -6051,44 +6068,45 @@ function buildEvacCorridor(scene, hx0, hz0, HD, HH, floorMat, wallMat, ceilMat, 
   ce2.rotation.x = Math.PI / 2;
   ce2.position.set(c2x0 + c2w/2, HH, c2z0 + c2d/2);
   scene.add(ce2);
-  // 左壁
+  // 上壁 (Z=c2z0=17.5)
+  var w2t = new THREE.Mesh(new THREE.BoxGeometry(c2w, HH, wt), wallMat);
+  w2t.position.set(c2x0 + c2w/2, HH/2, c2z0);
+  scene.add(w2t);
+  GAME.walls.push({ minX: c2x0, maxX: c2x0 + c2w, minZ: c2z0 - wt/2, maxZ: c2z0 + wt/2, minY: 0, maxY: HH });
+  // 下壁 (Z=c2z0+c2d=20.5) — セクション1の奥壁と接続するため右端は開ける
+  var w2bLen = c2w - 3;
+  var w2b = new THREE.Mesh(new THREE.BoxGeometry(w2bLen, HH, wt), wallMat);
+  w2b.position.set(c2x0 + w2bLen/2, HH/2, c2z0 + c2d);
+  scene.add(w2b);
+  GAME.walls.push({ minX: c2x0, maxX: c2x0 + w2bLen, minZ: c2z0+c2d-wt/2, maxZ: c2z0+c2d+wt/2, minY: 0, maxY: HH });
+  // 左端壁 (X=c2x0=-5.25) — 階段入口の手前
   var w2l = new THREE.Mesh(new THREE.BoxGeometry(wt, HH, c2d), wallMat);
   w2l.position.set(c2x0, HH/2, c2z0 + c2d/2);
   scene.add(w2l);
   GAME.walls.push({ minX: c2x0 - wt/2, maxX: c2x0 + wt/2, minZ: c2z0, maxZ: c2z0 + c2d, minY: 0, maxY: HH });
-  // 右壁
-  var w2r = new THREE.Mesh(new THREE.BoxGeometry(wt, HH, c2d), wallMat);
-  w2r.position.set(c2x0 + c2w, HH/2, c2z0 + c2d/2);
-  scene.add(w2r);
-  GAME.walls.push({ minX: c2x0+c2w-wt/2, maxX: c2x0+c2w+wt/2, minZ: c2z0, maxZ: c2z0 + c2d, minY: 0, maxY: HH });
-  // 奥壁（階段入口の手前）
-  var w2b = new THREE.Mesh(new THREE.BoxGeometry(c2w, HH, wt), wallMat);
-  w2b.position.set(c2x0 + c2w/2, HH/2, c2z0 + c2d);
-  scene.add(w2b);
-  GAME.walls.push({ minX: c2x0, maxX: c2x0 + c2w, minZ: c2z0+c2d-wt/2, maxZ: c2z0+c2d+wt/2, minY: 0, maxY: HH });
 
   // 蛍光灯（通路2）
-  for (var li2 = 0; li2 < 3; li2++) {
+  for (var li2 = 0; li2 < 2; li2++) {
     var lt2 = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.02, 0.06), lightMat);
-    lt2.position.set(c2x0 + c2w/2, HH - 0.04, c2z0 + 2 + li2 * 4);
+    lt2.position.set(c2x0 + 2 + li2 * 4, HH - 0.04, c2z0 + c2d/2);
     scene.add(lt2);
     var lp2 = new THREE.PointLight(0xffeedd, 1.0, 12);
-    lp2.position.set(c2x0 + c2w/2, HH - 0.1, c2z0 + 2 + li2 * 4);
+    lp2.position.set(c2x0 + 2 + li2 * 4, HH - 0.1, c2z0 + c2d/2);
     scene.add(lp2);
   }
 
   // ====== 障害物（倒れた棚・瓦礫・散乱物）======
   // 倒れたロッカー（通路1、通行を狭める）
   var lockerMat = new THREE.MeshStandardMaterial({ color: 0x889999, roughness: 0.6, metalness: 0.3, emissive: 0x050606 });
-  var locker = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.8, 0.4), lockerMat);
-  locker.position.set(c1x0 + 3, 0.4, c1z0 + c1d/2 - 0.3);
+  var locker = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.8, 1.5), lockerMat);
+  locker.position.set(c1x0 + c1w/2 - 0.3, 0.4, c1z0 + 3);
   locker.rotation.z = 0.3;
   scene.add(locker);
-  GAME.walls.push({ minX: c1x0+2, maxX: c1x0+4.5, minZ: c1z0+0.3, maxZ: c1z0+c1d/2+0.2, minY: 0, maxY: 1.0 });
+  GAME.walls.push({ minX: c1x0+0.3, maxX: c1x0+c1w/2+0.2, minZ: c1z0+2, maxZ: c1z0+4.5, minY: 0, maxY: 1.0 });
 
-  // 天井板の崩落（通路2、曲がり角付近）
-  var cTile = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.12, 1.2), debrisMat);
-  cTile.position.set(c2x0 + c2w/2, 0.06, c2z0 + 3);
+  // 天井板の崩落（通路1、中間付近）
+  var cTile = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.12, 1.8), debrisMat);
+  cTile.position.set(c1x0 + c1w/2, 0.06, c1z0 + 7);
   cTile.rotation.y = 0.2;
   scene.add(cTile);
 
@@ -6096,19 +6114,19 @@ function buildEvacCorridor(scene, hx0, hz0, HD, HH, floorMat, wallMat, ceilMat, 
   var glassMat2 = new THREE.MeshStandardMaterial({ color: 0x88ccee, roughness: 0.1, transparent: true, opacity: 0.4, emissive: 0x224466, emissiveIntensity: 0.2 });
   var glass2 = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.5), glassMat2);
   glass2.rotation.x = -Math.PI / 2;
-  glass2.position.set(c2x0 + c2w/2, 0.01, c2z0 + 8);
+  glass2.position.set(c2x0 + 5, 0.01, c2z0 + c2d/2);
   scene.add(glass2);
 
-  // 散乱した椅子
+  // 散乱した椅子（通路2）
   var chairMat = new THREE.MeshStandardMaterial({ color: 0x665544, roughness: 0.8 });
   var chair1 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.6, 0.4), chairMat);
-  chair1.position.set(c2x0 + 0.5, 0.3, c2z0 + 6);
+  chair1.position.set(c2x0 + 3, 0.3, c2z0 + 0.5);
   chair1.rotation.y = 0.8;
   chair1.rotation.z = 0.4;
   scene.add(chair1);
-  GAME.walls.push({ minX: c2x0, maxX: c2x0+1, minZ: c2z0+5.5, maxZ: c2z0+6.5, minY: 0, maxY: 0.8 });
+  GAME.walls.push({ minX: c2x0+2.5, maxX: c2x0+3.5, minZ: c2z0, maxZ: c2z0+1, minY: 0, maxY: 0.8 });
 
-  // 非常口サイン（通路の途中、方向を示す）
+  // 非常口サイン（通路1の壁に、L字方向を示す）
   var gSignCanvas = document.createElement('canvas');
   gSignCanvas.width = 200; gSignCanvas.height = 64;
   var gsCtx = gSignCanvas.getContext('2d');
@@ -6117,18 +6135,18 @@ function buildEvacCorridor(scene, hx0, hz0, HD, HH, floorMat, wallMat, ceilMat, 
   gsCtx.fillStyle = '#ffffff';
   gsCtx.font = 'bold 28px sans-serif';
   gsCtx.textAlign = 'center';
-  gsCtx.fillText('↓ 階段 1F', 100, 44);
+  gsCtx.fillText('← 階段 1F', 100, 44);
   var gsTexture = new THREE.CanvasTexture(gSignCanvas);
   var gsSign = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 0.32), new THREE.MeshBasicMaterial({ map: gsTexture }));
-  gsSign.position.set(c2x0 + c2w + 0.01, HH - 0.25, c2z0 + 5);
-  gsSign.rotation.y = -Math.PI / 2;
+  gsSign.position.set(c1x0 + c1w - 0.01, HH - 0.25, c1z0 + c1d - 2);
+  gsSign.rotation.y = Math.PI / 2;
   scene.add(gsSign);
   // 誘導ライト
   var guideLight = new THREE.PointLight(0x00ff44, 0.4, 6);
-  guideLight.position.set(c2x0 + c2w/2, HH - 0.3, c2z0 + 5);
+  guideLight.position.set(c1x0 + c1w/2, HH - 0.3, c1z0 + c1d - 2);
   scene.add(guideLight);
 
-  // ====== 階段入口ドア表示（通路2の奥） ======
+  // ====== 階段入口ドア表示（通路2の左端） ======
   var stairDoorCanvas = document.createElement('canvas');
   stairDoorCanvas.width = 200; stairDoorCanvas.height = 64;
   var sdCtx = stairDoorCanvas.getContext('2d');
@@ -6137,10 +6155,11 @@ function buildEvacCorridor(scene, hx0, hz0, HD, HH, floorMat, wallMat, ceilMat, 
   sdCtx.fillStyle = '#ffffff';
   sdCtx.font = 'bold 32px sans-serif';
   sdCtx.textAlign = 'center';
-  sdCtx.fillText('🚪 階段入口', 100, 44);
+  sdCtx.fillText('階段入口', 100, 44);
   var sdTexture = new THREE.CanvasTexture(stairDoorCanvas);
   var sdSign = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.38), new THREE.MeshBasicMaterial({ map: sdTexture }));
-  sdSign.position.set(c2x0 + c2w/2, HH - 0.3, c2z0 + c2d - 0.01);
+  sdSign.position.set(c2x0 + 0.01, HH - 0.3, c2z0 + c2d/2);
+  sdSign.rotation.y = Math.PI / 2;
   scene.add(sdSign);
 }
 
@@ -6201,7 +6220,7 @@ function triggerAftershock() {
 // これによりprogress計算・踊り場・Y座標管理のバグを完全に回避。
 
 // 階段室のトリガーゾーン定数（避難通路の奥）
-var STAIR_TRIGGER = { minX: -7.1, maxX: -4.4, minZ: 24, maxZ: 25.5 };
+var STAIR_TRIGGER = { minX: -5.4, maxX: -3.0, minZ: 17.4, maxZ: 20.6 };
 // 校庭のY座標（地面レベル）
 var GROUND_Y = 0;
 // 校庭のプレイヤー出現位置
@@ -7381,9 +7400,9 @@ function updateSingleNPC(npc, dtSec) {
           }
           // ウェイポイント: ドア出口(廊下内) → 廊下左端(非常口)
           npc._waypoints = [
-            { x: 4.2, z: 10.0 },   // 廊下に出る（ドアの先）
-            { x: 0, z: 10.5 },     // 廊下中央
-            { x: -2.5, z: 10.5 },  // 非常口
+            { x: 6.0, z: 6.6 },   // 廊下に出る（右壁ドアの先）
+            { x: 6.0, z: 9.0 },   // 廊下を非常口方向へ
+            { x: 6.0, z: 11.0 },  // 非常口
           ];
           npc._wpIndex = 0;
           npc.targetX = npc._waypoints[0].x;
@@ -7491,40 +7510,16 @@ function performInteract() {
       SoundManager.playSE('door');
       showAdvisor('ドアを開けた！廊下に出て、非常口（緑の看板）を目指そう！', 'praise');
       showItemGet('🚪 ドアを開けた！ — 避難経路確保');
-      // ドアを開く演出（スライド — 引き戸方式）
+      // ドアを開く演出（引き戸 — Z方向にスライド）
       if (target.mesh) {
-        target.mesh.position.x -= 1.0; // 左にスライド
+        target.mesh.position.z += 1.2; // 後方にスライド
       }
-      // 後方壁メッシュを消して、ドア開口部を除いた壁を再生成
-      if (GAME._backWall) {
-        GAME.scene.remove(GAME._backWall);
-        var W = 9, H = 3, wt = 0.2, D = 10;
-        var doorX = W/2 - 0.05, doorW = 1.4;
-        // 左側の壁（ドアの左）
-        var leftPartW = (doorX - doorW/2) - (-W/2);
-        if (leftPartW > 0.1) {
-          var leftPart = new THREE.Mesh(new THREE.BoxGeometry(leftPartW, H, wt), GAME._backWallMat);
-          leftPart.position.set(-W/2 + leftPartW/2, H/2, D - 1);
-          GAME.scene.add(leftPart);
-          GAME.cameraMeshes.push(leftPart);
-        }
-        // 右側の壁（ドアの右 → 極小なので省略可）
-        // ドア上部の壁（ドア高さ2.1m以上）
-        var doorH = 2.1;
-        var topPart = new THREE.Mesh(new THREE.BoxGeometry(doorW, H - doorH, wt), GAME._backWallMat);
-        topPart.position.set(doorX, doorH + (H - doorH)/2, D - 1);
-        GAME.scene.add(topPart);
-        GAME._backWall = null;
-      }
-      // 教室→廊下の壁コリジョンを除去して、ドア開口部以外を再設定
-      for (var wi = GAME.walls.length - 1; wi >= 0; wi--) {
-        var wall = GAME.walls[wi];
-        if (wall.minZ > 7.8 && wall.minZ < 9.2 && wall.maxZ > 7.8 && wall.maxZ < 9.2 && wall.minX < -4 && wall.maxX > 4) {
-          GAME.walls.splice(wi, 1);
-          // 左側の壁コリジョン（ドア開口部の左）
-          GAME.walls.push({ minX: -4.5, maxX: 3.0, minZ: 8.8, maxZ: 9.1, minY: 0, maxY: 3 });
-          break;
-        }
+      // 右壁ドア開口部のコリジョンを除去
+      if (GAME._rightWallDoorCollision) {
+        var idx = GAME.walls.indexOf(GAME._rightWallDoorCollision);
+        if (idx >= 0) GAME.walls.splice(idx, 1);
+        GAME._rightWallDoorOpen = true;
+        GAME._rightWallDoorCollision = null;
       }
       break;
 
