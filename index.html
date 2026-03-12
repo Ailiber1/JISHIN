@@ -5519,16 +5519,18 @@ function buildClassroom() {
   var classDoorW = 1.1, classDoorH = 2.1, classDoorD = 0.12;
 
   // ドア枠（濃茶色 — 壁の開口部に設置）
+  // ※教室側に0.05オフセットして廊下壁とのZ-fighting回避
   var frameMat = new THREE.MeshStandardMaterial({ color: 0x4a3520, roughness: 0.5, emissive: 0x1a0e05, emissiveIntensity: 0.15 });
+  var frameOffX = doorPosX - 0.05;
   // 枠上
   var dFT = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.12, rDoorW + 0.15), frameMat);
-  dFT.position.set(doorPosX, classDoorH + 0.06, doorCenterZ); scene.add(dFT);
+  dFT.position.set(frameOffX, classDoorH + 0.06, doorCenterZ); scene.add(dFT);
   // 枠前（Z小さい側）
   var dFF = new THREE.Mesh(new THREE.BoxGeometry(0.2, classDoorH + 0.12, 0.08), frameMat);
-  dFF.position.set(doorPosX, classDoorH/2, rDoorZ - 0.04); scene.add(dFF);
+  dFF.position.set(frameOffX, classDoorH/2, rDoorZ - 0.04); scene.add(dFF);
   // 枠後（Z大きい側）
   var dFB = new THREE.Mesh(new THREE.BoxGeometry(0.2, classDoorH + 0.12, 0.08), frameMat);
-  dFB.position.set(doorPosX, classDoorH/2, rDoorZ + rDoorW + 0.04); scene.add(dFB);
+  dFB.position.set(frameOffX, classDoorH/2, rDoorZ + rDoorW + 0.04); scene.add(dFB);
 
   // ドア本体（引き戸 — Z方向にスライド）
   var doorMat = new THREE.MeshStandardMaterial({ color: 0xb8894a, roughness: 0.55, emissive: 0x1a0e05, emissiveIntensity: 0.15 });
