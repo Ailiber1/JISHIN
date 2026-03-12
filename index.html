@@ -3247,72 +3247,185 @@ const SoundManager = {
       this.stopAmbient();
       var ctx = this.getCtx();
       if (!ctx) return;
+      var sr = ctx.sampleRate;
       var masterGain = ctx.createGain();
-      masterGain.gain.value = 0.12;
+      masterGain.gain.value = 0.15;
       masterGain.connect(ctx.destination);
+      var allSources = [];
+      var allTimers = [];
 
-      // ① エアコンのハム音（低周波フィルタードノイズ）
-      var bufLen = ctx.sampleRate * 2;
-      var buf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
-      var d = buf.getChannelData(0);
-      for (var i = 0; i < bufLen; i++) d[i] = (Math.random() * 2 - 1);
+      // ① エアコンのハム音（常時・低周波フィルタードノイズ）
+      var acBuf = ctx.createBuffer(1, sr * 2, sr);
+      var ad = acBuf.getChannelData(0);
+      for (var i = 0; i < ad.length; i++) ad[i] = (Math.random() * 2 - 1);
       var acSrc = ctx.createBufferSource();
-      acSrc.buffer = buf; acSrc.loop = true;
+      acSrc.buffer = acBuf; acSrc.loop = true;
       var acLP = ctx.createBiquadFilter();
-      acLP.type = 'lowpass'; acLP.frequency.value = 180;
+      acLP.type = 'lowpass'; acLP.frequency.value = 150;
       var acGain = ctx.createGain();
-      acGain.gain.value = 0.45;
+      acGain.gain.value = 0.5;
       acSrc.connect(acLP); acLP.connect(acGain); acGain.connect(masterGain);
       acSrc.start(0);
+      allSources.push(acSrc);
 
-      // ② タイピング音（ランダムクリック — バンドパスノイズの断続音）
-      var typeBuf = ctx.createBuffer(1, ctx.sampleRate * 4, ctx.sampleRate);
+      // ② タイピング音（控えめ・遠くのキーボード）
+      var typeBuf = ctx.createBuffer(1, sr * 6, sr);
       var td = typeBuf.getChannelData(0);
-      // ランダムな位置にクリック音を生成（1秒あたり約8-12回）
-      for (var t = 0; t < td.length; t++) {
-        td[t] = 0;
-      }
-      var clicksPerSec = 10;
-      var totalClicks = clicksPerSec * 4;
+      for (var ti = 0; ti < td.length; ti++) td[ti] = 0;
+      // 1秒あたり5-6回程度の控えめなクリック（遠い感じ）
+      var totalClicks = 32;
       for (var c = 0; c < totalClicks; c++) {
-        var clickPos = Math.floor(Math.random() * td.length);
-        var clickLen = Math.floor(ctx.sampleRate * (0.003 + Math.random() * 0.005)); // 3-8ms
-        var clickVol = 0.3 + Math.random() * 0.7;
-        for (var s = 0; s < clickLen && (clickPos + s) < td.length; s++) {
-          td[clickPos + s] = (Math.random() * 2 - 1) * clickVol * (1 - s / clickLen);
+        var cPos = Math.floor(Math.random() * td.length);
+        var cLen = Math.floor(sr * (0.002 + Math.random() * 0.004));
+        var cVol = 0.2 + Math.random() * 0.5;
+        for (var s = 0; s < cLen && (cPos + s) < td.length; s++) {
+          td[cPos + s] = (Math.random() * 2 - 1) * cVol * (1 - s / cLen);
         }
       }
       var typeSrc = ctx.createBufferSource();
       typeSrc.buffer = typeBuf; typeSrc.loop = true;
       var typeBP = ctx.createBiquadFilter();
-      typeBP.type = 'bandpass'; typeBP.frequency.value = 3000; typeBP.Q.value = 1.5;
+      typeBP.type = 'bandpass'; typeBP.frequency.value = 2500; typeBP.Q.value = 1.0;
       var typeGain = ctx.createGain();
-      typeGain.gain.value = 0.35;
+      typeGain.gain.value = 0.18;
       typeSrc.connect(typeBP); typeBP.connect(typeGain); typeGain.connect(masterGain);
       typeSrc.start(0);
+      allSources.push(typeSrc);
 
-      // ③ 低い話し声風（バンドパスノイズ — 200-500Hz帯）
-      var voiceBuf = ctx.createBuffer(1, ctx.sampleRate * 3, ctx.sampleRate);
+      // ③ 低い話し声風（常時・バンドパスノイズ）
+      var voiceBuf = ctx.createBuffer(1, sr * 4, sr);
       var vd = voiceBuf.getChannelData(0);
       for (var vi = 0; vi < vd.length; vi++) {
-        // 変調をかけて話し声風にする
-        vd[vi] = (Math.random() * 2 - 1) * (0.3 + 0.7 * Math.abs(Math.sin(vi / ctx.sampleRate * 3)));
+        vd[vi] = (Math.random() * 2 - 1) * (0.2 + 0.8 * Math.abs(Math.sin(vi / sr * 2.5)));
       }
       var voiceSrc = ctx.createBufferSource();
       voiceSrc.buffer = voiceBuf; voiceSrc.loop = true;
       var voiceBP = ctx.createBiquadFilter();
-      voiceBP.type = 'bandpass'; voiceBP.frequency.value = 350; voiceBP.Q.value = 3;
+      voiceBP.type = 'bandpass'; voiceBP.frequency.value = 320; voiceBP.Q.value = 2.5;
       var voiceGain = ctx.createGain();
-      voiceGain.gain.value = 0.15;
+      voiceGain.gain.value = 0.2;
       voiceSrc.connect(voiceBP); voiceBP.connect(voiceGain); voiceGain.connect(masterGain);
       voiceSrc.start(0);
+      allSources.push(voiceSrc);
+
+      // ④ コピー機（間欠的 — 8〜15秒おきに2〜4秒間動作）
+      var copierGain = ctx.createGain();
+      copierGain.gain.value = 0;
+      copierGain.connect(masterGain);
+      // コピー機のモーター音バッファ（低いウィーン音 + 紙送りのリズミカルなノイズ）
+      var cpBuf = ctx.createBuffer(1, sr * 4, sr);
+      var cpd = cpBuf.getChannelData(0);
+      for (var ci = 0; ci < cpd.length; ci++) {
+        // モーター回転音（120Hz + 高調波）+ 紙送りノイズ
+        var tSec = ci / sr;
+        var motor = Math.sin(tSec * 120 * Math.PI * 2) * 0.3
+                  + Math.sin(tSec * 240 * Math.PI * 2) * 0.15
+                  + Math.sin(tSec * 360 * Math.PI * 2) * 0.08;
+        // 紙送りリズム（0.5秒周期のバースト）
+        var feedPhase = (tSec % 0.5) / 0.5;
+        var feedNoise = feedPhase < 0.3 ? (Math.random() * 2 - 1) * 0.4 : 0;
+        cpd[ci] = motor + feedNoise;
+      }
+      var cpSrc = ctx.createBufferSource();
+      cpSrc.buffer = cpBuf; cpSrc.loop = true;
+      var cpLP = ctx.createBiquadFilter();
+      cpLP.type = 'lowpass'; cpLP.frequency.value = 600;
+      cpSrc.connect(cpLP); cpLP.connect(copierGain);
+      cpSrc.start(0);
+      allSources.push(cpSrc);
+      // コピー機のON/OFFスケジュール
+      function scheduleCopier() {
+        var delay = (8 + Math.random() * 12) * 1000; // 8〜20秒後にON
+        var duration = (2 + Math.random() * 3) * 1000; // 2〜5秒間動作
+        var tOn = setTimeout(function() {
+          copierGain.gain.setTargetAtTime(0.35, ctx.currentTime, 0.1);
+          var tOff = setTimeout(function() {
+            copierGain.gain.setTargetAtTime(0, ctx.currentTime, 0.2);
+            scheduleCopier();
+          }, duration);
+          allTimers.push(tOff);
+        }, delay);
+        allTimers.push(tOn);
+      }
+      scheduleCopier();
+
+      // ⑤ 電話の着信音（間欠的 — 20〜40秒おきに短くリリリン）
+      var phoneGain = ctx.createGain();
+      phoneGain.gain.value = 0;
+      phoneGain.connect(masterGain);
+      var phoneBuf = ctx.createBuffer(1, sr * 3, sr);
+      var phd = phoneBuf.getChannelData(0);
+      for (var phi = 0; phi < phd.length; phi++) {
+        var phSec = phi / sr;
+        // リリリン（2kHz + 2.5kHz のビート、0.5秒ON / 0.5秒OFF の繰り返し）
+        var ringOn = (phSec % 1.0) < 0.5 ? 1 : 0;
+        var ringTone = (Math.sin(phSec * 2000 * Math.PI * 2) + Math.sin(phSec * 2500 * Math.PI * 2)) * 0.3;
+        // トレモロ（ベルの振動）
+        ringTone *= (0.5 + 0.5 * Math.sin(phSec * 40 * Math.PI * 2));
+        phd[phi] = ringTone * ringOn;
+      }
+      var phSrc = ctx.createBufferSource();
+      phSrc.buffer = phoneBuf; phSrc.loop = true;
+      phSrc.connect(phoneGain);
+      allSources.push(phSrc);
+      phSrc.start(0);
+      function schedulePhone() {
+        var delay = (20 + Math.random() * 30) * 1000; // 20〜50秒後
+        var duration = (1.5 + Math.random() * 2) * 1000; // 1.5〜3.5秒間
+        var tOn = setTimeout(function() {
+          phoneGain.gain.setTargetAtTime(0.12, ctx.currentTime, 0.05);
+          var tOff = setTimeout(function() {
+            phoneGain.gain.setTargetAtTime(0, ctx.currentTime, 0.1);
+            schedulePhone();
+          }, duration);
+          allTimers.push(tOff);
+        }, delay);
+        allTimers.push(tOn);
+      }
+      schedulePhone();
+
+      // ⑥ 椅子のきしみ（間欠的 — 10〜25秒おきに短いきしみ音）
+      var chairGain = ctx.createGain();
+      chairGain.gain.value = 0;
+      chairGain.connect(masterGain);
+      var chairBuf = ctx.createBuffer(1, Math.floor(sr * 0.3), sr);
+      var chd = chairBuf.getChannelData(0);
+      for (var chi = 0; chi < chd.length; chi++) {
+        var chSec = chi / sr;
+        // きしみ = 高周波ノイズの短いバースト + 減衰
+        var env = Math.exp(-chSec * 15);
+        chd[chi] = (Math.random() * 2 - 1) * env * 0.6;
+      }
+      var chSrc = ctx.createBufferSource();
+      chSrc.buffer = chairBuf; chSrc.loop = true;
+      var chBP = ctx.createBiquadFilter();
+      chBP.type = 'bandpass'; chBP.frequency.value = 800; chBP.Q.value = 2;
+      chSrc.connect(chBP); chBP.connect(chairGain);
+      chSrc.start(0);
+      allSources.push(chSrc);
+      function scheduleChair() {
+        var delay = (10 + Math.random() * 20) * 1000;
+        var tOn = setTimeout(function() {
+          chairGain.gain.setTargetAtTime(0.25, ctx.currentTime, 0.02);
+          var tOff = setTimeout(function() {
+            chairGain.gain.setTargetAtTime(0, ctx.currentTime, 0.05);
+            scheduleChair();
+          }, 250 + Math.random() * 200);
+          allTimers.push(tOff);
+        }, delay);
+        allTimers.push(tOn);
+      }
+      scheduleChair();
 
       // 停止管理
-      var sources = [acSrc, typeSrc, voiceSrc];
-      this._officeAmbientSources = sources;
+      this._officeAmbientSources = allSources;
+      this._officeTimers = allTimers;
       this._ambientAudio = {
-        pause: function() { sources.forEach(function(s) { try { s.stop(); } catch(e){} }); },
-        volume: 0.12,
+        pause: function() {
+          allSources.forEach(function(s) { try { s.stop(); } catch(e){} });
+          allTimers.forEach(function(t) { clearTimeout(t); });
+        },
+        volume: 0.15,
         _isWebAudio: true
       };
     } catch(e) {}
