@@ -5451,6 +5451,9 @@ function buildHallway() {
   // 非常口トリガーゾーン（廊下左端の開口部）
   GAME._emergencyExitZone = { minX: hx0 - 1, maxX: hx0 + 0.5, minZ: hz0 + 0.5, maxZ: hz0 + HD - 0.5 };
 
+  // ====== 非常口の先：避難通路（L字型）======
+  buildEvacCorridor(scene, hx0, hz0, HD, HH, hallFloorMat, hallWallMat, hallCeilingMat, hallLightMat, debrisMat, wt);
+
   // ====== 消火器 ======
   var extinguisherMat = new THREE.MeshStandardMaterial({ color: 0xcc2222, roughness: 0.4, metalness: 0.3, emissive: 0x220000, emissiveIntensity: 0.15 });
   var extinguisher = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.4, 8), extinguisherMat);
@@ -5515,14 +5518,219 @@ function buildHallway() {
 }
 
 // ============================================================
+// SECTION: 避難通路（非常口→階段入口までのL字型通路）
+// ============================================================
+function buildEvacCorridor(scene, hx0, hz0, HD, HH, floorMat, wallMat, ceilMat, lightMat, debrisMat, wt) {
+  // 通路1: 非常口から下方向（-X方向→+Z方向のL字）
+  // セクション1: 非常口から左（-X方向）に伸びる通路
+  var c1x0 = hx0 - 10; // X=-12 ～ X=-2（10m）
+  var c1z0 = hz0 + 0.5; // Z=9.5
+  var c1w = 10, c1d = 2.5;
+
+  // 床
+  var f1 = new THREE.Mesh(new THREE.PlaneGeometry(c1w, c1d), floorMat);
+  f1.rotation.x = -Math.PI / 2;
+  f1.position.set(c1x0 + c1w/2, 0, c1z0 + c1d/2);
+  f1.receiveShadow = true;
+  scene.add(f1);
+  // 天井
+  var ce1 = new THREE.Mesh(new THREE.PlaneGeometry(c1w, c1d), ceilMat);
+  ce1.rotation.x = Math.PI / 2;
+  ce1.position.set(c1x0 + c1w/2, HH, c1z0 + c1d/2);
+  scene.add(ce1);
+  // 壁（上側 Z=c1z0）
+  var w1t = new THREE.Mesh(new THREE.BoxGeometry(c1w, HH, wt), wallMat);
+  w1t.position.set(c1x0 + c1w/2, HH/2, c1z0);
+  scene.add(w1t);
+  GAME.walls.push({ minX: c1x0, maxX: c1x0 + c1w, minZ: c1z0 - wt/2, maxZ: c1z0 + wt/2, minY: 0, maxY: HH });
+  // 壁（下側 Z=c1z0+c1d）※L字の曲がり角は開ける
+  var w1b1 = new THREE.Mesh(new THREE.BoxGeometry(c1w - 3, HH, wt), wallMat);
+  w1b1.position.set(c1x0 + (c1w-3)/2, HH/2, c1z0 + c1d);
+  scene.add(w1b1);
+  GAME.walls.push({ minX: c1x0, maxX: c1x0 + c1w - 3, minZ: c1z0+c1d-wt/2, maxZ: c1z0+c1d+wt/2, minY: 0, maxY: HH });
+  // 左端壁
+  var w1l = new THREE.Mesh(new THREE.BoxGeometry(wt, HH, c1d), wallMat);
+  w1l.position.set(c1x0, HH/2, c1z0 + c1d/2);
+  scene.add(w1l);
+  GAME.walls.push({ minX: c1x0 - wt/2, maxX: c1x0 + wt/2, minZ: c1z0, maxZ: c1z0 + c1d, minY: 0, maxY: HH });
+
+  // 蛍光灯（通路1）
+  for (var li = 0; li < 2; li++) {
+    var lt = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.02, 0.06), lightMat);
+    lt.position.set(c1x0 + 2 + li * 4, HH - 0.04, c1z0 + c1d/2);
+    scene.add(lt);
+    var lp = new THREE.PointLight(0xffeedd, 0.5, 8);
+    lp.position.set(c1x0 + 2 + li * 4, HH - 0.1, c1z0 + c1d/2);
+    scene.add(lp);
+  }
+
+  // セクション2: 曲がり角から+Z方向に伸びる通路（階段入口へ）
+  var c2x0 = hx0 - 5; // X=-7
+  var c2z0 = c1z0 + c1d; // Z=12
+  var c2w = 2.5, c2d = 13; // 13m（Z=12～25で階段トリガーに到達）
+
+  // 床
+  var f2 = new THREE.Mesh(new THREE.PlaneGeometry(c2w, c2d), floorMat);
+  f2.rotation.x = -Math.PI / 2;
+  f2.position.set(c2x0 + c2w/2, 0, c2z0 + c2d/2);
+  f2.receiveShadow = true;
+  scene.add(f2);
+  // 天井
+  var ce2 = new THREE.Mesh(new THREE.PlaneGeometry(c2w, c2d), ceilMat);
+  ce2.rotation.x = Math.PI / 2;
+  ce2.position.set(c2x0 + c2w/2, HH, c2z0 + c2d/2);
+  scene.add(ce2);
+  // 左壁
+  var w2l = new THREE.Mesh(new THREE.BoxGeometry(wt, HH, c2d), wallMat);
+  w2l.position.set(c2x0, HH/2, c2z0 + c2d/2);
+  scene.add(w2l);
+  GAME.walls.push({ minX: c2x0 - wt/2, maxX: c2x0 + wt/2, minZ: c2z0, maxZ: c2z0 + c2d, minY: 0, maxY: HH });
+  // 右壁
+  var w2r = new THREE.Mesh(new THREE.BoxGeometry(wt, HH, c2d), wallMat);
+  w2r.position.set(c2x0 + c2w, HH/2, c2z0 + c2d/2);
+  scene.add(w2r);
+  GAME.walls.push({ minX: c2x0+c2w-wt/2, maxX: c2x0+c2w+wt/2, minZ: c2z0, maxZ: c2z0 + c2d, minY: 0, maxY: HH });
+  // 奥壁（階段入口の手前）
+  var w2b = new THREE.Mesh(new THREE.BoxGeometry(c2w, HH, wt), wallMat);
+  w2b.position.set(c2x0 + c2w/2, HH/2, c2z0 + c2d);
+  scene.add(w2b);
+  GAME.walls.push({ minX: c2x0, maxX: c2x0 + c2w, minZ: c2z0+c2d-wt/2, maxZ: c2z0+c2d+wt/2, minY: 0, maxY: HH });
+
+  // 蛍光灯（通路2）
+  for (var li2 = 0; li2 < 3; li2++) {
+    var lt2 = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.02, 0.06), lightMat);
+    lt2.position.set(c2x0 + c2w/2, HH - 0.04, c2z0 + 2 + li2 * 4);
+    scene.add(lt2);
+    var lp2 = new THREE.PointLight(0xffeedd, 0.5, 8);
+    lp2.position.set(c2x0 + c2w/2, HH - 0.1, c2z0 + 2 + li2 * 4);
+    scene.add(lp2);
+  }
+
+  // ====== 障害物（倒れた棚・瓦礫・散乱物）======
+  // 倒れたロッカー（通路1、通行を狭める）
+  var lockerMat = new THREE.MeshStandardMaterial({ color: 0x889999, roughness: 0.6, metalness: 0.3, emissive: 0x050606 });
+  var locker = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.8, 0.4), lockerMat);
+  locker.position.set(c1x0 + 3, 0.4, c1z0 + c1d/2 - 0.3);
+  locker.rotation.z = 0.3;
+  scene.add(locker);
+  GAME.walls.push({ minX: c1x0+2, maxX: c1x0+4.5, minZ: c1z0+0.3, maxZ: c1z0+c1d/2+0.2, minY: 0, maxY: 1.0 });
+
+  // 天井板の崩落（通路2、曲がり角付近）
+  var cTile = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.12, 1.2), debrisMat);
+  cTile.position.set(c2x0 + c2w/2, 0.06, c2z0 + 3);
+  cTile.rotation.y = 0.2;
+  scene.add(cTile);
+
+  // ガラス破片（通路2の途中）
+  var glassMat2 = new THREE.MeshStandardMaterial({ color: 0x88ccee, roughness: 0.1, transparent: true, opacity: 0.4, emissive: 0x224466, emissiveIntensity: 0.2 });
+  var glass2 = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.5), glassMat2);
+  glass2.rotation.x = -Math.PI / 2;
+  glass2.position.set(c2x0 + c2w/2, 0.01, c2z0 + 8);
+  scene.add(glass2);
+
+  // 散乱した椅子
+  var chairMat = new THREE.MeshStandardMaterial({ color: 0x665544, roughness: 0.8 });
+  var chair1 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.6, 0.4), chairMat);
+  chair1.position.set(c2x0 + 0.5, 0.3, c2z0 + 6);
+  chair1.rotation.y = 0.8;
+  chair1.rotation.z = 0.4;
+  scene.add(chair1);
+  GAME.walls.push({ minX: c2x0, maxX: c2x0+1, minZ: c2z0+5.5, maxZ: c2z0+6.5, minY: 0, maxY: 0.8 });
+
+  // 非常口サイン（通路の途中、方向を示す）
+  var gSignCanvas = document.createElement('canvas');
+  gSignCanvas.width = 200; gSignCanvas.height = 64;
+  var gsCtx = gSignCanvas.getContext('2d');
+  gsCtx.fillStyle = '#00aa33';
+  gsCtx.fillRect(0, 0, 200, 64);
+  gsCtx.fillStyle = '#ffffff';
+  gsCtx.font = 'bold 28px sans-serif';
+  gsCtx.textAlign = 'center';
+  gsCtx.fillText('↓ 階段 1F', 100, 44);
+  var gsTexture = new THREE.CanvasTexture(gSignCanvas);
+  var gsSign = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 0.32), new THREE.MeshBasicMaterial({ map: gsTexture }));
+  gsSign.position.set(c2x0 + c2w + 0.01, HH - 0.25, c2z0 + 5);
+  gsSign.rotation.y = -Math.PI / 2;
+  scene.add(gsSign);
+  // 誘導ライト
+  var guideLight = new THREE.PointLight(0x00ff44, 0.4, 6);
+  guideLight.position.set(c2x0 + c2w/2, HH - 0.3, c2z0 + 5);
+  scene.add(guideLight);
+
+  // ====== 階段入口ドア表示（通路2の奥） ======
+  var stairDoorCanvas = document.createElement('canvas');
+  stairDoorCanvas.width = 200; stairDoorCanvas.height = 64;
+  var sdCtx = stairDoorCanvas.getContext('2d');
+  sdCtx.fillStyle = '#00aa33';
+  sdCtx.fillRect(0, 0, 200, 64);
+  sdCtx.fillStyle = '#ffffff';
+  sdCtx.font = 'bold 32px sans-serif';
+  sdCtx.textAlign = 'center';
+  sdCtx.fillText('🚪 階段入口', 100, 44);
+  var sdTexture = new THREE.CanvasTexture(stairDoorCanvas);
+  var sdSign = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.38), new THREE.MeshBasicMaterial({ map: sdTexture }));
+  sdSign.position.set(c2x0 + c2w/2, HH - 0.3, c2z0 + c2d - 0.01);
+  scene.add(sdSign);
+}
+
+// ============================================================
+// SECTION: 余震演出（避難中のランダム余震）
+// ============================================================
+GAME._aftershockTimer = 0;
+GAME._aftershockCount = 0;
+
+function updateAftershocks(dtSec) {
+  if (GAME.phase !== 'evacuation') return;
+  if (GAME._inSchoolyard) return;
+  GAME._aftershockTimer += dtSec;
+
+  // 8秒、18秒、30秒に余震発生（最大3回）
+  var triggers = [8, 18, 30];
+  if (GAME._aftershockCount < triggers.length && GAME._aftershockTimer > triggers[GAME._aftershockCount]) {
+    GAME._aftershockCount++;
+    triggerAftershock();
+  }
+}
+
+function triggerAftershock() {
+  showAdvisor('余震だ！頭を守りながら進め！', 'warning');
+  SoundManager.playSE('hit');
+
+  // 画面揺れ（2秒間）
+  var cam = GAME.camera;
+  if (!cam) return;
+  var origX = cam.position.x;
+  var origY = cam.position.y;
+  var shake = setInterval(function() {
+    cam.position.x = origX + (Math.random() - 0.5) * 0.15;
+    cam.position.y = origY + (Math.random() - 0.5) * 0.08;
+  }, 30);
+  setTimeout(function() {
+    clearInterval(shake);
+    cam.position.x = origX;
+    cam.position.y = origY;
+  }, 2000);
+
+  // 廊下の落下物を生成
+  var px = GAME.player.x;
+  var pz = GAME.player.z;
+  // プレイヤーの近くに3個落下
+  for (var i = 0; i < 3; i++) {
+    var fx = px + (Math.random() - 0.5) * 4;
+    var fz = pz + (Math.random() - 0.5) * 4 + 2;
+    spawnFallingObject(Math.random() > 0.5 ? 'light' : 'book', fx, fz);
+  }
+}
+
+// ============================================================
 // SECTION: 階段室＋校庭の構築
 // ============================================================
 // 階段は複雑なバグの温床（KANKERIで修正10件以上）のため、
 // 階段室入口到達→カットシーン（フェード演出）→校庭にテレポートする方式を採用。
 // これによりprogress計算・踊り場・Y座標管理のバグを完全に回避。
 
-// 階段室のトリガーゾーン定数
-var STAIR_TRIGGER = { minX: -1.5, maxX: 1.5, minZ: 24, maxZ: 25 };
+// 階段室のトリガーゾーン定数（避難通路の奥）
+var STAIR_TRIGGER = { minX: -7.1, maxX: -4.4, minZ: 24, maxZ: 25.5 };
 // 校庭のY座標（地面レベル）
 var GROUND_Y = 0;
 // 校庭のプレイヤー出現位置
@@ -5712,16 +5920,24 @@ function checkStairTrigger() {
       var btn = document.createElement('button');
       btn.id = 'emergency-exit-btn';
       btn.className = 'btn btn-neon';
-      btn.textContent = '🚪 非常口から階段を降りる';
+      btn.textContent = '🚪 非常口から避難通路へ';
       btn.style.cssText = 'position:fixed;bottom:20%;left:50%;transform:translateX(-50%);z-index:500;font-size:clamp(14px,3vw,20px);padding:12px 24px;background:rgba(0,180,60,0.9);border:2px solid #00ff44;color:#fff;border-radius:12px;cursor:pointer;animation:pulse 1s infinite;';
       btn.addEventListener('click', function() {
         btn.remove();
-        startStairCutscene();
+        GAME.scoring.usedEmergencyExit = true;
+        showAdvisor('避難通路に入った！階段を目指せ！', 'normal');
+        SoundManager.playSE('click');
       });
       document.getElementById('game-container').appendChild(btn);
     } else if (!inZone && exitBtn) {
       exitBtn.remove();
     }
+  }
+
+  // 避難通路の奥（階段入口）に到達 → カットシーン開始
+  if (p.x > STAIR_TRIGGER.minX && p.x < STAIR_TRIGGER.maxX &&
+      p.z > STAIR_TRIGGER.minZ && p.z < STAIR_TRIGGER.maxZ) {
+    startStairCutscene();
   }
 }
 
@@ -7093,9 +7309,10 @@ function gameLoop(timestamp) {
   // 地震エフェクト + 落下物 + ダストパーティクル
   if (GAME.quake.shaking) {
     updateQuake(dtSec);
-    updateFallingObjects(dtSec);
     updateDustParticles(dtSec);
   }
+  // 落下物は余震でも発生するため常に更新
+  updateFallingObjects(dtSec);
 
   updatePlayer(dt);
   updatePlayerModel();
@@ -7116,10 +7333,11 @@ function gameLoop(timestamp) {
     GAME._shoesHighlight.rotation.z = GAME.totalTimer * 1.5;
   }
 
-  // 階段トリガー + 避難ポイントチェック + ブロック塀チェック
+  // 階段トリガー + 避難ポイントチェック + ブロック塀チェック + 余震
   checkStairTrigger();
   checkEvacPointReached();
   checkBlockWallProximity();
+  updateAftershocks(dtSec);
 
   // 避難ポイントマーカーの点滅演出
   if (GAME._evacMarker && GAME._inSchoolyard) {
