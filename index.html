@@ -3360,6 +3360,8 @@ var NovelEngine = {
     this.charaRight.classList.add('hidden');
     this.charaLeft.classList.remove('speaking');
     this.charaRight.classList.remove('speaking');
+    this._lastLeftSpeaker = null;
+    this._lastRightSpeaker = null;
 
     this.choicesEl.classList.remove('active');
     this.choicesEl.innerHTML = '';
@@ -3429,6 +3431,8 @@ var NovelEngine = {
   },
 
   // 立ち絵更新
+  _lastLeftSpeaker: null,
+  _lastRightSpeaker: null,
   updateCharaSprites: function(line) {
     if (!line.speaker || line.speaker === 'narrator') {
       // ナレーター時は両方暗く
@@ -3447,18 +3451,41 @@ var NovelEngine = {
     this.charaLeft.classList.remove('chara-bousai');
     this.charaRight.classList.remove('chara-bousai');
 
+    // 次のセリフを先読みして、反対側のキャラが近くに登場するか判定
+    var nextLines = this.script.slice(this.scriptIndex + 1, this.scriptIndex + 4);
+    var oppositeSideNeeded = false;
+    for (var i = 0; i < nextLines.length; i++) {
+      var nl = nextLines[i];
+      if (nl && nl.speaker && this.SPEAKERS[nl.speaker]) {
+        if (this.SPEAKERS[nl.speaker].pos !== info.pos) {
+          oppositeSideNeeded = true;
+        }
+        break; // 直近の次の話者のみチェック
+      }
+    }
+
     if (info.pos === 'left') {
       this.charaLeft.style.backgroundImage = 'url(' + src + ')';
       this.charaLeft.classList.remove('hidden');
       this.charaLeft.classList.add('speaking');
       if (line.speaker === 'bousai') this.charaLeft.classList.add('chara-bousai');
+      this._lastLeftSpeaker = line.speaker;
+      // 右側: 直近で右側キャラが登場予定なら暗く残す、そうでなければ非表示
       this.charaRight.classList.remove('speaking');
+      if (!oppositeSideNeeded) {
+        this.charaRight.classList.add('hidden');
+      }
     } else if (info.pos === 'right') {
       this.charaRight.style.backgroundImage = 'url(' + src + ')';
       this.charaRight.classList.remove('hidden');
       this.charaRight.classList.add('speaking');
       if (line.speaker === 'bousai') this.charaRight.classList.add('chara-bousai');
+      this._lastRightSpeaker = line.speaker;
+      // 左側: 直近で左側キャラが登場予定なら暗く残す、そうでなければ非表示
       this.charaLeft.classList.remove('speaking');
+      if (!oppositeSideNeeded) {
+        this.charaLeft.classList.add('hidden');
+      }
     }
   },
 
