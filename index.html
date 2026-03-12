@@ -5413,6 +5413,21 @@ function buildHallway() {
   GAME._normalStairWarned = false;
 
   // ====== 非常口（正解ルート）— 廊下左端 ======
+  // 非常口ドア枠（出入り口をはっきり見せる）
+  var doorFrameMat = new THREE.MeshStandardMaterial({ color: 0x556655, roughness: 0.5, emissive: 0x112211, emissiveIntensity: 0.15 });
+  // 上枠
+  var doorTop = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.3, 2.2), doorFrameMat);
+  doorTop.position.set(hx0 + 0.07, HH - 0.15, hz0 + HD/2);
+  scene.add(doorTop);
+  // 左柱
+  var doorL = new THREE.Mesh(new THREE.BoxGeometry(0.15, HH, 0.15), doorFrameMat);
+  doorL.position.set(hx0 + 0.07, HH/2, hz0 + 0.5);
+  scene.add(doorL);
+  // 右柱
+  var doorR = new THREE.Mesh(new THREE.BoxGeometry(0.15, HH, 0.15), doorFrameMat);
+  doorR.position.set(hx0 + 0.07, HH/2, hz0 + HD - 0.5);
+  scene.add(doorR);
+
   // 非常口サイン（緑の光る看板 — 大きく目立つ）
   var exitSignMat = new THREE.MeshStandardMaterial({ color: 0x00cc44, roughness: 0.3, emissive: 0x00ff44, emissiveIntensity: 0.8 });
   var exitSign = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.4, 0.03), exitSignMat);
@@ -5559,7 +5574,7 @@ function buildEvacCorridor(scene, hx0, hz0, HD, HH, floorMat, wallMat, ceilMat, 
     var lt = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.02, 0.06), lightMat);
     lt.position.set(c1x0 + 2 + li * 4, HH - 0.04, c1z0 + c1d/2);
     scene.add(lt);
-    var lp = new THREE.PointLight(0xffeedd, 0.5, 8);
+    var lp = new THREE.PointLight(0xffeedd, 1.0, 12);
     lp.position.set(c1x0 + 2 + li * 4, HH - 0.1, c1z0 + c1d/2);
     scene.add(lp);
   }
@@ -5601,7 +5616,7 @@ function buildEvacCorridor(scene, hx0, hz0, HD, HH, floorMat, wallMat, ceilMat, 
     var lt2 = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.02, 0.06), lightMat);
     lt2.position.set(c2x0 + c2w/2, HH - 0.04, c2z0 + 2 + li2 * 4);
     scene.add(lt2);
-    var lp2 = new THREE.PointLight(0xffeedd, 0.5, 8);
+    var lp2 = new THREE.PointLight(0xffeedd, 1.0, 12);
     lp2.position.set(c2x0 + c2w/2, HH - 0.1, c2z0 + 2 + li2 * 4);
     scene.add(lp2);
   }
@@ -6060,6 +6075,10 @@ function updateSchoolyardNPCs(dtSec) {
 }
 
 function checkEvacPointReached() {
+  // 校庭エリア（Z>30）に入ったらフラグ自動設定
+  if (!GAME._inSchoolyard && GAME.phase === 'evacuation' && GAME.player.z > 30) {
+    teleportToSchoolyard();
+  }
   if (!GAME._inSchoolyard) return;
   if (GAME.scoring.reachedEvacPoint) return;
 
@@ -6879,7 +6898,7 @@ function updateSingleNPC(npc, dtSec) {
           mesh.position.y = Math.abs(Math.sin(npc.phase * 2)) * 0.03;
         }
       } else {
-        // ドア到達 → 廊下を通って非常口へ移動
+        // ドア到達 → ウェイポイントで廊下を通って非常口へ
         if (!npc._hallwayPhase) {
           npc._hallwayPhase = 1;
           GAME._exitedNPCs = (GAME._exitedNPCs || 0) + 1;
@@ -6888,12 +6907,17 @@ function updateSingleNPC(npc, dtSec) {
           } else if (GAME._exitedNPCs >= 20) {
             showAdvisor('ほとんどの生徒が避難完了！急いで！', 'warning');
           }
-          // 廊下を左（非常口方向）へ移動
-          npc.targetX = -2.5;
-          npc.targetZ = 10.5;
+          // ウェイポイント: ドア出口(廊下内) → 廊下左端(非常口)
+          npc._waypoints = [
+            { x: 4.2, z: 10.0 },   // 廊下に出る（ドアの先）
+            { x: 0, z: 10.5 },     // 廊下中央
+            { x: -2.5, z: 10.5 },  // 非常口
+          ];
+          npc._wpIndex = 0;
+          npc.targetX = npc._waypoints[0].x;
+          npc.targetZ = npc._waypoints[0].z;
         }
         if (npc._hallwayPhase === 1) {
-          // 非常口方向へ歩く
           var hdx = npc.targetX - npc.x;
           var hdz = npc.targetZ - npc.z;
           var hdist = Math.sqrt(hdx * hdx + hdz * hdz);
@@ -6913,10 +6937,17 @@ function updateSingleNPC(npc, dtSec) {
             }
             mesh.position.y = Math.abs(Math.sin(npc.phase * 2)) * 0.03;
           } else {
-            // 非常口に到達 → 退出（消える）
-            npc._hallwayPhase = 2;
-            npc.exited = true;
-            mesh.visible = false;
+            // 次のウェイポイントへ
+            npc._wpIndex++;
+            if (npc._wpIndex < npc._waypoints.length) {
+              npc.targetX = npc._waypoints[npc._wpIndex].x;
+              npc.targetZ = npc._waypoints[npc._wpIndex].z;
+            } else {
+              // 全ウェイポイント通過 → 退出
+              npc._hallwayPhase = 2;
+              npc.exited = true;
+              mesh.visible = false;
+            }
           }
         }
       }
