@@ -2771,7 +2771,7 @@ html, body {
         <tr><td>視点回転</td><td>マウス移動</td></tr>
         <tr><td>しゃがむ</td><td>C</td></tr>
         <tr><td>ダッシュ</td><td>Shift</td></tr>
-        <tr><td>頭を守る</td><td>G（避難中に押し続ける）</td></tr>
+        <tr><td>頭を守る</td><td>G（トグル：1回押してON/OFF）</td></tr>
         <tr><td>アクション / 声かけ</td><td>E / F / Space</td></tr>
         <tr><td>ポーズ</td><td>Esc</td></tr>
       </table>
@@ -2782,7 +2782,7 @@ html, body {
         <tr><td>視点回転</td><td>右側スワイプ</td></tr>
         <tr><td>しゃがむ</td><td>しゃがむボタン</td></tr>
         <tr><td>ダッシュ</td><td>走るボタン</td></tr>
-        <tr><td>頭を守る</td><td>頭を守るボタン（避難中）</td></tr>
+        <tr><td>頭を守る</td><td>頭を守るボタン（トグル）</td></tr>
         <tr><td>アクション / 声かけ</td><td>操作ボタン</td></tr>
         <tr><td>ポーズ</td><td>⏸ボタン</td></tr>
       </table>
@@ -2792,7 +2792,7 @@ html, body {
         <li>机の下に入ったらE長押しで脚を掴もう</li>
         <li>揺れが収まったら友達に声かけ（Eキー）</li>
         <li>非常口（緑の看板）を目指して避難</li>
-        <li>避難中はG長押しで頭を守りながら移動</li>
+        <li>避難中はGを1回押して頭を守りながら移動</li>
         <li>廊下の落下物を避けて進む</li>
       </ul>
       <div class="pause-btn" id="btn-controls-back">戻る</div>
@@ -2933,7 +2933,7 @@ const I18N = {
     CTRL_MOVE: '移動',
     CTRL_DASH: 'ダッシュ',
     CTRL_CROUCH: 'しゃがむ（トグル）',
-    CTRL_GUARD: '頭を守る（避難中に長押し）',
+    CTRL_GUARD: '頭を守る（トグル：ON/OFF）',
     CTRL_INTERACT: 'インタラクト / 声かけ（ドア・靴・安否確認等）',
     CTRL_MOUSE: 'マウス移動',
     CTRL_CAMERA: '視点操作',
@@ -3059,7 +3059,7 @@ const I18N = {
     CTRL_MOVE: 'Move',
     CTRL_DASH: 'Sprint',
     CTRL_CROUCH: 'Crouch (Toggle)',
-    CTRL_GUARD: 'Protect Head (hold during evacuation)',
+    CTRL_GUARD: 'Protect Head (toggle ON/OFF)',
     CTRL_INTERACT: 'Interact / Safety Check',
     CTRL_MOUSE: 'Mouse Move',
     CTRL_CAMERA: 'Camera Control',
@@ -9743,8 +9743,11 @@ document.addEventListener('keydown', function(e) {
     GAME.player.isCrouching = !GAME.player.isCrouching;
   }
   GAME._cPrev = true;
-  // 頭を守る: G（避難中にホールド）
-  if (e.code === 'KeyG') GAME.player.isGuarding = true;
+  // 頭を守る: Gトグル（しゃがみと同じ方式 — 小学生でも押しやすい）
+  if (e.code === 'KeyG' && !GAME._gPrev) {
+    GAME.player.isGuarding = !GAME.player.isGuarding;
+  }
+  GAME._gPrev = true;
   // E長押し: 机の脚を掴む（HOLD ON）/ インタラクト
   if (e.code === 'KeyE') {
     GAME.player.isHoldingDesk = true;
@@ -9765,7 +9768,7 @@ document.addEventListener('keyup', function(e) {
   GAME.keys[e.code] = false;
   // キー解除はポーズ中でも処理する（早期returnの前に配置 — KANKERI教訓）
   if (e.code === 'KeyC') GAME._cPrev = false;
-  if (e.code === 'KeyG') GAME.player.isGuarding = false;
+  if (e.code === 'KeyG') GAME._gPrev = false;
   if (e.code === 'KeyE') GAME.player.isHoldingDesk = false;
 });
 
@@ -9901,13 +9904,13 @@ function initGameControls() {
 
     guardBtn.addEventListener('touchstart', function(e) {
       e.preventDefault();
-      GAME.player.isGuarding = true;
-      this.classList.add('active');
+      GAME.player.isGuarding = !GAME.player.isGuarding;
+      if (GAME.player.isGuarding) {
+        this.classList.add('active');
+      } else {
+        this.classList.remove('active');
+      }
     }, { passive: false });
-    guardBtn.addEventListener('touchend', function() {
-      GAME.player.isGuarding = false;
-      this.classList.remove('active');
-    });
 
     dashBtn.addEventListener('touchstart', function(e) {
       e.preventDefault();
