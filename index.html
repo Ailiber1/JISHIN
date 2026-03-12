@@ -1653,6 +1653,32 @@ html, body {
 #interact-prompt .prompt-key { color: #ff6b00; font-weight: bold; }
 #interact-prompt .prompt-label { color: #ffffff; margin-left: 8px; }
 @keyframes promptPulse { 0%,100% { box-shadow: 0 0 20px rgba(0,255,65,0.3); } 50% { box-shadow: 0 0 30px rgba(0,255,65,0.6); } }
+/* HOLD ONインジケーター */
+#holdon-indicator {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  background: rgba(0,20,60,0.8); border: 2px solid rgba(0,180,255,0.8);
+  border-radius: 10px; padding: 12px 28px; z-index: 55;
+  font-family: 'Share Tech Mono', monospace; font-size: 18px;
+  color: #00ccff; text-align: center; display: none;
+  box-shadow: 0 0 25px rgba(0,180,255,0.4);
+  animation: holdonGlow 1s ease-in-out infinite;
+  pointer-events: none;
+}
+#holdon-indicator .holdon-title { font-size: 22px; font-weight: bold; color: #00eeff; letter-spacing: 3px; }
+#holdon-indicator .holdon-sub { font-size: 13px; color: rgba(180,220,255,0.7); margin-top: 4px; }
+@keyframes holdonGlow { 0%,100% { box-shadow: 0 0 25px rgba(0,180,255,0.4); border-color: rgba(0,180,255,0.8); } 50% { box-shadow: 0 0 40px rgba(0,180,255,0.7); border-color: rgba(0,220,255,1); } }
+/* HOLD ONプロンプト（Eキー長押し案内） */
+#holdon-prompt {
+  position: fixed; bottom: 25%; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,0.85); border: 2px solid rgba(0,180,255,0.6);
+  border-radius: 8px; padding: 10px 24px; z-index: 55;
+  font-family: 'Share Tech Mono', monospace; font-size: 15px;
+  color: #00ccff; text-align: center; display: none;
+  box-shadow: 0 0 15px rgba(0,180,255,0.3);
+  animation: promptPulse2 1.5s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes promptPulse2 { 0%,100% { box-shadow: 0 0 15px rgba(0,180,255,0.3); } 50% { box-shadow: 0 0 25px rgba(0,180,255,0.5); } }
 /* アイテム取得フラッシュ */
 #item-get-overlay {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -2685,6 +2711,8 @@ html, body {
   <div id="game-container"></div>
   <div id="daily-class-label"></div>
   <div id="interact-prompt"><span class="prompt-key">E</span><span class="prompt-label"></span></div>
+  <div id="holdon-prompt"></div>
+  <div id="holdon-indicator"><div class="holdon-title">🤲 HOLD ON!</div><div class="holdon-sub">机の脚を掴んでいる…</div></div>
   <div id="item-get-overlay"></div>
   <div id="item-get-text"></div>
   <div id="game-hud">
@@ -4848,6 +4876,7 @@ const GAME = {
     openedDoor: false,         // ドアを開けた
     turnedOffBreaker: false,   // ブレーカーを落とした
     putOnShoes: false,         // 靴を履いた
+    heldDeskLegs: false,       // 机の脚を掴んだ（HOLD ON）
     checkedSafety: false,      // 安否確認
     usedStairs: false,         // 階段で避難
     avoidedBlockWall: true,    // ブロック塀回避（初期true）
@@ -4868,7 +4897,9 @@ const GAME = {
   dailyDuration: 15,       // 日常パートの時間（秒）— 周囲確認の猶予
   // フェーズ遷移タイムスタンプ
   earthquakeStartTime: 0,  // 地震発生時刻
-  player: { x: 0, y: 0.9, z: 0, yaw: 0, pitch: 0, speed: 0.06, sprintMult: 1.5, isSprinting: false, isCrouching: false, isGuarding: false },
+  player: { x: 0, y: 0.9, z: 0, yaw: 0, pitch: 0, speed: 0.06, sprintMult: 1.5, isSprinting: false, isCrouching: false, isGuarding: false, isHoldingDesk: false },
+  _holdOnTime: 0,            // 机の脚を掴んだ累計時間（秒）
+  _holdOnActive: false,      // 現在HOLD ON中か
   walls: [],
   cameraMeshes: [],
   fallingObjects: [],      // 落下物配列
@@ -4911,8 +4942,11 @@ function initGame(stageNum) {
   s.awayFromHazard = false; s.didNotRunOutside = true; s.noElevator = true;
   s.noHitByFalling = true; s.turnedOffFire = false; s.openedDoor = false;
   s.turnedOffBreaker = false; s.putOnShoes = false; s.checkedSafety = false;
+  s.heldDeskLegs = false;
   s.usedStairs = false; s.avoidedBlockWall = true;
   s.reachedEvacPoint = false; s.withinTimeLimit = false;
+  GAME._holdOnTime = 0; GAME._holdOnActive = false;
+  GAME.player.isHoldingDesk = false;
   // ノベルフラグリセット
   GAME._novelEarthquakeDone = false;
   GAME._novelAftershakeDone = false;
@@ -8340,7 +8374,11 @@ function _doTransitionPhase(newPhase) {
       SoundManager.startAftershakeAmbient();
       var vig2 = document.getElementById('danger-vignette');
       if (vig2) vig2.style.boxShadow = 'inset 0 0 80px rgba(255,0,64,0)';
-      showAdvisor('揺れが収まった。火の元・ブレーカー・靴を確認しよう。', 'normal');
+      showAdvisor('揺れが収まった。靴を確認し、避難の準備をしよう。', 'normal');
+      // HOLD ON UIを非表示
+      GAME.player.isHoldingDesk = false; GAME._holdOnActive = false;
+      var hp = document.getElementById('holdon-prompt'); if (hp) hp.style.display = 'none';
+      var hi = document.getElementById('holdon-indicator'); if (hi) hi.style.display = 'none';
       spawnGlassDebris();
       shiftFurnitureAfterQuake();
       // 廊下の障害物を出現させる
@@ -8876,10 +8914,18 @@ function calculateScore() {
   if (s.guardedHead) score += 10;
   if (s.movedToSafe) score += 10;
 
-  // 揺れ中の行動（15点）
+  // 揺れ中の行動（23点）
   if (s.awayFromHazard) score += 5;
   if (s.didNotRunOutside) score += 5;
   if (s.noHitByFalling) score += 5;
+  // HOLD ON（机の脚を掴む）ボーナス: 掴んだ時間に応じて最大8点
+  if (s.heldDeskLegs) {
+    var holdBonus = Math.min(8, Math.floor(GAME._holdOnTime / 2) + 1);
+    score += holdBonus;
+    GAME._holdOnBonus = holdBonus;
+  } else {
+    GAME._holdOnBonus = 0;
+  }
 
   // 揺れ後の行動 — ステージ別フィルタリング
   if (stg === 1) {
@@ -8970,6 +9016,7 @@ function showResult() {
         { done: s.crouchedIn3s, text: '地震発生後すぐにしゃがんだ', pts: '+10' },
         { done: s.guardedHead, text: '頭を守る行動を取った', pts: '+10' },
         { done: s.movedToSafe, text: '安全な場所に移動した', pts: '+10' },
+        { done: s.heldDeskLegs, text: '机の脚を掴んで揺れに耐えた（HOLD ON）', pts: s.heldDeskLegs ? '+' + (GAME._holdOnBonus || 0) : '0' },
         { done: s.awayFromHazard, text: '危険物から離れた', pts: '+5' },
         { done: s.didNotRunOutside, text: '揺れ中に外に飛び出さなかった', pts: '+5' },
         { done: s.noHitByFalling, text: '落下物に当たらなかった', pts: '+5' },
@@ -9037,6 +9084,7 @@ function showResult() {
       var tips = [];
       if (!GAME.scoring.crouchedIn3s) tips.push('地震が来たらまず「低く！頭を守って！動かないで！」（シェイクアウト）が基本です。');
       if (!GAME.scoring.guardedHead) tips.push('頭を守ることが最も重要です。クッションや本で頭を覆いましょう。');
+      if (!GAME.scoring.heldDeskLegs) tips.push('机の下に入ったら脚をしっかり掴みましょう。揺れで机が動いても一緒に移動でき、頭を守り続けることができます（ShakeOut: Hold On）。');
       if (stg !== 1 && !GAME.scoring.turnedOffFire) tips.push('揺れが収まったらまず火の元を確認！ストーブやガスコンロの火を消しましょう。');
       if (!GAME.scoring.openedDoor) tips.push('揺れが収まったらドアを開けて避難経路を確保しましょう。地震で建物が歪むとドアが開かなくなることがあります。');
       if (stg !== 1 && !GAME.scoring.turnedOffBreaker) tips.push('避難前にブレーカーを落としましょう。通電火災（停電復旧時に発生する火災）を防げます。');
@@ -9070,7 +9118,7 @@ function showResult() {
     if (catEl) {
       categories = [
         { label: '初動対応', score: (s.crouchedIn3s ? 10 : 0) + (s.guardedHead ? 10 : 0) + (s.movedToSafe ? 10 : 0), max: 30 },
-        { label: '揺れ中の判断', score: (s.awayFromHazard ? 5 : 0) + (s.didNotRunOutside ? 5 : 0) + (s.noHitByFalling ? 5 : 0), max: 15 },
+        { label: '揺れ中の判断', score: (s.awayFromHazard ? 5 : 0) + (s.didNotRunOutside ? 5 : 0) + (s.noHitByFalling ? 5 : 0) + (GAME._holdOnBonus || 0), max: 23 },
         { label: '安全確保行動', score: (s.putOnShoes ? 7 : 0) + (s.openedDoor ? 8 : 0) + (s.checkedSafety ? 5 : 0), max: 20 },
         { label: '避難行動', score: (s.usedEmergencyExit ? 5 : 0) + (s.usedStairs ? 5 : 0) + (s.avoidedBlockWall ? 5 : 0) + (s.reachedEvacPoint ? 10 : 0) + (s.withinTimeLimit ? 5 : 0), max: 30 },
         { label: '知識・判断力', score: Math.max(0, GAME._novelChoiceScore || 0), max: 20 }
@@ -9321,8 +9369,36 @@ function checkScoringTriggers() {
     if (!s.movedToSafe && p.isCrouching && isUnderDesk(p.x, p.z)) {
       s.movedToSafe = true;
       GAME.score += 10;
-      showAdvisor('机の下に入れた！脚をしっかり持って！', 'praise');
+      showAdvisor('机の下に入れた！Eキー長押しで脚を掴もう！', 'praise');
     }
+
+    // HOLD ON（机の脚を掴む）判定
+    var holdOnPrompt = document.getElementById('holdon-prompt');
+    var holdOnIndicator = document.getElementById('holdon-indicator');
+    var canHoldOn = p.isCrouching && isUnderDesk(p.x, p.z);
+    if (canHoldOn && !p.isHoldingDesk && holdOnPrompt) {
+      // プロンプト表示（Eキー長押し案内）
+      holdOnPrompt.textContent = GAME.isMobile ? '🤲 インタラクトボタン長押し: 机の脚を掴む' : '🤲 E長押し: 机の脚を掴む';
+      holdOnPrompt.style.display = 'block';
+    } else if (holdOnPrompt) {
+      holdOnPrompt.style.display = 'none';
+    }
+    if (canHoldOn && p.isHoldingDesk) {
+      // HOLD ON中 — 累計時間を加算
+      GAME._holdOnActive = true;
+      var dtHold = (GAME.totalTimer - (GAME._lastHoldCheck || GAME.totalTimer));
+      if (dtHold > 0 && dtHold < 1) GAME._holdOnTime += dtHold;
+      if (holdOnIndicator) holdOnIndicator.style.display = 'block';
+      // 初回HOLD ON達成
+      if (!s.heldDeskLegs && GAME._holdOnTime >= 1.0) {
+        s.heldDeskLegs = true;
+        showAdvisor('机の脚をしっかり掴んだ！揺れが収まるまで離すな！', 'praise');
+      }
+    } else {
+      GAME._holdOnActive = false;
+      if (holdOnIndicator) holdOnIndicator.style.display = 'none';
+    }
+    GAME._lastHoldCheck = GAME.totalTimer;
 
     // 危険物から離れた（窓際・ロッカーの近くにいない）
     if (!s.awayFromHazard && !isNearHazard(p.x, p.z) && timeSinceQuake > 2) {
@@ -9556,6 +9632,14 @@ document.addEventListener('keydown', function(e) {
   GAME._cPrev = true;
   // ガード: G（ホールド）
   if (e.code === 'KeyG') GAME.player.isGuarding = true;
+  // E長押し: 机の脚を掴む（HOLD ON）/ インタラクト
+  if (e.code === 'KeyE') {
+    GAME.player.isHoldingDesk = true;
+    // 地震中＋しゃがみ＋机の下でない場合はインタラクトとして処理
+    var isQuakePhase = GAME.phase === 'earthquake' || GAME.phase === 'shaking';
+    var underDesk = GAME.player.isCrouching && isQuakePhase && isUnderDesk(GAME.player.x, GAME.player.z);
+    if (!underDesk) performInteract();
+  }
   // インタラクト: F / Space
   if (e.code === 'KeyF' || e.code === 'Space') {
     e.preventDefault();
@@ -9569,6 +9653,7 @@ document.addEventListener('keyup', function(e) {
   // キー解除はポーズ中でも処理する（早期returnの前に配置 — KANKERI教訓）
   if (e.code === 'KeyC') GAME._cPrev = false;
   if (e.code === 'KeyG') GAME.player.isGuarding = false;
+  if (e.code === 'KeyE') GAME.player.isHoldingDesk = false;
 });
 
 // --- マウス（ポインターロック）---
@@ -9722,13 +9807,23 @@ function initGameControls() {
     });
   })();
 
-  // --- モバイルインタラクトボタン（独立配置） ---
+  // --- モバイルインタラクトボタン（独立配置 + HOLD ON長押し対応） ---
   var interactBtn = document.getElementById('mob-interact');
   if (interactBtn) {
     interactBtn.addEventListener('touchstart', function(e) {
       e.preventDefault();
-      performInteract();
+      GAME.player.isHoldingDesk = true;
+      // 地震中＋しゃがみ＋机の下でない場合はインタラクト
+      var isQ = GAME.phase === 'earthquake' || GAME.phase === 'shaking';
+      var ud = GAME.player.isCrouching && isQ && isUnderDesk(GAME.player.x, GAME.player.z);
+      if (!ud) performInteract();
     }, { passive: false });
+    interactBtn.addEventListener('touchend', function() {
+      GAME.player.isHoldingDesk = false;
+    });
+    interactBtn.addEventListener('touchcancel', function() {
+      GAME.player.isHoldingDesk = false;
+    });
   }
 
   // --- ウィンドウリサイズ（ゲーム用） ---
