@@ -9037,9 +9037,9 @@ function showResult() {
       var tips = [];
       if (!GAME.scoring.crouchedIn3s) tips.push('地震が来たらまず「低く！頭を守って！動かないで！」（シェイクアウト）が基本です。');
       if (!GAME.scoring.guardedHead) tips.push('頭を守ることが最も重要です。クッションや本で頭を覆いましょう。');
-      if (!GAME.scoring.turnedOffFire) tips.push('揺れが収まったらまず火の元を確認！ストーブやガスコンロの火を消しましょう。');
+      if (stg !== 1 && !GAME.scoring.turnedOffFire) tips.push('揺れが収まったらまず火の元を確認！ストーブやガスコンロの火を消しましょう。');
       if (!GAME.scoring.openedDoor) tips.push('揺れが収まったらドアを開けて避難経路を確保しましょう。地震で建物が歪むとドアが開かなくなることがあります。');
-      if (!GAME.scoring.turnedOffBreaker) tips.push('避難前にブレーカーを落としましょう。通電火災（停電復旧時に発生する火災）を防げます。');
+      if (stg !== 1 && !GAME.scoring.turnedOffBreaker) tips.push('避難前にブレーカーを落としましょう。通電火災（停電復旧時に発生する火災）を防げます。');
       if (!GAME.scoring.putOnShoes) tips.push('ガラスの破片が散乱している可能性があります。必ず靴を履いてから避難しましょう。');
       if (!GAME.scoring.noHitByFalling) tips.push('「落ちてこない・倒れてこない・移動してこない」場所に身を寄せましょう。');
       if (!GAME.scoring.usedStairs) tips.push('避難時は必ず階段を使いましょう。エレベーターは余震で停止し、閉じ込められる危険があります。');
@@ -9119,7 +9119,10 @@ function showResult() {
     // 解放判定ボックス
     var unlockBox = document.getElementById('result-unlock-box');
     var nextBtn = document.getElementById('result-next-stage-btn');
-    var isUnlocked = totalScore >= UNLOCK_THRESHOLD && GAME.hitCount < 3;
+    // 理解度テスト90%以上が必須条件
+    var QUIZ_PASS_RATE = 0.9;
+    var quizPassed = (GAME._quizTotal > 0 && (GAME._quizScore / GAME._quizTotal) >= QUIZ_PASS_RATE);
+    var isUnlocked = totalScore >= UNLOCK_THRESHOLD && GAME.hitCount < 3 && quizPassed;
     var stageNum = GAME.stageNum;
 
     if (unlockBox) {
@@ -9141,11 +9144,14 @@ function showResult() {
         if (nextBtn) nextBtn.style.display = 'none';
       } else {
         unlockBox.className = 'result-unlock-box locked';
-        var needed = UNLOCK_THRESHOLD - totalScore;
+        var lockReasons = [];
+        if (totalScore < UNLOCK_THRESHOLD) lockReasons.push('総合スコア' + UNLOCK_THRESHOLD + '点以上');
+        if (!quizPassed) lockReasons.push('理解度テスト90%以上正解');
+        if (GAME.hitCount >= 3) lockReasons.push('被弾3回未満');
         unlockBox.innerHTML = '<span class="unlock-total-score">' + totalScore + ' / 100</span>'
           + '<div class="unlock-breakdown">' + escapeHTML(breakdownText) + '</div>'
-          + '<div class="unlock-message">🔒 次のステージ解放まであと ' + needed + '点</div>'
-          + '<div style="font-size:12px;color:#aaa;margin-top:4px">行動スコアと知識テストの両方で高得点を目指そう！</div>';
+          + '<div class="unlock-message">🔒 次のステージ解放条件を満たしていません</div>'
+          + '<div style="font-size:12px;color:#ffaa44;margin-top:4px">必要条件: ' + escapeHTML(lockReasons.join(' / ')) + '</div>';
         if (nextBtn) nextBtn.style.display = 'none';
       }
     }
