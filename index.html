@@ -1667,6 +1667,18 @@ html, body {
 #holdon-indicator .holdon-title { font-size: 22px; font-weight: bold; color: #00eeff; letter-spacing: 3px; }
 #holdon-indicator .holdon-sub { font-size: 13px; color: rgba(180,220,255,0.7); margin-top: 4px; }
 @keyframes holdonGlow { 0%,100% { box-shadow: 0 0 25px rgba(0,180,255,0.4); border-color: rgba(0,180,255,0.8); } 50% { box-shadow: 0 0 40px rgba(0,180,255,0.7); border-color: rgba(0,220,255,1); } }
+/* 避難中頭保護インジケーター */
+#guard-evac-indicator {
+  position: fixed; top: 12%; left: 50%; transform: translateX(-50%);
+  background: rgba(40,10,0,0.8); border: 2px solid rgba(255,160,0,0.8);
+  border-radius: 10px; padding: 8px 20px; z-index: 55;
+  text-align: center; font-family: 'Share Tech Mono', monospace;
+  animation: guardGlow 1s ease-in-out infinite;
+  pointer-events: none;
+}
+#guard-evac-indicator .holdon-title { font-size: 18px; font-weight: bold; color: #ffaa00; letter-spacing: 2px; }
+#guard-evac-indicator .holdon-sub { font-size: 12px; color: rgba(255,200,100,0.7); margin-top: 2px; }
+@keyframes guardGlow { 0%,100% { box-shadow: 0 0 20px rgba(255,160,0,0.3); } 50% { box-shadow: 0 0 35px rgba(255,160,0,0.6); } }
 /* HOLD ONプロンプト（Eキー長押し案内） */
 #holdon-prompt {
   position: fixed; bottom: 25%; left: 50%; transform: translateX(-50%);
@@ -2713,6 +2725,7 @@ html, body {
   <div id="interact-prompt"><span class="prompt-key">E</span><span class="prompt-label"></span></div>
   <div id="holdon-prompt"></div>
   <div id="holdon-indicator"><div class="holdon-title">🤲 HOLD ON!</div><div class="holdon-sub">机の脚を掴んでいる…</div></div>
+  <div id="guard-evac-indicator" style="display:none;"><div class="holdon-title">🛡️ 頭を保護中</div><div class="holdon-sub">頭を守りながら避難中…</div></div>
   <div id="item-get-overlay"></div>
   <div id="item-get-text"></div>
   <div id="game-hud">
@@ -2736,7 +2749,7 @@ html, body {
   <div id="mobile-buttons">
     <button class="mob-btn" id="mob-dash">走る</button>
     <button class="mob-btn" id="mob-crouch">しゃがむ</button>
-    <button class="mob-btn" id="mob-guard">ガード</button>
+    <button class="mob-btn" id="mob-guard">頭を守る</button>
   </div>
   <button id="mob-interact">操作</button>
   <button id="mob-pause">⏸</button>
@@ -2758,8 +2771,8 @@ html, body {
         <tr><td>視点回転</td><td>マウス移動</td></tr>
         <tr><td>しゃがむ</td><td>C</td></tr>
         <tr><td>ダッシュ</td><td>Shift</td></tr>
-        <tr><td>ガード</td><td>G（押し続ける）</td></tr>
-        <tr><td>アクション</td><td>F / Space</td></tr>
+        <tr><td>頭を守る</td><td>G（避難中に押し続ける）</td></tr>
+        <tr><td>アクション / 声かけ</td><td>E / F / Space</td></tr>
         <tr><td>ポーズ</td><td>Esc</td></tr>
       </table>
       <h3 style="color:var(--safety-orange);margin:14px 0 8px;font-size:14px;">スマホ操作</h3>
@@ -2769,17 +2782,18 @@ html, body {
         <tr><td>視点回転</td><td>右側スワイプ</td></tr>
         <tr><td>しゃがむ</td><td>しゃがむボタン</td></tr>
         <tr><td>ダッシュ</td><td>走るボタン</td></tr>
-        <tr><td>ガード</td><td>ガードボタン</td></tr>
-        <tr><td>アクション</td><td>操作ボタン</td></tr>
+        <tr><td>頭を守る</td><td>頭を守るボタン（避難中）</td></tr>
+        <tr><td>アクション / 声かけ</td><td>操作ボタン</td></tr>
         <tr><td>ポーズ</td><td>⏸ボタン</td></tr>
       </table>
       <h3 style="color:#ff6b00;margin:14px 0 8px;font-size:14px;">ゲームのコツ</h3>
       <ul class="controls-tips">
         <li>地震が来たら「まず低く、頭を守り、動かない」</li>
-        <li>揺れが収まったらブレーカーを落とす</li>
+        <li>机の下に入ったらE長押しで脚を掴もう</li>
+        <li>揺れが収まったら友達に声かけ（Eキー）</li>
         <li>非常口（緑の看板）を目指して避難</li>
+        <li>避難中はG長押しで頭を守りながら移動</li>
         <li>廊下の落下物を避けて進む</li>
-        <li>しゃがんでガードすると被ダメージ軽減</li>
       </ul>
       <div class="pause-btn" id="btn-controls-back">戻る</div>
     </div>
@@ -2919,8 +2933,8 @@ const I18N = {
     CTRL_MOVE: '移動',
     CTRL_DASH: 'ダッシュ',
     CTRL_CROUCH: 'しゃがむ（トグル）',
-    CTRL_GUARD: '頭を守る（ガード）',
-    CTRL_INTERACT: 'インタラクト（ドア・ブレーカー等）',
+    CTRL_GUARD: '頭を守る（避難中に長押し）',
+    CTRL_INTERACT: 'インタラクト / 声かけ（ドア・靴・安否確認等）',
     CTRL_MOUSE: 'マウス移動',
     CTRL_CAMERA: '視点操作',
     CTRL_PAUSE: 'ポーズ',
@@ -3045,8 +3059,8 @@ const I18N = {
     CTRL_MOVE: 'Move',
     CTRL_DASH: 'Sprint',
     CTRL_CROUCH: 'Crouch (Toggle)',
-    CTRL_GUARD: 'Protect Head (Guard)',
-    CTRL_INTERACT: 'Interact (door, breaker, etc.)',
+    CTRL_GUARD: 'Protect Head (hold during evacuation)',
+    CTRL_INTERACT: 'Interact / Safety Check',
     CTRL_MOUSE: 'Mouse Move',
     CTRL_CAMERA: 'Camera Control',
     CTRL_PAUSE: 'Pause',
@@ -4866,7 +4880,7 @@ const GAME = {
   // 採点フラグ — 各行動を1回だけ採点
   scoring: {
     crouchedIn3s: false,       // 3秒以内にしゃがんだ
-    guardedHead: false,        // 頭を守った
+    guardedHead: false,        // 頭を守りながら避難した
     movedToSafe: false,        // 安全な場所に移動
     awayFromHazard: false,     // 危険物から離れた
     didNotRunOutside: true,    // 外に飛び出さなかった（初期true）
@@ -4900,6 +4914,8 @@ const GAME = {
   player: { x: 0, y: 0.9, z: 0, yaw: 0, pitch: 0, speed: 0.06, sprintMult: 1.5, isSprinting: false, isCrouching: false, isGuarding: false, isHoldingDesk: false },
   _holdOnTime: 0,            // 机の脚を掴んだ累計時間（秒）
   _holdOnActive: false,      // 現在HOLD ON中か
+  _guardEvacTime: 0,         // 避難中に頭を守った累計時間（秒）
+  _guardEvacBonus: 0,        // 避難中頭保護ボーナス点
   walls: [],
   cameraMeshes: [],
   fallingObjects: [],      // 落下物配列
@@ -4944,6 +4960,8 @@ function initGame(stageNum) {
   s.turnedOffBreaker = false; s.putOnShoes = false; s.checkedSafety = false;
   s.heldDeskLegs = false;
   s.usedStairs = false; s.avoidedBlockWall = true;
+  GAME._guardEvacTime = 0; GAME._guardEvacBonus = 0;
+  GAME._lastGuardEvacCheck = 0; GAME._safetyCheckPrompted = false;
   s.reachedEvacPoint = false; s.withinTimeLimit = false;
   GAME._holdOnTime = 0; GAME._holdOnActive = false;
   GAME.player.isHoldingDesk = false;
@@ -6985,7 +7003,7 @@ function updatePlayerModel() {
     return;
   }
 
-  // ガード（腕を頭上に）
+  // 頭保護（腕を頭上に — 避難中の頭保護ポーズ）
   if (p.isGuarding) {
     j.leftShoulder.rotation.x = -2.8;
     j.leftShoulder.rotation.z = 0.3;
@@ -7735,6 +7753,27 @@ function tryHelpInjuredNPC() {
   return false;
 }
 
+// 安否確認（声かけ）— aftershake/evacuation中にNPC近くでE/F/Space
+function trySafetyCheck() {
+  if (GAME.scoring.checkedSafety) return false;
+  if (GAME.phase !== 'aftershake' && GAME.phase !== 'evacuation') return false;
+  var px = GAME.player.x, pz = GAME.player.z;
+  for (var i = 0; i < GAME.npcs.length; i++) {
+    var npc = GAME.npcs[i];
+    var dx = px - npc.x;
+    var dz = pz - npc.z;
+    if (Math.sqrt(dx * dx + dz * dz) < 2.0) {
+      GAME.scoring.checkedSafety = true;
+      GAME.score += 5;
+      SoundManager.playSE('click');
+      showAdvisor('「大丈夫？」— 周囲への声かけ、大切な行動です！', 'praise');
+      showItemGet('🗣️ 安否確認！ — 「大丈夫？」');
+      return true;
+    }
+  }
+  return false;
+}
+
 // ============================================================
 // SECTION: インタラクトシステム
 // ============================================================
@@ -7764,6 +7803,8 @@ function getNearestInteractable() {
 function performInteract() {
   // まず負傷NPCを助けられるかチェック
   if (tryHelpInjuredNPC()) return;
+  // 安否確認（声かけ）チェック
+  if (trySafetyCheck()) return;
 
   var target = getNearestInteractable();
   if (!target) return;
@@ -8679,11 +8720,12 @@ function onPlayerHit(type) {
   // スコア減点
   GAME.score = Math.max(0, GAME.score - 5);
 
-  // ガード中ならダメージ軽減演出
+  // 頭保護中ならダメージ軽減
   if (GAME.player.isGuarding) {
+    GAME.score += 2; // 軽減ボーナス（減点-5だが+2回復）
     showAdvisor('頭を守っていたから軽傷で済んだ！', 'praise');
   } else {
-    showAdvisor('落下物に当たった！頭を守ろう！', 'warning');
+    showAdvisor('落下物に当たった！Gキーで頭を守ろう！', 'warning');
   }
 
   // 移動速度一時低下（3秒間）
@@ -8949,9 +8991,8 @@ function calculateScore() {
   var score = 0;
   var stg = GAME.stageNum;
 
-  // 初期行動（30点）
+  // 初期行動（20点 — 頭保護は避難行動に移動）
   if (s.crouchedIn3s) score += 10;
-  if (s.guardedHead) score += 10;
   if (s.movedToSafe) score += 10;
 
   // 揺れ中の行動（23点）
@@ -8993,7 +9034,14 @@ function calculateScore() {
     if (s.checkedSafety) score += 6;
   }
 
-  // 避難行動（25点）
+  // 避難行動（35点 — 頭保護ボーナス含む）
+  if (s.guardedHead) {
+    var guardBonus = Math.min(10, Math.floor(GAME._guardEvacTime / 2) + 2);
+    score += guardBonus;
+    GAME._guardEvacBonus = guardBonus;
+  } else {
+    GAME._guardEvacBonus = 0;
+  }
   if (s.usedStairs) score += 5;
   if (s.avoidedBlockWall) score += 5;
   if (s.reachedEvacPoint) score += 10;
@@ -9054,7 +9102,6 @@ function showResult() {
     if (actionsEl) {
       actions = [
         { done: s.crouchedIn3s, text: '地震発生後すぐにしゃがんだ', pts: '+10' },
-        { done: s.guardedHead, text: '頭を守る行動を取った', pts: '+10' },
         { done: s.movedToSafe, text: '安全な場所に移動した', pts: '+10' },
         { done: s.heldDeskLegs, text: '机の脚を掴んで揺れに耐えた（HOLD ON）', pts: s.heldDeskLegs ? '+' + (GAME._holdOnBonus || 0) : '0' },
         { done: s.awayFromHazard, text: '危険物から離れた', pts: '+5' },
@@ -9066,7 +9113,7 @@ function showResult() {
         // Stage1（学校）: 生徒としての行動チェック
         actions.push({ done: s.openedDoor, text: 'ドアを開けて避難経路を確保した', pts: '+8' });
         actions.push({ done: s.putOnShoes, text: '上履きを履いた（ガラス破片対策）', pts: '+7' });
-        actions.push({ done: s.checkedSafety, text: '周囲の友達の安否確認を行った', pts: '+5' });
+        actions.push({ done: s.checkedSafety, text: '友達に「大丈夫？」と声をかけた', pts: '+5' });
         var novelPts = GAME._novelChoiceScore || 0;
         actions.push({ done: novelPts > 0, text: 'ノベル選択肢で正しい判断をした', pts: novelPts > 0 ? '+' + novelPts : '0' });
         if (GAME._oshimoViolations > 0) {
@@ -9082,9 +9129,10 @@ function showResult() {
         actions.push({ done: s.openedDoor, text: 'ドアを開けて避難経路を確保した', pts: '+6' });
         actions.push({ done: s.turnedOffBreaker, text: 'ブレーカーを落とした', pts: '+6' });
         actions.push({ done: s.putOnShoes, text: '靴を履いた', pts: '+6' });
-        actions.push({ done: s.checkedSafety, text: '周囲の安否確認を行った', pts: '+6' });
+        actions.push({ done: s.checkedSafety, text: '周囲に「大丈夫？」と声をかけた', pts: '+6' });
       }
       // 避難行動（全ステージ共通）
+      actions.push({ done: s.guardedHead, text: '頭を守りながら避難した', pts: s.guardedHead ? '+' + (GAME._guardEvacBonus || 0) : '0' });
       if (stg === 1) {
         actions.push({ done: s.usedEmergencyExit, text: '非常口から避難した（普通の階段を避けた）', pts: '+5' });
       }
@@ -9123,7 +9171,7 @@ function showResult() {
     if (tipBox) {
       var tips = [];
       if (!GAME.scoring.crouchedIn3s) tips.push('地震が来たらまず「低く！頭を守って！動かないで！」（シェイクアウト）が基本です。');
-      if (!GAME.scoring.guardedHead) tips.push('頭を守ることが最も重要です。クッションや本で頭を覆いましょう。');
+      if (!GAME.scoring.guardedHead) tips.push('避難中も頭を守ることが重要です。カバンや本で頭を覆いながら移動しましょう（Gキー長押し）。');
       if (!GAME.scoring.heldDeskLegs) tips.push('机の下に入ったら脚をしっかり掴みましょう。揺れで机が動いても一緒に移動でき、頭を守り続けることができます（ShakeOut: Hold On）。');
       if (stg !== 1 && !GAME.scoring.turnedOffFire) tips.push('揺れが収まったらまず火の元を確認！ストーブやガスコンロの火を消しましょう。');
       if (!GAME.scoring.openedDoor) tips.push('揺れが収まったらドアを開けて避難経路を確保しましょう。地震で建物が歪むとドアが開かなくなることがあります。');
@@ -9133,7 +9181,7 @@ function showResult() {
       if (!GAME.scoring.usedStairs) tips.push('避難時は必ず階段を使いましょう。エレベーターは余震で停止し、閉じ込められる危険があります。');
       if (!GAME.scoring.avoidedBlockWall) tips.push('ブロック塀や自動販売機の近くは倒壊の危険があります。離れて避難しましょう。');
       if (!GAME.scoring.reachedEvacPoint) tips.push('避難場所（学校の校庭など広い場所）まで移動しましょう。建物の近くは落下物の危険があります。');
-      if (stg === 1 && !GAME.scoring.checkedSafety) tips.push('揺れが収まったら周囲の友達の安否を確認しましょう。「大丈夫？」の一声が大切です。');
+      if (stg === 1 && !GAME.scoring.checkedSafety) tips.push('揺れが収まったら周囲の友達に「大丈夫？」と声をかけましょう（Eキーで声かけ）。一声が命を救うこともあります。');
       if (stg === 1 && (GAME._novelChoiceScore || 0) <= 0) tips.push('地震の時は先生の指示に従い、机の下に入って頭を守りましょう。窓や廊下に飛び出すのは危険です。');
       if (tips.length === 0) tips.push('素晴らしい避難行動でした！この知識を周りの人にも伝えましょう。');
       // 全tipを箇条書きで表示
@@ -9157,10 +9205,10 @@ function showResult() {
     var catEl = document.getElementById('result-categories');
     if (catEl) {
       categories = [
-        { label: '初動対応', score: (s.crouchedIn3s ? 10 : 0) + (s.guardedHead ? 10 : 0) + (s.movedToSafe ? 10 : 0), max: 30 },
+        { label: '初動対応', score: (s.crouchedIn3s ? 10 : 0) + (s.movedToSafe ? 10 : 0), max: 20 },
         { label: '揺れ中の判断', score: (s.awayFromHazard ? 5 : 0) + (s.didNotRunOutside ? 5 : 0) + (s.noHitByFalling ? 5 : 0) + (GAME._holdOnBonus || 0), max: 23 },
         { label: '安全確保行動', score: (s.putOnShoes ? 7 : 0) + (s.openedDoor ? 8 : 0) + (s.checkedSafety ? 5 : 0), max: 20 },
-        { label: '避難行動', score: (s.usedEmergencyExit ? 5 : 0) + (s.usedStairs ? 5 : 0) + (s.avoidedBlockWall ? 5 : 0) + (s.reachedEvacPoint ? 10 : 0) + (s.withinTimeLimit ? 5 : 0), max: 30 },
+        { label: '避難行動', score: (GAME._guardEvacBonus || 0) + (s.usedEmergencyExit ? 5 : 0) + (s.usedStairs ? 5 : 0) + (s.avoidedBlockWall ? 5 : 0) + (s.reachedEvacPoint ? 10 : 0) + (s.withinTimeLimit ? 5 : 0), max: 40 },
         { label: '知識・判断力', score: Math.max(0, GAME._novelChoiceScore || 0), max: 20 }
       ];
       var catHtml = '';
@@ -9398,12 +9446,7 @@ function checkScoringTriggers() {
       showAdvisor('すごい！素早く姿勢を低くできたね！', 'praise');
     }
 
-    // 頭を守った（ガード）
-    if (!s.guardedHead && p.isGuarding) {
-      s.guardedHead = true;
-      GAME.score += 10;
-      showAdvisor('頭を守る行動、完璧！', 'praise');
-    }
+    // （頭を守る行動は避難フェーズに移動 — HOLD ONで代替済み）
 
     // 安全な場所（机の下）に移動した
     if (!s.movedToSafe && p.isCrouching && isUnderDesk(p.x, p.z)) {
@@ -9457,6 +9500,35 @@ function checkScoringTriggers() {
       showAdvisor('窓から離れて！ガラスが割れて飛び散るよ！', 'warning');
     }
   }
+
+  // --- 避難中の頭保護（Gキー長押し）---
+  var guardEvacInd = document.getElementById('guard-evac-indicator');
+  var isEvacPhase = GAME.phase === 'aftershake' || GAME.phase === 'evacuation';
+  if (isEvacPhase && p.isGuarding) {
+    var dt2 = GAME.totalTimer - (GAME._lastGuardEvacCheck || GAME.totalTimer);
+    if (dt2 > 0) GAME._guardEvacTime += dt2;
+    if (!s.guardedHead && GAME._guardEvacTime >= 1.0) {
+      s.guardedHead = true;
+      showAdvisor('頭を守りながら避難、素晴らしい！', 'praise');
+    }
+    if (guardEvacInd) guardEvacInd.style.display = 'block';
+  } else {
+    if (guardEvacInd) guardEvacInd.style.display = 'none';
+  }
+  GAME._lastGuardEvacCheck = GAME.totalTimer;
+
+  // --- 安否確認プロンプト表示（aftershake/evacuation中にNPC近く）---
+  if (isEvacPhase && !s.checkedSafety) {
+    var nearNPC = false;
+    for (var ni = 0; ni < GAME.npcs.length; ni++) {
+      var dnx = p.x - GAME.npcs[ni].x, dnz = p.z - GAME.npcs[ni].z;
+      if (Math.sqrt(dnx * dnx + dnz * dnz) < 2.0) { nearNPC = true; break; }
+    }
+    if (nearNPC && !GAME._safetyCheckPrompted) {
+      GAME._safetyCheckPrompted = true;
+      showAdvisor(GAME.isMobile ? '操作ボタン: 「大丈夫？」と声をかけよう' : 'Eキー: 「大丈夫？」と声をかけよう', 'info');
+    }
+  }
 }
 
 function updatePlayer(dt) {
@@ -9464,7 +9536,8 @@ function updatePlayer(dt) {
   if (GAME.phase === 'daily') return;
   const p = GAME.player;
   let mx = 0, mz = 0;
-  const speed = p.speed * (p.isSprinting ? p.sprintMult : 1) * (p.isCrouching ? 0.5 : 1) * dt;
+  var guardMult = (p.isGuarding && (GAME.phase === 'aftershake' || GAME.phase === 'evacuation')) ? 0.7 : 1;
+  const speed = p.speed * (p.isSprinting ? p.sprintMult : 1) * (p.isCrouching ? 0.5 : 1) * guardMult * dt;
 
   if (!GAME.isMobile) {
     if (GAME.keys['KeyW'] || GAME.keys['ArrowUp']) mz += 1;
@@ -9670,7 +9743,7 @@ document.addEventListener('keydown', function(e) {
     GAME.player.isCrouching = !GAME.player.isCrouching;
   }
   GAME._cPrev = true;
-  // ガード: G（ホールド）
+  // 頭を守る: G（避難中にホールド）
   if (e.code === 'KeyG') GAME.player.isGuarding = true;
   // E長押し: 机の脚を掴む（HOLD ON）/ インタラクト
   if (e.code === 'KeyE') {
