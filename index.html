@@ -4478,6 +4478,9 @@ function showBriefing(stageNum) {
   // アドバイザーメッセージ
   document.getElementById('briefing-advisor-msg').textContent = data.advisor[lang];
 
+  // 開始ボタンにステージ番号を反映
+  document.getElementById('briefing-start-btn').setAttribute('data-stage', stageNum);
+
   showScreen('briefing-screen');
   applyI18N();
 
