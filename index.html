@@ -5565,11 +5565,59 @@ function buildSchoolyard() {
   evacBoard.position.set(EVAC_POINT.x, 2.3, EVAC_POINT.z - EVAC_POINT.radius - 0.5);
   scene.add(evacBoard);
 
-  // 避難ポイントテキストラベル（Canvas）
+  // === 光柱ビーム（遠くからでも目立つ垂直の緑光） ===
+  var beamGeo = new THREE.CylinderGeometry(0.3, 1.0, 20, 16, 1, true);
+  var beamMat = new THREE.MeshBasicMaterial({
+    color: 0x00ff88, transparent: true, opacity: 0.25,
+    side: THREE.DoubleSide, depthWrite: false
+  });
+  var beam = new THREE.Mesh(beamGeo, beamMat);
+  beam.position.set(EVAC_POINT.x, 10, EVAC_POINT.z);
+  scene.add(beam);
+  GAME._evacBeam = beam;
+  GAME._evacBeamMat = beamMat;
+
+  // === 地面の発光サークル ===
+  var glowGeo = new THREE.CircleGeometry(EVAC_POINT.radius + 0.5, 32);
+  var glowMat = new THREE.MeshBasicMaterial({
+    color: 0x00ff66, transparent: true, opacity: 0.3,
+    side: THREE.DoubleSide, depthWrite: false
+  });
+  var glowCircle = new THREE.Mesh(glowGeo, glowMat);
+  glowCircle.rotation.x = -Math.PI / 2;
+  glowCircle.position.set(EVAC_POINT.x, GROUND_Y + 0.04, EVAC_POINT.z);
+  scene.add(glowCircle);
+  GAME._evacGlow = glowCircle;
+
+  // === 内側の明るいリング ===
+  var innerRingGeo = new THREE.RingGeometry(0.5, EVAC_POINT.radius, 32);
+  var innerRingMat = new THREE.MeshBasicMaterial({
+    color: 0x00ffaa, transparent: true, opacity: 0.5,
+    side: THREE.DoubleSide, depthWrite: false
+  });
+  var innerRing = new THREE.Mesh(innerRingGeo, innerRingMat);
+  innerRing.rotation.x = -Math.PI / 2;
+  innerRing.position.set(EVAC_POINT.x, GROUND_Y + 0.05, EVAC_POINT.z);
+  scene.add(innerRing);
+
+  // === 下向き矢印（コーン・緑発光） ===
+  var arrowMat = new THREE.MeshBasicMaterial({ color: 0x00ff66, transparent: true, opacity: 0.8 });
+  var arrow = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.2, 8), arrowMat);
+  arrow.position.set(EVAC_POINT.x, 4.0, EVAC_POINT.z);
+  arrow.rotation.x = Math.PI; // 下向き
+  scene.add(arrow);
+  GAME._evacArrow = arrow;
+
+  // === ポイントライト（緑発光） ===
+  var evacLight = new THREE.PointLight(0x00ff66, 1.5, 15);
+  evacLight.position.set(EVAC_POINT.x, 1.0, EVAC_POINT.z);
+  scene.add(evacLight);
+
+  // === テキストラベル ===
   var evacLabelCanvas = document.createElement('canvas');
   evacLabelCanvas.width = 256; evacLabelCanvas.height = 64;
   var ectx = evacLabelCanvas.getContext('2d');
-  ectx.fillStyle = '#ff6b00';
+  ectx.fillStyle = 'rgba(0, 180, 80, 0.9)';
   ectx.fillRect(0, 0, 256, 64);
   ectx.fillStyle = '#ffffff';
   ectx.font = 'bold 30px sans-serif';
@@ -5577,17 +5625,9 @@ function buildSchoolyard() {
   ectx.fillText('▼ 避難場所', 128, 42);
   var evacLabelTex = new THREE.CanvasTexture(evacLabelCanvas);
   var evacLabel = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 0.5), new THREE.MeshBasicMaterial({ map: evacLabelTex, transparent: true }));
-  evacLabel.position.set(EVAC_POINT.x, 4.0, EVAC_POINT.z);
+  evacLabel.position.set(EVAC_POINT.x, 5.5, EVAC_POINT.z);
   scene.add(evacLabel);
   GAME._evacLabel = evacLabel;
-
-  // 上空からの矢印（コーン）
-  var arrowMat = new THREE.MeshStandardMaterial({ color: 0xff6b00, emissive: 0xff6b00, emissiveIntensity: 0.6 });
-  var arrow = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1.0, 8), arrowMat);
-  arrow.position.set(EVAC_POINT.x, 3.2, EVAC_POINT.z);
-  arrow.rotation.x = Math.PI; // 下向き
-  scene.add(arrow);
-  GAME._evacArrow = arrow;
 
   // 校庭のフェンス（外周）
   var fenceMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.4, metalness: 0.5, emissive: 0x050505, emissiveIntensity: 0.1, transparent: true, opacity: 0.4 });
@@ -7083,12 +7123,26 @@ function gameLoop(timestamp) {
 
   // 避難ポイントマーカーの点滅演出
   if (GAME._evacMarker && GAME._inSchoolyard) {
-    GAME._evacMarker.material.emissiveIntensity = 0.3 + Math.sin(GAME.totalTimer * 3) * 0.2;
-    GAME._evacMarker.material.opacity = 0.4 + Math.sin(GAME.totalTimer * 2) * 0.2;
+    var pulse = Math.sin(GAME.totalTimer * 3) * 0.5 + 0.5;
+    GAME._evacMarker.material.emissiveIntensity = 0.3 + pulse * 0.3;
+    GAME._evacMarker.material.opacity = 0.4 + pulse * 0.2;
+  }
+  // 光柱のアニメーション（回転＋脈動）
+  if (GAME._evacBeam && GAME._inSchoolyard) {
+    GAME._evacBeam.rotation.y += dtSec * 0.5;
+    var bPulse = Math.sin(GAME.totalTimer * 3) * 0.5 + 0.5;
+    GAME._evacBeamMat.opacity = 0.12 + bPulse * 0.15;
+  }
+  // 発光サークルの脈動
+  if (GAME._evacGlow && GAME._inSchoolyard) {
+    var gPulse = Math.sin(GAME.totalTimer * 2) * 0.5 + 0.5;
+    var gs = 1.0 + gPulse * 0.15;
+    GAME._evacGlow.scale.set(gs, gs, 1);
   }
   // 避難ポイント矢印の上下動
   if (GAME._evacArrow && GAME._inSchoolyard) {
-    GAME._evacArrow.position.y = 3.0 + Math.sin(GAME.totalTimer * 2) * 0.4;
+    GAME._evacArrow.position.y = 3.5 + Math.sin(GAME.totalTimer * 2) * 0.5;
+    GAME._evacArrow.rotation.y += dtSec * 2;
   }
   // 避難ラベルを常にカメラ方向に向ける
   if (GAME._evacLabel && GAME._inSchoolyard) {
