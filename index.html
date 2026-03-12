@@ -3245,31 +3245,76 @@ const SoundManager = {
   startOfficeAmbient() {
     try {
       this.stopAmbient();
-      var ctx = this._getCtx();
+      var ctx = this.getCtx();
       if (!ctx) return;
-      // エアコンのハム音（低周波ノイズ）
+      var masterGain = ctx.createGain();
+      masterGain.gain.value = 0.12;
+      masterGain.connect(ctx.destination);
+
+      // ① エアコンのハム音（低周波フィルタードノイズ）
       var bufLen = ctx.sampleRate * 2;
       var buf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
-      var data = buf.getChannelData(0);
-      for (var i = 0; i < bufLen; i++) data[i] = (Math.random() * 2 - 1);
-      var src = ctx.createBufferSource();
-      src.buffer = buf;
-      src.loop = true;
-      // ローパスフィルター（こもったエアコン音）
-      var lp = ctx.createBiquadFilter();
-      lp.type = 'lowpass';
-      lp.frequency.value = 200;
-      // ゲイン
-      var gain = ctx.createGain();
-      gain.gain.value = 0.06;
-      src.connect(lp);
-      lp.connect(gain);
-      gain.connect(ctx.destination);
-      src.start(0);
-      // 停止用に_ambientAudioとして保持
-      this._officeAmbientSrc = src;
-      this._officeAmbientGain = gain;
-      this._ambientAudio = { pause: function() { try { src.stop(); } catch(e){} }, volume: 0.06, _isWebAudio: true };
+      var d = buf.getChannelData(0);
+      for (var i = 0; i < bufLen; i++) d[i] = (Math.random() * 2 - 1);
+      var acSrc = ctx.createBufferSource();
+      acSrc.buffer = buf; acSrc.loop = true;
+      var acLP = ctx.createBiquadFilter();
+      acLP.type = 'lowpass'; acLP.frequency.value = 180;
+      var acGain = ctx.createGain();
+      acGain.gain.value = 0.45;
+      acSrc.connect(acLP); acLP.connect(acGain); acGain.connect(masterGain);
+      acSrc.start(0);
+
+      // ② タイピング音（ランダムクリック — バンドパスノイズの断続音）
+      var typeBuf = ctx.createBuffer(1, ctx.sampleRate * 4, ctx.sampleRate);
+      var td = typeBuf.getChannelData(0);
+      // ランダムな位置にクリック音を生成（1秒あたり約8-12回）
+      for (var t = 0; t < td.length; t++) {
+        td[t] = 0;
+      }
+      var clicksPerSec = 10;
+      var totalClicks = clicksPerSec * 4;
+      for (var c = 0; c < totalClicks; c++) {
+        var clickPos = Math.floor(Math.random() * td.length);
+        var clickLen = Math.floor(ctx.sampleRate * (0.003 + Math.random() * 0.005)); // 3-8ms
+        var clickVol = 0.3 + Math.random() * 0.7;
+        for (var s = 0; s < clickLen && (clickPos + s) < td.length; s++) {
+          td[clickPos + s] = (Math.random() * 2 - 1) * clickVol * (1 - s / clickLen);
+        }
+      }
+      var typeSrc = ctx.createBufferSource();
+      typeSrc.buffer = typeBuf; typeSrc.loop = true;
+      var typeBP = ctx.createBiquadFilter();
+      typeBP.type = 'bandpass'; typeBP.frequency.value = 3000; typeBP.Q.value = 1.5;
+      var typeGain = ctx.createGain();
+      typeGain.gain.value = 0.35;
+      typeSrc.connect(typeBP); typeBP.connect(typeGain); typeGain.connect(masterGain);
+      typeSrc.start(0);
+
+      // ③ 低い話し声風（バンドパスノイズ — 200-500Hz帯）
+      var voiceBuf = ctx.createBuffer(1, ctx.sampleRate * 3, ctx.sampleRate);
+      var vd = voiceBuf.getChannelData(0);
+      for (var vi = 0; vi < vd.length; vi++) {
+        // 変調をかけて話し声風にする
+        vd[vi] = (Math.random() * 2 - 1) * (0.3 + 0.7 * Math.abs(Math.sin(vi / ctx.sampleRate * 3)));
+      }
+      var voiceSrc = ctx.createBufferSource();
+      voiceSrc.buffer = voiceBuf; voiceSrc.loop = true;
+      var voiceBP = ctx.createBiquadFilter();
+      voiceBP.type = 'bandpass'; voiceBP.frequency.value = 350; voiceBP.Q.value = 3;
+      var voiceGain = ctx.createGain();
+      voiceGain.gain.value = 0.15;
+      voiceSrc.connect(voiceBP); voiceBP.connect(voiceGain); voiceGain.connect(masterGain);
+      voiceSrc.start(0);
+
+      // 停止管理
+      var sources = [acSrc, typeSrc, voiceSrc];
+      this._officeAmbientSources = sources;
+      this._ambientAudio = {
+        pause: function() { sources.forEach(function(s) { try { s.stop(); } catch(e){} }); },
+        volume: 0.12,
+        _isWebAudio: true
+      };
     } catch(e) {}
   },
 
@@ -8466,25 +8511,75 @@ function updateSingleNPC(npc, dtSec) {
     case 'daily':
       npc.phase += dtSec;
       if (npc.role === 'colleague') {
-        // Stage 2: 同僚のオフィスワーク（PCに向かって座っている）
+        // Stage 2: 同僚のオフィスワーク（PCに向かってタイピング）
         var coSeatY = 0.33 - (npc.npcH || 1.6) * 0.38;
         mesh.position.y = coSeatY + Math.sin(npc.phase * 1.5) * 0.002;
         mesh.rotation.y = Math.PI;
         var coSeed = (npc.deskX || 0) * 5 + (npc.deskZ || 0) * 3;
+        // 頭: モニターを見る（時々視線を変える）
         var coHead = mesh.userData.head;
-        if (coHead) coHead.rotation.x = 0.15 + Math.sin(npc.phase * 0.6 + coSeed) * 0.04;
+        if (coHead) {
+          coHead.rotation.x = 0.15 + Math.sin(npc.phase * 0.6 + coSeed) * 0.04;
+          coHead.rotation.y = Math.sin(npc.phase * 0.3 + coSeed * 2) * 0.08;
+        }
+        // 体: 微揺れ（呼吸）
         var coBody = mesh.userData.body;
-        if (coBody) coBody.rotation.z = Math.sin(npc.phase * 0.8 + coSeed) * 0.01;
+        if (coBody) {
+          coBody.rotation.z = Math.sin(npc.phase * 0.8 + coSeed) * 0.01;
+          // 腕: タイピング動作（左右交互に小さく動かす）
+          if (coBody.children && coBody.children.length >= 3) {
+            var coLArm = coBody.children[1]; // 左腕
+            var coRArm = coBody.children[2]; // 右腕
+            var typeSpeed = 6 + (coSeed % 3); // NPC毎に微妙に速度を変える
+            if (coLArm) {
+              coLArm.rotation.x = -0.9 + Math.sin(npc.phase * typeSpeed + coSeed) * 0.08;
+              coLArm.rotation.z = 0.25;
+            }
+            if (coRArm) {
+              coRArm.rotation.x = -0.9 + Math.sin(npc.phase * typeSpeed + coSeed + Math.PI) * 0.08;
+              coRArm.rotation.z = -0.25;
+            }
+          }
+        }
       } else if (npc.role === 'boss') {
-        // Stage 2: 上司（立って歩き回る）
-        mesh.position.y = Math.sin(npc.phase * 2) * 0.003;
+        // Stage 2: 上司（巡回 → 立ち止まって見回す → 再び巡回）
         var bossT = GAME.phaseTimer || 0;
-        // ゆっくり歩き回る
-        npc.x = 8 + Math.sin(bossT * 0.3) * 2;
-        npc.z = 12 + Math.cos(bossT * 0.25) * 1.5;
-        mesh.position.x = npc.x;
-        mesh.position.z = npc.z;
-        mesh.rotation.y = Math.atan2(Math.cos(bossT * 0.3), -Math.sin(bossT * 0.25));
+        var bossCycle = bossT % 10; // 10秒サイクル
+        if (bossCycle < 6) {
+          // 0-6秒: ゆっくり巡回
+          mesh.position.y = Math.abs(Math.sin(npc.phase * 5)) * 0.012;
+          npc.x = 8 + Math.sin(bossT * 0.3) * 2;
+          npc.z = 12 + Math.cos(bossT * 0.25) * 1.5;
+          mesh.position.x = npc.x;
+          mesh.position.z = npc.z;
+          mesh.rotation.y = Math.atan2(Math.cos(bossT * 0.3), -Math.sin(bossT * 0.25));
+          // 歩行アニメーション
+          if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = Math.sin(npc.phase * 5) * 0.3;
+          if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = -Math.sin(npc.phase * 5) * 0.3;
+          // 腕振り
+          var bBody = mesh.userData.body;
+          if (bBody && bBody.children && bBody.children.length >= 3) {
+            bBody.children[1].rotation.x = -Math.sin(npc.phase * 5) * 0.2;
+            bBody.children[2].rotation.x = Math.sin(npc.phase * 5) * 0.2;
+          }
+        } else {
+          // 6-10秒: 立ち止まって腕組み + 見回す
+          mesh.position.y = Math.sin(npc.phase * 2) * 0.003;
+          mesh.position.x = npc.x;
+          mesh.position.z = npc.z;
+          mesh.rotation.y = Math.sin((bossT - 6) * 0.8) * 0.6; // 左右見回す
+          // 脚リセット
+          if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = 0;
+          if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = 0;
+          // 腕組みポーズ
+          var bBody2 = mesh.userData.body;
+          if (bBody2 && bBody2.children && bBody2.children.length >= 3) {
+            bBody2.children[1].rotation.x = -1.2;
+            bBody2.children[1].rotation.z = 0.4;
+            bBody2.children[2].rotation.x = -1.2;
+            bBody2.children[2].rotation.z = -0.4;
+          }
+        }
       } else if (npc.role === 'student') {
         // 椅子座面(Y=0.38)に腰が合う高さ: 0.33 - height * 0.40
         var seatY = 0.33 - (npc.npcH || 1.35) * 0.40;
