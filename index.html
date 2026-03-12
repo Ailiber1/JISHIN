@@ -3398,6 +3398,15 @@ function resumeAudioContext() {
 document.addEventListener('touchstart', resumeAudioContext, { once: true });
 document.addEventListener('click', resumeAudioContext, { once: true });
 
+// テキスト解決ヘルパー（ノベル用）— {ja,en}オブジェクトまたは文字列を言語に応じて返す
+function resolveNovelText(t) {
+  if (!t) return '';
+  if (typeof t === 'object' && t.ja !== undefined) {
+    return currentLang === 'en' ? (t.en || t.ja) : t.ja;
+  }
+  return t;
+}
+
 // ============================================================
 // SECTION: NOVEL ENGINE
 // ============================================================
@@ -3415,10 +3424,16 @@ var NovelEngine = {
 
   // キャラクター名マッピング
   SPEAKERS: {
-    teacher: { name: '田中先生', pos: 'left', freq: 400 },
-    student_a: { name: 'ユウキ', pos: 'right', freq: 700 },
-    student_b: { name: 'アオイ', pos: 'right', freq: 800 },
-    bousai: { name: 'ボウサイ', pos: 'left', freq: 1000 },
+    // Stage 1
+    teacher: { name: {ja: '田中先生', en: 'Mr. Tanaka'}, pos: 'left', freq: 400 },
+    student_a: { name: {ja: 'ユウキ', en: 'Yuki'}, pos: 'right', freq: 700 },
+    student_b: { name: {ja: 'アオイ', en: 'Aoi'}, pos: 'right', freq: 800 },
+    // Stage 2
+    boss: { name: {ja: '課長', en: 'Manager'}, pos: 'left', freq: 400 },
+    colleague_a: { name: {ja: 'タカシ', en: 'Takashi'}, pos: 'right', freq: 700 },
+    colleague_b: { name: {ja: 'ミサキ', en: 'Misaki'}, pos: 'right', freq: 800 },
+    // Shared
+    bousai: { name: {ja: 'ボウサイ', en: 'Bousai'}, pos: 'left', freq: 1000 },
     narrator: { name: '', pos: null, freq: 0 },
   },
 
@@ -3575,14 +3590,14 @@ var NovelEngine = {
 
     // 話者名
     var info = this.SPEAKERS[line.speaker] || { name: line.speaker || '', pos: null, freq: 0 };
-    this.speakerEl.textContent = info.name;
+    this.speakerEl.textContent = resolveNovelText(info.name);
 
     // 立ち絵更新
     this.updateCharaSprites(line);
 
     // テキスト表示開始
     this.nextIndicator.style.display = 'none';
-    this.startTypewriter(line.text, info.freq);
+    this.startTypewriter(resolveNovelText(line.text), info.freq);
   },
 
   // 立ち絵更新
@@ -3716,7 +3731,7 @@ var NovelEngine = {
   // 選択肢表示
   showChoices: function(line) {
     var self = this;
-    this.textEl.textContent = line.text || '';
+    this.textEl.textContent = resolveNovelText(line.text);
     this.speakerEl.textContent = '';
     this.nextIndicator.style.display = 'none';
     this.choicesEl.innerHTML = '';
@@ -3725,7 +3740,7 @@ var NovelEngine = {
     line.choices.forEach(function(choice, i) {
       var btn = document.createElement('button');
       btn.className = 'novel-choice-btn';
-      btn.textContent = '▶ ' + choice.label;
+      btn.textContent = '▶ ' + resolveNovelText(choice.label);
       btn.addEventListener('click', function() { self.selectChoice(line, choice, i); });
       self.choicesEl.appendChild(btn);
     });
@@ -3847,36 +3862,36 @@ var NOVEL_VARIANTS = {
     prologue: [
       // パターンA: 理科の授業 + 避難訓練プリント
       [
-        { speaker: 'teacher', expr: 'normal', text: 'はい、3時間目は理科です。\n教科書の32ページを開いてください。' },
-        { speaker: 'student_a', expr: 'normal', text: '（ふぁ〜…眠いな〜…）' },
-        { speaker: 'student_b', expr: 'normal', text: 'ねえ、昨日の避難訓練のプリント出した？' },
-        { speaker: 'student_a', expr: 'surprise', text: 'え！？出してない！やばっ！' },
-        { speaker: 'teacher', expr: 'serious', text: '避難訓練のプリント、来週までですよ。\n地震はいつ来るか分かりません。' },
-        { speaker: 'student_b', expr: 'serious', text: '先生の言う通りだよ。\nちゃんとやっておいた方がいいって。' },
-        { speaker: 'bousai', expr: 'normal', text: '今日のポイント！\n① 机の下に入り、脚を持って頭を守る\n② 先生の指示に従って行動する\n③ 「おはしも」を守って避難する' },
-        { speaker: 'narrator', text: '── 数分後 ──' },
+        { speaker: 'teacher', expr: 'normal', text: {ja: 'はい、3時間目は理科です。\n教科書の32ページを開いてください。', en: 'Alright, third period is science.\nPlease open your textbooks to page 32.'} },
+        { speaker: 'student_a', expr: 'normal', text: {ja: '（ふぁ〜…眠いな〜…）', en: '(Yawn... so sleepy...)'} },
+        { speaker: 'student_b', expr: 'normal', text: {ja: 'ねえ、昨日の避難訓練のプリント出した？', en: 'Hey, did you turn in the evacuation drill worksheet?'} },
+        { speaker: 'student_a', expr: 'surprise', text: {ja: 'え！？出してない！やばっ！', en: 'What!? I didn\'t turn it in! Oh no!'} },
+        { speaker: 'teacher', expr: 'serious', text: {ja: '避難訓練のプリント、来週までですよ。\n地震はいつ来るか分かりません。', en: 'The evacuation drill worksheet is due next week.\nYou never know when an earthquake will strike.'} },
+        { speaker: 'student_b', expr: 'serious', text: {ja: '先生の言う通りだよ。\nちゃんとやっておいた方がいいって。', en: 'The teacher is right.\nYou should get it done properly.'} },
+        { speaker: 'bousai', expr: 'normal', text: {ja: '今日のポイント！\n① 机の下に入り、脚を持って頭を守る\n② 先生の指示に従って行動する\n③ 「おはしも」を守って避難する', en: 'Today\'s key points!\n① Get under your desk, hold the legs, and protect your head\n② Follow the teacher\'s instructions\n③ Evacuate following the "O-HA-SHI-MO" rules'} },
+        { speaker: 'narrator', text: {ja: '── 数分後 ──', en: '── A few minutes later ──'} },
       ],
       // パターンB: 社会の授業 + 最近の地震ニュース
       [
-        { speaker: 'teacher', expr: 'normal', text: 'では社会の続き。\n日本の自然災害について学びます。' },
-        { speaker: 'student_b', expr: 'normal', text: '昨日ニュースで地震あったよね。\n震度3だって。' },
-        { speaker: 'student_a', expr: 'normal', text: '震度3？全然気づかなかった…\n寝てたし…' },
-        { speaker: 'teacher', expr: 'serious', text: '日本は世界の地震の約10%が\n集中する地震大国です。\nいつ大きな揺れが来てもおかしくない。' },
-        { speaker: 'student_b', expr: 'worry', text: 'え…この学校も？' },
-        { speaker: 'teacher', expr: 'normal', text: 'だからこそ、正しい知識が大切なんです。' },
-        { speaker: 'bousai', expr: 'normal', text: '今日のポイント！\n① 「落ちてこない・倒れてこない」場所に移動\n② 机の下に入り、脚をしっかり持つ\n③ 先生の指示があるまで動かない' },
-        { speaker: 'narrator', text: '── 数分後 ──' },
+        { speaker: 'teacher', expr: 'normal', text: {ja: 'では社会の続き。\n日本の自然災害について学びます。', en: 'Let\'s continue with social studies.\nWe\'ll learn about natural disasters in Japan.'} },
+        { speaker: 'student_b', expr: 'normal', text: {ja: '昨日ニュースで地震あったよね。\n震度3だって。', en: 'There was an earthquake on the news yesterday.\nThey said it was intensity 3.'} },
+        { speaker: 'student_a', expr: 'normal', text: {ja: '震度3？全然気づかなかった…\n寝てたし…', en: 'Intensity 3? I didn\'t notice at all...\nI was asleep...'} },
+        { speaker: 'teacher', expr: 'serious', text: {ja: '日本は世界の地震の約10%が\n集中する地震大国です。\nいつ大きな揺れが来てもおかしくない。', en: 'Japan is an earthquake-prone country where\nabout 10% of the world\'s earthquakes occur.\nA major quake could strike at any time.'} },
+        { speaker: 'student_b', expr: 'worry', text: {ja: 'え…この学校も？', en: 'Wait... even at our school?'} },
+        { speaker: 'teacher', expr: 'normal', text: {ja: 'だからこそ、正しい知識が大切なんです。', en: 'That\'s exactly why having the right knowledge is so important.'} },
+        { speaker: 'bousai', expr: 'normal', text: {ja: '今日のポイント！\n① 「落ちてこない・倒れてこない」場所に移動\n② 机の下に入り、脚をしっかり持つ\n③ 先生の指示があるまで動かない', en: 'Today\'s key points!\n① Move to a spot where nothing can fall or topple on you\n② Get under your desk and hold the legs firmly\n③ Don\'t move until the teacher gives instructions'} },
+        { speaker: 'narrator', text: {ja: '── 数分後 ──', en: '── A few minutes later ──'} },
       ],
       // パターンC: 休み時間明け + 防災クイズの話
       [
-        { speaker: 'narrator', text: '── 昼休み明け ──' },
-        { speaker: 'student_a', expr: 'smile', text: '給食うまかったー！\n今日のカレー最高！' },
-        { speaker: 'student_b', expr: 'normal', text: 'ねえ、さっき防災アプリで\n「地震クイズ」やってみたんだけど…' },
-        { speaker: 'student_a', expr: 'normal', text: 'へぇ、何点だった？' },
-        { speaker: 'student_b', expr: 'worry', text: '40点…「おはしも」って何か\n全然わからなくて…' },
-        { speaker: 'teacher', expr: 'normal', text: '「おはしも」は大切ですよ。\n押さない・走らない・しゃべらない・戻らない。\n避難の時の合言葉です。' },
-        { speaker: 'bousai', expr: 'smile', text: '今日のポイント！\n① 揺れたらすぐ机の下に入る\n② 頭と首を守ることが最優先\n③ 「おはしも」を覚えて実践しよう' },
-        { speaker: 'narrator', text: '── 授業再開 ──' },
+        { speaker: 'narrator', text: {ja: '── 昼休み明け ──', en: '── After lunch break ──'} },
+        { speaker: 'student_a', expr: 'smile', text: {ja: '給食うまかったー！\n今日のカレー最高！', en: 'Lunch was so good!\nToday\'s curry was the best!'} },
+        { speaker: 'student_b', expr: 'normal', text: {ja: 'ねえ、さっき防災アプリで\n「地震クイズ」やってみたんだけど…', en: 'Hey, I just tried the\n"Earthquake Quiz" on the disaster prep app...'} },
+        { speaker: 'student_a', expr: 'normal', text: {ja: 'へぇ、何点だった？', en: 'Oh yeah? What did you score?'} },
+        { speaker: 'student_b', expr: 'worry', text: {ja: '40点…「おはしも」って何か\n全然わからなくて…', en: '40 points... I had no idea\nwhat "O-HA-SHI-MO" meant...'} },
+        { speaker: 'teacher', expr: 'normal', text: {ja: '「おはしも」は大切ですよ。\n押さない・走らない・しゃべらない・戻らない。\n避難の時の合言葉です。', en: '"O-HA-SHI-MO" is very important.\nDon\'t push, don\'t run, don\'t talk, don\'t go back.\nIt\'s the evacuation safety motto.'} },
+        { speaker: 'bousai', expr: 'smile', text: {ja: '今日のポイント！\n① 揺れたらすぐ机の下に入る\n② 頭と首を守ることが最優先\n③ 「おはしも」を覚えて実践しよう', en: 'Today\'s key points!\n① Get under your desk as soon as shaking starts\n② Protecting your head and neck is the top priority\n③ Learn and practice "O-HA-SHI-MO"'} },
+        { speaker: 'narrator', text: {ja: '── 授業再開 ──', en: '── Class resumes ──'} },
       ],
     ],
 
@@ -3884,61 +3899,61 @@ var NOVEL_VARIANTS = {
     earthquake: [
       // パターンA: 緊急地震速報 → 驚き
       [
-        { speaker: 'narrator', text: '── ﾋﾟﾛﾝﾋﾟﾛﾝ！緊急地震速報です ──' },
-        { speaker: 'teacher', expr: 'surprise', text: '…！地震だ！！' },
-        { speaker: 'student_b', expr: 'panic', text: 'きゃあっ！！' },
-        { speaker: 'teacher', expr: 'serious', text: '全員、机の下に入りなさい！！\n頭を守って！！' },
+        { speaker: 'narrator', text: {ja: '── ﾋﾟﾛﾝﾋﾟﾛﾝ！緊急地震速報です ──', en: '── Beep beep! Earthquake Early Warning! ──'} },
+        { speaker: 'teacher', expr: 'surprise', text: {ja: '…！地震だ！！', en: '...! It\'s an earthquake!!'} },
+        { speaker: 'student_b', expr: 'panic', text: {ja: 'きゃあっ！！', en: 'Aaah!!'} },
+        { speaker: 'teacher', expr: 'serious', text: {ja: '全員、机の下に入りなさい！！\n頭を守って！！', en: 'Everyone, get under your desks!!\nProtect your heads!!'} },
         {
-          type: 'choice', text: 'どうする？',
+          type: 'choice', text: {ja: 'どうする？', en: 'What do you do?'},
           choices: [
-            { label: '机の下に隠れる', score: 10, correct: true,
-              response: { speaker: 'bousai', expr: 'smile', text: '正解！机の脚をしっかり持って、\n頭を守ろう！' }},
-            { label: '廊下に飛び出す', score: -10, correct: false,
-              consequence: { icon: '💥', text: '廊下の天井パネルが\n落ちてきた！', flash: 'red', shake: true },
-              response: { speaker: 'bousai', expr: 'worry', text: '危ない！揺れている最中に廊下に出ると\n天井材や照明が落ちてくる。\n阪神淡路大震災では廊下での負傷者が\n非常に多かったんだ。\nまず机の下で身を守ろう。' }},
-            { label: '窓の近くで様子を見る', score: -5, correct: false,
-              consequence: { icon: '🪟', text: 'ガラスが割れて\n破片が飛んできた！', flash: 'red', shake: true },
-              response: { speaker: 'bousai', expr: 'worry', text: '窓ガラスは揺れで割れて\n鋭い破片になって飛び散る。\n東日本大震災では窓際でケガをした\n生徒がたくさんいたんだ。\n窓から離れて、机の下に入ろう。' }},
+            { label: {ja: '机の下に隠れる', en: 'Hide under the desk'}, score: 10, correct: true,
+              response: { speaker: 'bousai', expr: 'smile', text: {ja: '正解！机の脚をしっかり持って、\n頭を守ろう！', en: 'Correct! Hold the desk legs firmly\nand protect your head!'} }},
+            { label: {ja: '廊下に飛び出す', en: 'Run into the hallway'}, score: -10, correct: false,
+              consequence: { icon: '💥', text: {ja: '廊下の天井パネルが\n落ちてきた！', en: 'A ceiling panel fell down\nin the hallway!'}, flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: {ja: '危ない！揺れている最中に廊下に出ると\n天井材や照明が落ちてくる。\n阪神淡路大震災では廊下での負傷者が\n非常に多かったんだ。\nまず机の下で身を守ろう。', en: 'Dangerous! If you go into the hallway during shaking,\nceiling materials and lights can fall on you.\nIn the Great Hanshin Earthquake, many people\nwere injured in hallways.\nFirst, protect yourself under a desk.'} }},
+            { label: {ja: '窓の近くで様子を見る', en: 'Watch from near the window'}, score: -5, correct: false,
+              consequence: { icon: '🪟', text: {ja: 'ガラスが割れて\n破片が飛んできた！', en: 'The glass shattered and\nshards went flying!'}, flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: {ja: '窓ガラスは揺れで割れて\n鋭い破片になって飛び散る。\n東日本大震災では窓際でケガをした\n生徒がたくさんいたんだ。\n窓から離れて、机の下に入ろう。', en: 'Window glass shatters during shaking\nand sends sharp fragments flying.\nIn the 2011 Great East Japan Earthquake, many\nstudents near windows were injured.\nMove away from windows and get under a desk.'} }},
           ]
         },
       ],
       // パターンB: 突然の揺れ → パニック
       [
-        { speaker: 'narrator', text: '── ガタガタガタ…！ ──' },
-        { speaker: 'student_a', expr: 'surprise', text: 'え…揺れてる！？' },
-        { speaker: 'student_b', expr: 'panic', text: '地震！地震だよ！！' },
-        { speaker: 'teacher', expr: 'serious', text: '落ち着いて！\n「まず低く、頭を守り、動かない」！！' },
+        { speaker: 'narrator', text: {ja: '── ガタガタガタ…！ ──', en: '── Rattle rattle rattle...! ──'} },
+        { speaker: 'student_a', expr: 'surprise', text: {ja: 'え…揺れてる！？', en: 'Huh... it\'s shaking!?'} },
+        { speaker: 'student_b', expr: 'panic', text: {ja: '地震！地震だよ！！', en: 'Earthquake! It\'s an earthquake!!'} },
+        { speaker: 'teacher', expr: 'serious', text: {ja: '落ち着いて！\n「まず低く、頭を守り、動かない」！！', en: 'Stay calm!\n"Drop, Cover, and Hold On"!!'} },
         {
-          type: 'choice', text: 'どうする？',
+          type: 'choice', text: {ja: 'どうする？', en: 'What do you do?'},
           choices: [
-            { label: '机の下に入って脚を持つ', score: 10, correct: true,
-              response: { speaker: 'bousai', expr: 'smile', text: '正解！「DROP, COVER, HOLD ON」\nこれは世界共通の地震対応だよ！' }},
-            { label: '教室の出口に走る', score: -10, correct: false,
-              consequence: { icon: '💥', text: '蛍光灯が落下して\n頭を直撃！', flash: 'red', shake: true },
-              response: { speaker: 'bousai', expr: 'worry', text: '揺れの中を走ると転倒するし\n落下物に当たる危険がある。\n新潟県中越地震では、慌てて\n動いた人のケガが多かったんだ。\nまず身を守ることが最優先！' }},
-            { label: 'カバンを頭に乗せて様子を見る', score: -5, correct: false,
-              consequence: { icon: '📚', text: 'カバンでは重い落下物を\n防げなかった！', flash: 'red', shake: true },
-              response: { speaker: 'bousai', expr: 'worry', text: 'カバンでは天井材や蛍光灯の\n落下は防げない。\n机の下に入れば、天板が\n盾になってくれる。\n頑丈なものの下に入ろう！' }},
+            { label: {ja: '机の下に入って脚を持つ', en: 'Get under the desk and hold the legs'}, score: 10, correct: true,
+              response: { speaker: 'bousai', expr: 'smile', text: {ja: '正解！「DROP, COVER, HOLD ON」\nこれは世界共通の地震対応だよ！', en: 'Correct! "DROP, COVER, HOLD ON"\nThis is the universal earthquake response!'} }},
+            { label: {ja: '教室の出口に走る', en: 'Run to the classroom exit'}, score: -10, correct: false,
+              consequence: { icon: '💥', text: {ja: '蛍光灯が落下して\n頭を直撃！', en: 'A fluorescent light fell\nand hit your head!'}, flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: {ja: '揺れの中を走ると転倒するし\n落下物に当たる危険がある。\n新潟県中越地震では、慌てて\n動いた人のケガが多かったんだ。\nまず身を守ることが最優先！', en: 'Running during shaking can cause you to fall\nand you risk being hit by falling objects.\nIn the Niigata-Chuetsu Earthquake, many injuries\noccurred from people rushing around.\nProtecting yourself comes first!'} }},
+            { label: {ja: 'カバンを頭に乗せて様子を見る', en: 'Put your bag on your head and wait'}, score: -5, correct: false,
+              consequence: { icon: '📚', text: {ja: 'カバンでは重い落下物を\n防げなかった！', en: 'The bag couldn\'t block\nheavy falling objects!'}, flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: {ja: 'カバンでは天井材や蛍光灯の\n落下は防げない。\n机の下に入れば、天板が\n盾になってくれる。\n頑丈なものの下に入ろう！', en: 'A bag can\'t protect you from falling\nceiling materials or fluorescent lights.\nUnder a desk, the tabletop acts\nas a shield.\nGet under something sturdy!'} }},
           ]
         },
       ],
       // パターンC: 携帯が鳴る → 速報
       [
-        { speaker: 'narrator', text: '── ﾋﾞｰﾋﾞｰﾋﾞｰ！（携帯の緊急速報） ──' },
-        { speaker: 'student_b', expr: 'surprise', text: 'スマホが鳴ってる…！\n緊急地震速報！？' },
-        { speaker: 'teacher', expr: 'surprise', text: '…来る！全員しゃがんで！！' },
-        { speaker: 'narrator', text: '── 激しい揺れが教室を襲った ──' },
+        { speaker: 'narrator', text: {ja: '── ﾋﾞｰﾋﾞｰﾋﾞｰ！（携帯の緊急速報） ──', en: '── Buzz buzz buzz! (Emergency phone alert) ──'} },
+        { speaker: 'student_b', expr: 'surprise', text: {ja: 'スマホが鳴ってる…！\n緊急地震速報！？', en: 'Phones are going off...!\nEarthquake Early Warning!?'} },
+        { speaker: 'teacher', expr: 'surprise', text: {ja: '…来る！全員しゃがんで！！', en: '...It\'s coming! Everyone get down!!'} },
+        { speaker: 'narrator', text: {ja: '── 激しい揺れが教室を襲った ──', en: '── Violent shaking hit the classroom ──'} },
         {
-          type: 'choice', text: '揺れが始まった！どうする？',
+          type: 'choice', text: {ja: '揺れが始まった！どうする？', en: 'The shaking has started! What do you do?'},
           choices: [
-            { label: '机の下に潜り込む', score: 10, correct: true,
-              response: { speaker: 'bousai', expr: 'smile', text: 'ナイス判断！緊急地震速報が鳴ったら\n数秒以内に行動することが大切。\n机の下が一番安全だよ！' }},
-            { label: 'スマホで情報を確認する', score: -5, correct: false,
-              consequence: { icon: '📱', text: 'スマホを見ている間に\n本棚が倒れてきた！', flash: 'red', shake: true },
-              response: { speaker: 'bousai', expr: 'worry', text: '緊急地震速報から強い揺れまでは\n数秒しかない。\nスマホを見るよりまず身の安全！\n情報確認は揺れが収まってからだよ。' }},
-            { label: '窓を開けて逃げ道を確保する', score: -10, correct: false,
-              consequence: { icon: '🪟', text: '窓ガラスが割れて\n手を切ってしまった！', flash: 'red', shake: true },
-              response: { speaker: 'bousai', expr: 'worry', text: '揺れの最中にガラスに触れるのは\n非常に危険。窓の開放は\n揺れが収まってからでいい。\nまず「低く・頭を守る・動かない」！' }},
+            { label: {ja: '机の下に潜り込む', en: 'Dive under the desk'}, score: 10, correct: true,
+              response: { speaker: 'bousai', expr: 'smile', text: {ja: 'ナイス判断！緊急地震速報が鳴ったら\n数秒以内に行動することが大切。\n机の下が一番安全だよ！', en: 'Nice call! When the Earthquake Early Warning sounds,\nyou need to act within seconds.\nUnder the desk is the safest spot!'} }},
+            { label: {ja: 'スマホで情報を確認する', en: 'Check your phone for info'}, score: -5, correct: false,
+              consequence: { icon: '📱', text: {ja: 'スマホを見ている間に\n本棚が倒れてきた！', en: 'While checking your phone,\na bookshelf toppled over!'}, flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: {ja: '緊急地震速報から強い揺れまでは\n数秒しかない。\nスマホを見るよりまず身の安全！\n情報確認は揺れが収まってからだよ。', en: 'There are only a few seconds between\nthe warning and strong shaking.\nYour safety comes before checking your phone!\nLook up information after the shaking stops.'} }},
+            { label: {ja: '窓を開けて逃げ道を確保する', en: 'Open a window to secure an exit'}, score: -10, correct: false,
+              consequence: { icon: '🪟', text: {ja: '窓ガラスが割れて\n手を切ってしまった！', en: 'The window glass shattered\nand cut your hand!'}, flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: {ja: '揺れの最中にガラスに触れるのは\n非常に危険。窓の開放は\n揺れが収まってからでいい。\nまず「低く・頭を守る・動かない」！', en: 'Touching glass during shaking\nis extremely dangerous. Opening windows\ncan wait until the shaking stops.\nFirst: "Drop, Cover, and Hold On"!'} }},
           ]
         },
       ],
@@ -3948,52 +3963,52 @@ var NOVEL_VARIANTS = {
     aftershake: [
       // パターンA: ガラスに注意 + 先生の指示を待つ
       [
-        { speaker: 'teacher', expr: 'serious', text: '…揺れが収まりました。\n慌てないで。まず周りを確認して。' },
-        { speaker: 'student_a', expr: 'worry', text: '先生…窓ガラスが割れてます…' },
-        { speaker: 'student_b', expr: 'serious', text: 'ガラスの上を歩いちゃダメだよ。\n上履きをしっかり履いて。' },
-        { speaker: 'teacher', expr: 'normal', text: 'その通りです。落ち着いて行動しましょう。' },
+        { speaker: 'teacher', expr: 'serious', text: {ja: '…揺れが収まりました。\n慌てないで。まず周りを確認して。', en: '...The shaking has stopped.\nDon\'t panic. First, check your surroundings.'} },
+        { speaker: 'student_a', expr: 'worry', text: {ja: '先生…窓ガラスが割れてます…', en: 'Teacher... the window glass is broken...'} },
+        { speaker: 'student_b', expr: 'serious', text: {ja: 'ガラスの上を歩いちゃダメだよ。\n上履きをしっかり履いて。', en: 'Don\'t walk on the glass.\nMake sure your indoor shoes are on properly.'} },
+        { speaker: 'teacher', expr: 'normal', text: {ja: 'その通りです。落ち着いて行動しましょう。', en: 'That\'s right. Let\'s stay calm and act carefully.'} },
         {
-          type: 'choice', text: '次にどうする？',
+          type: 'choice', text: {ja: '次にどうする？', en: 'What do you do next?'},
           choices: [
-            { label: '先生の指示を待つ', score: 10, correct: true,
-              response: { speaker: 'teacher', expr: 'normal', text: 'よし、今から校庭に避難します。\n走らない、押さない、しゃべらない、戻らない。\n「おはしも」です。' }},
-            { label: 'すぐに廊下に出る', score: -5, correct: false,
-              consequence: { icon: '⚠️', text: '余震が来た！\n廊下で転倒してしまった！', flash: 'red', shake: true },
-              response: { speaker: 'bousai', expr: 'worry', text: '余震は本震の直後に来ることが多い。\n2016年の熊本地震では、最初の揺れの\n約28時間後にさらに大きな本震が来た。\n先生の指示を待って、安全を確認してから\n行動しよう。' }},
+            { label: {ja: '先生の指示を待つ', en: 'Wait for the teacher\'s instructions'}, score: 10, correct: true,
+              response: { speaker: 'teacher', expr: 'normal', text: {ja: 'よし、今から校庭に避難します。\n走らない、押さない、しゃべらない、戻らない。\n「おはしも」です。', en: 'Alright, we\'re evacuating to the schoolyard now.\nDon\'t run, don\'t push, don\'t talk, don\'t go back.\nRemember "O-HA-SHI-MO".'} }},
+            { label: {ja: 'すぐに廊下に出る', en: 'Go out to the hallway immediately'}, score: -5, correct: false,
+              consequence: { icon: '⚠️', text: {ja: '余震が来た！\n廊下で転倒してしまった！', en: 'An aftershock hit!\nYou fell down in the hallway!'}, flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: {ja: '余震は本震の直後に来ることが多い。\n2016年の熊本地震では、最初の揺れの\n約28時間後にさらに大きな本震が来た。\n先生の指示を待って、安全を確認してから\n行動しよう。', en: 'Aftershocks often come right after the main quake.\nIn the 2016 Kumamoto Earthquake, an even larger\nmainshock came about 28 hours after the first one.\nWait for the teacher\'s instructions and confirm\nit\'s safe before moving.'} }},
           ]
         },
       ],
       // パターンB: 火の元確認 + エレベーター禁止
       [
-        { speaker: 'teacher', expr: 'serious', text: '揺れが止まった…\n全員、ケガはありませんか！？' },
-        { speaker: 'student_b', expr: 'relief', text: '大丈夫…でもストーブの火が…！' },
-        { speaker: 'teacher', expr: 'normal', text: '私が消します。\n皆さんはまだ机の下にいなさい。' },
-        { speaker: 'student_a', expr: 'worry', text: 'エレベーターで降りた方が\n早くない？' },
+        { speaker: 'teacher', expr: 'serious', text: {ja: '揺れが止まった…\n全員、ケガはありませんか！？', en: 'The shaking has stopped...\nIs everyone okay!? Any injuries!?'} },
+        { speaker: 'student_b', expr: 'relief', text: {ja: '大丈夫…でもストーブの火が…！', en: 'I\'m okay... but the heater is still on...!'} },
+        { speaker: 'teacher', expr: 'normal', text: {ja: '私が消します。\n皆さんはまだ机の下にいなさい。', en: 'I\'ll turn it off.\nEveryone stay under your desks for now.'} },
+        { speaker: 'student_a', expr: 'worry', text: {ja: 'エレベーターで降りた方が\n早くない？', en: 'Wouldn\'t it be faster\nto take the elevator down?'} },
         {
-          type: 'choice', text: '避難はどうする？',
+          type: 'choice', text: {ja: '避難はどうする？', en: 'How should you evacuate?'},
           choices: [
-            { label: '先生の指示に従い階段で避難', score: 10, correct: true,
-              response: { speaker: 'bousai', expr: 'smile', text: '正解！地震後のエレベーターは絶対NG。\n余震で停止して閉じ込められる危険がある。\n東日本大震災では約14,000件もの\nエレベーター閉じ込めが発生したんだ。' }},
-            { label: 'エレベーターで素早く1階へ', score: -5, correct: false,
-              consequence: { icon: '🛗', text: '余震でエレベーターが\n停止した！閉じ込められた！', flash: 'red', shake: true },
-              response: { speaker: 'bousai', expr: 'worry', text: '地震後のエレベーター使用は厳禁！\n余震で停止し、救助まで何時間も\n閉じ込められることがある。\n必ず階段で避難しよう。' }},
+            { label: {ja: '先生の指示に従い階段で避難', en: 'Follow the teacher and use the stairs'}, score: 10, correct: true,
+              response: { speaker: 'bousai', expr: 'smile', text: {ja: '正解！地震後のエレベーターは絶対NG。\n余震で停止して閉じ込められる危険がある。\n東日本大震災では約14,000件もの\nエレベーター閉じ込めが発生したんだ。', en: 'Correct! Never use elevators after an earthquake.\nAftershocks can stop them and trap you inside.\nIn the 2011 Great East Japan Earthquake, about\n14,000 elevator entrapments occurred.'} }},
+            { label: {ja: 'エレベーターで素早く1階へ', en: 'Take the elevator to the 1st floor quickly'}, score: -5, correct: false,
+              consequence: { icon: '🛗', text: {ja: '余震でエレベーターが\n停止した！閉じ込められた！', en: 'An aftershock stopped the elevator!\nYou\'re trapped inside!'}, flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: {ja: '地震後のエレベーター使用は厳禁！\n余震で停止し、救助まで何時間も\n閉じ込められることがある。\n必ず階段で避難しよう。', en: 'Using elevators after an earthquake is strictly forbidden!\nAftershocks can stop them, and you could be\ntrapped for hours until rescue arrives.\nAlways evacuate using the stairs.'} }},
           ]
         },
       ],
       // パターンC: 通電火災の知識 + ブレーカー
       [
-        { speaker: 'narrator', text: '── 揺れが収まった… ──' },
-        { speaker: 'teacher', expr: 'serious', text: '全員無事ですか？\n落ち着いて周りを確認して。' },
-        { speaker: 'student_a', expr: 'worry', text: '先生、天井の一部が落ちてます…' },
-        { speaker: 'student_b', expr: 'normal', text: 'ブレーカーを落とした方が\nいいんだよね？\n「通電火災」を防ぐために。' },
+        { speaker: 'narrator', text: {ja: '── 揺れが収まった… ──', en: '── The shaking has subsided... ──'} },
+        { speaker: 'teacher', expr: 'serious', text: {ja: '全員無事ですか？\n落ち着いて周りを確認して。', en: 'Is everyone safe?\nStay calm and check your surroundings.'} },
+        { speaker: 'student_a', expr: 'worry', text: {ja: '先生、天井の一部が落ちてます…', en: 'Teacher, part of the ceiling has fallen...'} },
+        { speaker: 'student_b', expr: 'normal', text: {ja: 'ブレーカーを落とした方が\nいいんだよね？\n「通電火災」を防ぐために。', en: 'We should switch off the breaker,\nright?\nTo prevent an electrical fire.'} },
         {
-          type: 'choice', text: '避難前にすべきことは？',
+          type: 'choice', text: {ja: '避難前にすべきことは？', en: 'What should you do before evacuating?'},
           choices: [
-            { label: '火の元・ブレーカーを確認してから避難', score: 10, correct: true,
-              response: { speaker: 'bousai', expr: 'smile', text: '素晴らしい！通電火災は停電が復旧した時に\n倒れた電気ストーブなどから発生する火災。\n阪神淡路大震災の火災の約6割が\n通電火災だったんだ。\nブレーカーを落とすのは超重要！' }},
-            { label: '荷物を全部持って急いで避難', score: -5, correct: false,
-              consequence: { icon: '🎒', text: '大きな荷物が邪魔になり\n避難に時間がかかった！', flash: 'red', shake: true },
-              response: { speaker: 'bousai', expr: 'worry', text: '避難時に大量の荷物は危険。\n通路が狭くなるし、転倒の原因にも。\n貴重品と靴だけ持って、\nまず安全な場所に避難しよう。\n荷物は後から取りに来られる。' }},
+            { label: {ja: '火の元・ブレーカーを確認してから避難', en: 'Check fire sources and breaker, then evacuate'}, score: 10, correct: true,
+              response: { speaker: 'bousai', expr: 'smile', text: {ja: '素晴らしい！通電火災は停電が復旧した時に\n倒れた電気ストーブなどから発生する火災。\n阪神淡路大震災の火災の約6割が\n通電火災だったんだ。\nブレーカーを落とすのは超重要！', en: 'Excellent! Electrical fires occur when power is restored\nand fallen heaters or appliances reignite.\nAbout 60% of fires in the Great Hanshin Earthquake\nwere electrical fires.\nSwitching off the breaker is crucial!'} }},
+            { label: {ja: '荷物を全部持って急いで避難', en: 'Grab all your belongings and evacuate quickly'}, score: -5, correct: false,
+              consequence: { icon: '🎒', text: {ja: '大きな荷物が邪魔になり\n避難に時間がかかった！', en: 'The heavy bags slowed you down\nand delayed your evacuation!'}, flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: {ja: '避難時に大量の荷物は危険。\n通路が狭くなるし、転倒の原因にも。\n貴重品と靴だけ持って、\nまず安全な場所に避難しよう。\n荷物は後から取りに来られる。', en: 'Carrying lots of bags during evacuation is dangerous.\nThey block narrow paths and can cause falls.\nJust grab valuables and shoes,\nthen get to safety first.\nYou can come back for your things later.'} }},
           ]
         },
       ],
@@ -4003,31 +4018,31 @@ var NOVEL_VARIANTS = {
     epilogue_success: [
       // パターンA
       [
-        { speaker: 'teacher', expr: 'relief', text: '…全員、点呼完了。\n全員無事です。よかった…！' },
-        { speaker: 'student_a', expr: 'relief', text: '怖かった…でも、ちゃんと避難できた…！' },
-        { speaker: 'student_b', expr: 'smile', text: '避難訓練のプリント、\nちゃんと読んでおくね…！' },
-        { speaker: 'student_a', expr: 'smile', text: '俺も…！次からちゃんとやる！' },
-        { speaker: 'bousai', expr: 'smile', text: '素晴らしい避難だったよ！\n今回学んだことを振り返ろう。' },
-        { speaker: 'bousai', expr: 'normal', text: '① 地震が来たら「まず低く、頭を守り、動かない」\n② 揺れが収まったら火の元・ブレーカー確認\n③ 靴を履いてガラス破片に備える\n④ 「おはしも」を守って落ち着いて避難する' },
-        { speaker: 'bousai', expr: 'smile', text: '最後に、今の体験で学んだことを\nテストで確認してみよう！\n実際の地震でもきっと役に立つよ。' },
+        { speaker: 'teacher', expr: 'relief', text: {ja: '…全員、点呼完了。\n全員無事です。よかった…！', en: '...Roll call complete.\nEveryone is safe. Thank goodness...!'} },
+        { speaker: 'student_a', expr: 'relief', text: {ja: '怖かった…でも、ちゃんと避難できた…！', en: 'That was scary... but we evacuated safely...!'} },
+        { speaker: 'student_b', expr: 'smile', text: {ja: '避難訓練のプリント、\nちゃんと読んでおくね…！', en: 'I\'m going to read that evacuation\ndrill worksheet properly...!'} },
+        { speaker: 'student_a', expr: 'smile', text: {ja: '俺も…！次からちゃんとやる！', en: 'Me too...! I\'ll take it seriously from now on!'} },
+        { speaker: 'bousai', expr: 'smile', text: {ja: '素晴らしい避難だったよ！\n今回学んだことを振り返ろう。', en: 'That was an excellent evacuation!\nLet\'s review what we learned today.'} },
+        { speaker: 'bousai', expr: 'normal', text: {ja: '① 地震が来たら「まず低く、頭を守り、動かない」\n② 揺れが収まったら火の元・ブレーカー確認\n③ 靴を履いてガラス破片に備える\n④ 「おはしも」を守って落ち着いて避難する', en: '① When an earthquake hits: "Drop, Cover, and Hold On"\n② After shaking stops, check fire sources and breakers\n③ Wear shoes to protect against glass shards\n④ Follow "O-HA-SHI-MO" and evacuate calmly'} },
+        { speaker: 'bousai', expr: 'smile', text: {ja: '最後に、今の体験で学んだことを\nテストで確認してみよう！\n実際の地震でもきっと役に立つよ。', en: 'Finally, let\'s take a quiz to check\nwhat you learned from this experience!\nIt will surely help in a real earthquake.'} },
       ],
       // パターンB
       [
-        { speaker: 'teacher', expr: 'relief', text: '全員無事…本当によかった。\n皆さん、立派でしたよ。' },
-        { speaker: 'student_b', expr: 'smile', text: '先生が冷静だったから\nみんな落ち着けたんだよ。' },
-        { speaker: 'student_a', expr: 'relief', text: '正直すっごく怖かった…\nでも、やるべきことがわかってたから\n動けたんだと思う。' },
-        { speaker: 'bousai', expr: 'smile', text: 'その通り！「知っている」と「できる」は\n全然違う。今日の体験は本物の力になるよ。' },
-        { speaker: 'bousai', expr: 'normal', text: '日本では過去100年で震度6以上の\n地震が50回以上発生している。\n「備え」が命を守る唯一の方法だよ。' },
-        { speaker: 'bousai', expr: 'smile', text: 'さあ、学んだことをテストで\n確認してみよう！\n家族にも教えてあげてね。' },
+        { speaker: 'teacher', expr: 'relief', text: {ja: '全員無事…本当によかった。\n皆さん、立派でしたよ。', en: 'Everyone is safe... what a relief.\nYou all did wonderfully.'} },
+        { speaker: 'student_b', expr: 'smile', text: {ja: '先生が冷静だったから\nみんな落ち着けたんだよ。', en: 'We could stay calm because\nthe teacher stayed calm.'} },
+        { speaker: 'student_a', expr: 'relief', text: {ja: '正直すっごく怖かった…\nでも、やるべきことがわかってたから\n動けたんだと思う。', en: 'Honestly, I was really scared...\nBut I think I could act because\nI knew what to do.'} },
+        { speaker: 'bousai', expr: 'smile', text: {ja: 'その通り！「知っている」と「できる」は\n全然違う。今日の体験は本物の力になるよ。', en: 'Exactly! "Knowing" and "being able to do it"\nare totally different. Today\'s experience\nwill give you real strength.'} },
+        { speaker: 'bousai', expr: 'normal', text: {ja: '日本では過去100年で震度6以上の\n地震が50回以上発生している。\n「備え」が命を守る唯一の方法だよ。', en: 'In the past 100 years, Japan has experienced\nover 50 earthquakes of intensity 6 or higher.\nPreparedness is the only way to save lives.'} },
+        { speaker: 'bousai', expr: 'smile', text: {ja: 'さあ、学んだことをテストで\n確認してみよう！\n家族にも教えてあげてね。', en: 'Now, let\'s take a quiz to check\nwhat you\'ve learned!\nShare it with your family too.'} },
       ],
       // パターンC
       [
-        { speaker: 'teacher', expr: 'relief', text: '…はい、全員の無事を確認しました。' },
-        { speaker: 'student_a', expr: 'smile', text: '「おはしも」ちゃんと守れた！\n走りたくなったけど我慢した！' },
-        { speaker: 'student_b', expr: 'serious', text: '実はね…東日本大震災の時、\nお姉ちゃんが学校にいたんだ。\n先生の指示で全員助かったって。' },
-        { speaker: 'student_a', expr: 'serious', text: 'そうだったんだ…\n訓練って本当に大事なんだな。' },
-        { speaker: 'bousai', expr: 'normal', text: '「釜石の奇跡」を知ってるかな？\n東日本大震災で、釜石市の小中学生は\n日頃の防災教育のおかげで\nほぼ全員が助かったんだ。' },
-        { speaker: 'bousai', expr: 'smile', text: '知識は最強の防災グッズ！\nテストで今日の学びを確認しよう！' },
+        { speaker: 'teacher', expr: 'relief', text: {ja: '…はい、全員の無事を確認しました。', en: '...Alright, I\'ve confirmed everyone is safe.'} },
+        { speaker: 'student_a', expr: 'smile', text: {ja: '「おはしも」ちゃんと守れた！\n走りたくなったけど我慢した！', en: 'I followed "O-HA-SHI-MO" properly!\nI wanted to run but held back!'} },
+        { speaker: 'student_b', expr: 'serious', text: {ja: '実はね…東日本大震災の時、\nお姉ちゃんが学校にいたんだ。\n先生の指示で全員助かったって。', en: 'Actually... during the 2011 earthquake,\nmy older sister was at school.\nShe said everyone survived thanks to\nthe teacher\'s instructions.'} },
+        { speaker: 'student_a', expr: 'serious', text: {ja: 'そうだったんだ…\n訓練って本当に大事なんだな。', en: 'I didn\'t know that...\nDrills really are important, aren\'t they.'} },
+        { speaker: 'bousai', expr: 'normal', text: {ja: '「釜石の奇跡」を知ってるかな？\n東日本大震災で、釜石市の小中学生は\n日頃の防災教育のおかげで\nほぼ全員が助かったんだ。', en: 'Have you heard of the "Miracle of Kamaishi"?\nDuring the 2011 earthquake, nearly all elementary\nand middle school students in Kamaishi survived\nthanks to regular disaster preparedness education.'} },
+        { speaker: 'bousai', expr: 'smile', text: {ja: '知識は最強の防災グッズ！\nテストで今日の学びを確認しよう！', en: 'Knowledge is the ultimate survival tool!\nLet\'s take a quiz to review today\'s lessons!'} },
       ],
     ],
 
@@ -4035,21 +4050,21 @@ var NOVEL_VARIANTS = {
     epilogue_fail: [
       // パターンA
       [
-        { speaker: 'bousai', expr: 'worry', text: '残念…今回は避難がうまくいかなかったね。' },
-        { speaker: 'bousai', expr: 'serious', text: 'でも大丈夫。\n失敗から学ぶことが一番大切なんだ。\n実際の災害でこの経験が活きるよ。' },
-        { speaker: 'bousai', expr: 'normal', text: '最後に知識テストに挑戦しよう。\n正しい行動を確認して、\nもう一度チャレンジしてみよう！' },
+        { speaker: 'bousai', expr: 'worry', text: {ja: '残念…今回は避難がうまくいかなかったね。', en: 'Too bad... the evacuation didn\'t go well this time.'} },
+        { speaker: 'bousai', expr: 'serious', text: {ja: 'でも大丈夫。\n失敗から学ぶことが一番大切なんだ。\n実際の災害でこの経験が活きるよ。', en: 'But that\'s okay.\nLearning from mistakes is the most important thing.\nThis experience will help in a real disaster.'} },
+        { speaker: 'bousai', expr: 'normal', text: {ja: '最後に知識テストに挑戦しよう。\n正しい行動を確認して、\nもう一度チャレンジしてみよう！', en: 'Let\'s try a knowledge quiz.\nReview the correct actions,\nand give it another try!'} },
       ],
       // パターンB
       [
-        { speaker: 'bousai', expr: 'worry', text: '今回は厳しい結果になったね…\nでも、これは「練習」だから大丈夫。' },
-        { speaker: 'bousai', expr: 'normal', text: '大切なのは「次はどうするか」。\n何が危なかったか、振り返ってみよう。' },
-        { speaker: 'bousai', expr: 'smile', text: 'テストで正しい知識を確認して、\nもう一回挑戦してみて！\n次はきっとうまくいくよ！' },
+        { speaker: 'bousai', expr: 'worry', text: {ja: '今回は厳しい結果になったね…\nでも、これは「練習」だから大丈夫。', en: 'The results were tough this time...\nBut this is just practice, so it\'s okay.'} },
+        { speaker: 'bousai', expr: 'normal', text: {ja: '大切なのは「次はどうするか」。\n何が危なかったか、振り返ってみよう。', en: 'What matters is "what will you do next time?"\nLet\'s look back at what was dangerous.'} },
+        { speaker: 'bousai', expr: 'smile', text: {ja: 'テストで正しい知識を確認して、\nもう一回挑戦してみて！\n次はきっとうまくいくよ！', en: 'Check your knowledge with the quiz,\nand try again!\nYou\'ll do great next time!'} },
       ],
       // パターンC
       [
-        { speaker: 'bousai', expr: 'serious', text: '地震は怖い。\nだからこそ、準備が大事なんだ。' },
-        { speaker: 'bousai', expr: 'normal', text: '実は、防災訓練を1回やるだけで\n避難成功率は2倍になるという\nデータがあるんだよ。' },
-        { speaker: 'bousai', expr: 'smile', text: '今回の経験も立派な訓練さ！\nテストで復習して、\nもう一度やってみよう！' },
+        { speaker: 'bousai', expr: 'serious', text: {ja: '地震は怖い。\nだからこそ、準備が大事なんだ。', en: 'Earthquakes are scary.\nThat\'s exactly why preparation matters.'} },
+        { speaker: 'bousai', expr: 'normal', text: {ja: '実は、防災訓練を1回やるだけで\n避難成功率は2倍になるという\nデータがあるんだよ。', en: 'Did you know? Data shows that just one\ndisaster drill can double your chances\nof a successful evacuation.'} },
+        { speaker: 'bousai', expr: 'smile', text: {ja: '今回の経験も立派な訓練さ！\nテストで復習して、\nもう一度やってみよう！', en: 'This experience counts as real training!\nReview with the quiz,\nand give it another go!'} },
       ],
     ],
   },
@@ -4059,40 +4074,40 @@ var NOVEL_VARIANTS = {
     prologue: [
       // パターンA: 午後のミーティング前の雑談
       [
-        { speaker: 'narrator', text: '── 午後2時・オフィス ──' },
-        { speaker: 'boss', expr: 'normal', text: 'ミーティングは3時からだ。\nそれまで各自作業を進めてくれ。' },
-        { speaker: 'colleague_a', expr: 'normal', text: '（ふぁ〜…午後は眠いな…）' },
-        { speaker: 'colleague_b', expr: 'normal', text: 'ねえ、来週の防災訓練の案内見た？\n今年は全館避難訓練だって。' },
-        { speaker: 'colleague_a', expr: 'worry', text: 'えー、また？\n忙しいのに面倒だなぁ…' },
-        { speaker: 'colleague_b', expr: 'serious', text: '何言ってるの。\n去年、出張先で震度5に遭った時は\n本当に怖かったよ…' },
-        { speaker: 'boss', expr: 'serious', text: '防災訓練は大事だ。\nこのビルは10階建てだからな。\nいざという時、判断を間違えると命に関わる。' },
-        { speaker: 'bousai', expr: 'normal', text: 'オフィスでの地震対策ポイント！\n① 揺れたらデスクの下に入り脚を持つ\n② エレベーターは絶対に使わない\n③ 非常階段の位置を普段から確認しておく' },
-        { speaker: 'narrator', text: '── 数分後 ──' },
+        { speaker: 'narrator', text: {ja: '── 午後2時・オフィス ──', en: '── 2:00 PM - Office ──'} },
+        { speaker: 'boss', expr: 'normal', text: {ja: 'ミーティングは3時からだ。\nそれまで各自作業を進めてくれ。', en: 'The meeting starts at 3.\nKeep working until then.'} },
+        { speaker: 'colleague_a', expr: 'normal', text: {ja: '（ふぁ〜…午後は眠いな…）', en: '(Yawn... afternoons are so sleepy...)'} },
+        { speaker: 'colleague_b', expr: 'normal', text: {ja: 'ねえ、来週の防災訓練の案内見た？\n今年は全館避難訓練だって。', en: 'Hey, did you see the notice about next week\'s disaster drill?\nApparently it\'s a full-building evacuation drill this year.'} },
+        { speaker: 'colleague_a', expr: 'worry', text: {ja: 'えー、また？\n忙しいのに面倒だなぁ…', en: 'Ugh, again?\nWe\'re so busy, what a hassle...'} },
+        { speaker: 'colleague_b', expr: 'serious', text: {ja: '何言ってるの。\n去年、出張先で震度5に遭った時は\n本当に怖かったよ…', en: 'What are you saying?\nWhen I experienced a magnitude 5 quake\non a business trip last year, it was terrifying...'} },
+        { speaker: 'boss', expr: 'serious', text: {ja: '防災訓練は大事だ。\nこのビルは10階建てだからな。\nいざという時、判断を間違えると命に関わる。', en: 'Disaster drills are important.\nThis building has 10 floors.\nA wrong decision in an emergency could cost lives.'} },
+        { speaker: 'bousai', expr: 'normal', text: {ja: 'オフィスでの地震対策ポイント！\n① 揺れたらデスクの下に入り脚を持つ\n② エレベーターは絶対に使わない\n③ 非常階段の位置を普段から確認しておく', en: 'Earthquake safety tips for the office!\n1. Get under your desk and hold the legs\n2. Never use the elevator\n3. Know your emergency stairway locations'} },
+        { speaker: 'narrator', text: {ja: '── 数分後 ──', en: '── A few minutes later ──'} },
       ],
       // パターンB: コーヒーブレイク中
       [
-        { speaker: 'narrator', text: '── 午後の休憩時間・給湯室 ──' },
-        { speaker: 'colleague_a', expr: 'normal', text: 'そういえばさ、\n地震保険って入ってる？' },
-        { speaker: 'colleague_b', expr: 'normal', text: '私は入ってるよ。\nマンションの管理組合で勧められて。' },
-        { speaker: 'colleague_a', expr: 'worry', text: '俺、まだなんだよなぁ…\n高いんでしょ？' },
-        { speaker: 'boss', expr: 'normal', text: 'このビルは耐震等級2だが、\n過信は禁物だ。\n耐震と免震は違うからな。' },
-        { speaker: 'colleague_b', expr: 'surprise', text: 'え、耐震と免震って違うんですか？' },
-        { speaker: 'boss', expr: 'serious', text: '耐震は「壊れにくい」構造、\n免震は「揺れを伝えにくい」構造だ。\nどちらにしても中にいる人間の行動が大事だ。' },
-        { speaker: 'bousai', expr: 'normal', text: 'オフィス地震のポイント！\n① デスク周りの物が凶器になる\n② キャビネットは揺れで倒れてくる\n③ コピー機は揺れで移動するから近づかない' },
-        { speaker: 'narrator', text: '── 休憩終了、業務に戻る ──' },
+        { speaker: 'narrator', text: {ja: '── 午後の休憩時間・給湯室 ──', en: '── Afternoon break - Break room ──'} },
+        { speaker: 'colleague_a', expr: 'normal', text: {ja: 'そういえばさ、\n地震保険って入ってる？', en: 'By the way,\ndo you have earthquake insurance?'} },
+        { speaker: 'colleague_b', expr: 'normal', text: {ja: '私は入ってるよ。\nマンションの管理組合で勧められて。', en: 'I do.\nThe condo association recommended it.'} },
+        { speaker: 'colleague_a', expr: 'worry', text: {ja: '俺、まだなんだよなぁ…\n高いんでしょ？', en: 'I still don\'t have it...\nIsn\'t it expensive?'} },
+        { speaker: 'boss', expr: 'normal', text: {ja: 'このビルは耐震等級2だが、\n過信は禁物だ。\n耐震と免震は違うからな。', en: 'This building has seismic resistance grade 2,\nbut don\'t be overconfident.\nEarthquake-resistant and seismically isolated are different.'} },
+        { speaker: 'colleague_b', expr: 'surprise', text: {ja: 'え、耐震と免震って違うんですか？', en: 'Wait, they\'re different?'} },
+        { speaker: 'boss', expr: 'serious', text: {ja: '耐震は「壊れにくい」構造、\n免震は「揺れを伝えにくい」構造だ。\nどちらにしても中にいる人間の行動が大事だ。', en: 'Earthquake-resistant means "hard to break."\nSeismically isolated means "absorbs shaking."\nEither way, how people inside act is what matters.'} },
+        { speaker: 'bousai', expr: 'normal', text: {ja: 'オフィス地震のポイント！\n① デスク周りの物が凶器になる\n② キャビネットは揺れで倒れてくる\n③ コピー機は揺れで移動するから近づかない', en: 'Office earthquake tips!\n1. Items around your desk can become projectiles\n2. Cabinets can topple from shaking\n3. Stay away from copiers - they slide during quakes'} },
+        { speaker: 'narrator', text: {ja: '── 休憩終了、業務に戻る ──', en: '── Break over, back to work ──'} },
       ],
       // パターンC: 締め切り前の忙しい午後
       [
-        { speaker: 'narrator', text: '── 午後3時・締め切り間近のオフィス ──' },
-        { speaker: 'colleague_a', expr: 'serious', text: 'うわ、今日中にこのレポート\n仕上げないと…' },
-        { speaker: 'colleague_b', expr: 'normal', text: 'ねえ、さっき防災アプリの\n緊急地震速報の通知設定したんだけど…' },
-        { speaker: 'colleague_a', expr: 'normal', text: 'え、そんなのあるの？' },
-        { speaker: 'colleague_b', expr: 'normal', text: 'うん。スマホの設定で\n緊急速報をONにしておくと、\n揺れの数秒前に知らせてくれるの。' },
-        { speaker: 'boss', expr: 'normal', text: 'いい心がけだ。\nついでに確認しておこう。\n非常口はあのドアの先だ。覚えているな？' },
-        { speaker: 'colleague_a', expr: 'surprise', text: 'あ、あそこか…\n正直、普段意識してなかったです。' },
-        { speaker: 'boss', expr: 'serious', text: '非常階段は2か所ある。\n東側と西側だ。\nどちらが近いか、覚えておけ。' },
-        { speaker: 'bousai', expr: 'smile', text: 'オフィスの備えポイント！\n① 緊急地震速報の通知設定をONに\n② 非常階段の場所を必ず確認\n③ デスク下のスペースを物で塞がない' },
-        { speaker: 'narrator', text: '── 業務再開 ──' },
+        { speaker: 'narrator', text: {ja: '── 午後3時・締め切り間近のオフィス ──', en: '── 3:00 PM - Office, deadline approaching ──'} },
+        { speaker: 'colleague_a', expr: 'serious', text: {ja: 'うわ、今日中にこのレポート\n仕上げないと…', en: 'Oh man, I need to finish this report\nby end of day...'} },
+        { speaker: 'colleague_b', expr: 'normal', text: {ja: 'ねえ、さっき防災アプリの\n緊急地震速報の通知設定したんだけど…', en: 'Hey, I just set up the earthquake\nearly warning notifications on my phone...'} },
+        { speaker: 'colleague_a', expr: 'normal', text: {ja: 'え、そんなのあるの？', en: 'Oh, there\'s a setting for that?'} },
+        { speaker: 'colleague_b', expr: 'normal', text: {ja: 'うん。スマホの設定で\n緊急速報をONにしておくと、\n揺れの数秒前に知らせてくれるの。', en: 'Yeah. If you turn on emergency alerts\nin your phone settings,\nit warns you seconds before the shaking.'} },
+        { speaker: 'boss', expr: 'normal', text: {ja: 'いい心がけだ。\nついでに確認しておこう。\n非常口はあのドアの先だ。覚えているな？', en: 'Good thinking.\nWhile we\'re at it, let\'s confirm:\nthe emergency exit is through that door. Remember?'} },
+        { speaker: 'colleague_a', expr: 'surprise', text: {ja: 'あ、あそこか…\n正直、普段意識してなかったです。', en: 'Oh, over there...\nHonestly, I never really paid attention.'} },
+        { speaker: 'boss', expr: 'serious', text: {ja: '非常階段は2か所ある。\n東側と西側だ。\nどちらが近いか、覚えておけ。', en: 'There are two emergency stairways.\nEast side and west side.\nRemember which one is closer to you.'} },
+        { speaker: 'bousai', expr: 'smile', text: {ja: 'オフィスの備えポイント！\n① 緊急地震速報の通知設定をONに\n② 非常階段の場所を必ず確認\n③ デスク下のスペースを物で塞がない', en: 'Office preparedness tips!\n1. Turn on earthquake early warning alerts\n2. Always know where the emergency stairs are\n3. Keep the space under your desk clear'} },
+        { speaker: 'narrator', text: {ja: '── 業務再開 ──', en: '── Back to work ──'} },
       ],
     ],
 
@@ -4100,61 +4115,61 @@ var NOVEL_VARIANTS = {
     earthquake: [
       // パターンA: 緊急地震速報 → 上司の指示
       [
-        { speaker: 'narrator', text: '── ﾋﾟﾛﾝﾋﾟﾛﾝ！緊急地震速報です ──' },
-        { speaker: 'boss', expr: 'surprise', text: '…！緊急地震速報だ！！' },
-        { speaker: 'colleague_a', expr: 'worry', text: 'え！？ど、どうすれば…！' },
-        { speaker: 'boss', expr: 'serious', text: '全員、デスクの下に入れ！\n頭を守れ！！' },
+        { speaker: 'narrator', text: {ja: '── ﾋﾟﾛﾝﾋﾟﾛﾝ！緊急地震速報です ──', en: '── BEEP BEEP! Earthquake early warning! ──'} },
+        { speaker: 'boss', expr: 'surprise', text: {ja: '…！緊急地震速報だ！！', en: '...! Earthquake warning!!'} },
+        { speaker: 'colleague_a', expr: 'worry', text: {ja: 'え！？ど、どうすれば…！', en: 'What!? Wh-what do we do...!'} },
+        { speaker: 'boss', expr: 'serious', text: {ja: '全員、デスクの下に入れ！\n頭を守れ！！', en: 'Everyone, get under your desks!\nProtect your heads!!'} },
         {
-          type: 'choice', text: 'どうする？',
+          type: 'choice', text: {ja: 'どうする？', en: 'What do you do?'},
           choices: [
-            { label: 'デスクの下に潜る', score: 10, correct: true,
-              response: { speaker: 'bousai', expr: 'smile', text: '正解！デスクの脚をしっかり持って、\n頭を守ろう！\nオフィスではキャビネットやモニターが\n落ちてくるから、デスクの下が一番安全だよ。' }},
-            { label: 'エレベーターに走る', score: -10, correct: false,
-              consequence: { icon: '🛗', text: 'エレベーターが緊急停止！\n閉じ込められた！', flash: 'red', shake: true },
-              response: { speaker: 'bousai', expr: 'worry', text: '揺れの最中にエレベーターに乗るのは\n最も危険な行動の一つ！\n停電で閉じ込められたら救助まで\n何時間もかかることがある。\n絶対にエレベーターは使わないで！' }},
-            { label: 'コピー機の横で様子を見る', score: -5, correct: false,
-              consequence: { icon: '🖨️', text: 'コピー機が揺れで\n移動してきた！', flash: 'red', shake: true },
-              response: { speaker: 'bousai', expr: 'worry', text: 'コピー機は100kg以上あるけど、\n大きな揺れで簡単に移動するんだ。\n挟まれたら大ケガになる。\n重い機器の近くは避けて、\n丈夫なデスクの下に入ろう！' }},
+            { label: {ja: 'デスクの下に潜る', en: 'Get under the desk'}, score: 10, correct: true,
+              response: { speaker: 'bousai', expr: 'smile', text: {ja: '正解！デスクの脚をしっかり持って、\n頭を守ろう！\nオフィスではキャビネットやモニターが\n落ちてくるから、デスクの下が一番安全だよ。', en: 'Correct! Hold the desk legs firmly\nand protect your head!\nIn offices, cabinets and monitors can fall,\nso under the desk is the safest spot.'} }},
+            { label: {ja: 'エレベーターに走る', en: 'Run to the elevator'}, score: -10, correct: false,
+              consequence: { icon: '🛗', text: {ja: 'エレベーターが緊急停止！\n閉じ込められた！', en: 'The elevator emergency stopped!\nYou\'re trapped inside!'}, flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: {ja: '揺れの最中にエレベーターに乗るのは\n最も危険な行動の一つ！\n停電で閉じ込められたら救助まで\n何時間もかかることがある。\n絶対にエレベーターは使わないで！', en: 'Taking the elevator during shaking\nis one of the most dangerous things to do!\nIf the power goes out, you could be trapped\nfor hours waiting for rescue.\nNever use the elevator!'} }},
+            { label: {ja: 'コピー機の横で様子を見る', en: 'Wait by the copier'}, score: -5, correct: false,
+              consequence: { icon: '🖨️', text: {ja: 'コピー機が揺れで\n移動してきた！', en: 'The copier slid toward you\nfrom the shaking!'}, flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: {ja: 'コピー機は100kg以上あるけど、\n大きな揺れで簡単に移動するんだ。\n挟まれたら大ケガになる。\n重い機器の近くは避けて、\n丈夫なデスクの下に入ろう！', en: 'Copiers weigh over 100kg, but they\nslide easily in strong shaking.\nGetting pinned means serious injury.\nStay away from heavy equipment\nand get under a sturdy desk!'} }},
           ]
         },
       ],
       // パターンB: 突然の揺れ → 同僚Aがパニック
       [
-        { speaker: 'narrator', text: '── ガタガタガタ…！！ ──' },
-        { speaker: 'colleague_a', expr: 'worry', text: 'う、うわあっ！\n揺れてる！地震だ！！' },
-        { speaker: 'colleague_b', expr: 'surprise', text: '大きい…！\nキャビネットが倒れそう！！' },
-        { speaker: 'colleague_b', expr: 'normal', text: '落ち着いて！\nまずデスクの下に入って！\n脚をしっかり持つのよ！' },
+        { speaker: 'narrator', text: {ja: '── ガタガタガタ…！！ ──', en: '── RATTLE RATTLE...!! ──'} },
+        { speaker: 'colleague_a', expr: 'worry', text: {ja: 'う、うわあっ！\n揺れてる！地震だ！！', en: 'W-whoa!\nIt\'s shaking! Earthquake!!'} },
+        { speaker: 'colleague_b', expr: 'surprise', text: {ja: '大きい…！\nキャビネットが倒れそう！！', en: 'It\'s big...!\nThe cabinet is about to fall!!'} },
+        { speaker: 'colleague_b', expr: 'normal', text: {ja: '落ち着いて！\nまずデスクの下に入って！\n脚をしっかり持つのよ！', en: 'Stay calm!\nGet under your desk first!\nHold the legs tight!'} },
         {
-          type: 'choice', text: '揺れが激しい！どうする？',
+          type: 'choice', text: {ja: '揺れが激しい！どうする？', en: 'The shaking is intense! What do you do?'},
           choices: [
-            { label: 'デスクの下に入って脚を持つ', score: 10, correct: true,
-              response: { speaker: 'bousai', expr: 'smile', text: '素晴らしい判断！\nデスクの脚を持つのは、\n揺れでデスクが動いてしまうのを防ぐため。\n頭と体をしっかり守れるよ！' }},
-            { label: '窓際に逃げる', score: -10, correct: false,
-              consequence: { icon: '🪟', text: 'ガラスが割れて\n破片が降り注いだ！', flash: 'red', shake: true },
-              response: { speaker: 'bousai', expr: 'worry', text: 'オフィスビルの窓は大きいから、\n割れた時の破片の量もすごいんだ。\n窓際は最も危険な場所の一つ。\n窓から離れてデスクの下に入ろう！' }},
-            { label: '荷物をまとめて避難準備', score: -5, correct: false,
-              consequence: { icon: '💼', text: '荷物を集めている間に\n棚が倒れてきた！', flash: 'red', shake: true },
-              response: { speaker: 'bousai', expr: 'worry', text: '揺れの最中に荷物を集めるのはダメ！\n数秒の判断の遅れが命取りになる。\n荷物よりまず自分の身を守ること。\n「まず低く、頭を守り、動かない」が鉄則だよ。' }},
+            { label: {ja: 'デスクの下に入って脚を持つ', en: 'Get under desk and hold legs'}, score: 10, correct: true,
+              response: { speaker: 'bousai', expr: 'smile', text: {ja: '素晴らしい判断！\nデスクの脚を持つのは、\n揺れでデスクが動いてしまうのを防ぐため。\n頭と体をしっかり守れるよ！', en: 'Excellent decision!\nHolding the desk legs prevents\nthe desk from sliding away.\nIt keeps your head and body protected!'} }},
+            { label: {ja: '窓際に逃げる', en: 'Run to the window'}, score: -10, correct: false,
+              consequence: { icon: '🪟', text: {ja: 'ガラスが割れて\n破片が降り注いだ！', en: 'The glass shattered and\nshards rained down!'}, flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: {ja: 'オフィスビルの窓は大きいから、\n割れた時の破片の量もすごいんだ。\n窓際は最も危険な場所の一つ。\n窓から離れてデスクの下に入ろう！', en: 'Office building windows are large,\nso the amount of broken glass is enormous.\nNear windows is one of the most dangerous spots.\nMove away from windows and get under a desk!'} }},
+            { label: {ja: '荷物をまとめて避難準備', en: 'Gather belongings to evacuate'}, score: -5, correct: false,
+              consequence: { icon: '💼', text: {ja: '荷物を集めている間に\n棚が倒れてきた！', en: 'While gathering your things,\na shelf fell on you!'}, flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: {ja: '揺れの最中に荷物を集めるのはダメ！\n数秒の判断の遅れが命取りになる。\n荷物よりまず自分の身を守ること。\n「まず低く、頭を守り、動かない」が鉄則だよ。', en: 'Never gather belongings during shaking!\nA few seconds\' hesitation can be fatal.\nProtect yourself before your things.\n"Drop, Cover, and Hold On" is the rule!'} }},
           ]
         },
       ],
       // パターンC: サーバールームのガラスが割れる
       [
-        { speaker: 'narrator', text: '── ガタガタ…ガシャーン！！ ──' },
-        { speaker: 'colleague_b', expr: 'surprise', text: 'サーバールームのガラスが\n割れた音がする…！！' },
-        { speaker: 'colleague_a', expr: 'worry', text: 'やばい！データが…！\n見に行かないと…！' },
-        { speaker: 'boss', expr: 'serious', text: '今はサーバーどころじゃない！\n全員、低い姿勢を取れ！\nデスクの下だ！' },
+        { speaker: 'narrator', text: {ja: '── ガタガタ…ガシャーン！！ ──', en: '── RATTLE... CRASH!! ──'} },
+        { speaker: 'colleague_b', expr: 'surprise', text: {ja: 'サーバールームのガラスが\n割れた音がする…！！', en: 'That sounds like the server room glass\njust shattered...!!'} },
+        { speaker: 'colleague_a', expr: 'worry', text: {ja: 'やばい！データが…！\n見に行かないと…！', en: 'Oh no! The data...!\nI need to go check...!'} },
+        { speaker: 'boss', expr: 'serious', text: {ja: '今はサーバーどころじゃない！\n全員、低い姿勢を取れ！\nデスクの下だ！', en: 'Forget the servers!\nEveryone, get low!\nUnder your desks!'} },
         {
-          type: 'choice', text: '大きな揺れだ！どうする？',
+          type: 'choice', text: {ja: '大きな揺れだ！どうする？', en: 'A big quake! What do you do?'},
           choices: [
-            { label: '低い姿勢でデスクの下へ', score: 10, correct: true,
-              response: { speaker: 'bousai', expr: 'smile', text: '正解！地震の時は\n「まず低く、頭を守り、動かない」。\nサーバーやデータより、\n自分の命が最優先だよ！' }},
-            { label: '階段に走る', score: -10, correct: false,
-              consequence: { icon: '🏃', text: '揺れで転倒！\n階段から転げ落ちそうに！', flash: 'red', shake: true },
-              response: { speaker: 'bousai', expr: 'worry', text: '揺れている最中に移動するのは超危険！\n特に階段は転落の恐れがある。\n揺れが収まるまではその場で\n身を守ることに集中しよう。' }},
-            { label: 'サーバールームを確認しに行く', score: -5, correct: false,
-              consequence: { icon: '💥', text: 'ガラスの破片で\n足をケガした！', flash: 'red', shake: true },
-              response: { speaker: 'bousai', expr: 'worry', text: 'サーバーは後から復旧できるけど、\nケガをした体は簡単には治らない。\n割れたガラスの近くは特に危険。\nまず自分の安全を確保してから\n被害を確認しよう！' }},
+            { label: {ja: '低い姿勢でデスクの下へ', en: 'Get low and under the desk'}, score: 10, correct: true,
+              response: { speaker: 'bousai', expr: 'smile', text: {ja: '正解！地震の時は\n「まず低く、頭を守り、動かない」。\nサーバーやデータより、\n自分の命が最優先だよ！', en: 'Correct! During an earthquake:\n"Drop, Cover, and Hold On."\nYour life comes before\nservers or data!'} }},
+            { label: {ja: '階段に走る', en: 'Run for the stairs'}, score: -10, correct: false,
+              consequence: { icon: '🏃', text: {ja: '揺れで転倒！\n階段から転げ落ちそうに！', en: 'You fell from the shaking!\nAlmost tumbled down the stairs!'}, flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: {ja: '揺れている最中に移動するのは超危険！\n特に階段は転落の恐れがある。\n揺れが収まるまではその場で\n身を守ることに集中しよう。', en: 'Moving during shaking is extremely dangerous!\nStairs especially risk a fall.\nStay where you are and focus on\nprotecting yourself until the shaking stops.'} }},
+            { label: {ja: 'サーバールームを確認しに行く', en: 'Go check the server room'}, score: -5, correct: false,
+              consequence: { icon: '💥', text: {ja: 'ガラスの破片で\n足をケガした！', en: 'You cut your feet\non broken glass!'}, flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: {ja: 'サーバーは後から復旧できるけど、\nケガをした体は簡単には治らない。\n割れたガラスの近くは特に危険。\nまず自分の安全を確保してから\n被害を確認しよう！', en: 'Servers can be restored later,\nbut injuries don\'t heal easily.\nBroken glass areas are especially dangerous.\nSecure your own safety first,\nthen assess the damage!'} }},
           ]
         },
       ],
@@ -4164,55 +4179,55 @@ var NOVEL_VARIANTS = {
     aftershake: [
       // パターンA: 全員無事か確認 → エレベーター問題
       [
-        { speaker: 'boss', expr: 'serious', text: '…揺れが収まった。\n全員、無事か？返事をしてくれ。' },
-        { speaker: 'colleague_a', expr: 'relief', text: 'は、はい…無事です…' },
-        { speaker: 'colleague_b', expr: 'normal', text: '私も大丈夫です。' },
-        { speaker: 'colleague_a', expr: 'normal', text: 'よし、早く避難しましょう。\nエレベーターで1階に降りれば\nすぐ外に出られますよ。' },
-        { speaker: 'boss', expr: 'serious', text: '待て。避難の方法を考えろ。' },
+        { speaker: 'boss', expr: 'serious', text: {ja: '…揺れが収まった。\n全員、無事か？返事をしてくれ。', en: '...The shaking has stopped.\nIs everyone okay? Sound off.'} },
+        { speaker: 'colleague_a', expr: 'relief', text: {ja: 'は、はい…無事です…', en: 'Y-yes... I\'m okay...'} },
+        { speaker: 'colleague_b', expr: 'normal', text: {ja: '私も大丈夫です。', en: 'I\'m fine too.'} },
+        { speaker: 'colleague_a', expr: 'normal', text: {ja: 'よし、早く避難しましょう。\nエレベーターで1階に降りれば\nすぐ外に出られますよ。', en: 'Alright, let\'s evacuate quickly.\nIf we take the elevator to the 1st floor,\nwe can get outside right away.'} },
+        { speaker: 'boss', expr: 'serious', text: {ja: '待て。避難の方法を考えろ。', en: 'Wait. Think about how we should evacuate.'} },
         {
-          type: 'choice', text: 'どうやって避難する？',
+          type: 'choice', text: {ja: 'どうやって避難する？', en: 'How do you evacuate?'},
           choices: [
-            { label: '非常階段で避難する', score: 10, correct: true,
-              response: { speaker: 'bousai', expr: 'smile', text: '正解！地震後のエレベーターは絶対NG。\n余震で停止して閉じ込められる危険がある。\n東日本大震災では約14,000件もの\nエレベーター閉じ込めが発生したんだ。\n必ず非常階段を使おう！' }},
-            { label: 'エレベーターで素早く避難', score: -5, correct: false,
-              consequence: { icon: '🛗', text: '余震でエレベーターが\n緊急停止した！', flash: 'red', shake: true },
-              response: { speaker: 'bousai', expr: 'worry', text: '地震後のエレベーター使用は厳禁！\n余震で停止し、救助まで何時間も\n閉じ込められることがある。\n東日本大震災では約14,000件の\n閉じ込めが発生した。\n必ず階段で避難しよう。' }},
+            { label: {ja: '非常階段で避難する', en: 'Use the emergency stairs'}, score: 10, correct: true,
+              response: { speaker: 'bousai', expr: 'smile', text: {ja: '正解！地震後のエレベーターは絶対NG。\n余震で停止して閉じ込められる危険がある。\n東日本大震災では約14,000件もの\nエレベーター閉じ込めが発生したんだ。\n必ず非常階段を使おう！', en: 'Correct! Elevators after an earthquake are a no-go.\nAftershocks can stop them and trap you inside.\nDuring the 2011 Great East Japan Earthquake,\nabout 14,000 elevator entrapments occurred.\nAlways use the emergency stairs!'} }},
+            { label: {ja: 'エレベーターで素早く避難', en: 'Take the elevator quickly'}, score: -5, correct: false,
+              consequence: { icon: '🛗', text: {ja: '余震でエレベーターが\n緊急停止した！', en: 'An aftershock caused the elevator\nto emergency stop!'}, flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: {ja: '地震後のエレベーター使用は厳禁！\n余震で停止し、救助まで何時間も\n閉じ込められることがある。\n東日本大震災では約14,000件の\n閉じ込めが発生した。\n必ず階段で避難しよう。', en: 'Using elevators after an earthquake is forbidden!\nAftershocks can stop them, trapping you\nfor hours until rescue arrives.\nAbout 14,000 entrapments occurred\nin the 2011 earthquake.\nAlways evacuate by stairs.'} }},
           ]
         },
       ],
       // パターンB: 通電火災 → ブレーカー確認
       [
-        { speaker: 'narrator', text: '── 揺れが収まった… ──' },
-        { speaker: 'boss', expr: 'serious', text: '全員ケガはないか？' },
-        { speaker: 'colleague_a', expr: 'relief', text: '大丈夫です…\nでもデスク周り散らかって…' },
-        { speaker: 'colleague_b', expr: 'normal', text: '停電してますね…\nあの、ブレーカーを確認した方が\nいいんじゃないですか？' },
-        { speaker: 'colleague_a', expr: 'surprise', text: 'え？なんで？\n早く逃げた方がよくない？' },
-        { speaker: 'colleague_b', expr: 'serious', text: '「通電火災」って知ってる？\n停電が復旧した時に、\n倒れた機器から火が出ることがあるの。' },
+        { speaker: 'narrator', text: {ja: '── 揺れが収まった… ──', en: '── The shaking has stopped... ──'} },
+        { speaker: 'boss', expr: 'serious', text: {ja: '全員ケガはないか？', en: 'Is anyone hurt?'} },
+        { speaker: 'colleague_a', expr: 'relief', text: {ja: '大丈夫です…\nでもデスク周り散らかって…', en: 'I\'m okay...\nBut everything around my desk is a mess...'} },
+        { speaker: 'colleague_b', expr: 'normal', text: {ja: '停電してますね…\nあの、ブレーカーを確認した方が\nいいんじゃないですか？', en: 'The power\'s out...\nUm, shouldn\'t we check\nthe circuit breaker?'} },
+        { speaker: 'colleague_a', expr: 'surprise', text: {ja: 'え？なんで？\n早く逃げた方がよくない？', en: 'Huh? Why?\nShouldn\'t we just get out fast?'} },
+        { speaker: 'colleague_b', expr: 'serious', text: {ja: '「通電火災」って知ってる？\n停電が復旧した時に、\n倒れた機器から火が出ることがあるの。', en: 'Have you heard of "electrical restoration fires"?\nWhen power comes back on,\ntoppled equipment can catch fire.'} },
         {
-          type: 'choice', text: '避難前にどうする？',
+          type: 'choice', text: {ja: '避難前にどうする？', en: 'What do you do before evacuating?'},
           choices: [
-            { label: 'ブレーカーを確認してから避難', score: 10, correct: true,
-              response: { speaker: 'bousai', expr: 'smile', text: '素晴らしい！通電火災は\n阪神淡路大震災の火災の約6割の原因。\nブレーカーを落としてから避難すれば、\n二次災害を防げるんだ。\n余裕があれば必ず確認しよう！' }},
-            { label: '荷物を全部持って急いで避難', score: -5, correct: false,
-              consequence: { icon: '🔥', text: '数時間後、通電火災で\nオフィスが燃えてしまった…', flash: 'red', shake: false },
-              response: { speaker: 'bousai', expr: 'worry', text: '大量の荷物を持つと避難の邪魔になるし、\nブレーカーを落とさずに出ると\n通電火災の危険がある。\n貴重品だけ持って、\nブレーカーを確認してから避難しよう。' }},
+            { label: {ja: 'ブレーカーを確認してから避難', en: 'Check breaker, then evacuate'}, score: 10, correct: true,
+              response: { speaker: 'bousai', expr: 'smile', text: {ja: '素晴らしい！通電火災は\n阪神淡路大震災の火災の約6割の原因。\nブレーカーを落としてから避難すれば、\n二次災害を防げるんだ。\n余裕があれば必ず確認しよう！', en: 'Excellent! Electrical restoration fires caused\nabout 60% of fires in the 1995 Kobe earthquake.\nSwitching off the breaker before evacuating\nprevents secondary disasters.\nAlways check if you have time!'} }},
+            { label: {ja: '荷物を全部持って急いで避難', en: 'Grab everything and rush out'}, score: -5, correct: false,
+              consequence: { icon: '🔥', text: {ja: '数時間後、通電火災で\nオフィスが燃えてしまった…', en: 'Hours later, an electrical fire\nburned down the office...'}, flash: 'red', shake: false },
+              response: { speaker: 'bousai', expr: 'worry', text: {ja: '大量の荷物を持つと避難の邪魔になるし、\nブレーカーを落とさずに出ると\n通電火災の危険がある。\n貴重品だけ持って、\nブレーカーを確認してから避難しよう。', en: 'Carrying lots of stuff slows your evacuation,\nand leaving without switching off the breaker\nrisks an electrical fire.\nTake only valuables and\ncheck the breaker before leaving.'} }},
           ]
         },
       ],
       // パターンC: 天井パネル落下 → 点呼して避難
       [
-        { speaker: 'boss', expr: 'serious', text: '揺れが止まった。\n天井パネルが何枚か落ちているな…\n全員、名前を呼ぶから返事をしろ。' },
-        { speaker: 'colleague_a', expr: 'relief', text: 'はい…無事です。' },
-        { speaker: 'colleague_b', expr: 'normal', text: '大丈夫です。\nでも、通路に天井の破片が\n散らばっています。' },
-        { speaker: 'boss', expr: 'normal', text: 'よし、全員無事だ。\nこれから避難するぞ。\n足元に気をつけてくれ。' },
+        { speaker: 'boss', expr: 'serious', text: {ja: '揺れが止まった。\n天井パネルが何枚か落ちているな…\n全員、名前を呼ぶから返事をしろ。', en: 'The shaking has stopped.\nSeveral ceiling panels have fallen...\nI\'ll call roll - everyone respond.'} },
+        { speaker: 'colleague_a', expr: 'relief', text: {ja: 'はい…無事です。', en: 'Here... I\'m safe.'} },
+        { speaker: 'colleague_b', expr: 'normal', text: {ja: '大丈夫です。\nでも、通路に天井の破片が\n散らばっています。', en: 'I\'m okay.\nBut there\'s ceiling debris\nscattered in the hallway.'} },
+        { speaker: 'boss', expr: 'normal', text: {ja: 'よし、全員無事だ。\nこれから避難するぞ。\n足元に気をつけてくれ。', en: 'Good, everyone\'s safe.\nWe\'re evacuating now.\nWatch your step.'} },
         {
-          type: 'choice', text: 'どの方法で避難する？',
+          type: 'choice', text: {ja: 'どの方法で避難する？', en: 'How do you evacuate?'},
           choices: [
-            { label: '落ち着いて非常階段で避難', score: 10, correct: true,
-              response: { speaker: 'bousai', expr: 'smile', text: '正解！非常階段は地震に強い構造で、\n避難経路として最も安全だよ。\n慌てず、足元に気をつけながら\n一段ずつ降りていこう。' }},
-            { label: '階段が混むからエレベーターで', score: -5, correct: false,
-              consequence: { icon: '🛗', text: '余震でエレベーターが\n途中で止まってしまった！', flash: 'red', shake: true },
-              response: { speaker: 'bousai', expr: 'worry', text: '「階段が混む」は地震後に\nエレベーターを使う理由にならない。\n閉じ込められたら救助を待つしかない。\n少し時間がかかっても、\n安全な非常階段を使おう！' }},
+            { label: {ja: '落ち着いて非常階段で避難', en: 'Calmly use emergency stairs'}, score: 10, correct: true,
+              response: { speaker: 'bousai', expr: 'smile', text: {ja: '正解！非常階段は地震に強い構造で、\n避難経路として最も安全だよ。\n慌てず、足元に気をつけながら\n一段ずつ降りていこう。', en: 'Correct! Emergency stairs are built to\nwithstand earthquakes and are the safest route.\nStay calm, watch your footing,\nand go down one step at a time.'} }},
+            { label: {ja: '階段が混むからエレベーターで', en: 'Elevator to avoid crowded stairs'}, score: -5, correct: false,
+              consequence: { icon: '🛗', text: {ja: '余震でエレベーターが\n途中で止まってしまった！', en: 'An aftershock stopped\nthe elevator mid-floor!'}, flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: {ja: '「階段が混む」は地震後に\nエレベーターを使う理由にならない。\n閉じ込められたら救助を待つしかない。\n少し時間がかかっても、\n安全な非常階段を使おう！', en: '"Crowded stairs" is no reason to use\nan elevator after an earthquake.\nIf you get trapped, you can only wait for rescue.\nEven if it takes longer,\nuse the safe emergency stairs!'} }},
           ]
         },
       ],
@@ -4222,32 +4237,32 @@ var NOVEL_VARIANTS = {
     epilogue_success: [
       // パターンA
       [
-        { speaker: 'narrator', text: '── オフィスビル前の広場 ──' },
-        { speaker: 'boss', expr: 'relief', text: '…全員の安全を確認した。\n全員無事だ。よかった。' },
-        { speaker: 'colleague_a', expr: 'relief', text: '正直、パニックになりかけました…\nでも、正しい行動ができてよかった。' },
-        { speaker: 'colleague_b', expr: 'smile', text: '日頃から避難経路を確認していたから\n落ち着いて動けたんだと思う。\nやっぱり普段の備えが大事だね。' },
-        { speaker: 'boss', expr: 'smile', text: 'その通りだ。\n今日の経験を忘れないようにしよう。' },
-        { speaker: 'bousai', expr: 'smile', text: '素晴らしい避難だったよ！\n今回学んだことをおさらいしよう。' },
-        { speaker: 'bousai', expr: 'normal', text: '① 揺れたらデスクの下で頭を守る\n② エレベーターは絶対に使わない\n③ ブレーカーを落として通電火災を防ぐ\n④ 非常階段で落ち着いて避難する' },
-        { speaker: 'bousai', expr: 'smile', text: '最後にテストで知識を確認しよう！\nオフィスでの地震対策、\nしっかり身についたかな？' },
+        { speaker: 'narrator', text: {ja: '── オフィスビル前の広場 ──', en: '── Plaza in front of the office building ──'} },
+        { speaker: 'boss', expr: 'relief', text: {ja: '…全員の安全を確認した。\n全員無事だ。よかった。', en: '...Everyone\'s safety confirmed.\nAll safe. Thank goodness.'} },
+        { speaker: 'colleague_a', expr: 'relief', text: {ja: '正直、パニックになりかけました…\nでも、正しい行動ができてよかった。', en: 'Honestly, I almost panicked...\nBut I\'m glad we did the right thing.'} },
+        { speaker: 'colleague_b', expr: 'smile', text: {ja: '日頃から避難経路を確認していたから\n落ち着いて動けたんだと思う。\nやっぱり普段の備えが大事だね。', en: 'I think we stayed calm because\nwe knew the evacuation routes beforehand.\nDaily preparedness really matters.'} },
+        { speaker: 'boss', expr: 'smile', text: {ja: 'その通りだ。\n今日の経験を忘れないようにしよう。', en: 'Exactly.\nLet\'s not forget today\'s experience.'} },
+        { speaker: 'bousai', expr: 'smile', text: {ja: '素晴らしい避難だったよ！\n今回学んだことをおさらいしよう。', en: 'That was a great evacuation!\nLet\'s review what we learned.'} },
+        { speaker: 'bousai', expr: 'normal', text: {ja: '① 揺れたらデスクの下で頭を守る\n② エレベーターは絶対に使わない\n③ ブレーカーを落として通電火災を防ぐ\n④ 非常階段で落ち着いて避難する', en: '1. Get under your desk and protect your head\n2. Never use the elevator\n3. Switch off breakers to prevent electrical fires\n4. Evacuate calmly via emergency stairs'} },
+        { speaker: 'bousai', expr: 'smile', text: {ja: '最後にテストで知識を確認しよう！\nオフィスでの地震対策、\nしっかり身についたかな？', en: 'Let\'s test your knowledge!\nDid you master earthquake safety\nin the office?'} },
       ],
       // パターンB
       [
-        { speaker: 'narrator', text: '── オフィスビル前の広場 ──' },
-        { speaker: 'colleague_a', expr: 'relief', text: 'はぁ…助かった…\nエレベーターに乗らなくて\n本当によかったです。' },
-        { speaker: 'colleague_b', expr: 'smile', text: '上司の判断が的確でしたね。\nあの状況で冷静に指示を出すなんて。' },
-        { speaker: 'boss', expr: 'normal', text: '私も内心は焦っていたよ。\nだが、事前に対応を考えていたから\n動けたんだ。' },
-        { speaker: 'bousai', expr: 'normal', text: 'ちなみに、東日本大震災では\n約14,000件のエレベーター閉じ込めが\n発生したんだ。\nエレベーターに乗らない判断は\n本当に正しかったよ。' },
-        { speaker: 'bousai', expr: 'smile', text: 'さあ、テストで今日の知識を\n確認してみよう！\n家族や同僚にも教えてあげてね。' },
+        { speaker: 'narrator', text: {ja: '── オフィスビル前の広場 ──', en: '── Plaza in front of the office building ──'} },
+        { speaker: 'colleague_a', expr: 'relief', text: {ja: 'はぁ…助かった…\nエレベーターに乗らなくて\n本当によかったです。', en: 'Phew... we made it...\nI\'m so glad we didn\'t\ntake the elevator.'} },
+        { speaker: 'colleague_b', expr: 'smile', text: {ja: '上司の判断が的確でしたね。\nあの状況で冷静に指示を出すなんて。', en: 'The boss made the right call.\nStaying calm and giving orders\nin that situation was impressive.'} },
+        { speaker: 'boss', expr: 'normal', text: {ja: '私も内心は焦っていたよ。\nだが、事前に対応を考えていたから\n動けたんだ。', en: 'I was nervous inside too.\nBut I could act because\nI had thought about it beforehand.'} },
+        { speaker: 'bousai', expr: 'normal', text: {ja: 'ちなみに、東日本大震災では\n約14,000件のエレベーター閉じ込めが\n発生したんだ。\nエレベーターに乗らない判断は\n本当に正しかったよ。', en: 'By the way, during the 2011 earthquake,\nabout 14,000 elevator entrapments occurred.\nThe decision not to take the elevator\nwas absolutely right.'} },
+        { speaker: 'bousai', expr: 'smile', text: {ja: 'さあ、テストで今日の知識を\n確認してみよう！\n家族や同僚にも教えてあげてね。', en: 'Now let\'s test what you learned today!\nShare this knowledge with\nyour family and coworkers too.'} },
       ],
       // パターンC
       [
-        { speaker: 'narrator', text: '── オフィスビル前の広場 ──' },
-        { speaker: 'colleague_b', expr: 'smile', text: '非常階段の場所、\n知っていたからスムーズに避難できた。\n日頃から確認しておくのは大事だね。' },
-        { speaker: 'colleague_a', expr: 'serious', text: '俺、正直あの非常階段の場所\n知らなかったら詰んでた…\n明日から毎日確認するよ。' },
-        { speaker: 'boss', expr: 'smile', text: 'この経験を忘れるな。\n次に備えて、防災マニュアルも\n見直しておこう。' },
-        { speaker: 'bousai', expr: 'normal', text: '高層ビルでは「長周期地震動」にも\n注意が必要だよ。\n遠くの地震でもゆっくり大きく揺れて、\n10分以上続くことがある。\n2011年の東日本大震災では\n東京や大阪の高層ビルも揺れたんだ。' },
-        { speaker: 'bousai', expr: 'smile', text: 'テストで今日の学びを確認しよう！\nオフィスの防災知識、\nバッチリ身についたかな？' },
+        { speaker: 'narrator', text: {ja: '── オフィスビル前の広場 ──', en: '── Plaza in front of the office building ──'} },
+        { speaker: 'colleague_b', expr: 'smile', text: {ja: '非常階段の場所、\n知っていたからスムーズに避難できた。\n日頃から確認しておくのは大事だね。', en: 'Knowing where the emergency stairs were\nmade the evacuation smooth.\nIt\'s so important to check regularly.'} },
+        { speaker: 'colleague_a', expr: 'serious', text: {ja: '俺、正直あの非常階段の場所\n知らなかったら詰んでた…\n明日から毎日確認するよ。', en: 'Honestly, if I hadn\'t known where\nthose stairs were, I\'d have been in trouble...\nI\'m checking every day from now on.'} },
+        { speaker: 'boss', expr: 'smile', text: {ja: 'この経験を忘れるな。\n次に備えて、防災マニュアルも\n見直しておこう。', en: 'Don\'t forget this experience.\nLet\'s review the disaster manual\nto prepare for next time.'} },
+        { speaker: 'bousai', expr: 'normal', text: {ja: '高層ビルでは「長周期地震動」にも\n注意が必要だよ。\n遠くの地震でもゆっくり大きく揺れて、\n10分以上続くことがある。\n2011年の東日本大震災では\n東京や大阪の高層ビルも揺れたんだ。', en: 'In tall buildings, watch out for\n"long-period ground motion" too.\nEven distant earthquakes can cause slow,\nlarge swaying that lasts over 10 minutes.\nDuring the 2011 earthquake, high-rises\nin Tokyo and Osaka swayed significantly.'} },
+        { speaker: 'bousai', expr: 'smile', text: {ja: 'テストで今日の学びを確認しよう！\nオフィスの防災知識、\nバッチリ身についたかな？', en: 'Let\'s confirm what you learned with a test!\nDid you nail the office\nearthquake safety knowledge?'} },
       ],
     ],
 
@@ -4255,24 +4270,25 @@ var NOVEL_VARIANTS = {
     epilogue_fail: [
       // パターンA
       [
-        { speaker: 'bousai', expr: 'worry', text: '残念…今回は避難がうまくいかなかったね。\nでも、ここで学べたことがあるはず。' },
-        { speaker: 'bousai', expr: 'normal', text: 'オフィスでの地震は、\n家庭とは違う危険がたくさんある。\n重い機器、ガラス、エレベーター…\n正しい知識が身を守るよ。' },
-        { speaker: 'bousai', expr: 'smile', text: 'テストで正しい行動を確認して、\nもう一度挑戦してみよう！\n次はきっとうまくいくよ！' },
+        { speaker: 'bousai', expr: 'worry', text: {ja: '残念…今回は避難がうまくいかなかったね。\nでも、ここで学べたことがあるはず。', en: 'Too bad... the evacuation didn\'t go well this time.\nBut you surely learned something here.'} },
+        { speaker: 'bousai', expr: 'normal', text: {ja: 'オフィスでの地震は、\n家庭とは違う危険がたくさんある。\n重い機器、ガラス、エレベーター…\n正しい知識が身を守るよ。', en: 'Office earthquakes have many dangers\ndifferent from those at home.\nHeavy equipment, glass, elevators...\nThe right knowledge protects you.'} },
+        { speaker: 'bousai', expr: 'smile', text: {ja: 'テストで正しい行動を確認して、\nもう一度挑戦してみよう！\n次はきっとうまくいくよ！', en: 'Review the correct actions in the test\nand try again!\nYou\'ll do great next time!'} },
       ],
       // パターンB
       [
-        { speaker: 'bousai', expr: 'worry', text: '実際の災害で同じ判断をしないために、\n今回の体験を振り返ろう。' },
-        { speaker: 'bousai', expr: 'serious', text: 'オフィスビルでは「エレベーターを使わない」\n「デスクの下に入る」「非常階段で避難」、\nこの3つが基本中の基本だよ。' },
-        { speaker: 'bousai', expr: 'smile', text: 'さあ、テストで知識を確認して、\n再挑戦してみよう！\n正しい判断ができるようになるはず！' },
+        { speaker: 'bousai', expr: 'worry', text: {ja: '実際の災害で同じ判断をしないために、\n今回の体験を振り返ろう。', en: 'Let\'s reflect on this experience\nso you don\'t make the same choices in a real disaster.'} },
+        { speaker: 'bousai', expr: 'serious', text: {ja: 'オフィスビルでは「エレベーターを使わない」\n「デスクの下に入る」「非常階段で避難」、\nこの3つが基本中の基本だよ。', en: 'In office buildings, the three basics are:\n"Don\'t use elevators,"\n"Get under your desk,"\nand "Evacuate via emergency stairs."'} },
+        { speaker: 'bousai', expr: 'smile', text: {ja: 'さあ、テストで知識を確認して、\n再挑戦してみよう！\n正しい判断ができるようになるはず！', en: 'Now test your knowledge\nand try again!\nYou\'ll make the right calls next time!'} },
       ],
       // パターンC
       [
-        { speaker: 'bousai', expr: 'serious', text: '高層ビルでの地震は特に危険なんだ。\n上の階ほど揺れが大きくなるし、\n避難にも時間がかかる。' },
-        { speaker: 'bousai', expr: 'normal', text: 'だからこそ、「事前の備え」と\n「正しい判断」が命を救う。\n今回の体験を無駄にしないでほしい。' },
-        { speaker: 'bousai', expr: 'smile', text: '知識確認テストに挑戦しよう！\n正しい知識を身につけて、\nもう一回やってみて！' },
+        { speaker: 'bousai', expr: 'serious', text: {ja: '高層ビルでの地震は特に危険なんだ。\n上の階ほど揺れが大きくなるし、\n避難にも時間がかかる。', en: 'Earthquakes in high-rises are especially dangerous.\nHigher floors shake more,\nand evacuation takes longer.'} },
+        { speaker: 'bousai', expr: 'normal', text: {ja: 'だからこそ、「事前の備え」と\n「正しい判断」が命を救う。\n今回の体験を無駄にしないでほしい。', en: 'That\'s exactly why "advance preparation"\nand "correct decisions" save lives.\nDon\'t let this experience go to waste.'} },
+        { speaker: 'bousai', expr: 'smile', text: {ja: '知識確認テストに挑戦しよう！\n正しい知識を身につけて、\nもう一回やってみて！', en: 'Take the knowledge test!\nLearn the right actions\nand give it another try!'} },
       ],
     ],
   }
+
 };
 
 // ランダム選択ヘルパー
@@ -10050,7 +10066,7 @@ function showConsequence(data) {
   // アイコン
   setTimeout(function() {
     if (data.icon) { icon.textContent = data.icon; icon.classList.add('show'); }
-    if (data.text) { text.textContent = data.text; text.classList.add('show'); }
+    if (data.text) { text.textContent = resolveNovelText(data.text); text.classList.add('show'); }
   }, 300);
 
   // フラッシュフェードアウト
@@ -10078,66 +10094,116 @@ function hideConsequence() {
 var QUIZ_DATA = {
   1: [
     {
-      q: '地震が発生した時、最初にすべき行動は？',
-      choices: ['窓を開けて外の様子を確認する', '机の下に入り、脚を持って頭を守る', '荷物をまとめて避難準備をする', '友達に「地震だ」と叫んで知らせる'],
+      q: {ja: '地震が発生した時、最初にすべき行動は？', en: 'What should you do first when an earthquake strikes?'},
+      choices: [
+        {ja: '窓を開けて外の様子を確認する', en: 'Open the window to check outside'},
+        {ja: '机の下に入り、脚を持って頭を守る', en: 'Get under a desk, hold its legs, and protect your head'},
+        {ja: '荷物をまとめて避難準備をする', en: 'Pack your belongings and prepare to evacuate'},
+        {ja: '友達に「地震だ」と叫んで知らせる', en: 'Shout to your friends that it\'s an earthquake'}
+      ],
       answer: 1,
-      explain: '地震の際は「まず低く、頭を守り、動かない（Drop, Cover, Hold on）」が世界共通の基本行動です。机の脚をしっかり持つのは、揺れで机が動いてしまうのを防ぐためです。'
+      explain: {ja: '地震の際は「まず低く、頭を守り、動かない（Drop, Cover, Hold on）」が世界共通の基本行動です。机の脚をしっかり持つのは、揺れで机が動いてしまうのを防ぐためです。', en: '"Drop, Cover, Hold On" is the universal basic response to earthquakes. Holding the desk legs prevents it from sliding away during shaking.'}
     },
     {
-      q: '揺れが収まった後、避難前にすべき行動として正しくないものは？',
-      choices: ['ストーブの火を消す', 'ブレーカーを落とす', 'エレベーターで1階に降りる', '靴を履いてガラス破片に備える'],
+      q: {ja: '揺れが収まった後、避難前にすべき行動として正しくないものは？', en: 'Which action is NOT correct before evacuating after the shaking stops?'},
+      choices: [
+        {ja: 'ストーブの火を消す', en: 'Turn off the heater'},
+        {ja: 'ブレーカーを落とす', en: 'Switch off the circuit breaker'},
+        {ja: 'エレベーターで1階に降りる', en: 'Take the elevator to the first floor'},
+        {ja: '靴を履いてガラス破片に備える', en: 'Put on shoes to protect from glass shards'}
+      ],
       answer: 2,
-      explain: '地震後にエレベーターを使うのは非常に危険です。余震で停止し、閉じ込められる可能性があります。必ず階段を使って避難しましょう。東日本大震災では多くのエレベーター閉じ込めが発生しました。'
+      explain: {ja: '地震後にエレベーターを使うのは非常に危険です。余震で停止し、閉じ込められる可能性があります。必ず階段を使って避難しましょう。東日本大震災では多くのエレベーター閉じ込めが発生しました。', en: 'Using elevators after an earthquake is extremely dangerous. Aftershocks can stop them, trapping you inside. Always use stairs. During the 2011 Great East Japan Earthquake, many people were trapped in elevators.'}
     },
     {
-      q: '「おはしも」の意味として正しいものは？',
-      choices: ['お菓子を持って避難する', '押さない・走らない・しゃべらない・戻らない', 'お箸を持って避難する', '大きな声で助けを呼ぶ'],
+      q: {ja: '「おはしも」の意味として正しいものは？', en: 'What does the Japanese evacuation rule "O-HA-SHI-MO" mean?'},
+      choices: [
+        {ja: 'お菓子を持って避難する', en: 'Evacuate with snacks'},
+        {ja: '押さない・走らない・しゃべらない・戻らない', en: 'Don\'t push, don\'t run, don\'t talk, don\'t go back'},
+        {ja: 'お箸を持って避難する', en: 'Evacuate with chopsticks'},
+        {ja: '大きな声で助けを呼ぶ', en: 'Call for help loudly'}
+      ],
       answer: 1,
-      explain: '「おはしも」は学校で教える避難の合言葉です。お＝押さない、は＝走らない、し＝しゃべらない、も＝戻らない。パニックを防ぎ、安全に避難するための大切なルールです。'
+      explain: {ja: '「おはしも」は学校で教える避難の合言葉です。お＝押さない、は＝走らない、し＝しゃべらない、も＝戻らない。パニックを防ぎ、安全に避難するための大切なルールです。', en: '"O-HA-SHI-MO" is a Japanese school evacuation rule: O=don\'t push, HA=don\'t run, SHI=don\'t talk, MO=don\'t go back. It prevents panic and ensures safe evacuation.'}
     },
     {
-      q: 'ブレーカーを落とす理由は？',
-      choices: ['電気代を節約するため', '通電火災を防ぐため', '照明が眩しいから', '停電を早く復旧させるため'],
+      q: {ja: 'ブレーカーを落とす理由は？', en: 'Why should you switch off the circuit breaker?'},
+      choices: [
+        {ja: '電気代を節約するため', en: 'To save electricity costs'},
+        {ja: '通電火災を防ぐため', en: 'To prevent electrical restoration fires'},
+        {ja: '照明が眩しいから', en: 'Because the lights are too bright'},
+        {ja: '停電を早く復旧させるため', en: 'To restore power faster'}
+      ],
       answer: 1,
-      explain: '通電火災とは、停電が復旧した時に、倒れた電気ストーブや損傷した電気配線から火災が発生する現象です。阪神淡路大震災の火災の約6割が通電火災だったとされています。'
+      explain: {ja: '通電火災とは、停電が復旧した時に、倒れた電気ストーブや損傷した電気配線から火災が発生する現象です。阪神淡路大震災の火災の約6割が通電火災だったとされています。', en: 'Electrical restoration fires occur when power returns to toppled heaters or damaged wiring. About 60% of fires in the 1995 Great Hanshin Earthquake were caused by this.'}
     },
     {
-      q: '地震で窓ガラスが割れた時、正しい行動は？',
-      choices: ['素足で急いで避難する', '割れたガラスを片付けてから避難する', '靴を履いてからガラスを避けて避難する', 'ガラスの上を走って素早く通過する'],
+      q: {ja: '地震で窓ガラスが割れた時、正しい行動は？', en: 'What should you do when window glass breaks during an earthquake?'},
+      choices: [
+        {ja: '素足で急いで避難する', en: 'Evacuate barefoot quickly'},
+        {ja: '割れたガラスを片付けてから避難する', en: 'Clean up the glass before evacuating'},
+        {ja: '靴を履いてからガラスを避けて避難する', en: 'Put on shoes and evacuate avoiding the glass'},
+        {ja: 'ガラスの上を走って素早く通過する', en: 'Run across the glass quickly'}
+      ],
       answer: 2,
-      explain: '割れたガラスの上を素足や靴下で歩くと、深い切り傷を負い、歩けなくなることがあります。まず靴やスリッパを履き、ガラスのない経路を選んで避難しましょう。'
+      explain: {ja: '割れたガラスの上を素足や靴下で歩くと、深い切り傷を負い、歩けなくなることがあります。まず靴やスリッパを履き、ガラスのない経路を選んで避難しましょう。', en: 'Walking barefoot on broken glass can cause deep cuts, making it impossible to walk. Put on shoes or slippers first, and choose a path clear of glass.'}
     }
   ],
   2: [
     {
-      q: 'オフィスビルで地震が発生した時、最初にすべき行動は？',
-      choices: ['エレベーターで避難する', 'デスクの下に入り、脚を持って頭を守る', '重要書類をまとめる', 'スマホで地震情報を確認する'],
+      q: {ja: 'オフィスビルで地震が発生した時、最初にすべき行動は？', en: 'What should you do first when an earthquake hits in an office building?'},
+      choices: [
+        {ja: 'エレベーターで避難する', en: 'Evacuate by elevator'},
+        {ja: 'デスクの下に入り、脚を持って頭を守る', en: 'Get under your desk, hold its legs, and protect your head'},
+        {ja: '重要書類をまとめる', en: 'Gather important documents'},
+        {ja: 'スマホで地震情報を確認する', en: 'Check earthquake info on your phone'}
+      ],
       answer: 1,
-      explain: '高層ビルでも基本は「まず低く、頭を守り、動かない」です。特にオフィスのキャビネットやコピー機は揺れで移動するため、頑丈なデスクの下が最も安全です。'
+      explain: {ja: '高層ビルでも基本は「まず低く、頭を守り、動かない」です。特にオフィスのキャビネットやコピー機は揺れで移動するため、頑丈なデスクの下が最も安全です。', en: 'Even in high-rise buildings, "Drop, Cover, Hold On" is the rule. Cabinets and copiers can slide during shaking, so under a sturdy desk is the safest spot.'}
     },
     {
-      q: '地震後の避難で、絶対に使ってはいけないものは？',
-      choices: ['非常階段', '防火扉', 'エレベーター', '非常口'],
+      q: {ja: '地震後の避難で、絶対に使ってはいけないものは？', en: 'What must you NEVER use when evacuating after an earthquake?'},
+      choices: [
+        {ja: '非常階段', en: 'Emergency stairs'},
+        {ja: '防火扉', en: 'Fire doors'},
+        {ja: 'エレベーター', en: 'Elevator'},
+        {ja: '非常口', en: 'Emergency exit'}
+      ],
       answer: 2,
-      explain: '地震後のエレベーターは余震で停止し、閉じ込められる危険があります。東日本大震災では約14,000件のエレベーター閉じ込めが発生しました。必ず階段で避難しましょう。'
+      explain: {ja: '地震後のエレベーターは余震で停止し、閉じ込められる危険があります。東日本大震災では約14,000件のエレベーター閉じ込めが発生しました。必ず階段で避難しましょう。', en: 'Elevators can stop during aftershocks, trapping people inside. About 14,000 elevator entrapments occurred during the 2011 earthquake. Always use stairs.'}
     },
     {
-      q: '高層ビルで地震時に特に注意すべき現象は？',
-      choices: ['液状化現象', '長周期地震動', '津波', '停電'],
+      q: {ja: '高層ビルで地震時に特に注意すべき現象は？', en: 'What phenomenon should you watch out for in high-rise buildings during earthquakes?'},
+      choices: [
+        {ja: '液状化現象', en: 'Liquefaction'},
+        {ja: '長周期地震動', en: 'Long-period ground motion'},
+        {ja: '津波', en: 'Tsunami'},
+        {ja: '停電', en: 'Power outage'}
+      ],
       answer: 1,
-      explain: '長周期地震動は高層ビルをゆっくり大きく揺らす現象です。2011年の東日本大震災では、震源から遠く離れた東京や大阪の高層ビルが10分以上揺れ続けました。'
+      explain: {ja: '長周期地震動は高層ビルをゆっくり大きく揺らす現象です。2011年の東日本大震災では、震源から遠く離れた東京や大阪の高層ビルが10分以上揺れ続けました。', en: 'Long-period ground motion causes high-rise buildings to sway slowly but widely. During the 2011 earthquake, skyscrapers in Tokyo and Osaka — far from the epicenter — swayed for over 10 minutes.'}
     },
     {
-      q: '避難前にブレーカーを落とす理由は？',
-      choices: ['電気代を節約するため', '通電火災を防ぐため', '照明を消すため', 'エレベーターを止めるため'],
+      q: {ja: '避難前にブレーカーを落とす理由は？', en: 'Why should you switch off the breaker before evacuating?'},
+      choices: [
+        {ja: '電気代を節約するため', en: 'To save electricity costs'},
+        {ja: '通電火災を防ぐため', en: 'To prevent electrical restoration fires'},
+        {ja: '照明を消すため', en: 'To turn off the lights'},
+        {ja: 'エレベーターを止めるため', en: 'To stop the elevators'}
+      ],
       answer: 1,
-      explain: '通電火災は停電が復旧した際に、倒れた電気機器や損傷した配線から発生する火災です。阪神淡路大震災の火災の約6割が通電火災でした。'
+      explain: {ja: '通電火災は停電が復旧した際に、倒れた電気機器や損傷した配線から発生する火災です。阪神淡路大震災の火災の約6割が通電火災でした。', en: 'Electrical restoration fires occur when power returns to toppled equipment or damaged wiring. About 60% of fires in the 1995 Hanshin earthquake were caused by this.'}
     },
     {
-      q: 'オフィスで「落ちてこない・倒れてこない・移動してこない」場所として最も安全なのは？',
-      choices: ['窓際のデスク', 'コピー機の横', 'キャビネットの前', '柱の近くの丈夫なデスクの下'],
+      q: {ja: 'オフィスで「落ちてこない・倒れてこない・移動してこない」場所として最も安全なのは？', en: 'Which is the safest spot in an office — where nothing falls, topples, or slides toward you?'},
+      choices: [
+        {ja: '窓際のデスク', en: 'A desk by the window'},
+        {ja: 'コピー機の横', en: 'Next to the copier'},
+        {ja: 'キャビネットの前', en: 'In front of a cabinet'},
+        {ja: '柱の近くの丈夫なデスクの下', en: 'Under a sturdy desk near a pillar'}
+      ],
       answer: 3,
-      explain: '地震の3原則「落ちてこない・倒れてこない・移動してこない」場所を選びましょう。柱の近くは構造的に強く、丈夫なデスクの下なら落下物からも身を守れます。'
+      explain: {ja: '地震の3原則「落ちてこない・倒れてこない・移動してこない」場所を選びましょう。柱の近くは構造的に強く、丈夫なデスクの下なら落下物からも身を守れます。', en: 'Follow the 3 earthquake principles: nothing falls on you, nothing topples on you, nothing slides into you. Areas near pillars are structurally strong, and under a sturdy desk protects from falling objects.'}
     }
   ]
 };
@@ -10163,12 +10229,13 @@ function showQuizQuestion() {
   var nextBtn = document.getElementById('quiz-next-btn');
 
   progEl.textContent = (quizState.current + 1) + ' / ' + quizState.total;
-  qEl.textContent = q.q;
+  qEl.textContent = resolveNovelText(q.q);
   expEl.classList.remove('show');
   nextBtn.style.display = 'none';
   cEl.innerHTML = '';
 
-  q.choices.forEach(function(choice, i) {
+  var resolvedChoices = q.choices.map ? q.choices.map(function(c) { return resolveNovelText(c); }) : q.choices;
+  resolvedChoices.forEach(function(choice, i) {
     var btn = document.createElement('button');
     btn.className = 'quiz-choice-btn';
     btn.textContent = choice;
@@ -10198,15 +10265,15 @@ function selectQuizAnswer(index) {
   // 回答記録を保存（成績データ出力用）
   if (!GAME._quizAnswers) GAME._quizAnswers = [];
   GAME._quizAnswers.push({
-    question: q.q,
+    question: resolveNovelText(q.q),
     correct: isCorrect,
-    correctAnswer: q.choices[q.answer],
-    selectedAnswer: q.choices[index]
+    correctAnswer: resolveNovelText(q.choices[q.answer]),
+    selectedAnswer: resolveNovelText(q.choices[index])
   });
 
   // 解説表示
   var expEl = document.getElementById('quiz-explanation');
-  document.getElementById('quiz-exp-body').textContent = q.explain;
+  document.getElementById('quiz-exp-body').textContent = resolveNovelText(q.explain);
   expEl.classList.add('show');
 
   // 次へボタン
@@ -10240,7 +10307,7 @@ function showAdvisor(text, type) {
   var textEl = document.getElementById('advisor-text');
   if (!box || !textEl) return;
 
-  textEl.textContent = text;
+  textEl.textContent = resolveNovelText(text);
   textEl.className = type === 'warning' ? 'warning' : type === 'praise' ? 'praise' : '';
   box.classList.add('visible');
 
