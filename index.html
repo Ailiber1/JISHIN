@@ -6201,11 +6201,69 @@ function buildEvacCorridor(scene, hx0, hz0, HD, HH, floorMat, wallMat, ceilMat, 
   w2b.position.set(c2x0 + w2bLen/2, HH/2, c2z0 + c2d);
   scene.add(w2b);
   GAME.walls.push({ minX: c2x0, maxX: c2x0 + w2bLen, minZ: c2z0+c2d-wt/2, maxZ: c2z0+c2d+wt/2, minY: 0, maxY: HH });
-  // 左端壁 (X=c2x0=-5.25) — 階段入口の手前
-  var w2l = new THREE.Mesh(new THREE.BoxGeometry(wt, HH, c2d), wallMat);
-  w2l.position.set(c2x0, HH/2, c2z0 + c2d/2);
-  scene.add(w2l);
-  GAME.walls.push({ minX: c2x0 - wt/2, maxX: c2x0 + wt/2, minZ: c2z0, maxZ: c2z0 + c2d, minY: 0, maxY: HH });
+  // 左端壁 (X=c2x0=-5.25) — 出口ドア付き
+  // ドアの幅1.4m、中央に配置。上部と左右に壁を残す
+  var doorW = 1.4, doorH = 2.2;
+  var doorCenterZ = c2z0 + c2d / 2; // ドアの中央Z
+  var wallSideLen = (c2d - doorW) / 2; // ドア左右の壁の長さ
+  // 上部壁（ドアの上）
+  var w2lTop = new THREE.Mesh(new THREE.BoxGeometry(wt, HH - doorH, c2d), wallMat);
+  w2lTop.position.set(c2x0, doorH + (HH - doorH) / 2, c2z0 + c2d / 2);
+  scene.add(w2lTop);
+  // 下側壁（ドアの手前側）
+  if (wallSideLen > 0.05) {
+    var w2lS1 = new THREE.Mesh(new THREE.BoxGeometry(wt, doorH, wallSideLen), wallMat);
+    w2lS1.position.set(c2x0, doorH / 2, c2z0 + wallSideLen / 2);
+    scene.add(w2lS1);
+    GAME.walls.push({ minX: c2x0 - wt/2, maxX: c2x0 + wt/2, minZ: c2z0, maxZ: c2z0 + wallSideLen, minY: 0, maxY: HH });
+  }
+  // 上側壁（ドアの奥側）
+  if (wallSideLen > 0.05) {
+    var w2lS2 = new THREE.Mesh(new THREE.BoxGeometry(wt, doorH, wallSideLen), wallMat);
+    w2lS2.position.set(c2x0, doorH / 2, c2z0 + c2d - wallSideLen / 2);
+    scene.add(w2lS2);
+    GAME.walls.push({ minX: c2x0 - wt/2, maxX: c2x0 + wt/2, minZ: c2z0 + c2d - wallSideLen, maxZ: c2z0 + c2d, minY: 0, maxY: HH });
+  }
+  // 出口ドア本体（両開きドア — 緑色で「EXIT」表示）
+  var exitDoorMat = new THREE.MeshStandardMaterial({ color: 0x226633, roughness: 0.5, metalness: 0.2, emissive: 0x003311, emissiveIntensity: 0.3 });
+  var exitDoorL = new THREE.Mesh(new THREE.BoxGeometry(0.06, doorH, doorW / 2), exitDoorMat);
+  exitDoorL.position.set(c2x0 + 0.03, doorH / 2, doorCenterZ - doorW / 4);
+  scene.add(exitDoorL);
+  var exitDoorR = new THREE.Mesh(new THREE.BoxGeometry(0.06, doorH, doorW / 2), exitDoorMat);
+  exitDoorR.position.set(c2x0 + 0.03, doorH / 2, doorCenterZ + doorW / 4);
+  scene.add(exitDoorR);
+  // ドアのプッシュバー（横バー）
+  var exitBarMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.3, metalness: 0.7 });
+  var exitBarL = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.04, doorW / 2 - 0.1), exitBarMat);
+  exitBarL.position.set(c2x0 + 0.08, 1.0, doorCenterZ - doorW / 4);
+  scene.add(exitBarL);
+  var exitBarR = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.04, doorW / 2 - 0.1), exitBarMat);
+  exitBarR.position.set(c2x0 + 0.08, 1.0, doorCenterZ + doorW / 4);
+  scene.add(exitBarR);
+  // 「EXIT 出口」サイン（ドアの上に緑の発光サイン）
+  var exitSignCanvas = document.createElement('canvas');
+  exitSignCanvas.width = 256; exitSignCanvas.height = 96;
+  var esCtx = exitSignCanvas.getContext('2d');
+  esCtx.fillStyle = '#003311';
+  esCtx.fillRect(0, 0, 256, 96);
+  esCtx.fillStyle = '#00ff44';
+  esCtx.font = 'bold 44px sans-serif';
+  esCtx.textAlign = 'center';
+  esCtx.fillText('EXIT', 128, 42);
+  esCtx.font = 'bold 24px sans-serif';
+  esCtx.fillText('🚪 出口', 128, 80);
+  var exitSignTex = new THREE.CanvasTexture(exitSignCanvas);
+  var exitSign = new THREE.Mesh(
+    new THREE.PlaneGeometry(1.0, 0.4),
+    new THREE.MeshBasicMaterial({ map: exitSignTex })
+  );
+  exitSign.position.set(c2x0 + 0.08, doorH + 0.3, doorCenterZ);
+  exitSign.rotation.y = Math.PI / 2; // +X方向を向く（プレイヤーから見える）
+  scene.add(exitSign);
+  // ドア周りの緑色ライト
+  var exitDoorLight = new THREE.PointLight(0x00ff44, 0.8, 6);
+  exitDoorLight.position.set(c2x0 + 0.5, doorH + 0.2, doorCenterZ);
+  scene.add(exitDoorLight);
 
   // 蛍光灯（通路2）
   for (var li2 = 0; li2 < 2; li2++) {
@@ -6376,10 +6434,8 @@ function triggerAftershock() {
 // 階段室入口到達→カットシーン（フェード演出）→校庭にテレポートする方式を採用。
 // これによりprogress計算・踊り場・Y座標管理のバグを完全に回避。
 
-// 階段室のトリガーゾーン定数（避難通路の奥）
-// 階段トリガー: セクション1奥＋セクション2左端のどちらでも発動
-var STAIR_TRIGGER_S1 = { minX: 4.0, maxX: 7.5, minZ: 19.0, maxZ: 21.0 };  // セクション1奥
-var STAIR_TRIGGER_S2 = { minX: -5.4, maxX: -3.0, minZ: 17.4, maxZ: 20.6 }; // セクション2左端
+// 階段室のトリガーゾーン定数（セクション2左端のドア前のみ）
+var STAIR_TRIGGER = { minX: -5.4, maxX: -3.5, minZ: 17.4, maxZ: 20.6 }; // セクション2左端ドア前
 // 校庭のY座標（地面レベル）
 var GROUND_Y = 0;
 // 校庭のプレイヤー出現位置
@@ -6580,12 +6636,10 @@ function checkStairTrigger() {
 
   // ※非常口はインタラクトシステム（Eキー/モバイルタップ）で操作
 
-  // 避難通路の奥（階段入口）に到達 → カットシーン開始
-  var inS1 = p.x > STAIR_TRIGGER_S1.minX && p.x < STAIR_TRIGGER_S1.maxX &&
-             p.z > STAIR_TRIGGER_S1.minZ && p.z < STAIR_TRIGGER_S1.maxZ;
-  var inS2 = p.x > STAIR_TRIGGER_S2.minX && p.x < STAIR_TRIGGER_S2.maxX &&
-             p.z > STAIR_TRIGGER_S2.minZ && p.z < STAIR_TRIGGER_S2.maxZ;
-  if (inS1 || inS2) {
+  // セクション2左端のドア前に到達 → カットシーン開始
+  var inTrigger = p.x > STAIR_TRIGGER.minX && p.x < STAIR_TRIGGER.maxX &&
+                  p.z > STAIR_TRIGGER.minZ && p.z < STAIR_TRIGGER.maxZ;
+  if (inTrigger) {
     startStairCutscene();
   }
 }
