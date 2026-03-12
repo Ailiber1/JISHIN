@@ -5360,38 +5360,85 @@ function buildClassroom() {
   // インタラクト対象物
   // ============================================================
   var interactMat = new THREE.MeshStandardMaterial({ color: 0x886644, roughness: 0.6, emissive: 0x0a0806, emissiveIntensity: 0.1 });
-  var doorMat = new THREE.MeshStandardMaterial({ map: T.door, color: 0xc8a060, roughness: 0.5, emissive: 0x0a0806, emissiveIntensity: 0.12 });
 
-  // 教室後方のドア（廊下への出入口）— 右側の壁付近
-  var doorW = 0.9, doorH = 2.1, doorD = 0.08;
-  var door = new THREE.Mesh(new THREE.BoxGeometry(doorW, doorH, doorD), doorMat);
-  door.position.set(W/2 - 0.05, doorH/2, D - 1 - 0.05);
-  scene.add(door);
-  GAME.cameraMeshes.push(door);
-  // ドア枠（木製）
-  var frameMat = new THREE.MeshStandardMaterial({ color: 0x6b5035, roughness: 0.6, emissive: 0x050402, emissiveIntensity: 0.08 });
-  var dFrameTop = new THREE.Mesh(new THREE.BoxGeometry(doorW + 0.15, 0.08, doorD + 0.04), frameMat);
-  dFrameTop.position.set(W/2 - 0.05, doorH + 0.04, D - 1 - 0.05);
-  scene.add(dFrameTop);
-  var dFrameL = new THREE.Mesh(new THREE.BoxGeometry(0.07, doorH, doorD + 0.04), frameMat);
-  dFrameL.position.set(W/2 - 0.05 - doorW/2 - 0.035, doorH/2, D - 1 - 0.05);
-  scene.add(dFrameL);
-  var dFrameR = new THREE.Mesh(new THREE.BoxGeometry(0.07, doorH, doorD + 0.04), frameMat);
-  dFrameR.position.set(W/2 - 0.05 + doorW/2 + 0.035, doorH/2, D - 1 - 0.05);
-  scene.add(dFrameR);
-  // ドアノブ
-  var knobMat = new THREE.MeshStandardMaterial({ color: 0xddddcc, roughness: 0.3, metalness: 0.8 });
-  var knob = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 8), knobMat);
-  knob.position.set(W/2 - 0.05 - doorW/2 + 0.12, 1.0, D - 1 - 0.05 - doorD/2 - 0.02);
-  scene.add(knob);
+  // ============================================================
+  // 教室後方のドア（廊下への出入口）— 日本の学校風引き戸
+  // ============================================================
+  var doorX = W/2 - 0.05;
+  var doorZ = D - 1;
+  var doorW = 1.0, doorH = 2.1, doorD = 0.12;
+
+  // ドア枠（濃茶色 — 壁より手前に突出させて目立たせる）
+  var frameMat = new THREE.MeshStandardMaterial({ color: 0x4a3520, roughness: 0.5, emissive: 0x1a0e05, emissiveIntensity: 0.15 });
+  // 枠上
+  var dFT = new THREE.Mesh(new THREE.BoxGeometry(doorW + 0.2, 0.12, 0.2), frameMat);
+  dFT.position.set(doorX, doorH + 0.06, doorZ); scene.add(dFT);
+  // 枠左
+  var dFL = new THREE.Mesh(new THREE.BoxGeometry(0.1, doorH + 0.12, 0.2), frameMat);
+  dFL.position.set(doorX - doorW/2 - 0.05, doorH/2, doorZ); scene.add(dFL);
+  // 枠右
+  var dFR = new THREE.Mesh(new THREE.BoxGeometry(0.1, doorH + 0.12, 0.2), frameMat);
+  dFR.position.set(doorX + doorW/2 + 0.05, doorH/2, doorZ); scene.add(dFR);
+
+  // ドア本体（明るい茶色 — 壁色と差をつける）
+  var doorMat = new THREE.MeshStandardMaterial({ color: 0xb8894a, roughness: 0.55, emissive: 0x1a0e05, emissiveIntensity: 0.15 });
+  var doorGroup = new THREE.Group();
+  // メインパネル
+  var doorPanel = new THREE.Mesh(new THREE.BoxGeometry(doorW, doorH, doorD), doorMat);
+  doorPanel.position.set(0, doorH/2, 0);
+  doorGroup.add(doorPanel);
+  // 上パネル（ガラス窓部分 — すりガラス風）
+  var doorGlassMat = new THREE.MeshStandardMaterial({ color: 0xaaccdd, roughness: 0.2, metalness: 0.05, transparent: true, opacity: 0.5, emissive: 0x334455, emissiveIntensity: 0.2 });
+  var doorGlass = new THREE.Mesh(new THREE.BoxGeometry(doorW - 0.18, 0.6, 0.02), doorGlassMat);
+  doorGlass.position.set(0, doorH - 0.45, -doorD/2 - 0.01);
+  doorGroup.add(doorGlass);
+  // ガラス枠（細い木枠）
+  var glFrameMat = new THREE.MeshStandardMaterial({ color: 0x5a4020, roughness: 0.5 });
+  // 上下
+  var gfT = new THREE.Mesh(new THREE.BoxGeometry(doorW - 0.14, 0.04, 0.04), glFrameMat);
+  gfT.position.set(0, doorH - 0.12, -doorD/2 - 0.01); doorGroup.add(gfT);
+  var gfB = new THREE.Mesh(new THREE.BoxGeometry(doorW - 0.14, 0.04, 0.04), glFrameMat);
+  gfB.position.set(0, doorH - 0.78, -doorD/2 - 0.01); doorGroup.add(gfB);
+  // 左右
+  var gfL = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.7, 0.04), glFrameMat);
+  gfL.position.set(-(doorW/2 - 0.11), doorH - 0.45, -doorD/2 - 0.01); doorGroup.add(gfL);
+  var gfR = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.7, 0.04), glFrameMat);
+  gfR.position.set((doorW/2 - 0.11), doorH - 0.45, -doorD/2 - 0.01); doorGroup.add(gfR);
+  // 下パネルの溝（2つの凹み表現）
+  var grooveMat = new THREE.MeshStandardMaterial({ color: 0xa07838, roughness: 0.6 });
+  var groove1 = new THREE.Mesh(new THREE.BoxGeometry(doorW - 0.2, 0.5, 0.02), grooveMat);
+  groove1.position.set(0, 0.8, -doorD/2 - 0.01); doorGroup.add(groove1);
+  var groove2 = new THREE.Mesh(new THREE.BoxGeometry(doorW - 0.2, 0.5, 0.02), grooveMat);
+  groove2.position.set(0, 0.2, -doorD/2 - 0.01); doorGroup.add(groove2);
+  // ドアハンドル（レバー式 — 金属）
+  var handleMat = new THREE.MeshStandardMaterial({ color: 0xccccbb, roughness: 0.25, metalness: 0.85, emissive: 0x222222, emissiveIntensity: 0.1 });
+  // ハンドル台座
+  var handleBase = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.04, 8), handleMat);
+  handleBase.rotation.x = Math.PI / 2;
+  handleBase.position.set(-doorW/2 + 0.15, 1.0, -doorD/2 - 0.03);
+  doorGroup.add(handleBase);
+  // レバー
+  var lever = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.025, 0.025), handleMat);
+  lever.position.set(-doorW/2 + 0.21, 1.0, -doorD/2 - 0.04);
+  doorGroup.add(lever);
+
+  doorGroup.position.set(doorX, 0, doorZ);
+  scene.add(doorGroup);
+  GAME.cameraMeshes.push(doorPanel);
+
+  // ドア横の照明（ドアを目立たせる）
+  var doorLight = new THREE.PointLight(0xffeedd, 0.4, 4);
+  doorLight.position.set(doorX, doorH + 0.3, doorZ - 0.3);
+  scene.add(doorLight);
+
   GAME.interactables.push({
-    id: 'door', mesh: door,
-    x: W/2 - 0.05, z: D - 1 - 0.05,
-    radius: 1.5, // インタラクト可能距離
+    id: 'door', mesh: doorGroup,
+    x: doorX, z: doorZ,
+    radius: 1.5,
     action: 'openDoor',
     label: 'ドアを開ける',
     used: false,
-    phases: ['aftershake', 'evacuation'], // これらのフェーズでのみ有効
+    phases: ['aftershake', 'evacuation'],
   });
 
   // ブレーカー（前方壁の右端）— 赤いONランプ付き
@@ -7362,10 +7409,9 @@ function performInteract() {
       SoundManager.playSE('door');
       showAdvisor('ドアを開けた！廊下に出て、非常口（緑の看板）を目指そう！', 'praise');
       showItemGet('🚪 ドアを開けた！ — 避難経路確保');
-      // ドアを開く演出（90度回転）
+      // ドアを開く演出（スライド — 引き戸方式）
       if (target.mesh) {
-        target.mesh.rotation.y = Math.PI / 2;
-        target.mesh.position.x += 0.4;
+        target.mesh.position.x -= 1.0; // 左にスライド
       }
       // 後方壁メッシュを消して、ドア開口部を除いた壁を再生成
       if (GAME._backWall) {
