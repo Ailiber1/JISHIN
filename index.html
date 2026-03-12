@@ -5993,7 +5993,8 @@ function buildHallway() {
   GAME._exitDoorCenterX = exitCenterX;
   GAME._exitDoorEdW = edW;
   // 非常口トリガーゾーン（ボタン表示用）
-  GAME._emergencyExitZone = { minX: hx0 + 0.5, maxX: hx0 + HW - 0.5, minZ: exitZ - 1.5, maxZ: exitZ + 0.5 };
+  // トリガーゾーンを廊下全幅+手前方向に広げて確実にボタン表示
+  GAME._emergencyExitZone = { minX: hx0 - 0.1, maxX: hx0 + HW + 0.1, minZ: exitZ - 2.5, maxZ: exitZ + 0.5 };
 
   // ====== 非常口の先：避難通路（L字型）======
   // 新しいレイアウト: 廊下後端(Z=11)から+Z方向に延びてL字で-X方向に曲がる
