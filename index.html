@@ -6089,11 +6089,8 @@ function checkEvacPointReached() {
     GAME.scoring.reachedEvacPoint = true;
     GAME.scoring.withinTimeLimit = GAME.totalTimer < GAME.timeLimit;
     SoundManager.playSE('correct');
-    showAdvisor('避難完了！よくできました！', 'normal');
-    // 2秒後に結果画面へ
-    setTimeout(function() {
-      transitionPhase('result');
-    }, 2000);
+    // ゴール到達 → 即座にノベル演出に切り替え
+    transitionPhase('result');
   }
 }
 
