@@ -1511,6 +1511,23 @@ html, body {
   font-size: 14px; color: rgba(255,255,255,0.6); letter-spacing: 1px;
   background: rgba(0,0,0,0.4); padding: 4px 10px; border-radius: 4px;
 }
+#daily-class-label {
+  display: none; position: fixed;
+  bottom: 15%; left: 50%; transform: translateX(-50%);
+  z-index: 200; text-align: center; pointer-events: none;
+}
+#daily-class-label .dcl-main {
+  font-family: 'Noto Sans JP', sans-serif; font-size: clamp(16px, 4vw, 22px);
+  color: #fff; background: rgba(0,0,0,0.65); padding: 10px 28px;
+  border-radius: 8px; border: 1px solid rgba(255,255,255,0.15);
+  backdrop-filter: blur(4px); letter-spacing: 2px;
+}
+#daily-class-label .dcl-sub {
+  font-family: 'Noto Sans JP', sans-serif; font-size: clamp(11px, 2.5vw, 14px);
+  color: rgba(255,255,255,0.5); margin-top: 6px;
+}
+@keyframes dclFadeIn { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+#daily-class-label.active { display: block; animation: dclFadeIn 0.8s ease-out; }
 #hud-timer {
   font-size: 24px; color: #fff; letter-spacing: 2px;
   background: rgba(0,0,0,0.5); padding: 4px 14px;
@@ -2664,6 +2681,7 @@ html, body {
      ============================================================ -->
 <div id="game-screen" class="screen">
   <div id="game-container"></div>
+  <div id="daily-class-label"></div>
   <div id="interact-prompt"><span class="prompt-key">E</span><span class="prompt-label"></span></div>
   <div id="item-get-overlay"></div>
   <div id="item-get-text"></div>
@@ -4990,8 +5008,12 @@ function initGame(stageNum) {
   }
 
   document.getElementById('hud-score').textContent = 'SCORE: 0';
-  document.getElementById('hud-phase').textContent = GAME.phase === 'daily' ? '日常パート' : '';
+  document.getElementById('hud-phase').textContent = GAME.phase === 'daily' ? '授業中' : '';
   document.getElementById('hud-timer').textContent = '--:--';
+  // 「授業中」ラベル表示
+  var dclEl = document.getElementById('daily-class-label');
+  dclEl.innerHTML = '<div class="dcl-main">📚 授業中</div><div class="dcl-sub">まもなく地震が発生します</div>';
+  dclEl.className = 'active';
   document.getElementById('hud-safety-indicator').className = 'safe';
   document.getElementById('hud-safety-indicator').textContent = 'SAFE';
 
@@ -5359,9 +5381,23 @@ function buildClassroom() {
   GAME._rightWallDoorCollision = { minX: W/2-wallThick/2, maxX: W/2+wallThick/2, minZ: rDoorZ, maxZ: rDoorZ + rDoorW, minY: 0, maxY: H };
   GAME.walls.push(GAME._rightWallDoorCollision);
 
-  const blackboard = new THREE.Mesh(new THREE.BoxGeometry(4, 1.2, 0.05), blackboardMat);
+  // 黒板（Canvas texture — 授業中にチョーク文字が表示される）
+  var bbCanvas = document.createElement('canvas');
+  bbCanvas.width = 512; bbCanvas.height = 154;
+  var bbCtx = bbCanvas.getContext('2d');
+  bbCtx.fillStyle = '#2d4a2d';
+  bbCtx.fillRect(0, 0, 512, 154);
+  var bbTexture = new THREE.CanvasTexture(bbCanvas);
+  bbTexture.minFilter = THREE.LinearFilter;
+  var bbMatWithTex = new THREE.MeshStandardMaterial({ map: bbTexture, roughness: 0.5, emissive: 0x050a05, emissiveIntensity: 0.15 });
+  const blackboard = new THREE.Mesh(new THREE.BoxGeometry(4, 1.2, 0.05), bbMatWithTex);
   blackboard.position.set(0, 1.6, -0.85);
   scene.add(blackboard);
+  // 黒板テクスチャへの参照を保存（日常パートアニメーション用）
+  GAME._bbCanvas = bbCanvas;
+  GAME._bbCtx = bbCtx;
+  GAME._bbTexture = bbTexture;
+  GAME._bbCharIndex = 0;
 
   // 窓（ガラス + サッシ枠）
   var sashMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.4, metalness: 0.5 });
@@ -7161,6 +7197,60 @@ function spawnNPCs() {
   }
 }
 
+// ====== 黒板チョーク文字アニメーション ======
+function updateBlackboardText(elapsed) {
+  if (!GAME._bbCtx || !GAME._bbTexture) return;
+  var ctx = GAME._bbCtx;
+  // 授業内容テキスト（理科の授業風）
+  var lines = [
+    '地震のしくみ',
+    '',
+    '① プレートのずれ → 断層',
+    '② P波（縦波）→ S波（横波）',
+    '③ 震度とマグニチュード',
+  ];
+  // 1文字ずつ表示（0.15秒/文字）
+  var charInterval = 0.15;
+  var totalChars = 0;
+  for (var li = 0; li < lines.length; li++) totalChars += lines[li].length;
+  var currentCharCount = Math.floor(elapsed / charInterval);
+  if (currentCharCount <= GAME._bbCharIndex) return; // 変更なし
+  GAME._bbCharIndex = currentCharCount;
+
+  // 黒板をクリアして再描画
+  ctx.fillStyle = '#2d4a2d';
+  ctx.fillRect(0, 0, 512, 154);
+
+  // チョーク風テキスト
+  ctx.fillStyle = 'rgba(255,255,240,0.9)';
+  ctx.font = 'bold 20px "Noto Sans JP", sans-serif';
+  ctx.textBaseline = 'top';
+
+  var charCount = 0;
+  var y = 8;
+  for (var ln = 0; ln < lines.length; ln++) {
+    var line = lines[ln];
+    if (line === '') { y += 6; continue; }
+    var fontSize = ln === 0 ? 24 : 17;
+    ctx.font = (ln === 0 ? 'bold ' : '') + fontSize + 'px "Noto Sans JP", sans-serif';
+    ctx.fillStyle = ln === 0 ? 'rgba(255,255,200,0.95)' : 'rgba(255,255,240,0.85)';
+    var x = ln === 0 ? 150 : 20;
+    for (var ci = 0; ci < line.length; ci++) {
+      if (charCount >= currentCharCount) break;
+      // チョーク風のブレ
+      var jx = (Math.random() - 0.5) * 1.2;
+      var jy = (Math.random() - 0.5) * 0.8;
+      ctx.fillText(line[ci], x + jx, y + jy);
+      x += ctx.measureText(line[ci]).width + 1;
+      charCount++;
+    }
+    if (charCount >= currentCharCount) break;
+    charCount += 0; // line完了
+    y += fontSize + 6;
+  }
+  GAME._bbTexture.needsUpdate = true;
+}
+
 function updateNPCs(dtSec) {
   for (var i = 0; i < GAME.npcs.length; i++) {
     var npc = GAME.npcs[i];
@@ -7179,10 +7269,103 @@ function updateSingleNPC(npc, dtSec) {
         var seatY = 0.33 - (npc.npcH || 1.35) * 0.40;
         mesh.position.y = seatY + Math.sin(npc.phase * 2) * 0.003;
         mesh.rotation.y = Math.PI; // 黒板方向（-Z）を向く
+        // 生徒の微動作：時々ノートを書く仕草（頭を少し下げる）
+        var studentBob = Math.sin(npc.phase * 1.5 + i * 1.7) * 0.02;
+        var headNode = mesh.userData.head;
+        if (headNode) {
+          headNode.rotation.x = 0.1 + Math.sin(npc.phase * 0.8 + i * 2.3) * 0.05;
+        }
+        // 体の微揺れ（呼吸＋ペンを動かす仕草）
+        var bodyN = mesh.userData.body;
+        if (bodyN) {
+          bodyN.rotation.z = Math.sin(npc.phase * 1.2 + i * 3.1) * 0.02;
+        }
       } else {
-        // 先生は生徒側（+Z）を向いて立っている
-        mesh.position.y = Math.sin(npc.phase * 2) * 0.005;
-        mesh.rotation.y = 0;
+        // ====== 先生の授業アニメーション ======
+        var t = GAME.phaseTimer || 0;
+        if (!npc._dailyState) npc._dailyState = 'facing'; // facing → walking → writing → facing2
+        // 状態遷移タイミング
+        if (t < 2) {
+          // 0-2秒: 生徒を向いて立つ（話している）
+          npc._dailyState = 'facing';
+          mesh.position.set(npc.x, Math.sin(npc.phase * 2) * 0.005, npc.z);
+          mesh.rotation.y = 0; // 生徒方向
+          // 話すジェスチャー（右手を少し上げる）
+          var bodyT = mesh.userData.body;
+          if (bodyT && bodyT.children) {
+            // 右腕(children[3])をジェスチャー
+            var rShoulder = bodyT.children[3];
+            if (rShoulder) {
+              rShoulder.rotation.x = -0.3 + Math.sin(t * 4) * 0.15;
+              rShoulder.rotation.z = -0.2;
+            }
+            var lShoulder = bodyT.children[2];
+            if (lShoulder) {
+              lShoulder.rotation.x = 0;
+              lShoulder.rotation.z = 0.1;
+            }
+          }
+        } else if (t < 3.5) {
+          // 2-3.5秒: 黒板に向かって歩く
+          npc._dailyState = 'walking';
+          var walkProgress = (t - 2) / 1.5; // 0→1
+          var startX = 0.8, endX = -0.5;
+          var startZ = -0.5, endZ = -0.7;
+          npc.x = startX + (endX - startX) * walkProgress;
+          npc.z = startZ + (endZ - startZ) * walkProgress;
+          mesh.position.set(npc.x, Math.abs(Math.sin(npc.phase * 6)) * 0.02, npc.z);
+          // 黒板に向かう角度
+          mesh.rotation.y = Math.PI + 0.3;
+          // 歩行アニメーション
+          if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = Math.sin(npc.phase * 6) * 0.4;
+          if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = -Math.sin(npc.phase * 6) * 0.4;
+        } else if (t < 12) {
+          // 3.5-12秒: 黒板に文字を書く
+          npc._dailyState = 'writing';
+          npc.x = -0.5; npc.z = -0.7;
+          mesh.position.set(npc.x, Math.sin(npc.phase * 3) * 0.003, npc.z);
+          mesh.rotation.y = Math.PI; // 黒板を向く
+          // 歩行ポーズリセット
+          if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = 0;
+          if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = 0;
+          // 右手を上げて書く動作
+          var bodyW = mesh.userData.body;
+          if (bodyW && bodyW.children) {
+            var rArmW = bodyW.children[3];
+            if (rArmW) {
+              rArmW.rotation.x = -2.2 + Math.sin(t * 5) * 0.15; // 腕を高く上げる
+              rArmW.rotation.z = -0.3 + Math.sin(t * 3.7) * 0.1; // 横に振る（書く動作）
+            }
+            var lArmW = bodyW.children[2];
+            if (lArmW) {
+              lArmW.rotation.x = -0.3; // 左手は下ろし気味
+              lArmW.rotation.z = 0.2;
+            }
+          }
+          // ====== 黒板にチョーク文字を描画 ======
+          updateBlackboardText(t - 3.5);
+        } else {
+          // 12-15秒: 振り返って生徒を向く
+          npc._dailyState = 'facing2';
+          if (t < 12.5) {
+            // 振り返りアニメーション
+            var turnProg = (t - 12) / 0.5;
+            mesh.rotation.y = Math.PI * (1 - turnProg);
+          } else {
+            mesh.rotation.y = 0;
+          }
+          mesh.position.set(npc.x, Math.sin(npc.phase * 2) * 0.005, npc.z);
+          // 腕リセット
+          var bodyF = mesh.userData.body;
+          if (bodyF && bodyF.children) {
+            var rArmF = bodyF.children[3];
+            if (rArmF) { rArmF.rotation.x = 0; rArmF.rotation.z = -0.1; }
+            var lArmF = bodyF.children[2];
+            if (lArmF) { lArmF.rotation.x = 0; lArmF.rotation.z = 0.1; }
+          }
+          if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = 0;
+          if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = 0;
+        }
       }
       break;
 
@@ -8124,6 +8307,9 @@ function _doTransitionPhase(newPhase) {
 
   switch (newPhase) {
     case 'earthquake':
+      // 「授業中」ラベルを非表示
+      var dclHide = document.getElementById('daily-class-label');
+      if (dclHide) dclHide.className = '';
       // 地震発生！P波（初期微動）開始
       GAME.earthquakeStartTime = GAME.totalTimer;
       // 環境音: 教室ざわめき停止 → 地震BGM開始（ノベルで既に開始済みの場合もあるため安全に呼ぶ）
@@ -8221,7 +8407,7 @@ function updatePhaseDisplay() {
   var phaseEl = document.getElementById('hud-phase');
   var safetyEl = document.getElementById('hud-safety-indicator');
   var phaseNames = {
-    daily: '日常パート', earthquake: '地震発生！',
+    daily: '授業中', earthquake: '地震発生！',
     shaking: '揺れ中！', aftershake: '揺れ収束',
     evacuation: '避難中', result: '結果'
   };
