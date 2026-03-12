@@ -6487,14 +6487,17 @@ function checkStairTrigger() {
     var inZone = p.x > GAME._emergencyExitZone.minX && p.x < GAME._emergencyExitZone.maxX &&
                  p.z > GAME._emergencyExitZone.minZ && p.z < GAME._emergencyExitZone.maxZ;
     var exitBtn = document.getElementById('emergency-exit-btn');
-    if (inZone && !exitBtn) {
-      // 「非常口から階段を降りる」ボタンを表示
+    if (inZone && !exitBtn && !GAME._emergencyExitDoorOpen) {
+      // 「非常口から避難通路へ」ボタンを表示
       var btn = document.createElement('button');
       btn.id = 'emergency-exit-btn';
-      btn.className = 'btn btn-neon';
-      btn.textContent = '🚪 非常口から避難通路へ';
-      btn.style.cssText = 'position:fixed;bottom:20%;left:50%;transform:translateX(-50%);z-index:500;font-size:clamp(14px,3vw,20px);padding:12px 24px;background:rgba(0,180,60,0.9);border:2px solid #00ff44;color:#fff;border-radius:12px;cursor:pointer;animation:pulse 1s infinite;';
-      btn.addEventListener('click', function() {
+      btn.textContent = '▶ 非常口を開けて避難通路へ進む';
+      btn.style.cssText = 'position:fixed;bottom:22%;left:50%;transform:translateX(-50%);z-index:800;font-size:clamp(16px,3.5vw,22px);padding:16px 32px;background:linear-gradient(180deg,rgba(0,200,60,0.95),rgba(0,140,40,0.95));border:3px solid #00ff44;color:#fff;border-radius:14px;cursor:pointer;animation:pulse 1s infinite;font-weight:bold;letter-spacing:1px;box-shadow:0 0 20px rgba(0,255,68,0.5),0 4px 12px rgba(0,0,0,0.4);text-shadow:0 1px 3px rgba(0,0,0,0.5);-webkit-tap-highlight-color:transparent;touch-action:manipulation;';
+      var exitBtnHandler = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        btn.removeEventListener('click', exitBtnHandler);
+        btn.removeEventListener('touchend', exitBtnHandler);
         btn.remove();
         GAME.scoring.usedEmergencyExit = true;
         SoundManager.playSE('click');
@@ -6513,28 +6516,27 @@ function checkStairTrigger() {
         var ew = GAME._exitDoorEdW;
         if (door1 && door2) {
           var startTime = Date.now();
-          var duration = 600; // 0.6秒
+          var duration = 600;
           var animId = setInterval(function() {
             var elapsed = Date.now() - startTime;
             var t = Math.min(elapsed / duration, 1);
-            var ease = 1 - Math.pow(1 - t, 3); // easeOutCubic
-            var angle = ease * Math.PI / 2; // 90度開く
-            // 左ドア: 左端を軸に-Z方向に開く
+            var ease = 1 - Math.pow(1 - t, 3);
+            var angle = ease * Math.PI / 2;
             door1.rotation.y = -angle;
             door1.position.x = cx - ew + Math.sin(angle) * ew/2;
             door1.position.z = door1.position.z;
-            // 右ドア: 右端を軸に+Z方向に開く
             door2.rotation.y = angle;
             door2.position.x = cx + ew - Math.sin(angle) * ew/2;
-            // プッシュバーもドアに追随
             if (bar1) { bar1.rotation.y = -angle; bar1.position.x = door1.position.x; }
             if (bar2) { bar2.rotation.y = angle; bar2.position.x = door2.position.x; }
             if (t >= 1) clearInterval(animId);
           }, 16);
         }
         showAdvisor('非常口を開けた！避難通路を進め！', 'normal');
-      });
-      document.getElementById('game-container').appendChild(btn);
+      };
+      btn.addEventListener('click', exitBtnHandler);
+      btn.addEventListener('touchend', exitBtnHandler);
+      document.body.appendChild(btn);
     } else if (!inZone && exitBtn) {
       exitBtn.remove();
     }
