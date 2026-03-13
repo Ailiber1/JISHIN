@@ -9336,8 +9336,8 @@ function updateSingleNPC(npc, dtSec) {
       npc.phase += dtSec;
       if (npc.role === 'colleague') {
         // Stage 2: 同僚のオフィスワーク（PCに向かってタイピング）
-        // 椅子座面(Y=0.42)にお尻を密着: 腰(身長の50%)が座面に乗る位置
-        var coSeatY = 0.42 - (npc.npcH || 1.6) * 0.50;
+        // 椅子座面(Y=0.42)の上にお尻が乗る位置: 脚曲げ分を考慮して高めに設定
+        var coSeatY = 0.42 - (npc.npcH || 1.6) * 0.38;
         mesh.position.y = coSeatY + Math.sin(npc.phase * 1.5) * 0.002;
         mesh.rotation.y = Math.PI;
         var coSeed = (npc.deskX || 0) * 5 + (npc.deskZ || 0) * 3;
