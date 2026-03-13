@@ -5708,7 +5708,7 @@ function initGame(stageNum) {
     GAME.scene.children.forEach(function(obj) {
       if (!_preOffice.has(obj)) obj.userData.isOffice12F = true;
     });
-    try { buildBuildingPlaza(); } catch(e) { console.error('buildBuildingPlaza:', e); }
+    // buildBuildingPlaza はテレポート後に構築（10F内から見えないようにする）
     try { createPlayerModel(2); } catch(e) { console.error('createPlayerModel:', e); }
     try { spawnOfficeNPCs(); } catch(e) { console.error('spawnOfficeNPCs:', e); }
     try { createMinimap(); } catch(e) { console.error('createMinimap:', e); }
@@ -7294,7 +7294,7 @@ function buildSchoolyard() {
 // ============================================================
 // SECTION: Stage 2 定数・3D環境構築関数
 // ============================================================
-var EVAC_POINT_S2 = { x: 0, z: 30, radius: 3 };
+var EVAC_POINT_S2 = { x: 8, z: 25, radius: 3 }; // ビル前広場（道路外・敷地内）
 var STAIR_TRIGGER_S2 = { minX: -12.5, maxX: -10.5, minZ: 13.5, maxZ: 15.5 };
 var GROUND_Y_S2 = 0;
 var OFFICE_FLOOR_Y = 0; // 10階だが座標上はY=0で構築
@@ -7851,22 +7851,24 @@ function buildOfficeLobby() {
 }
 
 // ============================================================
-// buildBuildingPlaza() — Stage 2: ビル前広場（避難場所）20m×20m
+// buildBuildingPlaza() — Stage 2: ビル前広場（避難場所）
+// 参考画像: bg_building_plaza — 石畳の広場、左側に道路、右側にビル群、街路樹
 // ============================================================
 function buildBuildingPlaza() {
   var scene = GAME.scene;
   if (!PROC_TEX) PROC_TEX = generateProceduralTextures();
   var T = PROC_TEX;
+  var epX = EVAC_POINT_S2.x, epZ = EVAC_POINT_S2.z;
 
-  // 地面（アスファルト/コンクリート）
-  var groundMat = new THREE.MeshStandardMaterial({ map: T.concrete, color: 0xaaaaaa, roughness: 0.85, emissive: 0x050505, emissiveIntensity: 0.05 });
-  var ground = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), groundMat);
-  ground.rotation.x = -Math.PI / 2;
-  ground.position.set(EVAC_POINT_S2.x, GROUND_Y_S2, EVAC_POINT_S2.z);
-  ground.receiveShadow = true;
-  scene.add(ground);
+  // ===== 広い地面（暗灰色ベース 120×120） =====
+  var bigGroundMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.9 });
+  var bigGround = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), bigGroundMat);
+  bigGround.rotation.x = -Math.PI / 2;
+  bigGround.position.set(0, GROUND_Y_S2 - 0.03, 30);
+  bigGround.receiveShadow = true;
+  scene.add(bigGround);
 
-  // ビル外壁（背後に見えるビルの壁面）
+  // ===== 自ビル外壁（背後 Z=10, 40m高） =====
   var extWallMat = new THREE.MeshStandardMaterial({ map: T.concrete, color: 0xc0bdb0, roughness: 0.75, emissive: 0x050505, emissiveIntensity: 0.05 });
   var extWall = new THREE.Mesh(new THREE.BoxGeometry(20, 40, 0.3), extWallMat);
   extWall.position.set(0, 20, 10);
@@ -7874,32 +7876,24 @@ function buildBuildingPlaza() {
   GAME.cameraMeshes.push(extWall);
   GAME.walls.push({ minX: -10, maxX: 10, minZ: 9.85, maxZ: 10.15, minY: 0, maxY: 40 });
 
-  // ビル外壁の非常口ドア（プレイヤーが出てきた場所）
+  // 非常口ドア
   var extDoorMat = new THREE.MeshStandardMaterial({ color: 0x4a6a4a, roughness: 0.5, metalness: 0.3, emissive: 0x0a1a0a, emissiveIntensity: 0.12 });
   var extDoor = new THREE.Mesh(new THREE.BoxGeometry(1.8, 2.4, 0.15), extDoorMat);
   extDoor.position.set(0, 1.2, 10.2);
   scene.add(extDoor);
-  // ドア枠
   var extDoorFrameMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.4, metalness: 0.6 });
   var extDFTop = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.15, 0.2), extDoorFrameMat);
-  extDFTop.position.set(0, 2.47, 10.2);
-  scene.add(extDFTop);
+  extDFTop.position.set(0, 2.47, 10.2); scene.add(extDFTop);
   var extDFL = new THREE.Mesh(new THREE.BoxGeometry(0.15, 2.5, 0.2), extDoorFrameMat);
-  extDFL.position.set(-1.05, 1.2, 10.2);
-  scene.add(extDFL);
+  extDFL.position.set(-1.05, 1.2, 10.2); scene.add(extDFL);
   var extDFR = new THREE.Mesh(new THREE.BoxGeometry(0.15, 2.5, 0.2), extDoorFrameMat);
-  extDFR.position.set(1.05, 1.2, 10.2);
-  scene.add(extDFR);
-  // 非常口サイン
+  extDFR.position.set(1.05, 1.2, 10.2); scene.add(extDFR);
   var extExitSign = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.25, 0.05), new THREE.MeshStandardMaterial({ color: 0x00cc44, emissive: 0x00cc44, emissiveIntensity: 0.8 }));
-  extExitSign.position.set(0, 2.7, 10.25);
-  scene.add(extExitSign);
-  // 非常口ライト
+  extExitSign.position.set(0, 2.7, 10.25); scene.add(extExitSign);
   var extExitLight = new THREE.PointLight(0x00ff44, 0.5, 8);
-  extExitLight.position.set(0, 2.7, 10.5);
-  scene.add(extExitLight);
+  extExitLight.position.set(0, 2.7, 10.5); scene.add(extExitLight);
 
-  // ビル外壁の窓（オフィスビル風の格子状窓）
+  // 自ビル外壁の窓
   var extWinMat = new THREE.MeshStandardMaterial({ color: 0x6699bb, roughness: 0.1, metalness: 0.1, transparent: true, opacity: 0.4, emissive: 0x334466, emissiveIntensity: 0.2 });
   for (var ewi = 0; ewi < 8; ewi++) {
     for (var ewr = 0; ewr < 12; ewr++) {
@@ -7909,71 +7903,120 @@ function buildBuildingPlaza() {
     }
   }
 
-  // ===== オフィス街の景観 =====
-  var epX = EVAC_POINT_S2.x, epZ = EVAC_POINT_S2.z;
+  // ===== ビル前広場（石畳タイル — ビル出口から右側に広がる） =====
+  var plazaMat = new THREE.MeshStandardMaterial({ map: T.concrete, color: 0xc8c0b0, roughness: 0.6, emissive: 0x060605, emissiveIntensity: 0.05 });
+  var plaza = new THREE.Mesh(new THREE.PlaneGeometry(25, 25), plazaMat);
+  plaza.rotation.x = -Math.PI / 2;
+  plaza.position.set(5, GROUND_Y_S2 + 0.005, 23);
+  plaza.receiveShadow = true;
+  scene.add(plaza);
 
-  // 広い地面（100m×100m — 水色の隙間を埋める）
-  var bigGroundMat = new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.9 });
-  var bigGround = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), bigGroundMat);
-  bigGround.rotation.x = -Math.PI / 2;
-  bigGround.position.set(epX, GROUND_Y_S2 - 0.02, epZ);
-  bigGround.receiveShadow = true;
-  scene.add(bigGround);
+  // 石畳タイルの線（格子模様）
+  var tileLine = new THREE.MeshBasicMaterial({ color: 0x999080, transparent: true, opacity: 0.4 });
+  for (var tx = -7; tx <= 17; tx += 2) {
+    var vLine = new THREE.Mesh(new THREE.PlaneGeometry(0.03, 25), tileLine);
+    vLine.rotation.x = -Math.PI / 2;
+    vLine.position.set(tx, GROUND_Y_S2 + 0.008, 23);
+    scene.add(vLine);
+  }
+  for (var tz = 11; tz <= 35; tz += 2) {
+    var hLine = new THREE.Mesh(new THREE.PlaneGeometry(25, 0.03), tileLine);
+    hLine.rotation.x = -Math.PI / 2;
+    hLine.position.set(5, GROUND_Y_S2 + 0.008, tz);
+    scene.add(hLine);
+  }
 
-  // 道路（前方の車道 — Z方向に伸びる）
+  // ===== 歩道（ビル沿い Z方向 — ビル外壁の前） =====
+  var sidewalkMat = new THREE.MeshStandardMaterial({ color: 0xb0a898, roughness: 0.65 });
+  var sidewalk = new THREE.Mesh(new THREE.PlaneGeometry(20, 5), sidewalkMat);
+  sidewalk.rotation.x = -Math.PI / 2;
+  sidewalk.position.set(0, GROUND_Y_S2 + 0.003, 12.5);
+  scene.add(sidewalk);
+
+  // ===== 道路（左側 X=-12 付近を Z方向に伸びる — 広場の外） =====
   var roadMat = new THREE.MeshStandardMaterial({ color: 0x333338, roughness: 0.85 });
   var road = new THREE.Mesh(new THREE.PlaneGeometry(10, 100), roadMat);
   road.rotation.x = -Math.PI / 2;
-  road.position.set(epX, GROUND_Y_S2 + 0.005, epZ + 20);
+  road.position.set(-12, GROUND_Y_S2 + 0.002, 30);
   scene.add(road);
 
   // 中央線（白い破線）
   var lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.7 });
-  for (var li = -10; li < 30; li++) {
+  for (var li = -15; li < 25; li++) {
     var dashLine = new THREE.Mesh(new THREE.PlaneGeometry(0.12, 1.5), lineMat);
     dashLine.rotation.x = -Math.PI / 2;
-    dashLine.position.set(epX, GROUND_Y_S2 + 0.01, epZ + 20 + li * 3);
+    dashLine.position.set(-12, GROUND_Y_S2 + 0.006, li * 3);
     scene.add(dashLine);
   }
-
   // 道路端の白線
-  var edgeLineL = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 100), lineMat);
-  edgeLineL.rotation.x = -Math.PI / 2;
-  edgeLineL.position.set(epX - 5, GROUND_Y_S2 + 0.01, epZ + 20);
-  scene.add(edgeLineL);
-  var edgeLineR = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 100), lineMat);
-  edgeLineR.rotation.x = -Math.PI / 2;
-  edgeLineR.position.set(epX + 5, GROUND_Y_S2 + 0.01, epZ + 20);
-  scene.add(edgeLineR);
+  var edgeL = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 100), lineMat);
+  edgeL.rotation.x = -Math.PI / 2;
+  edgeL.position.set(-17, GROUND_Y_S2 + 0.006, 30); scene.add(edgeL);
+  var edgeR = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 100), lineMat);
+  edgeR.rotation.x = -Math.PI / 2;
+  edgeR.position.set(-7, GROUND_Y_S2 + 0.006, 30); scene.add(edgeR);
 
-  // 歩道（ビル側）— 歩道テクスチャ
-  var sidewalkMat = new THREE.MeshStandardMaterial({ color: 0x999990, roughness: 0.75 });
-  var sidewalkL = new THREE.Mesh(new THREE.PlaneGeometry(8, 100), sidewalkMat);
-  sidewalkL.rotation.x = -Math.PI / 2;
-  sidewalkL.position.set(epX - 9, GROUND_Y_S2 + 0.003, epZ + 20);
-  scene.add(sidewalkL);
-  var sidewalkR = new THREE.Mesh(new THREE.PlaneGeometry(8, 100), sidewalkMat);
-  sidewalkR.rotation.x = -Math.PI / 2;
-  sidewalkR.position.set(epX + 9, GROUND_Y_S2 + 0.003, epZ + 20);
-  scene.add(sidewalkR);
+  // 歩道（道路と広場の間 — ビル側）
+  var roadSidewalk = new THREE.Mesh(new THREE.PlaneGeometry(3, 100), sidewalkMat);
+  roadSidewalk.rotation.x = -Math.PI / 2;
+  roadSidewalk.position.set(-5.5, GROUND_Y_S2 + 0.003, 30);
+  scene.add(roadSidewalk);
+
+  // 縁石（道路と歩道の境界）
+  var curbMat = new THREE.MeshStandardMaterial({ color: 0xccccbb, roughness: 0.6 });
+  var curbR = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 80), curbMat);
+  curbR.position.set(-7, 0.06, 30); scene.add(curbR);
+  var curbL = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 80), curbMat);
+  curbL.position.set(-17, 0.06, 30); scene.add(curbL);
+
+  // ===== 街路樹（広場と道路沿い） =====
+  var trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c3d2e, roughness: 0.8 });
+  var leafMat = new THREE.MeshStandardMaterial({ color: 0x3a8a3a, roughness: 0.6, emissive: 0x0a2a0a, emissiveIntensity: 0.08 });
+  var treePositions = [
+    { x: -4, z: 16 }, { x: -4, z: 22 }, { x: -4, z: 28 }, { x: -4, z: 34 },
+    { x: 15, z: 16 }, { x: 15, z: 22 }, { x: 15, z: 28 }, { x: 15, z: 34 },
+  ];
+  for (var ti = 0; ti < treePositions.length; ti++) {
+    var tp = treePositions[ti];
+    var trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.15, 2.5, 8), trunkMat);
+    trunk.position.set(tp.x, 1.25, tp.z); scene.add(trunk);
+    var canopy = new THREE.Mesh(new THREE.SphereGeometry(1.5, 8, 6), leafMat);
+    canopy.position.set(tp.x, 3.5, tp.z); canopy.scale.y = 0.7; scene.add(canopy);
+  }
+
+  // ===== ベンチ（広場の端） =====
+  var benchMat = new THREE.MeshStandardMaterial({ color: 0x8b7355, roughness: 0.7 });
+  var benchLegMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.5, metalness: 0.5 });
+  var benchPositions = [{ x: 14, z: 20 }, { x: 14, z: 26 }];
+  for (var bci = 0; bci < benchPositions.length; bci++) {
+    var bp = benchPositions[bci];
+    var seat = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.08, 0.5), benchMat);
+    seat.position.set(bp.x, 0.45, bp.z); scene.add(seat);
+    var back = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.5, 0.06), benchMat);
+    back.position.set(bp.x, 0.7, bp.z - 0.22); scene.add(back);
+    for (var bli = 0; bli < 2; bli++) {
+      var leg = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.45, 0.4), benchLegMat);
+      leg.position.set(bp.x - 0.7 + bli * 1.4, 0.225, bp.z); scene.add(leg);
+    }
+  }
 
   // ===== 周囲のビル群 =====
   var buildingData = [
-    // 向かい側（道路の向こう Z+方向）
-    { x: -12, z: epZ + 30, w: 10, d: 8, h: 25, color: 0x778899 },
-    { x: 1, z: epZ + 32, w: 12, d: 10, h: 35, color: 0x889999 },
-    { x: 14, z: epZ + 28, w: 8, d: 8, h: 20, color: 0x8899aa },
-    // 左側
-    { x: -20, z: epZ - 5, w: 8, d: 15, h: 30, color: 0x7788aa },
-    { x: -22, z: epZ + 15, w: 10, d: 10, h: 22, color: 0x889988 },
+    // 道路向かい側（左 X=-20方向）
+    { x: -22, z: 15, w: 8, d: 12, h: 30, color: 0x778899 },
+    { x: -22, z: 30, w: 10, d: 10, h: 25, color: 0x889999 },
+    { x: -22, z: 45, w: 8, d: 8, h: 20, color: 0x8899aa },
+    // 広場の奥（Z+方向）
+    { x: 3, z: 42, w: 12, d: 8, h: 35, color: 0x7788aa },
+    { x: 16, z: 40, w: 8, d: 8, h: 22, color: 0x889988 },
     // 右側
-    { x: 20, z: epZ - 3, w: 9, d: 12, h: 28, color: 0x8888aa },
-    { x: 22, z: epZ + 18, w: 8, d: 8, h: 18, color: 0x99887788 },
-    // 奥（自ビルの隣）
-    { x: -15, z: 12, w: 8, d: 6, h: 32, color: 0x7799aa },
-    { x: 15, z: 12, w: 10, d: 6, h: 26, color: 0x8899aa },
+    { x: 22, z: 18, w: 6, d: 15, h: 28, color: 0x8888aa },
+    { x: 22, z: 35, w: 8, d: 10, h: 18, color: 0x998877 },
+    // 自ビルの左隣
+    { x: -14, z: 10, w: 6, d: 6, h: 32, color: 0x7799aa },
+    // 自ビルの右隣
+    { x: 14, z: 10, w: 6, d: 6, h: 26, color: 0x8899aa },
   ];
-
   var winMat = new THREE.MeshStandardMaterial({ color: 0xaaccdd, roughness: 0.1, metalness: 0.2, transparent: true, opacity: 0.5, emissive: 0x334466, emissiveIntensity: 0.15 });
 
   for (var bi = 0; bi < buildingData.length; bi++) {
@@ -7981,53 +8024,21 @@ function buildBuildingPlaza() {
     var bMat = new THREE.MeshStandardMaterial({ color: bd.color, roughness: 0.7, emissive: 0x050505, emissiveIntensity: 0.05 });
     var bMesh = new THREE.Mesh(new THREE.BoxGeometry(bd.w, bd.h, bd.d), bMat);
     bMesh.position.set(bd.x, bd.h / 2, bd.z);
-    bMesh.castShadow = true;
-    bMesh.receiveShadow = true;
+    bMesh.castShadow = true; bMesh.receiveShadow = true;
     scene.add(bMesh);
-
-    // 窓グリッド（各面に）
+    // 窓グリッド（前面＋背面のみ — パフォーマンス）
     var floorH = 3.2;
     var floors = Math.floor(bd.h / floorH);
-    // 前面（Z+）
     var winCols = Math.floor(bd.w / 2.2);
     for (var wf = 0; wf < floors; wf++) {
       for (var wc = 0; wc < winCols; wc++) {
         var wMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.8), winMat);
-        wMesh.position.set(
-          bd.x - bd.w / 2 + 1.1 + wc * 2.2,
-          1.5 + wf * floorH,
-          bd.z + bd.d / 2 + 0.01
-        );
+        wMesh.position.set(bd.x - bd.w / 2 + 1.1 + wc * 2.2, 1.5 + wf * floorH, bd.z + bd.d / 2 + 0.01);
         scene.add(wMesh);
-      }
-    }
-    // 背面（Z-）
-    for (var wf2 = 0; wf2 < floors; wf2++) {
-      for (var wc2 = 0; wc2 < winCols; wc2++) {
         var wMesh2 = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.8), winMat);
-        wMesh2.position.set(
-          bd.x - bd.w / 2 + 1.1 + wc2 * 2.2,
-          1.5 + wf2 * floorH,
-          bd.z - bd.d / 2 - 0.01
-        );
+        wMesh2.position.set(bd.x - bd.w / 2 + 1.1 + wc * 2.2, 1.5 + wf * floorH, bd.z - bd.d / 2 - 0.01);
         wMesh2.rotation.y = Math.PI;
         scene.add(wMesh2);
-      }
-    }
-    // 側面の窓
-    var sideCols = Math.floor(bd.d / 2.2);
-    for (var wf3 = 0; wf3 < floors; wf3++) {
-      for (var wc3 = 0; wc3 < sideCols; wc3++) {
-        // 左側面
-        var wMeshL = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.8), winMat);
-        wMeshL.position.set(bd.x - bd.w / 2 - 0.01, 1.5 + wf3 * floorH, bd.z - bd.d / 2 + 1.1 + wc3 * 2.2);
-        wMeshL.rotation.y = -Math.PI / 2;
-        scene.add(wMeshL);
-        // 右側面
-        var wMeshR = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.8), winMat);
-        wMeshR.position.set(bd.x + bd.w / 2 + 0.01, 1.5 + wf3 * floorH, bd.z - bd.d / 2 + 1.1 + wc3 * 2.2);
-        wMeshR.rotation.y = Math.PI / 2;
-        scene.add(wMeshR);
       }
     }
   }
@@ -8035,62 +8046,40 @@ function buildBuildingPlaza() {
   // ===== 街路灯 =====
   var poleMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.5, metalness: 0.6 });
   var lampPositions = [
-    { x: -6, z: epZ + 5 }, { x: 6, z: epZ + 5 },
-    { x: -6, z: epZ + 15 }, { x: 6, z: epZ + 15 },
+    { x: 0, z: 18 }, { x: 0, z: 28 },
+    { x: 12, z: 18 }, { x: 12, z: 28 },
   ];
   for (var lpi = 0; lpi < lampPositions.length; lpi++) {
     var lp = lampPositions[lpi];
     var pole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 4.5, 8), poleMat);
-    pole.position.set(lp.x, 2.25, lp.z);
-    scene.add(pole);
-    // ランプヘッド
+    pole.position.set(lp.x, 2.25, lp.z); scene.add(pole);
     var lampHead = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.1, 0.3), new THREE.MeshStandardMaterial({ color: 0xdddddd, emissive: 0xffeedd, emissiveIntensity: 0.3 }));
-    lampHead.position.set(lp.x, 4.5, lp.z);
-    scene.add(lampHead);
+    lampHead.position.set(lp.x, 4.5, lp.z); scene.add(lampHead);
     var streetLight = new THREE.PointLight(0xffeedd, 0.2, 10);
-    streetLight.position.set(lp.x, 4.4, lp.z);
-    scene.add(streetLight);
+    streetLight.position.set(lp.x, 4.4, lp.z); scene.add(streetLight);
   }
-
-  // ===== 横断歩道（ビル前） =====
-  var crossMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 });
-  for (var ci = 0; ci < 6; ci++) {
-    var crossStripe = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 4), crossMat);
-    crossStripe.rotation.x = -Math.PI / 2;
-    crossStripe.position.set(epX - 2.5 + ci * 1.0, GROUND_Y_S2 + 0.012, epZ + 20);
-    scene.add(crossStripe);
-  }
-
-  // ===== ガードレール/縁石 =====
-  var curbMat = new THREE.MeshStandardMaterial({ color: 0xccccbb, roughness: 0.6 });
-  var curbL = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.15, 50), curbMat);
-  curbL.position.set(epX - 5.1, 0.075, epZ + 20);
-  scene.add(curbL);
-  var curbR = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.15, 50), curbMat);
-  curbR.position.set(epX + 5.1, 0.075, epZ + 20);
-  scene.add(curbR);
 
   // --- 避難ポイントマーカー（オレンジの円 + 看板 + 光柱） ---
   var markerMat = new THREE.MeshStandardMaterial({ color: 0xff6b00, roughness: 0.5, emissive: 0xff6b00, emissiveIntensity: 0.4, transparent: true, opacity: 0.6 });
   var marker = new THREE.Mesh(new THREE.CylinderGeometry(EVAC_POINT_S2.radius, EVAC_POINT_S2.radius, 0.05, 32), markerMat);
-  marker.position.set(EVAC_POINT_S2.x, GROUND_Y_S2 + 0.03, EVAC_POINT_S2.z);
+  marker.position.set(epX, GROUND_Y_S2 + 0.03, epZ);
   scene.add(marker);
   GAME._evacMarkerS2 = marker;
 
   // 避難ポイント看板
   var evacSignMat = new THREE.MeshStandardMaterial({ color: 0xff6b00, roughness: 0.4, emissive: 0xff6b00, emissiveIntensity: 0.5 });
   var evacPole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.5, 8), new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.5, emissive: 0x050505 }));
-  evacPole.position.set(EVAC_POINT_S2.x, 1.25, EVAC_POINT_S2.z - EVAC_POINT_S2.radius - 0.5);
+  evacPole.position.set(epX, 1.25, epZ - EVAC_POINT_S2.radius - 0.5);
   scene.add(evacPole);
   var evacBoard = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.4, 0.05), evacSignMat);
-  evacBoard.position.set(EVAC_POINT_S2.x, 2.3, EVAC_POINT_S2.z - EVAC_POINT_S2.radius - 0.5);
+  evacBoard.position.set(epX, 2.3, epZ - EVAC_POINT_S2.radius - 0.5);
   scene.add(evacBoard);
 
   // 光柱ビーム
   var beamGeo = new THREE.CylinderGeometry(0.3, 1.0, 20, 16, 1, true);
   var beamMat = new THREE.MeshBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0.25, side: THREE.DoubleSide, depthWrite: false });
   var beam = new THREE.Mesh(beamGeo, beamMat);
-  beam.position.set(EVAC_POINT_S2.x, 10, EVAC_POINT_S2.z);
+  beam.position.set(epX, 10, epZ);
   scene.add(beam);
   GAME._evacBeamS2 = beam;
   GAME._evacBeamMatS2 = beamMat;
@@ -8100,25 +8089,22 @@ function buildBuildingPlaza() {
   var glowMat = new THREE.MeshBasicMaterial({ color: 0x00ff66, transparent: true, opacity: 0.3, side: THREE.DoubleSide, depthWrite: false });
   var glowCircle = new THREE.Mesh(glowGeo, glowMat);
   glowCircle.rotation.x = -Math.PI / 2;
-  glowCircle.position.set(EVAC_POINT_S2.x, GROUND_Y_S2 + 0.04, EVAC_POINT_S2.z);
+  glowCircle.position.set(epX, GROUND_Y_S2 + 0.04, epZ);
   scene.add(glowCircle);
   GAME._evacGlowS2 = glowCircle;
 
-  // 内側リング
   var innerRingGeo = new THREE.RingGeometry(0.5, EVAC_POINT_S2.radius, 32);
   var innerRingMat = new THREE.MeshBasicMaterial({ color: 0x00ffaa, transparent: true, opacity: 0.2, side: THREE.DoubleSide, depthWrite: false });
   var innerRing = new THREE.Mesh(innerRingGeo, innerRingMat);
   innerRing.rotation.x = -Math.PI / 2;
-  innerRing.position.set(EVAC_POINT_S2.x, GROUND_Y_S2 + 0.05, EVAC_POINT_S2.z);
+  innerRing.position.set(epX, GROUND_Y_S2 + 0.05, epZ);
   scene.add(innerRing);
 
-  // 照明（広場用のポイントライト 2個）
-  var plazaLight1 = new THREE.PointLight(0xffeedd, 0.3, 20);
-  plazaLight1.position.set(-5, 8, EVAC_POINT_S2.z);
-  scene.add(plazaLight1);
-  var plazaLight2 = new THREE.PointLight(0xffeedd, 0.3, 20);
-  plazaLight2.position.set(5, 8, EVAC_POINT_S2.z);
-  scene.add(plazaLight2);
+  // 照明
+  var plazaLight1 = new THREE.PointLight(0xffeedd, 0.3, 25);
+  plazaLight1.position.set(epX - 5, 8, epZ); scene.add(plazaLight1);
+  var plazaLight2 = new THREE.PointLight(0xffeedd, 0.3, 25);
+  plazaLight2.position.set(epX + 5, 8, epZ); scene.add(plazaLight2);
 }
 
 // ============================================================
@@ -8408,7 +8394,15 @@ function teleportToBuildingPlaza() {
   GAME.player.x = 0;
   GAME.player.y = 0.9;
   GAME.player.z = 14; // ビル出口のすぐ前（振り返ると階段が見える距離）
-  GAME.player.yaw = Math.PI; // ビル出口方向を向く（階段から出てきた構図）
+  GAME.player.yaw = 0; // 広場（外側）を向く
+
+  // キー状態リセット（カットシーン中の入力残りを防止）
+  GAME.keys = {};
+  GAME.joystickMag = 0;
+  GAME.player.isSprinting = false;
+  GAME.player.isCrouching = false;
+  GAME.player.isGuarding = false;
+  GAME.player.isHoldingDesk = false;
 
   // 10階オフィスの壁判定を全クリア（1階ロビー＋広場用に再構築）
   GAME.walls = [];
@@ -8428,6 +8422,9 @@ function teleportToBuildingPlaza() {
 
   // 出入り口の奥に「1階非常階段出口」の構造物を設置
   buildGroundFloorStairwell();
+
+  // ビル前広場を構築（テレポート後に初めて構築 — 10Fから見えないようにする）
+  try { buildBuildingPlaza(); } catch(e) { console.error('buildBuildingPlaza:', e); }
 
   // fog・照明を屋外に変更
   GAME.scene.fog = new THREE.FogExp2(0x87ceeb, 0.005);
@@ -8453,9 +8450,9 @@ function teleportToBuildingPlaza() {
 
 function spawnPlazaNPCs() {
   GAME._plazaNPCs = [];
-  // 上司（避難ポイント手前で待機）
+  // 上司（避難ポイント手前で待機 — 広場内）
   var bossModel = createNPCModel(0x1a237e, 1.7, 0xf5c6a0);
-  bossModel.position.set(EVAC_POINT_S2.x + 2, 0, EVAC_POINT_S2.z - 2);
+  bossModel.position.set(EVAC_POINT_S2.x + 1.5, 0, EVAC_POINT_S2.z - 1.5);
   bossModel.rotation.y = Math.PI;
   GAME.scene.add(bossModel);
   GAME._plazaNPCs.push({ mesh: bossModel, role: 'boss', phase: 0 });
@@ -8463,7 +8460,7 @@ function spawnPlazaNPCs() {
   var colors = [0xf5f5f5, 0xe8e8e8, 0xeeeeee, 0xe0e0e0, 0xf0f0f0, 0xdadada];
   for (var i = 0; i < 8; i++) {
     var angle = (i / 8) * Math.PI * 2;
-    var r = 1.0 + Math.random() * 1.5;
+    var r = 1.0 + Math.random() * 1.2;
     var sx = EVAC_POINT_S2.x + Math.cos(angle) * r;
     var sz = EVAC_POINT_S2.z + Math.sin(angle) * r;
     var nModel = createNPCModel(colors[i % colors.length], 1.55 + Math.random() * 0.15, 0xf5c6a0);
@@ -9517,7 +9514,14 @@ function updateSingleNPC(npc, dtSec) {
           mesh.position.y = 0;
           mesh.rotation.z = 0;
           var wb = mesh.userData.body;
-          if (wb) { wb.rotation.x = 0; wb.rotation.z = 0; }
+          if (wb) {
+            wb.rotation.x = 0; wb.rotation.z = 0;
+            // 腕リセット（手錠ポーズ防止）
+            if (wb.children && wb.children.length >= 3) {
+              wb.children[1].rotation.x = 0; wb.children[1].rotation.z = 0;
+              wb.children[2].rotation.x = 0; wb.children[2].rotation.z = 0;
+            }
+          }
           if (mesh.userData.leftLeg) {
             mesh.userData.leftLeg.rotation.x = 0;
             var wl = mesh.userData.leftLeg.children[0];
@@ -9550,7 +9554,13 @@ function updateSingleNPC(npc, dtSec) {
             mesh.rotation.z = 0;
             // しゃがみポーズリセット
             var db = mesh.userData.body;
-            if (db) { db.rotation.x = 0; db.rotation.z = 0; }
+            if (db) {
+              db.rotation.x = 0; db.rotation.z = 0;
+              if (db.children && db.children.length >= 3) {
+                db.children[1].rotation.x = 0; db.children[1].rotation.z = 0;
+                db.children[2].rotation.x = 0; db.children[2].rotation.z = 0;
+              }
+            }
             if (mesh.userData.leftLeg) {
               mesh.userData.leftLeg.rotation.x = 0;
               var dl = mesh.userData.leftLeg.children[0];
@@ -9597,7 +9607,14 @@ function updateSingleNPC(npc, dtSec) {
         mesh.rotation.z = 0;
         // しゃがみポーズを完全リセット（これがないと幽霊のように浮く）
         var resetBody = mesh.userData.body;
-        if (resetBody) { resetBody.rotation.x = 0; resetBody.rotation.z = 0; }
+        if (resetBody) {
+          resetBody.rotation.x = 0; resetBody.rotation.z = 0;
+          // 腕もリセット（手錠ポーズ防止）
+          if (resetBody.children && resetBody.children.length >= 3) {
+            resetBody.children[1].rotation.x = 0; resetBody.children[1].rotation.z = 0;
+            resetBody.children[2].rotation.x = 0; resetBody.children[2].rotation.z = 0;
+          }
+        }
         if (mesh.userData.leftLeg) {
           mesh.userData.leftLeg.rotation.x = 0;
           var rul = mesh.userData.leftLeg.children[0];
@@ -9653,6 +9670,13 @@ function updateSingleNPC(npc, dtSec) {
         var bodyNode = mesh.userData.body;
         if (bodyNode) {
           bodyNode.rotation.x = 0.05; // 軽い前傾
+          // 腕振りアニメーション
+          if (bodyNode.children && bodyNode.children.length >= 3) {
+            bodyNode.children[1].rotation.x = Math.sin(npc.phase + Math.PI) * 0.35; // 左腕
+            bodyNode.children[1].rotation.z = 0;
+            bodyNode.children[2].rotation.x = Math.sin(npc.phase) * 0.35; // 右腕
+            bodyNode.children[2].rotation.z = 0;
+          }
           // 体の上下動（歩行のバウンス）
           mesh.position.y = Math.abs(Math.sin(npc.phase * 2)) * 0.03;
         }
@@ -11756,6 +11780,10 @@ function checkScoringTriggers() {
     var holdOnPrompt = document.getElementById('holdon-prompt');
     var holdOnIndicator = document.getElementById('holdon-indicator');
     var canHoldOn = p.isCrouching && isUnderDesk(p.x, p.z);
+    // 机の下から出たら自動解除
+    if (p.isHoldingDesk && !canHoldOn) {
+      p.isHoldingDesk = false;
+    }
     if (canHoldOn && !p.isHoldingDesk && holdOnPrompt) {
       // プロンプト表示（Eキー長押し案内）
       if (currentLang === 'en') {
@@ -12192,11 +12220,14 @@ document.addEventListener('keydown', function(e) {
   GAME._gPrev = true;
   // E長押し: 机の脚を掴む（HOLD ON）/ インタラクト
   if (e.code === 'KeyE') {
-    GAME.player.isHoldingDesk = true;
-    // 地震中＋しゃがみ＋机の下でない場合はインタラクトとして処理
     var isQuakePhase = GAME.phase === 'earthquake' || GAME.phase === 'shaking';
     var underDesk = GAME.player.isCrouching && isQuakePhase && isUnderDesk(GAME.player.x, GAME.player.z);
-    if (!underDesk) performInteract();
+    // 机の下でしゃがみ中のみホールドオン有効
+    if (underDesk) {
+      GAME.player.isHoldingDesk = true;
+    } else {
+      performInteract();
+    }
   }
   // インタラクト: F / Space
   if (e.code === 'KeyF' || e.code === 'Space') {
@@ -12384,11 +12415,14 @@ function initGameControls() {
   if (interactBtn) {
     interactBtn.addEventListener('touchstart', function(e) {
       e.preventDefault();
-      GAME.player.isHoldingDesk = true;
-      // 地震中＋しゃがみ＋机の下でない場合はインタラクト
       var isQ = GAME.phase === 'earthquake' || GAME.phase === 'shaking';
       var ud = GAME.player.isCrouching && isQ && isUnderDesk(GAME.player.x, GAME.player.z);
-      if (!ud) performInteract();
+      // 机の下でしゃがみ中のみホールドオン有効
+      if (ud) {
+        GAME.player.isHoldingDesk = true;
+      } else {
+        performInteract();
+      }
     }, { passive: false });
     interactBtn.addEventListener('touchend', function() {
       GAME.player.isHoldingDesk = false;
