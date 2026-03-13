@@ -10259,6 +10259,63 @@ function updateSingleNPC(npc, dtSec) {
         if (bodyN) {
           bodyN.rotation.z = Math.sin(npc.phase * 1.2 + seed * 1.3) * 0.02;
         }
+      } else if (npc.role === 'mother' || npc.role === 'father' || npc.role === 'sister' || npc.role === 'grandma') {
+        // ====== Stage 3: 家族の日常アニメーション ======
+        mesh.position.y = (npc.floorY || 0) + Math.sin(npc.phase * 1.5) * 0.003;
+        if (npc.role === 'mother') {
+          // 母: キッチンで料理（腕を前に出して作業）
+          var mBody = mesh.userData.body;
+          if (mBody && mBody.children && mBody.children.length >= 3) {
+            mBody.children[1].rotation.x = -0.7 + Math.sin(npc.phase * 3) * 0.1;
+            mBody.children[1].rotation.z = 0.2;
+            mBody.children[2].rotation.x = -0.7 + Math.sin(npc.phase * 3 + 1.5) * 0.1;
+            mBody.children[2].rotation.z = -0.2;
+          }
+          if (mesh.userData.head) mesh.userData.head.rotation.x = 0.15;
+        } else if (npc.role === 'father') {
+          // 父: リビングでリラックス（ソファに座り読書）
+          var fSeatY = (npc.floorY || 0) - (npc.npcH || 1.7) * 0.15;
+          mesh.position.y = fSeatY;
+          if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = -0.5;
+          if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = -0.5;
+          var fBody = mesh.userData.body;
+          if (fBody && fBody.children && fBody.children.length >= 3) {
+            fBody.children[1].rotation.x = -0.6;
+            fBody.children[1].rotation.z = 0.15;
+            fBody.children[2].rotation.x = -0.6;
+            fBody.children[2].rotation.z = -0.15;
+          }
+          if (mesh.userData.head) {
+            mesh.userData.head.rotation.x = 0.2 + Math.sin(npc.phase * 0.5) * 0.03;
+          }
+        } else if (npc.role === 'sister') {
+          // 妹: 2Fで遊んでいる（跳ねるような動き）
+          mesh.position.y = (npc.floorY || 0) + Math.abs(Math.sin(npc.phase * 4)) * 0.02;
+          if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = Math.sin(npc.phase * 3) * 0.15;
+          if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = -Math.sin(npc.phase * 3) * 0.15;
+          var sBody = mesh.userData.body;
+          if (sBody && sBody.children && sBody.children.length >= 3) {
+            sBody.children[1].rotation.x = Math.sin(npc.phase * 2) * 0.3;
+            sBody.children[2].rotation.x = -Math.sin(npc.phase * 2) * 0.3;
+          }
+        } else if (npc.role === 'grandma') {
+          // 祖母: 和室で座っている（正座・お茶を飲む仕草）
+          var gSeatY = (npc.floorY || 0) - (npc.npcH || 1.45) * 0.35;
+          mesh.position.y = gSeatY;
+          if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = -1.5;
+          if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = -1.5;
+          var gBody = mesh.userData.body;
+          if (gBody) {
+            gBody.rotation.x = 0.1;
+            if (gBody.children && gBody.children.length >= 3) {
+              gBody.children[1].rotation.x = -0.5 + Math.sin(npc.phase * 0.8) * 0.05;
+              gBody.children[2].rotation.x = -0.5 + Math.sin(npc.phase * 0.8 + 1) * 0.05;
+            }
+          }
+          if (mesh.userData.head) {
+            mesh.userData.head.rotation.y = Math.sin(npc.phase * 0.3) * 0.1;
+          }
+        }
       } else {
         // ====== 先生の授業アニメーション ======
         var t = GAME.phaseTimer || 0;
