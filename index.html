@@ -11846,7 +11846,23 @@ document.addEventListener('keydown', function(e) {
 
   // しゃがむ: Cトグル（KANKERIと同じ方式）
   if (e.code === 'KeyC' && !GAME._cPrev) {
-    GAME.player.isCrouching = !GAME.player.isCrouching;
+    if (GAME.player.isCrouching) {
+      // 立ち上がり: 頭上にデスクがあるか判定
+      var canStand = true;
+      var pp = GAME.player;
+      var sR = 0.25;
+      for (var wi = 0; wi < GAME.walls.length; wi++) {
+        var ww = GAME.walls[wi];
+        if (ww.maxY !== undefined && ww.maxY <= 0.65) {
+          if (pp.x + sR > ww.minX && pp.x - sR < ww.maxX && pp.z + sR > ww.minZ && pp.z - sR < ww.maxZ) {
+            canStand = false; break;
+          }
+        }
+      }
+      if (canStand) GAME.player.isCrouching = false;
+    } else {
+      GAME.player.isCrouching = true;
+    }
   }
   GAME._cPrev = true;
   // 頭を守る: Gトグル（しゃがみと同じ方式 — 小学生でも押しやすい）
@@ -12000,11 +12016,25 @@ function initGameControls() {
     // しゃがむ: トグル方式（KANKERIと同じ）
     crouchBtn.addEventListener('touchstart', function(e) {
       e.preventDefault();
-      GAME.player.isCrouching = !GAME.player.isCrouching;
       if (GAME.player.isCrouching) {
-        this.classList.add('active');
+        // 立ち上がり: 頭上にデスクがあるか判定
+        var canStand = true;
+        var pp = GAME.player, sR = 0.25;
+        for (var wi = 0; wi < GAME.walls.length; wi++) {
+          var ww = GAME.walls[wi];
+          if (ww.maxY !== undefined && ww.maxY <= 0.65) {
+            if (pp.x + sR > ww.minX && pp.x - sR < ww.maxX && pp.z + sR > ww.minZ && pp.z - sR < ww.maxZ) {
+              canStand = false; break;
+            }
+          }
+        }
+        if (canStand) {
+          GAME.player.isCrouching = false;
+          this.classList.remove('active');
+        }
       } else {
-        this.classList.remove('active');
+        GAME.player.isCrouching = true;
+        this.classList.add('active');
       }
     }, { passive: false });
 
