@@ -3999,52 +3999,56 @@ var NovelEngine = {
       var lum0 = topRow0[0]*0.3+topRow0[1]*0.59+topRow0[2]*0.11;
       var lum1 = topRow1[0]*0.3+topRow1[1]*0.59+topRow1[2]*0.11;
       if (Math.abs(lum0 - lum1) > 15 && lum0 > 140 && lum1 > 140) isChecker = true;
-      // 背景ピクセル判定: 灰色系 or チェッカー色に近いピクセル
+      // 背景ピクセル判定
       var bgAvg = [0,0,0];
       for (var si = 0; si < bgSamples.length; si++) {
         bgAvg[0] += bgSamples[si][0]; bgAvg[1] += bgSamples[si][1]; bgAvg[2] += bgSamples[si][2];
       }
       bgAvg[0] /= bgSamples.length; bgAvg[1] /= bgSamples.length; bgAvg[2] /= bgSamples.length;
-      // 背景が明るいグレー/白系（チェッカー or ソリッド）かチェック
       var bgLum = bgAvg[0]*0.3+bgAvg[1]*0.59+bgAvg[2]*0.11;
-      if (bgLum < 100 && !isChecker) return; // 暗い背景は処理しない（意図的な背景の可能性）
-      // フラッドフィル: 四隅から背景色に近いピクセルを透過にする
-      var visited = new Uint8Array(w * h);
-      var queue = [];
-      var tolerance = isChecker ? 50 : 35;
-      function isBgPixel(idx4) {
-        var r = d[idx4], g = d[idx4+1], b = d[idx4+2], a = d[idx4+3];
-        if (a === 0) return true;
-        // チェッカーボード: 白(>200)系 or 灰色(150-220)系
-        if (isChecker) {
+      if (bgLum < 100 && !isChecker) return; // 暗い背景は処理しない
+
+      if (isChecker) {
+        // チェッカーボード検出時: 全ピクセルスキャンで高輝度・低彩度ピクセルを透過
+        for (var pi = 0; pi < d.length; pi += 4) {
+          var r = d[pi], g = d[pi+1], b = d[pi+2];
           var lum = r*0.3+g*0.59+b*0.11;
           var sat = Math.max(r,g,b) - Math.min(r,g,b);
-          return lum > 140 && sat < 40;
+          if (lum > 130 && sat < 45) {
+            d[pi+3] = 0;
+          }
         }
-        // 背景平均色との距離
-        var dr = r-bgAvg[0], dg = g-bgAvg[1], db = b-bgAvg[2];
-        return Math.sqrt(dr*dr+dg*dg+db*db) < tolerance;
-      }
-      // 四隅と上下辺中央からフラッドフィル開始
-      var startPts = [[0,0],[w-1,0],[0,h-1],[w-1,h-1],[Math.floor(w/2),0],[Math.floor(w/2),h-1],[0,Math.floor(h/2)],[w-1,Math.floor(h/2)]];
-      for (var sp = 0; sp < startPts.length; sp++) {
-        var sx = startPts[sp][0], sy = startPts[sp][1];
-        var si2 = sy * w + sx;
-        if (visited[si2] || !isBgPixel(si2 * 4)) continue;
-        queue.push(si2);
-        visited[si2] = 1;
-        while (queue.length > 0) {
-          var pos = queue.pop();
-          d[pos * 4 + 3] = 0; // 透過にする
-          var px = pos % w, py = Math.floor(pos / w);
-          var neighbors = [[px-1,py],[px+1,py],[px,py-1],[px,py+1]];
-          for (var ni = 0; ni < neighbors.length; ni++) {
-            var nx = neighbors[ni][0], ny = neighbors[ni][1];
-            if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
-            var npos = ny * w + nx;
-            if (visited[npos]) continue;
-            visited[npos] = 1;
-            if (isBgPixel(npos * 4)) queue.push(npos);
+      } else {
+        // ソリッド背景: フラッドフィルで四隅から除去
+        var visited = new Uint8Array(w * h);
+        var queue = [];
+        var tolerance = 35;
+        function isBgPixel(idx4) {
+          var r2 = d[idx4], g2 = d[idx4+1], b2 = d[idx4+2];
+          if (d[idx4+3] === 0) return true;
+          var dr = r2-bgAvg[0], dg = g2-bgAvg[1], db = b2-bgAvg[2];
+          return Math.sqrt(dr*dr+dg*dg+db*db) < tolerance;
+        }
+        var startPts = [[0,0],[w-1,0],[0,h-1],[w-1,h-1],[Math.floor(w/2),0],[Math.floor(w/2),h-1],[0,Math.floor(h/2)],[w-1,Math.floor(h/2)]];
+        for (var sp = 0; sp < startPts.length; sp++) {
+          var sx = startPts[sp][0], sy = startPts[sp][1];
+          var si2 = sy * w + sx;
+          if (visited[si2] || !isBgPixel(si2 * 4)) continue;
+          queue.push(si2);
+          visited[si2] = 1;
+          while (queue.length > 0) {
+            var pos = queue.pop();
+            d[pos * 4 + 3] = 0;
+            var px = pos % w, py = Math.floor(pos / w);
+            var neighbors = [[px-1,py],[px+1,py],[px,py-1],[px,py+1]];
+            for (var ni = 0; ni < neighbors.length; ni++) {
+              var nx = neighbors[ni][0], ny = neighbors[ni][1];
+              if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+              var npos = ny * w + nx;
+              if (visited[npos]) continue;
+              visited[npos] = 1;
+              if (isBgPixel(npos * 4)) queue.push(npos);
+            }
           }
         }
       }
@@ -4223,7 +4227,13 @@ var NovelEngine = {
     if (!info) return;
     var folder = (line.speaker === 'bousai') ? 'characters/shared/' : 'characters/stage' + (GAME.stageNum || 1) + '/';
     var expr = this._resolveExpr(line.speaker, line.expr || 'normal');
-    var src = folder + line.speaker + '_' + expr + '.png' + CACHE_BUSTER;
+    var srcKey = folder + line.speaker + '_' + expr + '.png';
+    var src = srcKey + CACHE_BUSTER;
+
+    // 背景除去済みキャラ画像があればData URLを使用
+    if (this._processedKeys[srcKey] && this._imageCache[srcKey] && this._imageCache[srcKey].src) {
+      src = this._imageCache[srcKey].src;
+    }
 
     // ボウサイキャラのサイズ調整クラス
     this.charaLeft.classList.remove('chara-bousai');
@@ -4242,8 +4252,10 @@ var NovelEngine = {
       }
     }
 
-    // 画像を3枚重ねにして半透明ピクセルのアルファを強化
-    var dblSrc = 'url(' + src + '), url(' + src + '), url(' + src + ')';
+    // 画像を3枚重ねにして半透明ピクセルのアルファを強化（Data URLの場合は1枚で十分）
+    var dblSrc = src.startsWith('data:')
+      ? 'url(' + src + ')'
+      : 'url(' + src + '), url(' + src + '), url(' + src + ')';
 
     if (info.pos === 'left') {
       this.charaLeft.style.backgroundImage = dblSrc;
