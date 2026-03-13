@@ -9533,6 +9533,15 @@ function updateSingleNPC(npc, dtSec) {
             if (wr && wr.children[0]) wr.children[0].rotation.x = 0;
           }
         }
+        // 待機中アイドルアニメーション（呼吸 + 周囲を見回す）
+        npc.phase += dtSec;
+        mesh.position.y = Math.sin(npc.phase * 2) * 0.004;
+        mesh.rotation.y = npc._origYaw !== undefined ? npc._origYaw + Math.sin(npc.phase * 0.8) * 0.3 : mesh.rotation.y + Math.sin(npc.phase * 0.8) * 0.003;
+        var wbIdle = mesh.userData.body;
+        if (wbIdle && wbIdle.children && wbIdle.children.length >= 3) {
+          wbIdle.children[1].rotation.x = Math.sin(npc.phase * 0.7) * 0.05;
+          wbIdle.children[2].rotation.x = Math.sin(npc.phase * 0.7 + 0.5) * 0.05;
+        }
         break;
       }
 
@@ -10640,9 +10649,10 @@ function _doTransitionPhase(newPhase) {
       GAME.player.isCrouching = false;
 
       if (GAME.stageNum === 2) {
-        // Stage 2: オフィス — プレイヤーを通路に移動
-        GAME.player.x = 0;
-        GAME.player.z = 7;
+        // Stage 2: オフィス — プレイヤーをデスク間の通路に移動
+        // デスクグリッド: X=-8,-4,0,4 / Z=2,4.5,7,9.5,12 なので間を選ぶ
+        GAME.player.x = -2;
+        GAME.player.z = 5.75;
         showAdvisor({ja: '避難開始！非常階段を目指そう！エレベーターは使うな！', en: 'Start evacuating! Head for the emergency stairs! Don\'t use the elevator!'}, 'normal');
       } else {
         // Stage 1: 学校
