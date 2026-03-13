@@ -7909,16 +7909,166 @@ function buildBuildingPlaza() {
     }
   }
 
-  // 道路のライン
-  var lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 });
-  var roadLine = new THREE.Mesh(new THREE.PlaneGeometry(0.15, 20), lineMat);
-  roadLine.rotation.x = -Math.PI / 2;
-  roadLine.position.set(-8, GROUND_Y_S2 + 0.01, EVAC_POINT_S2.z);
-  scene.add(roadLine);
-  var roadLine2 = new THREE.Mesh(new THREE.PlaneGeometry(0.15, 20), lineMat);
-  roadLine2.rotation.x = -Math.PI / 2;
-  roadLine2.position.set(8, GROUND_Y_S2 + 0.01, EVAC_POINT_S2.z);
-  scene.add(roadLine2);
+  // ===== オフィス街の景観 =====
+  var epX = EVAC_POINT_S2.x, epZ = EVAC_POINT_S2.z;
+
+  // 広い地面（100m×100m — 水色の隙間を埋める）
+  var bigGroundMat = new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.9 });
+  var bigGround = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), bigGroundMat);
+  bigGround.rotation.x = -Math.PI / 2;
+  bigGround.position.set(epX, GROUND_Y_S2 - 0.02, epZ);
+  bigGround.receiveShadow = true;
+  scene.add(bigGround);
+
+  // 道路（前方の車道 — Z方向に伸びる）
+  var roadMat = new THREE.MeshStandardMaterial({ color: 0x333338, roughness: 0.85 });
+  var road = new THREE.Mesh(new THREE.PlaneGeometry(10, 100), roadMat);
+  road.rotation.x = -Math.PI / 2;
+  road.position.set(epX, GROUND_Y_S2 + 0.005, epZ + 20);
+  scene.add(road);
+
+  // 中央線（白い破線）
+  var lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.7 });
+  for (var li = -10; li < 30; li++) {
+    var dashLine = new THREE.Mesh(new THREE.PlaneGeometry(0.12, 1.5), lineMat);
+    dashLine.rotation.x = -Math.PI / 2;
+    dashLine.position.set(epX, GROUND_Y_S2 + 0.01, epZ + 20 + li * 3);
+    scene.add(dashLine);
+  }
+
+  // 道路端の白線
+  var edgeLineL = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 100), lineMat);
+  edgeLineL.rotation.x = -Math.PI / 2;
+  edgeLineL.position.set(epX - 5, GROUND_Y_S2 + 0.01, epZ + 20);
+  scene.add(edgeLineL);
+  var edgeLineR = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 100), lineMat);
+  edgeLineR.rotation.x = -Math.PI / 2;
+  edgeLineR.position.set(epX + 5, GROUND_Y_S2 + 0.01, epZ + 20);
+  scene.add(edgeLineR);
+
+  // 歩道（ビル側）— 歩道テクスチャ
+  var sidewalkMat = new THREE.MeshStandardMaterial({ color: 0x999990, roughness: 0.75 });
+  var sidewalkL = new THREE.Mesh(new THREE.PlaneGeometry(8, 100), sidewalkMat);
+  sidewalkL.rotation.x = -Math.PI / 2;
+  sidewalkL.position.set(epX - 9, GROUND_Y_S2 + 0.003, epZ + 20);
+  scene.add(sidewalkL);
+  var sidewalkR = new THREE.Mesh(new THREE.PlaneGeometry(8, 100), sidewalkMat);
+  sidewalkR.rotation.x = -Math.PI / 2;
+  sidewalkR.position.set(epX + 9, GROUND_Y_S2 + 0.003, epZ + 20);
+  scene.add(sidewalkR);
+
+  // ===== 周囲のビル群 =====
+  var buildingData = [
+    // 向かい側（道路の向こう Z+方向）
+    { x: -12, z: epZ + 30, w: 10, d: 8, h: 25, color: 0x778899 },
+    { x: 1, z: epZ + 32, w: 12, d: 10, h: 35, color: 0x889999 },
+    { x: 14, z: epZ + 28, w: 8, d: 8, h: 20, color: 0x8899aa },
+    // 左側
+    { x: -20, z: epZ - 5, w: 8, d: 15, h: 30, color: 0x7788aa },
+    { x: -22, z: epZ + 15, w: 10, d: 10, h: 22, color: 0x889988 },
+    // 右側
+    { x: 20, z: epZ - 3, w: 9, d: 12, h: 28, color: 0x8888aa },
+    { x: 22, z: epZ + 18, w: 8, d: 8, h: 18, color: 0x99887788 },
+    // 奥（自ビルの隣）
+    { x: -15, z: 12, w: 8, d: 6, h: 32, color: 0x7799aa },
+    { x: 15, z: 12, w: 10, d: 6, h: 26, color: 0x8899aa },
+  ];
+
+  var winMat = new THREE.MeshStandardMaterial({ color: 0xaaccdd, roughness: 0.1, metalness: 0.2, transparent: true, opacity: 0.5, emissive: 0x334466, emissiveIntensity: 0.15 });
+
+  for (var bi = 0; bi < buildingData.length; bi++) {
+    var bd = buildingData[bi];
+    var bMat = new THREE.MeshStandardMaterial({ color: bd.color, roughness: 0.7, emissive: 0x050505, emissiveIntensity: 0.05 });
+    var bMesh = new THREE.Mesh(new THREE.BoxGeometry(bd.w, bd.h, bd.d), bMat);
+    bMesh.position.set(bd.x, bd.h / 2, bd.z);
+    bMesh.castShadow = true;
+    bMesh.receiveShadow = true;
+    scene.add(bMesh);
+
+    // 窓グリッド（各面に）
+    var floorH = 3.2;
+    var floors = Math.floor(bd.h / floorH);
+    // 前面（Z+）
+    var winCols = Math.floor(bd.w / 2.2);
+    for (var wf = 0; wf < floors; wf++) {
+      for (var wc = 0; wc < winCols; wc++) {
+        var wMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.8), winMat);
+        wMesh.position.set(
+          bd.x - bd.w / 2 + 1.1 + wc * 2.2,
+          1.5 + wf * floorH,
+          bd.z + bd.d / 2 + 0.01
+        );
+        scene.add(wMesh);
+      }
+    }
+    // 背面（Z-）
+    for (var wf2 = 0; wf2 < floors; wf2++) {
+      for (var wc2 = 0; wc2 < winCols; wc2++) {
+        var wMesh2 = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.8), winMat);
+        wMesh2.position.set(
+          bd.x - bd.w / 2 + 1.1 + wc2 * 2.2,
+          1.5 + wf2 * floorH,
+          bd.z - bd.d / 2 - 0.01
+        );
+        wMesh2.rotation.y = Math.PI;
+        scene.add(wMesh2);
+      }
+    }
+    // 側面の窓
+    var sideCols = Math.floor(bd.d / 2.2);
+    for (var wf3 = 0; wf3 < floors; wf3++) {
+      for (var wc3 = 0; wc3 < sideCols; wc3++) {
+        // 左側面
+        var wMeshL = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.8), winMat);
+        wMeshL.position.set(bd.x - bd.w / 2 - 0.01, 1.5 + wf3 * floorH, bd.z - bd.d / 2 + 1.1 + wc3 * 2.2);
+        wMeshL.rotation.y = -Math.PI / 2;
+        scene.add(wMeshL);
+        // 右側面
+        var wMeshR = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.8), winMat);
+        wMeshR.position.set(bd.x + bd.w / 2 + 0.01, 1.5 + wf3 * floorH, bd.z - bd.d / 2 + 1.1 + wc3 * 2.2);
+        wMeshR.rotation.y = Math.PI / 2;
+        scene.add(wMeshR);
+      }
+    }
+  }
+
+  // ===== 街路灯 =====
+  var poleMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.5, metalness: 0.6 });
+  var lampPositions = [
+    { x: -6, z: epZ + 5 }, { x: 6, z: epZ + 5 },
+    { x: -6, z: epZ + 15 }, { x: 6, z: epZ + 15 },
+  ];
+  for (var lpi = 0; lpi < lampPositions.length; lpi++) {
+    var lp = lampPositions[lpi];
+    var pole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 4.5, 8), poleMat);
+    pole.position.set(lp.x, 2.25, lp.z);
+    scene.add(pole);
+    // ランプヘッド
+    var lampHead = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.1, 0.3), new THREE.MeshStandardMaterial({ color: 0xdddddd, emissive: 0xffeedd, emissiveIntensity: 0.3 }));
+    lampHead.position.set(lp.x, 4.5, lp.z);
+    scene.add(lampHead);
+    var streetLight = new THREE.PointLight(0xffeedd, 0.2, 10);
+    streetLight.position.set(lp.x, 4.4, lp.z);
+    scene.add(streetLight);
+  }
+
+  // ===== 横断歩道（ビル前） =====
+  var crossMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 });
+  for (var ci = 0; ci < 6; ci++) {
+    var crossStripe = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 4), crossMat);
+    crossStripe.rotation.x = -Math.PI / 2;
+    crossStripe.position.set(epX - 2.5 + ci * 1.0, GROUND_Y_S2 + 0.012, epZ + 20);
+    scene.add(crossStripe);
+  }
+
+  // ===== ガードレール/縁石 =====
+  var curbMat = new THREE.MeshStandardMaterial({ color: 0xccccbb, roughness: 0.6 });
+  var curbL = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.15, 50), curbMat);
+  curbL.position.set(epX - 5.1, 0.075, epZ + 20);
+  scene.add(curbL);
+  var curbR = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.15, 50), curbMat);
+  curbR.position.set(epX + 5.1, 0.075, epZ + 20);
+  scene.add(curbR);
 
   // --- 避難ポイントマーカー（オレンジの円 + 看板 + 光柱） ---
   var markerMat = new THREE.MeshStandardMaterial({ color: 0xff6b00, roughness: 0.5, emissive: 0xff6b00, emissiveIntensity: 0.4, transparent: true, opacity: 0.6 });
