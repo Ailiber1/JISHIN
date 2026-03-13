@@ -9501,13 +9501,36 @@ function updateSingleNPC(npc, dtSec) {
           mesh.position.z = npc.z + (Math.random() - 0.5) * 0.02;
         }
       } else if (npc.behavior === 'panic') {
-        // パニック: ランダムに動き回る
+        // パニック: 頭を抱えながらランダムに動き回る
         if (npc.state !== 'panicking') {
           npc.state = 'panicking';
           mesh.scale.set(1, 1, 1); // 座り状態から立ち上がり
           mesh.position.y = 0;
           npc.targetX = npc.x + (Math.random() - 0.5) * 4;
           npc.targetZ = npc.z + (Math.random() - 0.5) * 4;
+          // 脚の座りポーズをリセット
+          if (mesh.userData.leftLeg) {
+            mesh.userData.leftLeg.rotation.x = 0;
+            var pUL = mesh.userData.leftLeg.children[0];
+            if (pUL && pUL.children[0]) pUL.children[0].rotation.x = 0;
+          }
+          if (mesh.userData.rightLeg) {
+            mesh.userData.rightLeg.rotation.x = 0;
+            var pUR = mesh.userData.rightLeg.children[0];
+            if (pUR && pUR.children[0]) pUR.children[0].rotation.x = 0;
+          }
+        }
+        // 腕: 頭を抱えるポーズ（両腕を上げて頭の横に）
+        var panicBody = mesh.userData.body;
+        if (panicBody && panicBody.children && panicBody.children.length >= 3) {
+          panicBody.children[1].rotation.x = -2.5 + Math.sin(npc.phase * 3) * 0.15;
+          panicBody.children[1].rotation.z = 0.3;
+          panicBody.children[2].rotation.x = -2.5 + Math.sin(npc.phase * 3 + 1) * 0.15;
+          panicBody.children[2].rotation.z = -0.3;
+        }
+        // 体: 前かがみで揺れる
+        if (panicBody) {
+          panicBody.rotation.x = 0.3 + Math.sin(npc.phase * 4) * 0.05;
         }
         // ターゲットに向かって移動
         var dx = npc.targetX - npc.x;
