@@ -9279,6 +9279,17 @@ function updateSingleNPC(npc, dtSec) {
         mesh.position.y = coSeatY + Math.sin(npc.phase * 1.5) * 0.002;
         mesh.rotation.y = Math.PI;
         var coSeed = (npc.deskX || 0) * 5 + (npc.deskZ || 0) * 3;
+        // 脚: 座りポーズ（膝90度曲げ）
+        if (mesh.userData.leftLeg) {
+          mesh.userData.leftLeg.rotation.x = -1.57;
+          var coUL = mesh.userData.leftLeg.children[0];
+          if (coUL && coUL.children[0]) coUL.children[0].rotation.x = 1.57;
+        }
+        if (mesh.userData.rightLeg) {
+          mesh.userData.rightLeg.rotation.x = -1.57;
+          var coUR = mesh.userData.rightLeg.children[0];
+          if (coUR && coUR.children[0]) coUR.children[0].rotation.x = 1.57;
+        }
         // 頭: モニターを見る（時々視線を変える）
         var coHead = mesh.userData.head;
         if (coHead) {
