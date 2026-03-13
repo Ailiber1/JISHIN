@@ -8221,6 +8221,9 @@ function teleportToBuildingPlaza() {
   GAME.player.z = 14; // ビル出口のすぐ前（振り返ると階段が見える距離）
   GAME.player.yaw = Math.PI; // ビル出口方向を向く（階段から出てきた構図）
 
+  // 12階オフィスの壁判定を全クリア（1階ロビー＋広場用に再構築）
+  GAME.walls = [];
+
   // オフィス内部を完全非表示（12階のオフィスが見えないようにする）
   GAME.scene.traverse(function(obj) {
     if (obj.userData && obj.userData.isOfficeFurniture) obj.visible = false;
@@ -8230,6 +8233,9 @@ function teleportToBuildingPlaza() {
       if (GAME.npcs[ni].mesh) GAME.npcs[ni].mesh.visible = false;
     }
   }
+
+  // 1階ロビーを構築（壁判定含む）
+  buildOfficeLobby();
 
   // 出入り口の奥に「1階非常階段出口」の構造物を設置
   buildGroundFloorStairwell();
