@@ -5868,13 +5868,15 @@ function initGame(stageNum) {
     GAME.player.z = 2 + 1 * 2.5 + 0.4; // 4.9（椅子位置）
     GAME.player.yaw = Math.PI;
     GAME.timeLimit = 360; // 6分
-  } else if (sn === 3) {
+  } else if (stageNum === 3) {
     // Stage 3: 一軒家 — プレイヤーは2Fの自室（勉強机に座っている）
-    GAME.player.x = 3;
-    GAME.player.y = 3.6;  // 2F (1F高さ2.7m + 床厚0.15m + 目線0.75m)
-    GAME.player.z = 2;
+    GAME.player.x = -4;
+    GAME.player.y = HOUSE_2F_Y + 0.9;  // 2F床(3.0m) + 目線高さ
+    GAME.player.z = -3.5;
     GAME.player.yaw = Math.PI;
-    GAME.timeLimit = 360; // 6分
+    GAME.timeLimit = 420; // 7分（2階建て＋屋外避難のため長め）
+    GAME._inHouseGarden = false;
+    GAME._onHouse2F = true;
   } else {
     // Stage 1: 学校 — プレイヤーの席(col=3, row=2)
     GAME._playerDeskCol = 3;
@@ -5957,6 +5959,12 @@ function initGame(stageNum) {
     try { createPlayerModel(2); } catch(e) { console.error('createPlayerModel:', e); }
     try { spawnOfficeNPCs(); } catch(e) { console.error('spawnOfficeNPCs:', e); }
     try { createMinimap(); } catch(e) { console.error('createMinimap:', e); }
+  } else if (stageNum === 3) {
+    // Stage 3: 木造2階建て一軒家
+    try { buildHouseFloor(); } catch(e) { console.error('buildHouseFloor:', e); }
+    try { createPlayerModel(3); } catch(e) { console.error('createPlayerModel:', e); }
+    try { spawnHouseNPCs(); } catch(e) { console.error('spawnHouseNPCs:', e); }
+    try { createMinimap(); } catch(e) { console.error('createMinimap:', e); }
   } else {
     // Stage 1: 学校
     for (var i = -3; i <= 3; i += 3) {
@@ -6005,6 +6013,8 @@ function initGame(stageNum) {
   SoundManager.stopAll();
   if (stageNum === 2) {
     SoundManager.startOfficeAmbient();
+  } else if (stageNum === 3) {
+    SoundManager.startClassroomAmbient(); // 静かな環境音を流用
   } else {
     SoundManager.startClassroomAmbient();
   }
@@ -7539,11 +7549,12 @@ function buildSchoolyard() {
   GAME._blockWallZone = { minX: -17, maxX: -7, minZ: 53, maxZ: 57 };
 }
 
+// [OLD Stage 3 code removed — replaced by new version below Stage 2]
+
 // ============================================================
 // SECTION: Stage 2 定数・3D環境構築関数
 // ============================================================
 var EVAC_POINT_S2 = { x: 8, z: 25, radius: 3 }; // ビル前広場（道路外・敷地内）
-var EVAC_POINT_S3 = { x: 0, z: -60, radius: 5 }; // 近隣公園（道路50m先）
 var STAIR_TRIGGER_S2 = { minX: -12.5, maxX: -10.5, minZ: 13.5, maxZ: 15.5 };
 var GROUND_Y_S2 = 0;
 var OFFICE_FLOOR_Y = 0; // 10階だが座標上はY=0で構築
@@ -8384,6 +8395,488 @@ function buildBuildingPlaza() {
   plazaLight2.position.set(epX + 5, 8, epZ); scene.add(plazaLight2);
 }
 
+
+// ============================================================
+// Stage 3: 木造2階建て一軒家 — EVAC_POINT / 定数
+// ============================================================
+var EVAC_POINT_S3 = { x: 0, z: -60, radius: 5 };
+var HOUSE_1F_Y = 0;
+var HOUSE_2F_Y = 3.0;
+var HOUSE_H = 2.8;
+var STAIR_TRIGGER_S3_DOWN = { minX: 4.5, maxX: 6.0, minZ: 3.0, maxZ: 5.0 };
+var STAIR_TRIGGER_S3_EVAC = { minX: -6.5, maxX: -4.5, minZ: -11.5, maxZ: -10.5 };
+
+// ============================================================
+// buildHouseFloor() — Stage 3: 木造2階建て一軒家
+// ============================================================
+function buildHouseFloor() {
+  var scene = GAME.scene;
+  if (!PROC_TEX) PROC_TEX = generateProceduralTextures();
+  var T = PROC_TEX;
+
+  var W = 12, D = 10, H = HOUSE_H;
+  var wallThick = 0.18;
+  var Y1 = HOUSE_1F_Y;
+  var Y2 = HOUSE_2F_Y;
+
+  // --- マテリアル ---
+  var woodFloorMat = new THREE.MeshStandardMaterial({ map: T.woodFloor, color: 0xb87333, roughness: 0.75, emissive: 0x0a0804, emissiveIntensity: 0.1 });
+  var tatamiMat = new THREE.MeshStandardMaterial({ color: 0x8b9a46, roughness: 0.85, emissive: 0x050804, emissiveIntensity: 0.08 });
+  var wallMat = new THREE.MeshStandardMaterial({ map: T.wallPlaster, color: 0xf5f0e8, roughness: 0.75, emissive: 0x080604, emissiveIntensity: 0.08 });
+  var ceilingMat = new THREE.MeshStandardMaterial({ map: T.ceiling, color: 0xf5f3ef, roughness: 0.6, emissive: 0x080808, emissiveIntensity: 0.05 });
+  var kitchenTileMat = new THREE.MeshStandardMaterial({ color: 0xe0e0e0, roughness: 0.4, emissive: 0x050505, emissiveIntensity: 0.05 });
+  var exteriorWallMat = new THREE.MeshStandardMaterial({ color: 0xd4c4a0, roughness: 0.8, emissive: 0x080604, emissiveIntensity: 0.05 });
+  var roofMat = new THREE.MeshStandardMaterial({ color: 0x4a4a4a, roughness: 0.7, emissive: 0x050505, emissiveIntensity: 0.05 });
+  var furnitureMat = new THREE.MeshStandardMaterial({ color: 0x8b6f47, roughness: 0.6, emissive: 0x0a0806, emissiveIntensity: 0.1 });
+  var sofaMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.7, emissive: 0x080604, emissiveIntensity: 0.1 });
+  var metalMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.4, metalness: 0.6, emissive: 0x050505, emissiveIntensity: 0.1 });
+  var tvMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.3, emissive: 0x111155, emissiveIntensity: 0.3 });
+  var fridgeMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.4, metalness: 0.2, emissive: 0x050505, emissiveIntensity: 0.05 });
+  var stoveMat = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.5, metalness: 0.5, emissive: 0x331100, emissiveIntensity: 0.2 });
+  var bedMat = new THREE.MeshStandardMaterial({ color: 0xeeddcc, roughness: 0.8, emissive: 0x060504, emissiveIntensity: 0.05 });
+  var deskMat = new THREE.MeshStandardMaterial({ color: 0xc4a67d, roughness: 0.6, emissive: 0x0a0806, emissiveIntensity: 0.1 });
+  var blockWallMat = new THREE.MeshStandardMaterial({ color: 0x9e9e9e, roughness: 0.8, emissive: 0x050505, emissiveIntensity: 0.05 });
+  var roadMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.9, emissive: 0x030303, emissiveIntensity: 0.05 });
+  var grassMat = new THREE.MeshStandardMaterial({ color: 0x4caf50, roughness: 0.9, emissive: 0x040804, emissiveIntensity: 0.08 });
+  var doorMat = new THREE.MeshStandardMaterial({ color: 0x6d4c2e, roughness: 0.6, emissive: 0x0a0804, emissiveIntensity: 0.1 });
+  var windowMat = new THREE.MeshStandardMaterial({ color: 0x88ccee, roughness: 0.1, metalness: 0.1, transparent: true, opacity: 0.3, emissive: 0x224466, emissiveIntensity: 0.3 });
+  var breakerMat = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.5, metalness: 0.5, emissive: 0x050505, emissiveIntensity: 0.1 });
+  var futonMat = new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.8, emissive: 0x060402, emissiveIntensity: 0.05 });
+  var toyMat = new THREE.MeshStandardMaterial({ color: 0xff6b6b, roughness: 0.6, emissive: 0x110505, emissiveIntensity: 0.1 });
+
+  // ===== 1F =====
+  var floor1 = new THREE.Mesh(new THREE.PlaneGeometry(W, D), woodFloorMat);
+  floor1.rotation.x = -Math.PI / 2; floor1.position.set(0, Y1, 0);
+  floor1.receiveShadow = true; scene.add(floor1);
+
+  var tatamiFloor = new THREE.Mesh(new THREE.PlaneGeometry(4, 3), tatamiMat);
+  tatamiFloor.rotation.x = -Math.PI / 2; tatamiFloor.position.set(-4, Y1 + 0.01, 3.5);
+  tatamiFloor.receiveShadow = true; scene.add(tatamiFloor);
+
+  var kitchenFloor = new THREE.Mesh(new THREE.PlaneGeometry(4, 3), kitchenTileMat);
+  kitchenFloor.rotation.x = -Math.PI / 2; kitchenFloor.position.set(4, Y1 + 0.01, 3.5);
+  kitchenFloor.receiveShadow = true; scene.add(kitchenFloor);
+
+  var ceiling1 = new THREE.Mesh(new THREE.PlaneGeometry(W, D), ceilingMat);
+  ceiling1.rotation.x = Math.PI / 2; ceiling1.position.set(0, Y1 + H, 0); scene.add(ceiling1);
+
+  // 1F外壁 — 前壁(Z=-5) 玄関開口(X=-6~-4)
+  var frontW1 = new THREE.Mesh(new THREE.BoxGeometry(W - 2, H, wallThick), wallMat);
+  frontW1.position.set(1, Y1 + H / 2, -D / 2); frontW1.receiveShadow = true;
+  scene.add(frontW1); GAME.cameraMeshes.push(frontW1);
+  GAME.walls.push({ minX: -5, maxX: W / 2, minZ: -D / 2 - wallThick / 2, maxZ: -D / 2 + wallThick / 2, minY: Y1, maxY: Y1 + H });
+
+  var genkanLintel = new THREE.Mesh(new THREE.BoxGeometry(2, H - 2.2, wallThick), wallMat);
+  genkanLintel.position.set(-5, Y1 + 2.2 + (H - 2.2) / 2, -D / 2); scene.add(genkanLintel);
+
+  var genkanDoor = new THREE.Mesh(new THREE.BoxGeometry(1.8, 2.2, 0.08), doorMat);
+  genkanDoor.position.set(-5, Y1 + 1.1, -D / 2); scene.add(genkanDoor);
+  GAME.cameraMeshes.push(genkanDoor);
+  GAME._genkanDoorCollision = { minX: -6, maxX: -4, minZ: -D / 2 - wallThick / 2, maxZ: -D / 2 + wallThick / 2, minY: Y1, maxY: Y1 + 2.2, _isDoor: true, _doorId: 'genkanDoor' };
+  GAME.walls.push(GAME._genkanDoorCollision);
+  GAME._genkanDoorMesh = genkanDoor;
+  GAME._genkanDoorOpen = false;
+
+  var backWall1 = new THREE.Mesh(new THREE.BoxGeometry(W, H, wallThick), wallMat);
+  backWall1.position.set(0, Y1 + H / 2, D / 2); backWall1.receiveShadow = true;
+  scene.add(backWall1); GAME.cameraMeshes.push(backWall1);
+  GAME.walls.push({ minX: -W / 2, maxX: W / 2, minZ: D / 2 - wallThick / 2, maxZ: D / 2 + wallThick / 2, minY: Y1, maxY: Y1 + H });
+
+  var leftWall1 = new THREE.Mesh(new THREE.BoxGeometry(wallThick, H, D), wallMat);
+  leftWall1.position.set(-W / 2, Y1 + H / 2, 0); leftWall1.receiveShadow = true;
+  scene.add(leftWall1); GAME.cameraMeshes.push(leftWall1);
+  GAME.walls.push({ minX: -W / 2 - wallThick / 2, maxX: -W / 2 + wallThick / 2, minZ: -D / 2, maxZ: D / 2, minY: Y1, maxY: Y1 + H });
+
+  var rightWall1 = new THREE.Mesh(new THREE.BoxGeometry(wallThick, H, D), wallMat);
+  rightWall1.position.set(W / 2, Y1 + H / 2, 0); rightWall1.receiveShadow = true;
+  scene.add(rightWall1); GAME.cameraMeshes.push(rightWall1);
+  GAME.walls.push({ minX: W / 2 - wallThick / 2, maxX: W / 2 + wallThick / 2, minZ: -D / 2, maxZ: D / 2, minY: Y1, maxY: Y1 + H });
+
+  // 1F内壁 — 和室仕切り
+  var waWall = new THREE.Mesh(new THREE.BoxGeometry(wallThick, H, 3), wallMat);
+  waWall.position.set(-2, Y1 + H / 2, 3.5); scene.add(waWall);
+  GAME.walls.push({ minX: -2 - wallThick / 2, maxX: -2 + wallThick / 2, minZ: 2, maxZ: 5, minY: Y1, maxY: Y1 + H });
+
+  var kitchenCounterWall = new THREE.Mesh(new THREE.BoxGeometry(wallThick, 0.9, 3), wallMat);
+  kitchenCounterWall.position.set(2, Y1 + 0.45, 3.5); scene.add(kitchenCounterWall);
+  GAME.walls.push({ minX: 2 - wallThick / 2, maxX: 2 + wallThick / 2, minZ: 2, maxZ: 5, minY: Y1, maxY: Y1 + 0.9 });
+
+  var hallWallL = new THREE.Mesh(new THREE.BoxGeometry(3.5, H, wallThick), wallMat);
+  hallWallL.position.set(-4.25, Y1 + H / 2, 2); scene.add(hallWallL);
+  GAME.walls.push({ minX: -6, maxX: -2.5, minZ: 2 - wallThick / 2, maxZ: 2 + wallThick / 2, minY: Y1, maxY: Y1 + H });
+
+  var hallWallR = new THREE.Mesh(new THREE.BoxGeometry(4.5, H, wallThick), wallMat);
+  hallWallR.position.set(3.75, Y1 + H / 2, 2); scene.add(hallWallR);
+  GAME.walls.push({ minX: 1.5, maxX: 6, minZ: 2 - wallThick / 2, maxZ: 2 + wallThick / 2, minY: Y1, maxY: Y1 + H });
+
+  // 1F階段
+  for (var si = 0; si < 6; si++) {
+    var stepY = Y1 + (si + 1) * (HOUSE_2F_Y / 6);
+    var stepZ = 3 + si * (2.0 / 6);
+    var step = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.1, 2.0 / 6), furnitureMat);
+    step.position.set(5.25, stepY - 0.05, stepZ + (2.0 / 6) / 2);
+    step.receiveShadow = true; scene.add(step);
+  }
+  GAME.walls.push({ minX: 4.5, maxX: 6, minZ: 3, maxZ: 5, minY: Y1, maxY: Y1 + HOUSE_2F_Y });
+
+  // ===== 1F家具 =====
+  var chabudai = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.35, 0.6), furnitureMat);
+  chabudai.position.set(0, Y1 + 0.175, -1); chabudai.receiveShadow = true; scene.add(chabudai);
+  GAME.walls.push({ minX: -0.55, maxX: 0.55, minZ: -1.35, maxZ: -0.65, minY: Y1, maxY: Y1 + 0.3 });
+
+  var sofaSeat = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.4, 0.6), sofaMat);
+  sofaSeat.position.set(0, Y1 + 0.2, -2.5); sofaSeat.receiveShadow = true; scene.add(sofaSeat);
+  var sofaBack = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.5, 0.15), sofaMat);
+  sofaBack.position.set(0, Y1 + 0.65, -2.85); scene.add(sofaBack);
+  GAME.walls.push({ minX: -0.85, maxX: 0.85, minZ: -3.0, maxZ: -2.2, minY: Y1, maxY: Y1 + 0.65 });
+
+  var tvStand = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.5, 0.4), furnitureMat);
+  tvStand.position.set(0, Y1 + 0.25, 1.5); tvStand.receiveShadow = true; scene.add(tvStand);
+  var tv = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.6, 0.05), tvMat);
+  tv.position.set(0, Y1 + 0.8, 1.5); scene.add(tv);
+  GAME._tvMeshS3 = tv;
+  GAME.walls.push({ minX: -0.65, maxX: 0.65, minZ: 1.25, maxZ: 1.75, minY: Y1, maxY: Y1 + 0.5 });
+
+  var bookshelf = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.8, 0.8), furnitureMat);
+  bookshelf.position.set(-1.8, Y1 + 0.9, 1.2); bookshelf.receiveShadow = true; scene.add(bookshelf);
+  GAME.walls.push({ minX: -2.05, maxX: -1.55, minZ: 0.75, maxZ: 1.65, minY: Y1, maxY: Y1 + 1.8 });
+
+  // キッチン
+  var gasStove = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.85, 0.5), stoveMat);
+  gasStove.position.set(4.5, Y1 + 0.425, 4.5); gasStove.receiveShadow = true; scene.add(gasStove);
+  var gasFlame = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 6), new THREE.MeshBasicMaterial({ color: 0xff4400, transparent: true, opacity: 0.7 }));
+  gasFlame.position.set(4.5, Y1 + 0.9, 4.5); scene.add(gasFlame);
+  GAME._gasFlameS3 = gasFlame;
+  var gasLight = new THREE.PointLight(0xff4400, 0.5, 3);
+  gasLight.position.set(4.5, Y1 + 0.9, 4.5); scene.add(gasLight);
+  GAME._gasLightS3 = gasLight;
+
+  var kCounter = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.85, 0.5), kitchenTileMat);
+  kCounter.position.set(3.0, Y1 + 0.425, 4.5); kCounter.receiveShadow = true; scene.add(kCounter);
+  GAME.walls.push({ minX: 2.0, maxX: 5.5, minZ: 4.2, maxZ: 4.8, minY: Y1, maxY: Y1 + 0.85 });
+
+  var fridge = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.7, 0.6), fridgeMat);
+  fridge.position.set(5.5, Y1 + 0.85, 3.0); fridge.receiveShadow = true; scene.add(fridge);
+  GAME._fridgeMeshS3 = fridge;
+  GAME.walls.push({ minX: 5.15, maxX: 5.85, minZ: 2.65, maxZ: 3.35, minY: Y1, maxY: Y1 + 1.7 });
+
+  var dishCabinet = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.6, 0.4), furnitureMat);
+  dishCabinet.position.set(3.0, Y1 + 0.8, 2.3); dishCabinet.receiveShadow = true; scene.add(dishCabinet);
+  GAME.walls.push({ minX: 2.55, maxX: 3.45, minZ: 2.05, maxZ: 2.55, minY: Y1, maxY: Y1 + 1.6 });
+
+  // 玄関
+  var shoeRack = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.4), furnitureMat);
+  shoeRack.position.set(-5.3, Y1 + 0.4, -4.0); shoeRack.receiveShadow = true; scene.add(shoeRack);
+
+  var shoesMesh = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.08, 0.1), new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.6 }));
+  shoesMesh.position.set(-5.3, Y1 + 0.04, -4.5); scene.add(shoesMesh);
+  GAME._shoesMeshS3 = shoesMesh;
+
+  var mirror = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.8, 0.03), new THREE.MeshStandardMaterial({ color: 0xccddee, roughness: 0.05, metalness: 0.8 }));
+  mirror.position.set(-5.8, Y1 + 1.4, -3.5); mirror.rotation.y = Math.PI / 2; scene.add(mirror);
+
+  var breakerBox = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.5, 0.1), breakerMat);
+  breakerBox.position.set(-4.5, Y1 + 1.5, -4.8); scene.add(breakerBox);
+  var breakerLever = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.15, 0.06), new THREE.MeshStandardMaterial({ color: 0xff4444, roughness: 0.4, emissive: 0x441111, emissiveIntensity: 0.3 }));
+  breakerLever.position.set(-4.5, Y1 + 1.5, -4.73); scene.add(breakerLever);
+  GAME._breakerLeverS3 = breakerLever;
+
+  var flashlight = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.2, 8), new THREE.MeshStandardMaterial({ color: 0xffdd00, roughness: 0.4, emissive: 0x443300, emissiveIntensity: 0.3 }));
+  flashlight.position.set(-5.3, Y1 + 0.84, -4.0); flashlight.rotation.z = Math.PI / 2; scene.add(flashlight);
+  GAME._flashlightMeshS3 = flashlight;
+
+  // 和室
+  var futon = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.1, 1.8), futonMat);
+  futon.position.set(-4.0, Y1 + 0.06, 4.0); futon.receiveShadow = true; scene.add(futon);
+
+  // ===== 2F =====
+  var floor2 = new THREE.Mesh(new THREE.PlaneGeometry(W, D), woodFloorMat);
+  floor2.rotation.x = -Math.PI / 2; floor2.position.set(0, Y2, 0);
+  floor2.receiveShadow = true; scene.add(floor2);
+
+  var ceiling2 = new THREE.Mesh(new THREE.PlaneGeometry(W, D), ceilingMat);
+  ceiling2.rotation.x = Math.PI / 2; ceiling2.position.set(0, Y2 + H, 0); scene.add(ceiling2);
+
+  // 2F外壁
+  var fw2 = new THREE.Mesh(new THREE.BoxGeometry(W, H, wallThick), wallMat);
+  fw2.position.set(0, Y2 + H / 2, -D / 2); fw2.receiveShadow = true; scene.add(fw2); GAME.cameraMeshes.push(fw2);
+  GAME.walls.push({ minX: -W / 2, maxX: W / 2, minZ: -D / 2 - wallThick / 2, maxZ: -D / 2 + wallThick / 2, minY: Y2, maxY: Y2 + H });
+  var bw2 = new THREE.Mesh(new THREE.BoxGeometry(W, H, wallThick), wallMat);
+  bw2.position.set(0, Y2 + H / 2, D / 2); bw2.receiveShadow = true; scene.add(bw2); GAME.cameraMeshes.push(bw2);
+  GAME.walls.push({ minX: -W / 2, maxX: W / 2, minZ: D / 2 - wallThick / 2, maxZ: D / 2 + wallThick / 2, minY: Y2, maxY: Y2 + H });
+  var lw2 = new THREE.Mesh(new THREE.BoxGeometry(wallThick, H, D), wallMat);
+  lw2.position.set(-W / 2, Y2 + H / 2, 0); lw2.receiveShadow = true; scene.add(lw2); GAME.cameraMeshes.push(lw2);
+  GAME.walls.push({ minX: -W / 2 - wallThick / 2, maxX: -W / 2 + wallThick / 2, minZ: -D / 2, maxZ: D / 2, minY: Y2, maxY: Y2 + H });
+  var rw2 = new THREE.Mesh(new THREE.BoxGeometry(wallThick, H, D), wallMat);
+  rw2.position.set(W / 2, Y2 + H / 2, 0); rw2.receiveShadow = true; scene.add(rw2); GAME.cameraMeshes.push(rw2);
+  GAME.walls.push({ minX: W / 2 - wallThick / 2, maxX: W / 2 + wallThick / 2, minZ: -D / 2, maxZ: D / 2, minY: Y2, maxY: Y2 + H });
+
+  // 2F内壁 — 左X=-1（プレイヤー/子ども部屋）
+  var lw2a = new THREE.Mesh(new THREE.BoxGeometry(wallThick, H, 3), wallMat);
+  lw2a.position.set(-1, Y2 + H / 2, -3.5); scene.add(lw2a);
+  GAME.walls.push({ minX: -1 - wallThick / 2, maxX: -1 + wallThick / 2, minZ: -5, maxZ: -2, minY: Y2, maxY: Y2 + H });
+  var lw2lintel1 = new THREE.Mesh(new THREE.BoxGeometry(wallThick, H - 2.1, 2), wallMat);
+  lw2lintel1.position.set(-1, Y2 + 2.1 + (H - 2.1) / 2, -1); scene.add(lw2lintel1);
+  var lw2b = new THREE.Mesh(new THREE.BoxGeometry(wallThick, H, 2), wallMat);
+  lw2b.position.set(-1, Y2 + H / 2, 1); scene.add(lw2b);
+  GAME.walls.push({ minX: -1 - wallThick / 2, maxX: -1 + wallThick / 2, minZ: 0, maxZ: 2, minY: Y2, maxY: Y2 + H });
+  var lw2lintel2 = new THREE.Mesh(new THREE.BoxGeometry(wallThick, H - 2.1, 2), wallMat);
+  lw2lintel2.position.set(-1, Y2 + 2.1 + (H - 2.1) / 2, 3); scene.add(lw2lintel2);
+  var lw2c = new THREE.Mesh(new THREE.BoxGeometry(wallThick, H, 1), wallMat);
+  lw2c.position.set(-1, Y2 + H / 2, 4.5); scene.add(lw2c);
+  GAME.walls.push({ minX: -1 - wallThick / 2, maxX: -1 + wallThick / 2, minZ: 4, maxZ: 5, minY: Y2, maxY: Y2 + H });
+
+  // 右X=1（親寝室）
+  var rw2a2 = new THREE.Mesh(new THREE.BoxGeometry(wallThick, H, 3), wallMat);
+  rw2a2.position.set(1, Y2 + H / 2, -3.5); scene.add(rw2a2);
+  GAME.walls.push({ minX: 1 - wallThick / 2, maxX: 1 + wallThick / 2, minZ: -5, maxZ: -2, minY: Y2, maxY: Y2 + H });
+  var rw2lintel = new THREE.Mesh(new THREE.BoxGeometry(wallThick, H - 2.1, 2), wallMat);
+  rw2lintel.position.set(1, Y2 + 2.1 + (H - 2.1) / 2, -1); scene.add(rw2lintel);
+  var rw2b2 = new THREE.Mesh(new THREE.BoxGeometry(wallThick, H, 3), wallMat);
+  rw2b2.position.set(1, Y2 + H / 2, 1.5); scene.add(rw2b2);
+  GAME.walls.push({ minX: 1 - wallThick / 2, maxX: 1 + wallThick / 2, minZ: 0, maxZ: 3, minY: Y2, maxY: Y2 + H });
+
+  // プレイヤー/子ども部屋仕切り(Z=0)
+  var prWall = new THREE.Mesh(new THREE.BoxGeometry(5, H, wallThick), wallMat);
+  prWall.position.set(-3.5, Y2 + H / 2, 0); scene.add(prWall);
+  GAME.walls.push({ minX: -6, maxX: -1, minZ: -wallThick / 2, maxZ: wallThick / 2, minY: Y2, maxY: Y2 + H });
+
+  // 2F家具
+  var studyDesk = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.72, 0.5), deskMat);
+  studyDesk.position.set(-4, Y2 + 0.36, -4.0); studyDesk.receiveShadow = true; scene.add(studyDesk);
+  var sdLeg1 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.72, 0.04), metalMat);
+  sdLeg1.position.set(-4.45, Y2 + 0.36, -4.2); scene.add(sdLeg1);
+  var sdLeg2 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.72, 0.04), metalMat);
+  sdLeg2.position.set(-3.55, Y2 + 0.36, -4.2); scene.add(sdLeg2);
+  GAME.walls.push({ minX: -4.55, maxX: -3.45, minZ: -4.3, maxZ: -3.7, minY: Y2, maxY: Y2 + 0.65 });
+
+  var playerBed = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.4, 2.0), bedMat);
+  playerBed.position.set(-2.0, Y2 + 0.2, -3.5); playerBed.receiveShadow = true; scene.add(playerBed);
+  GAME.walls.push({ minX: -2.55, maxX: -1.45, minZ: -4.55, maxZ: -2.45, minY: Y2, maxY: Y2 + 0.4 });
+
+  var sisterDesk = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.55, 0.4), deskMat);
+  sisterDesk.position.set(-4, Y2 + 0.275, 3.5); sisterDesk.receiveShadow = true; scene.add(sisterDesk);
+  GAME.walls.push({ minX: -4.45, maxX: -3.55, minZ: 3.25, maxZ: 3.75, minY: Y2, maxY: Y2 + 0.5 });
+
+  var sisterBed = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.35, 1.6), new THREE.MeshStandardMaterial({ color: 0xffbbdd, roughness: 0.8, emissive: 0x110508, emissiveIntensity: 0.05 }));
+  sisterBed.position.set(-2.5, Y2 + 0.175, 4.0); sisterBed.receiveShadow = true; scene.add(sisterBed);
+  GAME.walls.push({ minX: -2.95, maxX: -2.05, minZ: 3.15, maxZ: 4.85, minY: Y2, maxY: Y2 + 0.35 });
+
+  var toy1 = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.15, 0.15), toyMat);
+  toy1.position.set(-3.5, Y2 + 0.075, 2.5); scene.add(toy1);
+
+  var parentBed = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.4, 2.0), bedMat);
+  parentBed.position.set(3.5, Y2 + 0.2, -3.5); parentBed.receiveShadow = true; scene.add(parentBed);
+  GAME.walls.push({ minX: 2.55, maxX: 4.45, minZ: -4.55, maxZ: -2.45, minY: Y2, maxY: Y2 + 0.4 });
+
+  var tansu = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.8, 0.5), furnitureMat);
+  tansu.position.set(5.2, Y2 + 0.9, -3.5); tansu.receiveShadow = true; scene.add(tansu);
+  GAME._tansuMeshS3 = tansu;
+  GAME.walls.push({ minX: 4.75, maxX: 5.65, minZ: -3.8, maxZ: -3.2, minY: Y2, maxY: Y2 + 1.8 });
+
+  // ===== 外部 =====
+  // 外壁1F
+  scene.add(new THREE.Mesh(new THREE.BoxGeometry(W + 0.4, H + 0.3, 0.15), exteriorWallMat).translateX(0).translateY(Y1 + H / 2).translateZ(-D / 2 - 0.15));
+  scene.add(new THREE.Mesh(new THREE.BoxGeometry(W + 0.4, H + 0.3, 0.15), exteriorWallMat).translateX(0).translateY(Y1 + H / 2).translateZ(D / 2 + 0.15));
+  scene.add(new THREE.Mesh(new THREE.BoxGeometry(0.15, H + 0.3, D + 0.4), exteriorWallMat).translateX(-W / 2 - 0.15).translateY(Y1 + H / 2).translateZ(0));
+  scene.add(new THREE.Mesh(new THREE.BoxGeometry(0.15, H + 0.3, D + 0.4), exteriorWallMat).translateX(W / 2 + 0.15).translateY(Y1 + H / 2).translateZ(0));
+  // 外壁2F
+  scene.add(new THREE.Mesh(new THREE.BoxGeometry(W + 0.4, H + 0.3, 0.15), exteriorWallMat).translateX(0).translateY(Y2 + H / 2).translateZ(-D / 2 - 0.15));
+  scene.add(new THREE.Mesh(new THREE.BoxGeometry(W + 0.4, H + 0.3, 0.15), exteriorWallMat).translateX(0).translateY(Y2 + H / 2).translateZ(D / 2 + 0.15));
+  scene.add(new THREE.Mesh(new THREE.BoxGeometry(0.15, H + 0.3, D + 0.4), exteriorWallMat).translateX(-W / 2 - 0.15).translateY(Y2 + H / 2).translateZ(0));
+  scene.add(new THREE.Mesh(new THREE.BoxGeometry(0.15, H + 0.3, D + 0.4), exteriorWallMat).translateX(W / 2 + 0.15).translateY(Y2 + H / 2).translateZ(0));
+
+  // 屋根
+  var roofL = new THREE.Mesh(new THREE.BoxGeometry(W + 1.5, 0.15, D / 2 + 1.5), roofMat);
+  roofL.position.set(0, Y2 + H + 1.2, -D / 4); roofL.rotation.x = 0.4; scene.add(roofL);
+  var roofR = new THREE.Mesh(new THREE.BoxGeometry(W + 1.5, 0.15, D / 2 + 1.5), roofMat);
+  roofR.position.set(0, Y2 + H + 1.2, D / 4); roofR.rotation.x = -0.4; scene.add(roofR);
+
+  // 庭
+  var gardenFloor = new THREE.Mesh(new THREE.PlaneGeometry(8, 6), grassMat);
+  gardenFloor.rotation.x = -Math.PI / 2; gardenFloor.position.set(-1, Y1 - 0.01, -8);
+  gardenFloor.receiveShadow = true; scene.add(gardenFloor);
+
+  // ブロック塀
+  var bwH = 1.5;
+  var bwL2 = new THREE.Mesh(new THREE.BoxGeometry(0.2, bwH, 6), blockWallMat);
+  bwL2.position.set(-5, Y1 + bwH / 2, -8); bwL2.receiveShadow = true; scene.add(bwL2);
+  GAME.walls.push({ minX: -5.1, maxX: -4.9, minZ: -11, maxZ: -5, minY: Y1, maxY: Y1 + bwH });
+  var bwR2 = new THREE.Mesh(new THREE.BoxGeometry(0.2, bwH, 6), blockWallMat);
+  bwR2.position.set(3, Y1 + bwH / 2, -8); bwR2.receiveShadow = true; scene.add(bwR2);
+  GAME.walls.push({ minX: 2.9, maxX: 3.1, minZ: -11, maxZ: -5, minY: Y1, maxY: Y1 + bwH });
+  var bwF1 = new THREE.Mesh(new THREE.BoxGeometry(4, bwH, 0.2), blockWallMat);
+  bwF1.position.set(-3, Y1 + bwH / 2, -11); bwF1.receiveShadow = true; scene.add(bwF1);
+  GAME.walls.push({ minX: -5, maxX: -1, minZ: -11.1, maxZ: -10.9, minY: Y1, maxY: Y1 + bwH });
+  var bwF2 = new THREE.Mesh(new THREE.BoxGeometry(2, bwH, 0.2), blockWallMat);
+  bwF2.position.set(2, Y1 + bwH / 2, -11); bwF2.receiveShadow = true; scene.add(bwF2);
+  GAME.walls.push({ minX: 1, maxX: 3, minZ: -11.1, maxZ: -10.9, minY: Y1, maxY: Y1 + bwH });
+  GAME._blockWallZoneS3 = { minX: -5.5, maxX: 3.5, minZ: -11.5, maxZ: -10.5 };
+  GAME._blockWallZones = [GAME._blockWallZoneS3];
+
+  // 道路
+  var road = new THREE.Mesh(new THREE.PlaneGeometry(4, 30), roadMat);
+  road.rotation.x = -Math.PI / 2; road.position.set(0, Y1 - 0.02, -26);
+  road.receiveShadow = true; scene.add(road);
+  scene.add(new THREE.Mesh(new THREE.PlaneGeometry(8, 30), grassMat).rotateX(-Math.PI / 2).translateX(-6).translateZ(-26));
+  scene.add(new THREE.Mesh(new THREE.PlaneGeometry(8, 30), grassMat).rotateX(-Math.PI / 2).translateX(6).translateZ(-26));
+  scene.add(new THREE.Mesh(new THREE.PlaneGeometry(30, 20), grassMat).rotateX(-Math.PI / 2).translateY(-0.04).translateZ(-51));
+
+  // 避難公園
+  var parkFloor = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), grassMat);
+  parkFloor.rotation.x = -Math.PI / 2; parkFloor.position.set(0, Y1 - 0.02, -60);
+  parkFloor.receiveShadow = true; scene.add(parkFloor);
+
+  var evacMat3 = new THREE.MeshStandardMaterial({ color: 0xff6b00, emissive: 0xff6b00, emissiveIntensity: 0.6, transparent: true, opacity: 0.7 });
+  var evacMarker = new THREE.Mesh(new THREE.CylinderGeometry(EVAC_POINT_S3.radius, EVAC_POINT_S3.radius, 0.05, 32), evacMat3);
+  evacMarker.position.set(EVAC_POINT_S3.x, Y1 + 0.03, EVAC_POINT_S3.z); scene.add(evacMarker);
+  GAME._evacMarkerS3 = evacMarker;
+
+  var evacPole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.5, 8), metalMat);
+  evacPole.position.set(EVAC_POINT_S3.x, Y1 + 1.25, EVAC_POINT_S3.z - EVAC_POINT_S3.radius - 0.5); scene.add(evacPole);
+  var evacBoard = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.5, 0.05), new THREE.MeshStandardMaterial({ color: 0x00aa44, emissive: 0x00aa44, emissiveIntensity: 0.4 }));
+  evacBoard.position.set(EVAC_POINT_S3.x, Y1 + 2.3, EVAC_POINT_S3.z - EVAC_POINT_S3.radius - 0.5); scene.add(evacBoard);
+
+  var glowGeo = new THREE.CircleGeometry(EVAC_POINT_S3.radius + 0.5, 32);
+  var glowMat2 = new THREE.MeshBasicMaterial({ color: 0xff6b00, transparent: true, opacity: 0.15, side: THREE.DoubleSide, depthWrite: false });
+  var glow = new THREE.Mesh(glowGeo, glowMat2);
+  glow.rotation.x = -Math.PI / 2; glow.position.set(EVAC_POINT_S3.x, Y1 + 0.02, EVAC_POINT_S3.z); scene.add(glow);
+
+  // 照明
+  GAME._houseLights = [];
+  var lPos = [[0, Y1 + H - 0.1, 0, 0.4], [-4, Y1 + H - 0.1, 3.5, 0.3], [4, Y1 + H - 0.1, 3.5, 0.3],
+              [-3.5, Y2 + H - 0.1, -2.5, 0.4], [-3.5, Y2 + H - 0.1, 3.0, 0.3], [3.5, Y2 + H - 0.1, -2.5, 0.3]];
+  for (var li = 0; li < lPos.length; li++) {
+    var hl = new THREE.PointLight(0xffeedd, lPos[li][3], li < 3 ? 10 : 8);
+    hl.position.set(lPos[li][0], lPos[li][1], lPos[li][2]); scene.add(hl);
+    GAME._houseLights.push(hl);
+  }
+
+  // 窓（1F左右各2）
+  for (var wi = 0; wi < 2; wi++) {
+    var wZ = -2 + wi * 4;
+    var lwi = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.2), windowMat);
+    lwi.position.set(-W / 2 + 0.12, Y1 + 1.5, wZ); lwi.rotation.y = Math.PI / 2; scene.add(lwi);
+    var rwi = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.2), windowMat);
+    rwi.position.set(W / 2 - 0.12, Y1 + 1.5, wZ); rwi.rotation.y = -Math.PI / 2; scene.add(rwi);
+  }
+
+  // インタラクタブル
+  GAME.interactables.push({ x: 0, z: -1, radius: 1.5, action: 'hideUnderDesk', label: {ja: 'ちゃぶ台の下に潜る', en: 'Hide Under Table'}, phases: ['earthquake', 'shaking'], used: false });
+  GAME.interactables.push({ x: -4, z: -4, radius: 1.5, action: 'hideUnderDesk', label: {ja: '机の下に潜る', en: 'Hide Under Desk'}, phases: ['earthquake', 'shaking'], used: false, floorY: Y2 });
+  GAME.interactables.push({ x: 4.5, z: 4.5, radius: 1.5, action: 'turnOffGas', label: {ja: '\uD83D\uDD25 ガスを止める', en: '\uD83D\uDD25 Turn Off Gas'}, phases: ['aftershake', 'evacuation'], used: false, mesh: gasStove });
+  GAME.interactables.push({ x: -4.5, z: -4.8, radius: 1.5, action: 'turnOffBreaker', label: {ja: '\u26A1 ブレーカーを落とす', en: '\u26A1 Turn Off Breaker'}, phases: ['aftershake', 'evacuation'], used: false, mesh: breakerLever });
+  GAME.interactables.push({ x: -5.3, z: -4.0, radius: 1.5, action: 'pickUpFlashlight', label: {ja: '\uD83D\uDD26 懐中電灯を取る', en: '\uD83D\uDD26 Pick Up Flashlight'}, phases: ['aftershake', 'evacuation'], used: false, mesh: flashlight });
+  GAME.interactables.push({ x: -5.3, z: -4.5, radius: 1.5, action: 'putOnShoes', label: {ja: '\uD83D\uDC5F 靴を履く', en: '\uD83D\uDC5F Put On Shoes'}, phases: ['aftershake', 'evacuation'], used: false, mesh: shoesMesh });
+  GAME.interactables.push({ x: -5, z: -4.8, radius: 2.0, action: 'openGenkanDoor', label: {ja: '\uD83D\uDEAA 玄関ドアを開ける', en: '\uD83D\uDEAA Open Front Door'}, phases: ['aftershake', 'evacuation'], used: false, mesh: genkanDoor });
+}
+
+// ============================================================
+// spawnHouseNPCs() — Stage 3: 家族NPC配置
+// ============================================================
+function spawnHouseNPCs() {
+  GAME.npcs = [];
+  GAME._exitedNPCs = 0;
+
+  var motherModel = createNPCModel(0xe91e63, 1.55, 0xf5c6a0, { isFemale: true, hairColor: 0x333333, skirtColor: 0xe91e63 });
+  motherModel.position.set(3.5, HOUSE_1F_Y, 3.5);
+  GAME.scene.add(motherModel);
+  GAME.npcs.push({
+    mesh: motherModel, role: 'mother', x: 3.5, z: 3.5, targetX: 3.5, targetZ: 3.5,
+    behavior: 'calm', state: 'idle', speed: 0.015, phase: 0,
+    npcH: 1.55, evacuationDelay: 3, exited: false, deskX: 3.5, deskZ: 3.5, floorY: HOUSE_1F_Y,
+  });
+
+  var fatherModel = createNPCModel(0x757575, 1.7, 0xf5c6a0, { isMale: true, tieColor: 0x424242 });
+  fatherModel.position.set(0, HOUSE_1F_Y, -2.5);
+  GAME.scene.add(fatherModel);
+  GAME.npcs.push({
+    mesh: fatherModel, role: 'father', x: 0, z: -2.5, targetX: 0, targetZ: -2.5,
+    behavior: 'calm', state: 'idle', speed: 0.018, phase: 0,
+    npcH: 1.7, evacuationDelay: 4, exited: false, deskX: 0, deskZ: -1, floorY: HOUSE_1F_Y,
+  });
+
+  var sisterModel = createNPCModel(0x03a9f4, 1.0, 0xf5c6a0, { isFemale: true, hairColor: 0x222222, skirtColor: 0x03a9f4 });
+  sisterModel.position.set(-3.5, HOUSE_2F_Y, 3.0);
+  GAME.scene.add(sisterModel);
+  GAME.npcs.push({
+    mesh: sisterModel, role: 'sister', x: -3.5, z: 3.0, targetX: -3.5, targetZ: 3.0,
+    behavior: 'panic', state: 'idle', speed: 0.008, phase: 0,
+    npcH: 1.0, evacuationDelay: 10, exited: false, deskX: -3.5, deskZ: 3.0, floorY: HOUSE_2F_Y,
+    needsHelp: true, helpMessage: {ja: '妹が泣いている！声をかけて落ち着かせよう！', en: 'Your sister is crying! Talk to her to calm her down!'},
+  });
+
+  var grandmaModel = createNPCModel(0x795548, 1.45, 0xf5c6a0, { isFemale: true, hairColor: 0xaaaaaa, skirtColor: 0x795548 });
+  grandmaModel.position.set(-4.0, HOUSE_1F_Y, 4.0);
+  GAME.scene.add(grandmaModel);
+  var cane = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.9, 6), new THREE.MeshStandardMaterial({ color: 0x6d4c2e, roughness: 0.6 }));
+  cane.position.set(0.2, -0.3, 0.1); cane.rotation.z = 0.15;
+  grandmaModel.userData.body.add(cane);
+  GAME.npcs.push({
+    mesh: grandmaModel, role: 'grandma', x: -4.0, z: 4.0, targetX: -4.0, targetZ: 4.0,
+    behavior: 'injured', state: 'idle', speed: 0.005, phase: 0,
+    npcH: 1.45, evacuationDelay: 8, exited: false, deskX: -4.0, deskZ: 4.0, floorY: HOUSE_1F_Y,
+    needsHelp: true, helpMessage: {ja: 'おばあちゃんは一人では歩けない！手を貸して一緒に避難しよう！', en: 'Grandma can\'t walk alone! Help her evacuate!'},
+  });
+}
+
+// ============================================================
+// teleportToHouseExterior() — Stage 3: 家の外への遷移
+// ============================================================
+function teleportToHouseExterior() {
+  GAME._inHouseGarden = true;
+  GAME.player.x = -1; GAME.player.y = 0.9; GAME.player.z = -7;
+  GAME.player.yaw = Math.PI;
+  GAME.keys = {}; GAME.joystickMag = 0;
+  GAME.player.isSprinting = false; GAME.player.isCrouching = false;
+  GAME.player.isGuarding = false;
+  GAME.scene.fog = new THREE.FogExp2(0x332233, 0.008);
+  GAME.renderer.setClearColor(0x332233);
+  GAME.scene.traverse(function(obj) {
+    if (obj.isDirectionalLight) { obj.intensity = 0.4; obj.position.set(5, 15, -20); }
+  });
+  showAdvisor({ja: 'ブロック塀には近づくな！道路を通って避難公園（オレンジ）を目指そう！', en: 'Stay away from block walls! Head to the evacuation park (orange) via the road!'}, 'normal');
+}
+
+// ============================================================
+// Stage 3: 2F→1F階段カットシーン
+// ============================================================
+function startStairCutsceneS3Down() {
+  GAME._stairCutsceneActive = true;
+  var overlay = document.createElement('div');
+  overlay.id = 'stair-fade-overlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:#000;opacity:0;z-index:9999;transition:opacity 0.8s;pointer-events:none;display:flex;align-items:center;justify-content:center;';
+  var text = document.createElement('div');
+  text.style.cssText = 'color:#ff6b00;font-family:"Share Tech Mono",monospace;font-size:clamp(16px,4vw,24px);text-align:center;opacity:0;transition:opacity 0.5s 0.5s;';
+  text.innerHTML = currentLang === 'ja'
+    ? '階段で1階へ移動中...<br><span style="font-size:0.7em;color:#999;">手すりをしっかり持って、慎重に降りよう</span>'
+    : 'Going downstairs...<br><span style="font-size:0.7em;color:#999;">Hold the handrail and descend carefully</span>';
+  overlay.appendChild(text);
+  document.body.appendChild(overlay);
+  requestAnimationFrame(function() { overlay.style.opacity = '1'; text.style.opacity = '1'; });
+  SoundManager.playSE('click');
+
+  setTimeout(function() {
+    // 1Fにテレポート
+    GAME._onHouse2F = false;
+    GAME.player.x = 4.5;
+    GAME.player.y = 0.9;
+    GAME.player.z = 2.5;
+    GAME.player.yaw = -Math.PI / 2;
+    GAME.keys = {};
+    GAME.joystickMag = 0;
+
+    overlay.style.opacity = '0';
+    text.style.opacity = '0';
+    setTimeout(function() {
+      if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+      GAME._stairCutsceneActive = false;
+    }, 1000);
+
+    showAdvisor({ja: '1階に降りた！ガスを止めて、靴を履いて、玄関から外へ避難しよう！', en: 'Made it to 1F! Turn off gas, put on shoes, and evacuate through the front door!'}, 'normal');
+  }, 2000);
+}
+
 // ============================================================
 // SECTION: 階段カットシーン（フェード演出で3F→1F移動）
 // ============================================================
@@ -8392,9 +8885,27 @@ GAME._inSchoolyard = false;
 
 function checkStairTrigger() {
   if (GAME._stairCutsceneActive || GAME._inSchoolyard || GAME._inBuildingPlaza) return;
-  if (GAME.phase !== 'evacuation') return;
+  if (GAME.phase !== 'evacuation' && GAME.phase !== 'aftershake') return;
 
   var p = GAME.player;
+
+  if (GAME.stageNum === 3) {
+    // Stage 3: 2F階段エリアに入ったら1Fにテレポート
+    if (GAME._onHouse2F && !GAME._stairCutsceneActive) {
+      var inStairDown = p.x > STAIR_TRIGGER_S3_DOWN.minX && p.x < STAIR_TRIGGER_S3_DOWN.maxX &&
+                        p.z > STAIR_TRIGGER_S3_DOWN.minZ && p.z < STAIR_TRIGGER_S3_DOWN.maxZ;
+      if (inStairDown) {
+        startStairCutsceneS3Down();
+      }
+    }
+    // 玄関ドアが開いて外に出たら庭→道路→公園
+    if (!GAME._onHouse2F && GAME._genkanDoorOpen && !GAME._inHouseGarden) {
+      if (p.z < -5.5) {
+        teleportToHouseExterior();
+      }
+    }
+    return;
+  }
 
   if (GAME.stageNum === 2) {
     // Stage 2: 非常階段ドアが開いていて、トリガーゾーンに入った場合
@@ -8784,7 +9295,7 @@ function checkEvacPointReached() {
     if (GAME._blockWallZones && !GAME._blockWallWarned) {
       for (var bwi = 0; bwi < GAME._blockWallZones.length; bwi++) {
         var bw = GAME._blockWallZones[bwi];
-        if (Math.abs(p3.x - bw.x) < 1.5 && Math.abs(p3.z - bw.z) < 1.5) {
+        if (p3.x > bw.minX - 1.5 && p3.x < bw.maxX + 1.5 && p3.z > bw.minZ - 1.5 && p3.z < bw.maxZ + 1.5) {
           GAME._blockWallWarned = true;
           GAME.scoring.avoidedBlockWall = false;
           showAdvisor({ja: '危険！ブロック塀に近づくな！倒壊の恐れがある！', en: 'Danger! Stay away from block walls! They may collapse!'}, 'warning');
@@ -8924,6 +9435,10 @@ function createPlayerModel(stageNum) {
     // Stage 2: 白シャツ + グレースラックス（オフィスワーカー）
     bodyMat = new THREE.MeshStandardMaterial({ color: 0xf5f5f5, emissive: 0xf5f5f5, emissiveIntensity: 0.2, roughness: 0.6, metalness: 0.05 });
     pantsMat = new THREE.MeshStandardMaterial({ color: 0x424242, emissive: 0x424242, emissiveIntensity: 0.15, roughness: 0.7 });
+  } else if (sn === 3) {
+    // Stage 3: カジュアル部屋着（Tシャツ＋スウェットパンツ）
+    bodyMat = new THREE.MeshStandardMaterial({ color: 0x6699cc, emissive: 0x6699cc, emissiveIntensity: 0.15, roughness: 0.7 });
+    pantsMat = new THREE.MeshStandardMaterial({ color: 0x555566, emissive: 0x555566, emissiveIntensity: 0.1, roughness: 0.8 });
   } else {
     // Stage 1: 学生服カラー
     bodyMat = new THREE.MeshStandardMaterial({ color: 0x223355, emissive: 0x223355, emissiveIntensity: 0.3, roughness: 0.7, metalness: 0.1 });
@@ -9128,7 +9643,7 @@ function updatePlayerModel() {
     mesh.rotation.y = Math.PI; // 黒板方向を向く
     // 椅子に座る高さ（ステージの椅子座面に合わせる）
     var playerH = 0.82; // totalHeight相当
-    var chairSeatH = GAME.stageNum === 2 ? 0.42 : 0.33;
+    var chairSeatH = GAME.stageNum === 2 ? 0.42 : GAME.stageNum === 3 ? 0.36 : 0.33;
     var seatY = chairSeatH - playerH * 0.40;
     mesh.position.y = seatY + Math.sin((GAME.totalTimer || 0) * 2) * 0.003;
     // 座りポーズ: 脚を90度曲げる
@@ -9599,7 +10114,7 @@ function updateBlackboardText(elapsed) {
 }
 
 // NPC用壁判定: 新しい位置が壁と衝突するかチェック
-function npcCheckWall(nx, nz, npcR) {
+function npcCheckWall(nx, nz, npcR, npcY) {
   var R = npcR || 0.3;
   for (var i = 0; i < GAME.walls.length; i++) {
     var w = GAME.walls[i];
@@ -9607,6 +10122,11 @@ function npcCheckWall(nx, nz, npcR) {
     if (w.maxY !== undefined && w.maxY <= 0.65) continue;
     // 開いたドアのコリジョンはスキップ
     if (w._isDoor && w._doorId === 'stairDoorS2' && GAME._stairDoorOpen) continue;
+    if (w._isDoor && w._doorId === 'genkanDoor' && GAME._genkanDoorOpen) continue;
+    // 2階建て: NPCのY位置で壁を高さフィルタリング
+    if (npcY !== undefined && w.minY !== undefined && w.maxY !== undefined) {
+      if (npcY < w.minY - 0.5 || npcY > w.maxY + 0.5) continue;
+    }
     if (nx + R > w.minX && nx - R < w.maxX && nz + R > w.minZ && nz - R < w.maxZ) {
       return true;
     }
@@ -9621,11 +10141,11 @@ function npcMoveWithCollision(npc, dx, dz, speed) {
   var mx = (dx / dist) * speed;
   var mz = (dz / dist) * speed;
   // まずX軸移動
-  if (!npcCheckWall(npc.x + mx, npc.z, 0.3)) {
+  if (!npcCheckWall(npc.x + mx, npc.z, 0.3, npc.y)) {
     npc.x += mx;
   }
   // 次にZ軸移動
-  if (!npcCheckWall(npc.x, npc.z + mz, 0.3)) {
+  if (!npcCheckWall(npc.x, npc.z + mz, 0.3, npc.y)) {
     npc.z += mz;
   }
   npc.mesh.position.x = npc.x;
@@ -10014,6 +10534,26 @@ function updateSingleNPC(npc, dtSec) {
       // 避難フェーズ — 列ごとに順番退出（ドア側の列から）
       if (npc.exited) break;
 
+      // followingPlayer: プレイヤーの後ろをついてくる
+      if (npc.followingPlayer && npc.helped) {
+        var fpx = GAME.player.x, fpz = GAME.player.z;
+        var fdx = fpx - npc.x, fdz = fpz - npc.z;
+        var fdist = Math.sqrt(fdx * fdx + fdz * fdz);
+        if (fdist > 1.5) {
+          var fspd = npc.speed * 1.2;
+          npc.x += (fdx / fdist) * fspd;
+          npc.z += (fdz / fdist) * fspd;
+          mesh.position.x = npc.x;
+          mesh.position.z = npc.z;
+          mesh.position.y = GAME.player.y - 0.9;
+          mesh.rotation.y = Math.atan2(fdx, fdz);
+          npc.phase += dtSec * 7;
+          if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = Math.sin(npc.phase) * 0.4;
+          if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = -Math.sin(npc.phase) * 0.4;
+        }
+        break;
+      }
+
       // 負傷NPC（助けていない）はその場に留まる
       if (npc.behavior === 'injured' && !npc.helped) {
         mesh.rotation.z = Math.PI / 2;
@@ -10163,7 +10703,18 @@ function updateSingleNPC(npc, dtSec) {
           // Stage 2: 非常階段ドアへ (左端 x=-11.5, z=14.5)
           npc.targetX = -11.5 + (Math.random() - 0.5) * 1;
           npc.targetZ = 14.5;
+        } else if (GAME.stageNum === 3) {
+          // Stage 3: 玄関ドアへ (X=-5, Z=-5)
+          npc.targetX = -5 + (Math.random() - 0.5) * 0.5;
+          npc.targetZ = -5;
+          // 2FのNPCは階段経由で1Fへ
+          if (npc.floorY && npc.floorY > 1) {
+            npc._stairPhase = 'goToStairs';
+            npc.targetX = 5.3;
+            npc.targetZ = 4.0;
+          }
         } else {
+          // Stage 1: 教室ドア方向
           npc.targetX = 4.2;
           npc.targetZ = 6.6;
         }
@@ -10215,11 +10766,30 @@ function updateSingleNPC(npc, dtSec) {
           mesh.position.y = Math.abs(Math.sin(npc.phase * 2)) * 0.03;
         }
       } else {
-        // ドア到達 → ウェイポイントで廊下を通って非常口へ
+        // ドア到達 or 階段到達
+        // Stage 3: 2FのNPCが階段に到達 → 1Fへ降ろして玄関へ
+        if (npc._stairPhase === 'goToStairs') {
+          npc._stairPhase = null;
+          npc.floorY = HOUSE_1F_Y;
+          mesh.position.y = HOUSE_1F_Y;
+          npc.targetX = -5 + (Math.random() - 0.5) * 0.5;
+          npc.targetZ = -5;
+          break; // 次フレームで玄関へ向かう
+        }
+        // ドア到達 → ウェイポイントで退出へ
         if (!npc._hallwayPhase) {
           npc._hallwayPhase = 1;
           GAME._exitedNPCs = (GAME._exitedNPCs || 0) + 1;
-          if (GAME.stageNum === 2) {
+          if (GAME.stageNum === 3) {
+            if (GAME._exitedNPCs === 1) {
+              showAdvisor({ja: '家族が外へ出始めた！全員で避難しよう！', en: 'Family is going outside! Let\'s evacuate together!'}, 'normal');
+            }
+            // Stage 3 ウェイポイント: 玄関 → 庭 → 退出
+            npc._waypoints = [
+              { x: -5, z: -7 },    // 庭へ出る
+              { x: -3, z: -10 },   // 道路方面
+            ];
+          } else if (GAME.stageNum === 2) {
             if (GAME._exitedNPCs === 3) {
               showAdvisor({ja: '同僚たちが非常階段へ向かっている！君も急ごう！', en: 'Colleagues are heading for the stairs! Hurry up!'}, 'normal');
             } else if (GAME._exitedNPCs >= 12) {
@@ -10282,21 +10852,49 @@ function updateSingleNPC(npc, dtSec) {
   }
 }
 
-// 負傷NPCとのインタラクト（近くの負傷NPCを助ける）
+// 負傷NPC・要救助NPCとのインタラクト
 function tryHelpInjuredNPC() {
   var px = GAME.player.x, pz = GAME.player.z;
   for (var i = 0; i < GAME.npcs.length; i++) {
     var npc = GAME.npcs[i];
-    if (npc.behavior !== 'injured' || npc.helped) continue;
-    var dx = px - npc.x;
-    var dz = pz - npc.z;
-    if (Math.sqrt(dx * dx + dz * dz) < 1.5) {
+    var canHelp = (npc.needsHelp && !npc.helped) || (npc.behavior === 'injured' && !npc.helped);
+    if (!canHelp) continue;
+    var dx = px - npc.x, dz = pz - npc.z;
+    var dy = Math.abs((GAME.player.y - 0.9) - (npc.floorY || 0));
+    if (dy > 2) continue;
+    if (Math.sqrt(dx * dx + dz * dz) < 2.0) {
       npc.helped = true;
+      npc.followingPlayer = true;
       GAME.scoring.checkedSafety = true;
-      GAME.score += 6;
-      SoundManager.playSE('rescue');
-      showAdvisor({ja: '動けない生徒を助けた！素晴らしい！', en: 'You helped a student who couldn\'t move! Great job!'}, 'praise');
-      SoundManager.playSE('click');
+      if (npc.role === 'sister') {
+        GAME.scoring.rescuedChild = true;
+        GAME.score += 5;
+        SoundManager.playSE('click');
+        showAdvisor({ja: '妹を落ち着かせた！一緒に避難しよう！', en: 'You calmed your sister! Let\'s evacuate together!'}, 'praise');
+        showItemGet('👧 妹を救助！ — 家族を守る');
+        npc.behavior = 'calm'; npc.state = 'following';
+        var sMesh = npc.mesh;
+        if (sMesh.userData.body) {
+          sMesh.userData.body.rotation.x = 0;
+          if (sMesh.userData.body.children && sMesh.userData.body.children.length >= 3) {
+            sMesh.userData.body.children[1].rotation.x = 0; sMesh.userData.body.children[1].rotation.z = 0;
+            sMesh.userData.body.children[2].rotation.x = 0; sMesh.userData.body.children[2].rotation.z = 0;
+          }
+        }
+      } else if (npc.role === 'grandma') {
+        GAME.scoring.helpedGrandma = true;
+        GAME.score += 5;
+        SoundManager.playSE('click');
+        showAdvisor({ja: 'おばあちゃんを手助けした！一緒に避難しよう！', en: 'You helped grandma! Let\'s evacuate together!'}, 'praise');
+        showItemGet('👵 おばあちゃんを支援！ — 家族を守る');
+        npc.state = 'following';
+        npc.mesh.rotation.z = 0;
+        npc.mesh.position.y = npc.floorY || 0;
+      } else {
+        GAME.score += 6;
+        SoundManager.playSE('rescue');
+        showAdvisor({ja: '動けない生徒を助けた！素晴らしい！', en: 'You helped a student who couldn\'t move! Great job!'}, 'praise');
+      }
       return true;
     }
   }
@@ -10488,6 +11086,60 @@ function performInteract() {
         target.mesh.position.z += 1.5; // ドアを奥に開く
       }
       break;
+
+    case 'turnOffGas':
+      // Stage 3: ガスコンロを止める
+      GAME.scoring.turnedOffGas = true;
+      GAME.score += 5;
+      showAdvisor({ja: 'ガスの元栓を閉めた！地震後のガス漏れ・火災を防げるよ。', en: 'Gas valve shut off! This prevents gas leaks and fires after the earthquake.'}, 'praise');
+      showItemGet('🔥 ガスOFF！ — ガス漏れ・火災を防止');
+      if (GAME._gasFlameS3) GAME._gasFlameS3.visible = false;
+      if (GAME._gasLightS3) GAME._gasLightS3.visible = false;
+      if (target.mesh) {
+        target.mesh.material = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.6, metalness: 0.3, emissive: 0x000000, emissiveIntensity: 0 });
+      }
+      break;
+
+    case 'pickUpFlashlight':
+      // Stage 3: 懐中電灯を取る
+      GAME._hasFlashlight = true;
+      GAME.scoring.usedFlashlight = true;
+      GAME.score += 3;
+      showAdvisor({ja: '懐中電灯を手に入れた！停電時に足元を照らせるよ。', en: 'Flashlight acquired! You can light your way during a blackout.'}, 'praise');
+      showItemGet('🔦 懐中電灯をゲット！ — 停電対策');
+      if (target.mesh) target.mesh.visible = false;
+      // スポットライト作成（プレイヤー前方を照らす）
+      if (!GAME._flashSpot) {
+        var fSpot = new THREE.SpotLight(0xffffcc, 1.5, 15, Math.PI / 6, 0.3, 1);
+        fSpot.castShadow = false;
+        scene.add(fSpot);
+        var fTarget = new THREE.Object3D();
+        scene.add(fTarget);
+        fSpot.target = fTarget;
+        GAME._flashSpot = fSpot;
+        GAME._flashSpotTarget = fTarget;
+      }
+      break;
+
+    case 'openGenkanDoor':
+      // Stage 3: 玄関ドアを開ける
+      GAME.scoring.openedDoor = true;
+      GAME._genkanDoorOpen = true;
+      GAME.score += 5;
+      SoundManager.playSE('door');
+      showAdvisor({ja: '玄関ドアを開けた！庭を通って道路に出よう！', en: 'Front door opened! Go through the garden to the road!'}, 'praise');
+      showItemGet('🚪 玄関ドアを開放！ — 避難経路確保');
+      // ドアコリジョン除去
+      if (GAME._genkanDoorCollision) {
+        var gdIdx = GAME.walls.indexOf(GAME._genkanDoorCollision);
+        if (gdIdx >= 0) GAME.walls.splice(gdIdx, 1);
+      }
+      // ドアメッシュを開く
+      if (GAME._genkanDoorMesh) {
+        GAME._genkanDoorMesh.rotation.y = -Math.PI / 2;
+        GAME._genkanDoorMesh.position.x -= 0.8;
+      }
+      break;
   }
 }
 
@@ -10638,7 +11290,7 @@ function createMinimap() {
 function updateMinimap() {
   var canvas = GAME._minimap;
   if (!canvas) return;
-  var show = (GAME.phase === 'aftershake' || GAME.phase === 'evacuation' || GAME._inSchoolyard || GAME._inBuildingPlaza) && GAME.running && !GAME.paused;
+  var show = (GAME.phase === 'aftershake' || GAME.phase === 'evacuation' || GAME._inSchoolyard || GAME._inBuildingPlaza || GAME._inHouseGarden) && GAME.running && !GAME.paused;
   canvas.style.display = show ? 'block' : 'none';
   if (!show) return;
 
@@ -10701,6 +11353,49 @@ function updateMinimap() {
     ctx.lineTo(s3[0], s3[1]);
     ctx.stroke();
     ctx.setLineDash([]);
+  } else if (GAME.stageNum === 3) {
+    // === Stage 3: 一軒家 + 避難公園 ===
+    var mapMinX = -10, mapMaxX = 10, mapMinZ = -65, mapMaxZ = 10;
+    var scaleX = w / (mapMaxX - mapMinX);
+    var scaleZ = h / (mapMaxZ - mapMinZ);
+    function toMap(x, z) {
+      return [(x - mapMinX) * scaleX, h - (z - mapMinZ) * scaleZ];
+    }
+    // 家本体（1F）
+    ctx.fillStyle = 'rgba(180,140,100,0.5)';
+    var h1 = toMap(-6, -6); var h2 = toMap(6, 7);
+    ctx.fillRect(h1[0], h2[1], h2[0] - h1[0], h1[1] - h2[1]);
+    // 庭
+    ctx.fillStyle = 'rgba(100,160,80,0.3)';
+    var g1 = toMap(-6, -12); var g2 = toMap(6, -6);
+    ctx.fillRect(g1[0], g2[1], g2[0] - g1[0], g1[1] - g2[1]);
+    // 道路
+    ctx.fillStyle = 'rgba(100,100,100,0.4)';
+    var rd1 = toMap(-2, -12); var rd2 = toMap(2, -60);
+    ctx.fillRect(rd1[0], rd2[1], rd2[0] - rd1[0], rd1[1] - rd2[1]);
+    // ブロック塀（危険: 赤表示）
+    if (GAME._blockWallZones) {
+      ctx.fillStyle = 'rgba(255,50,50,0.4)';
+      GAME._blockWallZones.forEach(function(bw) {
+        var b1 = toMap(bw.minX, bw.minZ); var b2 = toMap(bw.maxX, bw.maxZ);
+        ctx.fillRect(b1[0], b2[1], b2[0] - b1[0], b1[1] - b2[1]);
+      });
+    }
+    // 避難公園
+    ctx.fillStyle = 'rgba(80,180,80,0.4)';
+    var pk1 = toMap(-8, -63); var pk2 = toMap(8, -55);
+    ctx.fillRect(pk1[0], pk2[1], pk2[0] - pk1[0], pk1[1] - pk2[1]);
+    // 避難ポイント
+    ctx.fillStyle = 'rgba(255,107,0,0.7)';
+    var ep3 = toMap(EVAC_POINT_S3.x, EVAC_POINT_S3.z);
+    ctx.beginPath(); ctx.arc(ep3[0], ep3[1], 5, 0, Math.PI * 2); ctx.fill();
+    // 避難ルート（点線：家→庭→道路→公園）
+    ctx.strokeStyle = 'rgba(0,255,65,0.4)';
+    ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    var sr1 = toMap(0, 0); var sr2 = toMap(0, -9); var sr3 = toMap(0, -60);
+    ctx.moveTo(sr1[0], sr1[1]); ctx.lineTo(sr2[0], sr2[1]); ctx.lineTo(sr3[0], sr3[1]);
+    ctx.stroke(); ctx.setLineDash([]);
   } else {
     // === Stage 1: 学校 ===
     // マップ範囲: X=-20~20, Z=-2~62 → 40x64
@@ -10844,9 +11539,24 @@ function gameLoop(timestamp) {
     );
     GAME._stoveFlame.position.y = 0.7 + Math.sin(GAME.totalTimer * 6) * 0.02;
   }
+  // Stage 3: ガスコンロ炎の揺らぎアニメーション
+  if (GAME._gasFlameS3 && GAME._gasFlameS3.visible) {
+    GAME._gasFlameS3.scale.set(
+      0.8 + Math.sin(GAME.totalTimer * 9) * 0.25,
+      0.7 + Math.sin(GAME.totalTimer * 13) * 0.35,
+      0.8 + Math.cos(GAME.totalTimer * 11) * 0.25
+    );
+  }
   // 上履きハイライトの回転アニメーション
   if (GAME._shoesHighlight && GAME._shoesHighlight.visible) {
     GAME._shoesHighlight.rotation.z = GAME.totalTimer * 1.5;
+  }
+  // Stage 3: 懐中電灯スポットライト更新
+  if (GAME._flashSpot && GAME._hasFlashlight) {
+    var fp = GAME.player;
+    GAME._flashSpot.position.set(fp.x, fp.y + 1.4, fp.z);
+    var fa = GAME.player.angle || 0;
+    GAME._flashSpotTarget.position.set(fp.x + Math.sin(fa) * 5, fp.y + 0.5, fp.z + Math.cos(fa) * 5);
   }
 
   // 階段トリガー + 避難ポイントチェック + ブロック塀チェック + 余震
@@ -11040,7 +11750,7 @@ function transitionPhase(newPhase) {
     SoundManager.stopAmbient(300);
     SoundManager.playBGM('BGM/JISHIN_earthquake.mp3', 0.35, false);
     SoundManager.playEarthquakeAlarm(); // J-Alert風警報音（ピロンピロン）
-    var eqBg = GAME.stageNum === 2 ? 'backgrounds/stage2/bg_office_shake.png' : 'backgrounds/stage1/bg_classroom_shake.png';
+    var eqBg = GAME.stageNum === 2 ? 'backgrounds/stage2/bg_office_shake.png' : GAME.stageNum === 3 ? 'backgrounds/stage3/bg_living_room.png' : 'backgrounds/stage1/bg_classroom_shake.png';
     NovelEngine.start(
       novelScripts.earthquake,
       eqBg,
@@ -11061,7 +11771,7 @@ function transitionPhase(newPhase) {
     GAME._novelAftershakeDone = true;
     GAME.running = false;
     if (document.pointerLockElement) document.exitPointerLock();
-    var asBg = GAME.stageNum === 2 ? 'backgrounds/stage2/bg_office_shake.png' : 'backgrounds/stage1/bg_classroom_shake.png';
+    var asBg = GAME.stageNum === 2 ? 'backgrounds/stage2/bg_office_shake.png' : GAME.stageNum === 3 ? 'backgrounds/stage3/bg_living_room.png' : 'backgrounds/stage1/bg_classroom_shake.png';
     NovelEngine.start(
       novelScripts.aftershake,
       asBg,
@@ -11197,7 +11907,7 @@ function _doTransitionPhase(newPhase) {
           GAME._houseLights.forEach(function(l) { l.intensity = 0; });
         }
         // 薄暗い環境光に変更
-        if (GAME._ambientLight) GAME._ambientLight.intensity = 0.08;
+        if (GAME._hemiLight) GAME._hemiLight.intensity = 0.08;
       } else if (GAME.stageNum === 2) {
         // Stage 2: オフィス — プレイヤーをデスク間の通路に移動
         GAME.player.x = -2;
@@ -11322,7 +12032,20 @@ function updateQuake(dtSec) {
 // 落下物の生成予約（揺れ中にタイミングをずらして生成）
 function scheduleFallingObjects() {
   var schedule;
-  if (GAME.stageNum === 2) {
+  if (GAME.stageNum === 3) {
+    // Stage 3: 一軒家 — 食器・本・照明・TV
+    schedule = [
+      { time: 2, type: 'book', x: 3.0, z: 2.3 },     // 食器棚から食器
+      { time: 3, type: 'book', x: -1.8, z: 1.2 },    // 本棚から本
+      { time: 4, type: 'light', x: 0, z: 0 },         // 1F天井照明
+      { time: 5, type: 'book', x: 3.2, z: 2.5 },     // 食器棚から食器2
+      { time: 6, type: 'book', x: -1.5, z: 1.0 },    // 本棚から本2
+      { time: 7, type: 'light', x: -4, z: 3.5 },     // 和室天井照明
+      { time: 9, type: 'book', x: 0, z: 1.5 },       // TV落下
+      { time: 11, type: 'light', x: -3.5, z: -2.5 }, // 2Fプレイヤー部屋照明
+      { time: 13, type: 'book', x: 5.2, z: -3.5 },   // 2Fタンスから物落下
+    ];
+  } else if (GAME.stageNum === 2) {
     // Stage 2: 天井パネル・書類・コピー機部品・モニター — オフィス向け
     schedule = [
       { time: 2, type: 'light', x: -4, z: 3 },      // 天井照明パネル1
@@ -12279,6 +13002,12 @@ function downloadResultData(totalScore, categories, actions) {
 // ============================================================
 // 安全ゾーン定義（机の下 = 各デスクの位置）
 function isUnderDesk(px, pz) {
+  if (GAME.stageNum === 3) {
+    // Stage 3: ちゃぶ台（1F: 0, -1）or 勉強机（2F: -4, -4）
+    if (Math.abs(px - 0) < 0.6 && Math.abs(pz - (-1)) < 0.4) return true;
+    if (GAME._onHouse2F && Math.abs(px - (-4)) < 0.6 && Math.abs(pz - (-4)) < 0.4) return true;
+    return false;
+  }
   if (GAME.stageNum === 2) {
     // Stage 2: オフィスデスク配列（4×5）
     var oStartX = -8, oStartZ = 2, oGapX = 4, oGapZ = 2.5;
@@ -12348,6 +13077,8 @@ function checkScoringTriggers() {
       GAME.score += 10;
       var deskMsg = GAME.stageNum === 2
         ? {ja: 'デスクの下に入れた！Eキー長押しで脚を掴もう！', en: 'You got under the desk! Hold E to grab the leg!'}
+        : GAME.stageNum === 3
+        ? {ja: 'テーブルの下に入れた！Eキー長押しで脚を掴もう！', en: 'You got under the table! Hold E to grab the leg!'}
         : {ja: '机の下に入れた！Eキー長押しで脚を掴もう！', en: 'You got under the desk! Hold E to grab the leg!'};
       showAdvisor(deskMsg, 'praise');
     }
@@ -12395,7 +13126,7 @@ function checkScoringTriggers() {
 
     // 揺れ中に部屋の外に出た場合
     if (s.didNotRunOutside) {
-      var outsideThreshold = GAME.stageNum === 2 ? 14.0 : 9.5;
+      var outsideThreshold = GAME.stageNum === 2 ? 14.0 : GAME.stageNum === 3 ? -5.5 : 9.5;
       if (p.z > outsideThreshold) {
         s.didNotRunOutside = false;
         showAdvisor({ja: '揺れている最中に外に出るのは危険！落下物に注意！', en: 'Going outside during shaking is dangerous! Watch for falling objects!'}, 'warning');
@@ -12404,7 +13135,7 @@ function checkScoringTriggers() {
 
     // 窓際に近づいた警告
     if (!GAME._windowWarned && timeSinceQuake > 1) {
-      var nearWindow = GAME.stageNum === 2 ? (p.x < -10.5) : (p.x < -3.5);
+      var nearWindow = GAME.stageNum === 2 ? (p.x < -10.5) : GAME.stageNum === 3 ? (Math.abs(p.x) > 5.5) : (p.x < -3.5);
       if (nearWindow) {
         GAME._windowWarned = true;
         showAdvisor({ja: '窓から離れて！ガラスが割れて飛び散るよ！', en: 'Get away from the window! The glass could shatter!'}, 'warning');
@@ -12485,6 +13216,10 @@ function updatePlayer(dt) {
     const w = GAME.walls[i];
     // しゃがみ時のみ家具（机: maxY<=0.65）の衝突を無視（机の下に潜り込むため）
     if (p.isCrouching && w.maxY !== undefined && w.maxY <= 0.65) continue;
+    // Stage 3: 2階建て — プレイヤーY位置で壁を高さフィルタリング
+    if (w.minY !== undefined && w.maxY !== undefined) {
+      if (p.y < w.minY - 0.5 || p.y > w.maxY + 0.5) continue;
+    }
     if (newX + R > w.minX && newX - R < w.maxX && p.z + R > w.minZ && p.z - R < w.maxZ) {
       blocked = true; break;
     }
@@ -12496,6 +13231,10 @@ function updatePlayer(dt) {
   for (let i = 0; i < GAME.walls.length; i++) {
     const w = GAME.walls[i];
     if (p.isCrouching && w.maxY !== undefined && w.maxY <= 0.65) continue;
+    // Stage 3: 2階建て — プレイヤーY位置で壁を高さフィルタリング
+    if (w.minY !== undefined && w.maxY !== undefined) {
+      if (p.y < w.minY - 0.5 || p.y > w.maxY + 0.5) continue;
+    }
     if (p.x + R > w.minX && p.x - R < w.maxX && newZ + R > w.minZ && newZ - R < w.maxZ) {
       blocked = true; break;
     }
