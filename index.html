@@ -9344,21 +9344,17 @@ function updateSingleNPC(npc, dtSec) {
       npc.phase += dtSec;
       if (npc.role === 'colleague') {
         // Stage 2: 同僚のオフィスワーク（PCに向かってタイピング）
-        // 椅子座面(Y=0.42)の上にお尻が乗る位置: 脚曲げ分を考慮して高めに設定
-        var coSeatY = 0.42 - (npc.npcH || 1.6) * 0.38;
+        // 椅子座面(Y=0.42)の上にお尻が乗る位置
+        var coSeatY = 0.42 - (npc.npcH || 1.6) * 0.32;
         mesh.position.y = coSeatY + Math.sin(npc.phase * 1.5) * 0.002;
         mesh.rotation.y = Math.PI;
         var coSeed = (npc.deskX || 0) * 5 + (npc.deskZ || 0) * 3;
-        // 脚: 座りポーズ（自然な角度 — 太ももやや前傾 + 膝軽く曲げ）
+        // 脚: 座りポーズ（太ももを軽く前傾のみ — 膝曲げなしでシンプルに）
         if (mesh.userData.leftLeg) {
-          mesh.userData.leftLeg.rotation.x = -0.9;
-          var coUL = mesh.userData.leftLeg.children[0];
-          if (coUL && coUL.children[0]) coUL.children[0].rotation.x = 0.9;
+          mesh.userData.leftLeg.rotation.x = -0.5;
         }
         if (mesh.userData.rightLeg) {
-          mesh.userData.rightLeg.rotation.x = -0.9;
-          var coUR = mesh.userData.rightLeg.children[0];
-          if (coUR && coUR.children[0]) coUR.children[0].rotation.x = 0.9;
+          mesh.userData.rightLeg.rotation.x = -0.5;
         }
         // 頭: モニターを見る（時々視線を変える）
         var coHead = mesh.userData.head;
