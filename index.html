@@ -3774,13 +3774,24 @@ var NovelEngine = {
     colleague_a: { normal: 1, relief: 1, serious: 1, smile: 1, worry: 1 },
     colleague_b: { normal: 1, panic: 1, surprise: 1, worry: 1 }
   },
-  _EXPR_FALLBACK: { worry: 'serious', surprise: 'panic', relief: 'smile', serious: 'normal', smile: 'normal' },
+  _EXPR_FALLBACK: { worry: 'serious', surprise: 'panic', panic: 'serious', relief: 'smile', relieved: 'smile', serious: 'normal', smile: 'normal' },
   _resolveExpr: function(speaker, expr) {
     var avail = this._EXPR_AVAILABLE[speaker];
-    if (avail && !avail[expr] && this._EXPR_FALLBACK[expr]) {
-      return this._EXPR_FALLBACK[expr];
+    if (!avail) return expr;
+    // フォールバックチェーン: 最大3回まで辿り、見つからなければnormalに落とす
+    var resolved = expr;
+    var maxTries = 3;
+    while (!avail[resolved] && maxTries > 0) {
+      if (this._EXPR_FALLBACK[resolved]) {
+        resolved = this._EXPR_FALLBACK[resolved];
+      } else {
+        resolved = 'normal';
+        break;
+      }
+      maxTries--;
     }
-    return expr;
+    if (!avail[resolved]) resolved = 'normal';
+    return resolved;
   },
 
   // ノベル開始
