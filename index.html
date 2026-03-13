@@ -8485,13 +8485,21 @@ function spawnPlazaNPCs() {
   GAME.scene.add(bossModel);
   GAME._plazaNPCs.push({ mesh: bossModel, role: 'boss', phase: 0 });
 
-  var colors = [0xf5f5f5, 0xe8e8e8, 0xeeeeee, 0xe0e0e0, 0xf0f0f0, 0xdadada];
+  var plazaTieColors = [0x1a237e, 0x8b0000, 0x2e4057, 0x4a0e4e, 0x1b5e20];
+  var plazaSkirtColors = [0x2c2c2c, 0x1a1a2e, 0x3d2b1f, 0x2c3e50, 0x4a4a4a];
   for (var i = 0; i < 8; i++) {
     var angle = (i / 8) * Math.PI * 2;
     var r = 1.0 + Math.random() * 1.2;
     var sx = EVAC_POINT_S2.x + Math.cos(angle) * r;
     var sz = EVAC_POINT_S2.z + Math.sin(angle) * r;
-    var nModel = createNPCModel(colors[i % colors.length], 1.55 + Math.random() * 0.15, 0xf5c6a0);
+    var plazaMale = i % 2 === 0;
+    var plazaH = plazaMale ? (1.62 + Math.random() * 0.12) : (1.52 + Math.random() * 0.10);
+    var nModel = createNPCModel(0xf0f0f0, plazaH, 0xf5c6a0, {
+      isMale: plazaMale,
+      isFemale: !plazaMale,
+      tieColor: plazaTieColors[i % plazaTieColors.length],
+      skirtColor: plazaSkirtColors[i % plazaSkirtColors.length]
+    });
     nModel.position.set(sx, 0, sz);
     nModel.rotation.y = Math.random() * Math.PI * 2;
     GAME.scene.add(nModel);
@@ -9638,14 +9646,68 @@ function updateSingleNPC(npc, dtSec) {
       break;
 
     case 'aftershake':
-      // 揺れ収束 — NPCは机の下/その場で待機（まだ避難しない）
-      if ((npc.behavior === 'calm' || npc.role === 'teacher') && npc.state === 'crouching') {
-        // 机の下で待機継続
-      }
+      // 揺れ収束 — NPCが段階的に机の下から出る演出
       if (npc.behavior === 'injured' && !npc.helped) {
-        // 負傷NPCは倒れたまま
         mesh.rotation.z = Math.PI / 2;
         mesh.position.y = -0.2;
+        break;
+      }
+      // 2秒後から順番に立ち上がる（列ごとにずらす）
+      var standDelay = 2 + (npc.deskX !== undefined ? Math.abs(npc.deskX + 8) / 4 : 0) * 0.8 + Math.random() * 0.5;
+      if (GAME.phaseTimer >= standDelay && npc.state === 'crouching') {
+        npc.state = 'standing_up';
+        npc._standTimer = 0;
+        // 通路位置にオフセット（デスク・椅子貫通防止）
+        var aisleOffset = (npc.deskX !== undefined && npc.deskX <= 0) ? 1.5 : -1.5;
+        npc.x = (npc.deskX || npc.x) + aisleOffset;
+        npc.z = npc.deskZ || npc.z;
+        mesh.position.x = npc.x;
+        mesh.position.z = npc.z;
+      }
+      if (npc.state === 'standing_up') {
+        npc._standTimer = (npc._standTimer || 0) + dtSec;
+        var t = Math.min(npc._standTimer / 0.8, 1); // 0.8秒かけて立ち上がる
+        var body2 = mesh.userData.body;
+        if (body2) {
+          body2.rotation.x = 0.9 * (1 - t); // 前かがみ→直立
+          if (body2.children && body2.children.length >= 3) {
+            body2.children[1].rotation.x = -3.0 * (1 - t);
+            body2.children[1].rotation.z = 0.4 * (1 - t);
+            body2.children[2].rotation.x = -3.0 * (1 - t);
+            body2.children[2].rotation.z = -0.4 * (1 - t);
+          }
+        }
+        // 脚を徐々に伸ばす
+        if (mesh.userData.leftLeg) {
+          mesh.userData.leftLeg.rotation.x = -1.8 * (1 - t);
+        }
+        if (mesh.userData.rightLeg) {
+          mesh.userData.rightLeg.rotation.x = -1.8 * (1 - t);
+        }
+        mesh.position.y = mesh.position.y * (1 - t); // Y位置を0に戻す
+        if (t >= 1) {
+          npc.state = 'aftershake_idle';
+          mesh.position.y = 0;
+        }
+      }
+      if (npc.state === 'aftershake_idle') {
+        // 立ち上がった後のアイドル（周囲を見回す）
+        npc.phase += dtSec;
+        mesh.position.y = Math.sin(npc.phase * 2) * 0.003;
+        mesh.rotation.y = (npc._origYaw || mesh.rotation.y) + Math.sin(npc.phase * 0.6) * 0.25;
+      }
+      // パニックNPCは立って震える
+      if (npc.behavior === 'panic' && npc.state === 'panicking') {
+        npc.state = 'aftershake_idle';
+        mesh.position.y = 0;
+        var pb = mesh.userData.body;
+        if (pb) { pb.rotation.x = 0; }
+        if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = 0;
+        if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = 0;
+        // 通路にオフセット
+        var pOff = (npc.deskX !== undefined && npc.deskX <= 0) ? 1.5 : -1.5;
+        npc.x = (npc.deskX || npc.x) + pOff;
+        mesh.position.x = npc.x;
       }
       break;
 
@@ -9664,11 +9726,19 @@ function updateSingleNPC(npc, dtSec) {
       var myDelay = npc.evacuationDelay || 0;
       if (GAME.phaseTimer < myDelay) {
         // まだ順番が来ていない — 立ち上がって待機（ポーズ完全リセット）
-        if (npc.state === 'crouching' || npc.state === 'idle' || npc.state === 'sitting' || npc.state === 'panicking' || npc.state === 'fallen') {
+        if (npc.state === 'crouching' || npc.state === 'idle' || npc.state === 'sitting' || npc.state === 'panicking' || npc.state === 'fallen' || npc.state === 'standing_up' || npc.state === 'aftershake_idle') {
           npc.state = 'waiting';
           mesh.scale.set(1, 1, 1);
           mesh.position.y = 0;
           mesh.rotation.z = 0;
+          // デスク・椅子貫通防止: 通路位置にオフセット
+          if (npc.deskX !== undefined && GAME.stageNum === 2) {
+            var evAisleOff = (npc.deskX <= 0) ? 1.5 : -1.5;
+            npc.x = npc.deskX + evAisleOff;
+            npc.z = npc.deskZ || npc.z;
+            mesh.position.x = npc.x;
+            mesh.position.z = npc.z;
+          }
           var wb = mesh.userData.body;
           if (wb) {
             wb.rotation.x = 0; wb.rotation.z = 0;
@@ -10565,8 +10635,20 @@ function updatePhase(dtSec) {
       break;
 
     case 'aftershake':
-      // 揺れ収束 → 避難判断フェーズ（30秒の猶予）
-      if (GAME.phaseTimer >= 30) {
+      // 揺れ収束 → 避難判断フェーズ（8秒の猶予 + 段階的ガイダンス）
+      if (!GAME._aftershakeGuide1 && GAME.phaseTimer >= 2) {
+        GAME._aftershakeGuide1 = true;
+        showAdvisor({ja: 'まだ動くな。余震に備えて様子を見よう。', en: 'Don\'t move yet. Wait and watch for aftershocks.'}, 'normal');
+      }
+      if (!GAME._aftershakeGuide2 && GAME.phaseTimer >= 5) {
+        GAME._aftershakeGuide2 = true;
+        showAdvisor({ja: '周囲を確認して。けが人はいないか？', en: 'Check your surroundings. Anyone injured?'}, 'normal');
+      }
+      if (!GAME._aftershakeGuide3 && GAME.phaseTimer >= 7) {
+        GAME._aftershakeGuide3 = true;
+        showAdvisor({ja: '避難経路を確認！まもなく避難開始だ。', en: 'Check evacuation routes! Evacuation starts soon.'}, 'warning');
+      }
+      if (GAME.phaseTimer >= 8) {
         transitionPhase('evacuation');
       }
       break;
@@ -10794,6 +10876,10 @@ function _doTransitionPhase(newPhase) {
       GAME._oshimoLastWarn = 0;
       GAME._aftershockDone = false;
       GAME._glassWarned = false;
+      // aftershakeガイダンスフラグ初期化
+      GAME._aftershakeGuide1 = false;
+      GAME._aftershakeGuide2 = false;
+      GAME._aftershakeGuide3 = false;
       break;
 
     case 'evacuation':
