@@ -9897,16 +9897,16 @@ function updateSingleNPC(npc, dtSec) {
             kneeR.children[0].rotation.x = Math.max(0, legSwing) * 0.8;
           }
         }
-        // 腕振り（脚と逆位相）
+        // 頭を両手で守りながら移動（避難姿勢）
         var bodyNode = mesh.userData.body;
         if (bodyNode) {
-          bodyNode.rotation.x = 0.05; // 軽い前傾
-          // 腕振りアニメーション
+          bodyNode.rotation.x = 0.15; // 前かがみ（頭を守る姿勢）
           if (bodyNode.children && bodyNode.children.length >= 3) {
-            bodyNode.children[1].rotation.x = Math.sin(npc.phase + Math.PI) * 0.35; // 左腕
-            bodyNode.children[1].rotation.z = 0;
-            bodyNode.children[2].rotation.x = Math.sin(npc.phase) * 0.35; // 右腕
-            bodyNode.children[2].rotation.z = 0;
+            // 両腕を頭の上に（小さな揺れ付き）
+            bodyNode.children[1].rotation.x = -2.8 + Math.sin(npc.phase * 1.5) * 0.08;
+            bodyNode.children[1].rotation.z = 0.35;
+            bodyNode.children[2].rotation.x = -2.8 + Math.sin(npc.phase * 1.5 + 0.5) * 0.08;
+            bodyNode.children[2].rotation.z = -0.35;
           }
           // 体の上下動（歩行のバウンス）
           mesh.position.y = Math.abs(Math.sin(npc.phase * 2)) * 0.03;
@@ -11510,9 +11510,9 @@ function calculateScore() {
   if (s.awayFromHazard) score += 5;
   if (s.didNotRunOutside) score += 5;
   if (s.noHitByFalling) score += 5;
-  // HOLD ON（机の脚を掴む）ボーナス: 掴んだ時間に応じて最大8点
+  // HOLD ON（机の脚を掴む）ボーナス: 掴んだ時間に応じて最大3点
   if (s.heldDeskLegs) {
-    var holdBonus = Math.min(8, Math.floor(GAME._holdOnTime / 2) + 1);
+    var holdBonus = Math.min(3, Math.floor(GAME._holdOnTime / 3) + 1);
     score += holdBonus;
     GAME._holdOnBonus = holdBonus;
   } else {
@@ -11744,7 +11744,7 @@ function showResult() {
     if (catEl) {
       categories = [
         { label: en ? 'Initial Response' : '初動対応', score: (s.crouchedIn3s ? 10 : 0) + (s.movedToSafe ? 10 : 0), max: 20 },
-        { label: en ? 'During Shaking' : '揺れ中の判断', score: (s.awayFromHazard ? 5 : 0) + (s.didNotRunOutside ? 5 : 0) + (s.noHitByFalling ? 5 : 0) + (GAME._holdOnBonus || 0), max: 23 },
+        { label: en ? 'During Shaking' : '揺れ中の判断', score: (s.awayFromHazard ? 5 : 0) + (s.didNotRunOutside ? 5 : 0) + (s.noHitByFalling ? 5 : 0) + (GAME._holdOnBonus || 0), max: 18 },
         { label: en ? 'Safety Actions' : '安全確保行動', score: (s.putOnShoes ? 7 : 0) + (s.openedDoor ? 8 : 0) + (s.checkedSafety ? 5 : 0), max: 20 },
         { label: en ? 'Evacuation' : '避難行動', score: (GAME._guardEvacBonus || 0) + (s.usedEmergencyExit ? 5 : 0) + (s.usedStairs ? 5 : 0) + (s.avoidedBlockWall ? 5 : 0) + (s.reachedEvacPoint ? 10 : 0) + (s.withinTimeLimit ? 5 : 0), max: 40 },
         { label: en ? 'Knowledge' : '知識・判断力', score: Math.max(0, GAME._novelChoiceScore || 0), max: 20 }
