@@ -8479,7 +8479,7 @@ function teleportToBuildingPlaza() {
 function spawnPlazaNPCs() {
   GAME._plazaNPCs = [];
   // 上司（避難ポイント手前で待機 — 広場内）
-  var bossModel = createNPCModel(0x1a237e, 1.7, 0xf5c6a0);
+  var bossModel = createNPCModel(0xf0f0f0, 1.7, 0xf5c6a0, { isMale: true, tieColor: 0x8b0000, jacket: true, jacketColor: 0x1a237e });
   bossModel.position.set(EVAC_POINT_S2.x + 1.5, 0, EVAC_POINT_S2.z - 1.5);
   bossModel.rotation.y = Math.PI;
   GAME.scene.add(bossModel);
@@ -8953,7 +8953,8 @@ function updatePlayerModel() {
 // ============================================================
 GAME.npcs = [];
 
-function createNPCModel(color, height, headColor) {
+function createNPCModel(color, height, headColor, opts) {
+  opts = opts || {};
   var figure = new THREE.Group();
   // KANKERI準拠の比率で計算
   var headR = height * 0.11;
@@ -8979,6 +8980,15 @@ function createNPCModel(color, height, headColor) {
   var hair = new THREE.Mesh(new THREE.SphereGeometry(headR * 1.06, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.45), hairMat);
   hair.position.y = 0.01;
   head.add(hair);
+
+  // 女性NPC: ロングヘア（後頭部から首元まで）
+  if (opts.isFemale) {
+    var longHairMat = new THREE.MeshStandardMaterial({ color: opts.hairColor || 0x222222, roughness: 0.8, emissive: 0x111111, emissiveIntensity: 0.1 });
+    var longHair = new THREE.Mesh(new THREE.CylinderGeometry(headR * 0.8, headR * 0.5, headR * 1.8, 8), longHairMat);
+    longHair.position.set(0, -headR * 0.6, -headR * 0.4);
+    longHair.castShadow = true;
+    head.add(longHair);
+  }
 
   // 目（KANKERI子ども準拠）
   var eyeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
@@ -9007,11 +9017,53 @@ function createNPCModel(color, height, headColor) {
   torso.castShadow = true;
   torso.add(neckPivot);
 
+  // ネクタイ（男性NPC）
+  if (opts.isMale) {
+    var npcTieMat = new THREE.MeshStandardMaterial({ color: opts.tieColor || 0x1a237e, emissive: opts.tieColor || 0x1a237e, emissiveIntensity: 0.2 });
+    var npcTie = new THREE.Mesh(new THREE.BoxGeometry(0.025, torsoLen * 0.65, 0.012), npcTieMat);
+    npcTie.position.set(0, 0.02, torsoR * 0.95);
+    torso.add(npcTie);
+    var npcTieKnot = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.025, 0.015), npcTieMat);
+    npcTieKnot.position.set(0, torsoLen * 0.33, torsoR * 0.95);
+    torso.add(npcTieKnot);
+  }
+
+  // スカート（女性NPC）
+  if (opts.isFemale) {
+    var skirtMat = new THREE.MeshStandardMaterial({ color: opts.skirtColor || 0x2c2c2c, roughness: 0.7, emissive: opts.skirtColor || 0x2c2c2c, emissiveIntensity: 0.15 });
+    var skirtH = torsoLen * 0.45;
+    var skirt = new THREE.Mesh(new THREE.CylinderGeometry(torsoR * 1.1, torsoR * 1.8, skirtH, 12), skirtMat);
+    skirt.position.y = -torsoLen / 2 - skirtH * 0.1;
+    skirt.castShadow = true;
+    torso.add(skirt);
+  }
+
+  // ジャケット（上司用）
+  if (opts.jacket) {
+    var jacketMat = new THREE.MeshStandardMaterial({ color: opts.jacketColor || 0x1a237e, roughness: 0.6, emissive: opts.jacketColor || 0x1a237e, emissiveIntensity: 0.15 });
+    // ジャケット胴体（胴体より少し大きい）
+    var jacket = new THREE.Mesh(new THREE.CylinderGeometry(torsoR * 1.15, torsoR * 1.2, torsoLen * 1.02, 12), jacketMat);
+    jacket.position.y = 0;
+    jacket.castShadow = true;
+    torso.add(jacket);
+    // 襟（V字）
+    var collarMat = new THREE.MeshStandardMaterial({ color: opts.jacketColor || 0x1a237e, roughness: 0.5, emissive: opts.jacketColor || 0x1a237e, emissiveIntensity: 0.2 });
+    var lCollar = new THREE.Mesh(new THREE.BoxGeometry(torsoR * 0.6, torsoLen * 0.15, 0.01), collarMat);
+    lCollar.position.set(-torsoR * 0.35, torsoLen * 0.4, torsoR * 1.05);
+    lCollar.rotation.z = 0.2;
+    torso.add(lCollar);
+    var rCollar = new THREE.Mesh(new THREE.BoxGeometry(torsoR * 0.6, torsoLen * 0.15, 0.01), collarMat);
+    rCollar.position.set(torsoR * 0.35, torsoLen * 0.4, torsoR * 1.05);
+    rCollar.rotation.z = -0.2;
+    torso.add(rCollar);
+  }
+
   // 腕（torsoの子 — 回転時に破綻しない）
+  var armMat = opts.jacket ? new THREE.MeshStandardMaterial({ color: opts.jacketColor || 0x1a237e, roughness: 0.6, emissive: opts.jacketColor || 0x1a237e, emissiveIntensity: 0.15 }) : mat;
   [-1, 1].forEach(function(side) {
     var shoulderPivot = new THREE.Object3D();
     shoulderPivot.position.set(side * (torsoR + armR + 0.01), torsoLen / 2 - 0.03, 0);
-    var upperArm = new THREE.Mesh(new THREE.CylinderGeometry(armR, armR * 0.88, upperArmLen, 8), mat);
+    var upperArm = new THREE.Mesh(new THREE.CylinderGeometry(armR, armR * 0.88, upperArmLen, 8), armMat);
     upperArm.position.y = -upperArmLen / 2;
     upperArm.castShadow = true;
     shoulderPivot.add(upperArm);
@@ -9027,20 +9079,22 @@ function createNPCModel(color, height, headColor) {
   });
 
   // 脚（torsoの子）
+  var legMat = opts.jacket ? new THREE.MeshStandardMaterial({ color: 0x2c2c2c, roughness: 0.6, emissive: 0x2c2c2c, emissiveIntensity: 0.1 }) : mat;
   var npcLeftLeg, npcRightLeg;
   [-1, 1].forEach(function(side, idx) {
     var hipPivot = new THREE.Object3D();
     hipPivot.position.set(side * (torsoR * 0.5), -torsoLen / 2, 0);
-    var upperLeg = new THREE.Mesh(new THREE.CylinderGeometry(legR * 1.1, legR * 0.9, upperLegLen, 8), mat);
+    var upperLeg = new THREE.Mesh(new THREE.CylinderGeometry(legR * 1.1, legR * 0.9, upperLegLen, 8), legMat);
     upperLeg.position.y = -upperLegLen / 2;
     upperLeg.castShadow = true;
     hipPivot.add(upperLeg);
-    var lowerLeg = new THREE.Mesh(new THREE.CylinderGeometry(legR * 0.9, legR * 0.7, lowerLegLen, 8), mat);
+    var lowerLeg = new THREE.Mesh(new THREE.CylinderGeometry(legR * 0.9, legR * 0.7, lowerLegLen, 8), legMat);
     lowerLeg.position.y = -upperLegLen / 2 - lowerLegLen / 2;
     lowerLeg.castShadow = true;
     upperLeg.add(lowerLeg);
-    // 足
-    var foot = new THREE.Mesh(new THREE.BoxGeometry(legR * 2.5, 0.03, 0.07), mat);
+    // 足（靴）
+    var footMat = opts.jacket ? new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.5 }) : mat;
+    var foot = new THREE.Mesh(new THREE.BoxGeometry(legR * 2.5, 0.03, 0.07), footMat);
     foot.position.set(0, -lowerLegLen / 2, 0.02);
     lowerLeg.add(foot);
     torso.add(hipPivot);
@@ -9119,7 +9173,7 @@ function spawnOfficeNPCs() {
   GAME._exitedNPCs = 0;
 
   // 上司NPC（オフィス奥 — ダークスーツ）
-  var bossModel = createNPCModel(0x1a237e, 1.7, 0xf5c6a0);
+  var bossModel = createNPCModel(0xf0f0f0, 1.7, 0xf5c6a0, { isMale: true, tieColor: 0x8b0000, jacket: true, jacketColor: 0x1a237e });
   bossModel.position.set(8, 0, 12);
   GAME.scene.add(bossModel);
   GAME.npcs.push({
@@ -9149,10 +9203,17 @@ function spawnOfficeNPCs() {
       var rand = Math.random();
       var behavior = rand < 0.6 ? 'calm' : rand < 0.85 ? 'panic' : 'injured';
 
-      var isMale = Math.random() > 0.5;
+      var isMale = colleagueCount % 2 === 0; // 交互に男女を配置（バランス均等）
       var bodyColor = isMale ? maleColors[colleagueCount % maleColors.length] : femaleColors[colleagueCount % femaleColors.length];
-      var npcHeight = 1.55 + Math.random() * 0.2; // 大人サイズ
-      var model = createNPCModel(bodyColor, npcHeight, 0xf5c6a0);
+      var npcHeight = isMale ? (1.62 + Math.random() * 0.15) : (1.52 + Math.random() * 0.12); // 男性やや高め
+      var tieColors = [0x1a237e, 0x8b0000, 0x2e4057, 0x4a0e4e, 0x1b5e20];
+      var skirtColors = [0x2c2c2c, 0x1a1a2e, 0x3d2b1f, 0x2c3e50, 0x4a4a4a];
+      var model = createNPCModel(bodyColor, npcHeight, 0xf5c6a0, {
+        isMale: isMale,
+        isFemale: !isMale,
+        tieColor: tieColors[colleagueCount % tieColors.length],
+        skirtColor: skirtColors[colleagueCount % skirtColors.length]
+      });
       model.position.set(sx, 0, sz);
       GAME.scene.add(model);
 
