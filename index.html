@@ -7524,6 +7524,34 @@ function buildOfficeFloor() {
       monitor.userData.isOfficeFurniture = true;
       scene.add(monitor);
 
+      // オフィスチェア（座面 + 背もたれ + 脚 + キャスター）
+      var chairSeatMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.6 });
+      var chairLegMat2 = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.4, metalness: 0.6 });
+      // 座面
+      var chairSeat = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.05, 0.45), chairSeatMat);
+      chairSeat.position.set(dPosX, 0.42, dPosZ + 0.5);
+      chairSeat.userData.isOfficeFurniture = true;
+      scene.add(chairSeat);
+      // 背もたれ
+      var chairBack2 = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.4, 0.04), chairSeatMat);
+      chairBack2.position.set(dPosX, 0.67, dPosZ + 0.72);
+      chairBack2.userData.isOfficeFurniture = true;
+      scene.add(chairBack2);
+      // 支柱（中央1本）
+      var chairPole = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.3, 6), chairLegMat2);
+      chairPole.position.set(dPosX, 0.25, dPosZ + 0.5);
+      chairPole.userData.isOfficeFurniture = true;
+      scene.add(chairPole);
+      // 脚ベース（5本星型）
+      for (var cli = 0; cli < 5; cli++) {
+        var cAngle = (cli / 5) * Math.PI * 2;
+        var cleg = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.03, 0.22), chairLegMat2);
+        cleg.position.set(dPosX + Math.sin(cAngle) * 0.1, 0.08, dPosZ + 0.5 + Math.cos(cAngle) * 0.1);
+        cleg.rotation.y = cAngle;
+        cleg.userData.isOfficeFurniture = true;
+        scene.add(cleg);
+      }
+
       // デスク当たり判定（しゃがみ時は潜れるようmaxY=0.65）
       GAME.walls.push({
         minX: dPosX - 0.65, maxX: dPosX + 0.65,
