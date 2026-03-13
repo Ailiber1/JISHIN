@@ -2890,7 +2890,7 @@ const I18N = {
     STAGE1_NAME: '学校（教室）',
     STAGE1_DESC: '3階の教室。机の下に隠れ、先生の指示で校庭へ避難',
     STAGE2_NAME: 'オフィスビル（高層階）',
-    STAGE2_DESC: '12階のオフィス。非常階段で1階まで避難',
+    STAGE2_DESC: '10階のオフィス。非常階段で1階まで避難',
     STAGE3_NAME: '一軒家（木造2階建て）',
     STAGE3_DESC: '木造住宅。火の始末やブレーカーの対処が重要',
     STAGE4_NAME: 'マンション（高層・10階）',
@@ -3047,7 +3047,7 @@ const I18N = {
     STAGE1_NAME: 'School (Classroom)',
     STAGE1_DESC: '3rd floor classroom. Hide under a desk, follow the teacher to the schoolyard',
     STAGE2_NAME: 'Office Building (High Floor)',
-    STAGE2_DESC: '12th floor office. Evacuate via emergency stairs to ground level',
+    STAGE2_DESC: '10th floor office. Evacuate via emergency stairs to ground level',
     STAGE3_NAME: 'Wooden House (2-Story)',
     STAGE3_DESC: 'Wooden house. Handling fire and breakers is critical',
     STAGE4_NAME: 'Apartment (High-Rise, 10F)',
@@ -4713,9 +4713,9 @@ const BRIEFING_DATA = {
     advisor: { ja: '「学校では先生の指示が一番大事。まずは机の下に入って揺れが収まるのを待とう。」', en: '"In school, following the teacher is key. Get under a desk first and wait for the shaking to stop."' }
   },
   2: {
-    setting: { ja: '都市部のオフィスビル12階。午後の業務中に大きな揺れが発生。同僚たちがパニックに。', en: 'A 12th floor office in an urban building. Strong shaking occurs during afternoon work hours. Colleagues are panicking.' },
+    setting: { ja: '都市部のオフィスビル10階。午後の業務中に大きな揺れが発生。同僚たちがパニックに。', en: 'A 10th floor office in an urban building. Strong shaking occurs during afternoon work hours. Colleagues are panicking.' },
     points: {
-      ja: ['コピー機・キャビネットなど重い備品から離れる', 'エレベーターは絶対に使わない（非常階段で避難）', '12階から1階まで落ち着いて階段を降りる'],
+      ja: ['コピー機・キャビネットなど重い備品から離れる', 'エレベーターは絶対に使わない（非常階段で避難）', '10階から1階まで落ち着いて階段を降りる'],
       en: ['Stay away from heavy equipment like copiers and cabinets', 'Never use elevators (use emergency stairs)', 'Calmly descend 12 floors via stairs']
     },
     advisor: { ja: '「高層ビルの揺れは長く続く。焦らず、まずデスクの下に。階段は混雑するから冷静に。」', en: '"Shaking lasts longer in tall buildings. Stay calm, get under your desk first. Stairs will be crowded."' }
@@ -5699,10 +5699,15 @@ function initGame(stageNum) {
   GAME._elevatorTrapActive = false;
 
   if (stageNum === 2) {
-    // Stage 2: オフィスビル12階
+    // Stage 2: オフィスビル10階
     // 室内PointLight配列は buildOfficeFloor 内で配置
+    var _preOffice = new Set(GAME.scene.children);
     try { buildOfficeFloor(); } catch(e) { console.error('buildOfficeFloor:', e); }
     try { buildElevatorHall(); } catch(e) { console.error('buildElevatorHall:', e); }
+    // 10階オフィスのメッシュをタグ付け（テレポート時に非表示にするため）
+    GAME.scene.children.forEach(function(obj) {
+      if (!_preOffice.has(obj)) obj.userData.isOffice12F = true;
+    });
     try { buildBuildingPlaza(); } catch(e) { console.error('buildBuildingPlaza:', e); }
     try { createPlayerModel(2); } catch(e) { console.error('createPlayerModel:', e); }
     try { spawnOfficeNPCs(); } catch(e) { console.error('spawnOfficeNPCs:', e); }
@@ -7292,10 +7297,10 @@ function buildSchoolyard() {
 var EVAC_POINT_S2 = { x: 0, z: 30, radius: 3 };
 var STAIR_TRIGGER_S2 = { minX: -12.5, maxX: -10.5, minZ: 13.5, maxZ: 15.5 };
 var GROUND_Y_S2 = 0;
-var OFFICE_FLOOR_Y = 0; // 12階だが座標上はY=0で構築
+var OFFICE_FLOOR_Y = 0; // 10階だが座標上はY=0で構築
 
 // ============================================================
-// buildOfficeFloor() — Stage 2: オフィスフロア（12階）25m×15m
+// buildOfficeFloor() — Stage 2: オフィスフロア（10階）25m×15m
 // ============================================================
 function buildOfficeFloor() {
   var scene = GAME.scene;
@@ -7430,7 +7435,7 @@ function buildOfficeFloor() {
     scene.add(lwFrameBot);
   }
 
-  // --- 窓の外（12階からの景色 — 空とビル群） ---
+  // --- 窓の外（10階からの景色 — 空とビル群） ---
   (function() {
     // 空の背景パネル（前壁の外側）
     var skyCanvas = document.createElement('canvas');
@@ -8125,8 +8130,8 @@ function startStairCutsceneS2() {
   var text = document.createElement('div');
   text.style.cssText = 'color:#ff6b00;font-family:"Share Tech Mono",monospace;font-size:clamp(16px,4vw,24px);text-align:center;opacity:0;transition:opacity 0.5s 0.5s;';
   text.innerHTML = currentLang === 'ja'
-    ? '非常階段で12階→1階へ移動中...<br><span style="font-size:0.7em;color:#999;">「落ち着いて、手すりを掴んで降りよう」</span>'
-    : 'Taking emergency stairs from 12F to 1F...<br><span style="font-size:0.7em;color:#999;">"Stay calm, hold the handrail"</span>';
+    ? '非常階段で10階→1階へ移動中...<br><span style="font-size:0.7em;color:#999;">「落ち着いて、手すりを掴んで降りよう」</span>'
+    : 'Taking emergency stairs from 10F to 1F...<br><span style="font-size:0.7em;color:#999;">"Stay calm, hold the handrail"</span>';
   overlay.appendChild(text);
   document.body.appendChild(overlay);
 
@@ -8255,12 +8260,12 @@ function teleportToBuildingPlaza() {
   GAME.player.z = 14; // ビル出口のすぐ前（振り返ると階段が見える距離）
   GAME.player.yaw = Math.PI; // ビル出口方向を向く（階段から出てきた構図）
 
-  // 12階オフィスの壁判定を全クリア（1階ロビー＋広場用に再構築）
+  // 10階オフィスの壁判定を全クリア（1階ロビー＋広場用に再構築）
   GAME.walls = [];
 
-  // オフィス内部を完全非表示（12階のオフィスが見えないようにする）
+  // 10階オフィス全体を完全非表示（壁・床・天井・家具・窓すべて）
   GAME.scene.traverse(function(obj) {
-    if (obj.userData && obj.userData.isOfficeFurniture) obj.visible = false;
+    if (obj.userData && (obj.userData.isOfficeFurniture || obj.userData.isOffice12F)) obj.visible = false;
   });
   if (GAME.npcs) {
     for (var ni = 0; ni < GAME.npcs.length; ni++) {
@@ -9763,7 +9768,7 @@ function performInteract() {
       // Stage 2: 非常階段ドアを開ける
       GAME.scoring.usedStairs = true;
       GAME.score += 5;
-      showAdvisor({ja: '非常階段のドアを開けた！12階から1階まで、階段で避難しよう！', en: 'Stair door opened! Evacuate from the 12th to the 1st floor via stairs!'}, 'praise');
+      showAdvisor({ja: '非常階段のドアを開けた！10階から1階まで、階段で避難しよう！', en: 'Stair door opened! Evacuate from the 10th to the 1st floor via stairs!'}, 'praise');
       showItemGet('🚪 非常階段のドアを開放！ — 正しい避難ルート');
       // ドアのコリジョン除去
       if (GAME._stairDoorCollision) {
@@ -10388,6 +10393,10 @@ function _doTransitionPhase(newPhase) {
     case 'earthquake':
       // 日常シネマティック終了
       endDailyCinematic();
+      // キー状態をリセット（シネマティック中の入力残りを防止）
+      GAME.keys = {};
+      GAME.joystickMag = 0;
+      GAME.player.isSprinting = false;
       // 「授業中」ラベルを非表示
       var dclHide = document.getElementById('daily-class-label');
       if (dclHide) dclHide.className = '';
@@ -11173,8 +11182,8 @@ function showResult() {
     if (timeEl) timeEl.textContent = min + ':' + (sec < 10 ? '0' : '') + sec;
     var en = (currentLang === 'en');
     var stageNames = en
-      ? { 1: 'School (Classroom)', 2: 'Office Building (12F)', 3: 'Detached House', 4: 'Apartment', 5: 'Underground Mall' }
-      : { 1: '学校（教室）', 2: 'オフィスビル（12階）', 3: '一軒家', 4: 'マンション', 5: '地下街' };
+      ? { 1: 'School (Classroom)', 2: 'Office Building (10F)', 3: 'Detached House', 4: 'Apartment', 5: 'Underground Mall' }
+      : { 1: '学校（教室）', 2: 'オフィスビル（10階）', 3: '一軒家', 4: 'マンション', 5: '地下街' };
     if (stageLabel) stageLabel.textContent = 'Stage ' + GAME.stageNum + ': ' + (stageNames[GAME.stageNum] || '');
     if (titleEl) titleEl.textContent = GAME.hitCount >= 3 ? (en ? 'EVACUATION FAILED' : '避難失敗') : (en ? 'EVACUATION COMPLETE' : '避難完了');
 
