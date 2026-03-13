@@ -1875,11 +1875,11 @@ html, body {
 .novel-chara {
   position: absolute; bottom: 0;
   height: 75%; width: 38%;
-  background-size: contain, contain; background-repeat: no-repeat, no-repeat; background-position: bottom center, bottom center;
+  background-size: contain, contain, contain; background-repeat: no-repeat, no-repeat, no-repeat; background-position: bottom center, bottom center, bottom center;
   transition: opacity 0.3s ease, transform 0.3s ease, filter 0.15s ease;
-  filter: brightness(0.6);
+  filter: brightness(0.6) drop-shadow(0 0 6px rgba(0,0,0,0.5));
 }
-.novel-chara.speaking { filter: brightness(1); }
+.novel-chara.speaking { filter: brightness(1) drop-shadow(0 0 8px rgba(0,0,0,0.6)); }
 .novel-chara.hidden { opacity: 0; transform: translateY(20px); pointer-events: none; }
 .novel-chara.chara-bousai { height: 50%; bottom: 5%; }
 #novel-chara-left { left: -3%; }
@@ -3989,8 +3989,8 @@ var NovelEngine = {
       }
     }
 
-    // 画像を2枚重ねにして半透明ピクセルのアルファを強化
-    var dblSrc = 'url(' + src + '), url(' + src + ')';
+    // 画像を3枚重ねにして半透明ピクセルのアルファを強化
+    var dblSrc = 'url(' + src + '), url(' + src + '), url(' + src + ')';
 
     if (info.pos === 'left') {
       this.charaLeft.style.backgroundImage = dblSrc;
@@ -8119,8 +8119,19 @@ function teleportToBuildingPlaza() {
   setTimeout(function() { SoundManager.startPlazaAmbient(); }, 600);
   GAME.player.x = 0;
   GAME.player.y = 0.9;
-  GAME.player.z = 20; // 広場の手前
-  GAME.player.yaw = Math.PI;
+  GAME.player.z = 22; // ビル出口から少し離れた位置
+  GAME.player.yaw = 0; // 避難ポイント方向（+Z）を向く
+
+  // オフィス内部・ロビーのメッシュを非表示（ビルの中が見えないようにする）
+  GAME.scene.traverse(function(obj) {
+    if (obj.userData && obj.userData.isOfficeFurniture) obj.visible = false;
+  });
+  // NPC（オフィス内）を非表示
+  if (GAME.npcs) {
+    for (var ni = 0; ni < GAME.npcs.length; ni++) {
+      if (GAME.npcs[ni].mesh) GAME.npcs[ni].mesh.visible = false;
+    }
+  }
 
   // fog・照明を屋外に変更
   GAME.scene.fog = new THREE.FogExp2(0x87ceeb, 0.005);
@@ -8874,8 +8885,10 @@ function npcCheckWall(nx, nz, npcR) {
   var R = npcR || 0.3;
   for (var i = 0; i < GAME.walls.length; i++) {
     var w = GAME.walls[i];
-    // 高さ0.65以下の家具（デスク）はNPCも無視（机の下を通過しない代わりに迂回処理で対応）
+    // 高さ0.65以下の家具（デスク）はNPCも無視
     if (w.maxY !== undefined && w.maxY <= 0.65) continue;
+    // 開いたドアのコリジョンはスキップ
+    if (w._isDoor && w._doorId === 'stairDoorS2' && GAME._stairDoorOpen) continue;
     if (nx + R > w.minX && nx - R < w.maxX && nz + R > w.minZ && nz - R < w.maxZ) {
       return true;
     }
