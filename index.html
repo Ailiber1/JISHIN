@@ -3568,6 +3568,127 @@ const SoundManager = {
     this._playAmbientFile('sounds/schoolyard.mp3', 0.20, true);
   },
 
+  // 家庭の環境音（Stage 3 日常パート — 夕方の一軒家）
+  startHomeAmbient() {
+    try {
+      this.stopAmbient();
+      var ctx = this.getCtx();
+      if (!ctx) return;
+      var sr = ctx.sampleRate;
+      var master = ctx.createGain();
+      master.gain.value = 0.30;
+      master.connect(ctx.destination);
+      var _src = [], _tmr = [];
+
+      function noiseBuf(sec) {
+        var b = ctx.createBuffer(1, Math.floor(sr * sec), sr);
+        var d = b.getChannelData(0);
+        for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+        return b;
+      }
+      function play(buf, chain, vol) {
+        var s = ctx.createBufferSource();
+        s.buffer = buf; s.loop = true;
+        var g = ctx.createGain(); g.gain.value = vol;
+        var last = s;
+        for (var i = 0; i < chain.length; i++) { last.connect(chain[i]); last = chain[i]; }
+        last.connect(g); g.connect(master);
+        s.start(0); _src.push(s);
+        return { src: s, gain: g };
+      }
+
+      // ─── ① 室内の静かな空気感（低域ハム＝エアコンや冷蔵庫の低い唸り）───
+      var humLP = ctx.createBiquadFilter();
+      humLP.type = 'lowpass'; humLP.frequency.value = 180; humLP.Q.value = 0.4;
+      play(noiseBuf(3), [humLP], 0.22);
+
+      // ─── ② 時計のチクタク（壁掛け時計）───
+      var tickBuf = ctx.createBuffer(1, Math.floor(sr * 2), sr);
+      var td = tickBuf.getChannelData(0);
+      for (var ti = 0; ti < 2; ti++) {
+        var tPos = Math.floor(ti * sr); // 1秒ごと
+        var tLen = Math.floor(sr * 0.005);
+        for (var ts = 0; ts < tLen && (tPos + ts) < td.length; ts++) {
+          var tEnv = 1 - ts / tLen;
+          td[tPos + ts] = (Math.random() * 2 - 1) * tEnv * tEnv * 0.6;
+        }
+      }
+      var tickHP = ctx.createBiquadFilter();
+      tickHP.type = 'highpass'; tickHP.frequency.value = 2500;
+      play(tickBuf, [tickHP], 0.18);
+
+      // ─── ③ TVの遠い音（リビングのTVから漏れるくぐもった話し声）───
+      var tvBuf = ctx.createBuffer(1, Math.floor(sr * 6), sr);
+      var tvd = tvBuf.getChannelData(0);
+      for (var tvi = 0; tvi < tvd.length; tvi++) {
+        var tvSec = tvi / sr;
+        // 話し声のリズム感を帯域ノイズ+変調で表現
+        var tvMod = 0.2 + 0.8 * Math.pow(Math.abs(Math.sin(tvSec * 2.1) * Math.sin(tvSec * 3.7)), 0.6);
+        tvd[tvi] = (Math.random() * 2 - 1) * tvMod;
+      }
+      var tvBP = ctx.createBiquadFilter();
+      tvBP.type = 'bandpass'; tvBP.frequency.value = 350; tvBP.Q.value = 1.5;
+      var tvLP = ctx.createBiquadFilter();
+      tvLP.type = 'lowpass'; tvLP.frequency.value = 1200;
+      play(tvBuf, [tvBP, tvLP], 0.12);
+
+      // ─── ④ 台所の音（水道のポタポタ＋食器の微かな音）───
+      var kitchenGain = ctx.createGain(); kitchenGain.gain.value = 0; kitchenGain.connect(master);
+      var dripBuf = ctx.createBuffer(1, Math.floor(sr * 0.05), sr);
+      var drd = dripBuf.getChannelData(0);
+      for (var dri = 0; dri < drd.length; dri++) {
+        var drSec = dri / sr;
+        drd[dri] = Math.sin(drSec * 800 * Math.PI * 2) * Math.exp(-drSec * 60) * 0.8;
+      }
+      var dripSrc = ctx.createBufferSource();
+      dripSrc.buffer = dripBuf; dripSrc.loop = true;
+      var dripHP = ctx.createBiquadFilter();
+      dripHP.type = 'highpass'; dripHP.frequency.value = 600;
+      dripSrc.connect(dripHP); dripHP.connect(kitchenGain);
+      dripSrc.start(0); _src.push(dripSrc);
+      function doDrip() {
+        var wait = (3 + Math.random() * 8) * 1000;
+        _tmr.push(setTimeout(function() {
+          kitchenGain.gain.setTargetAtTime(0.25, ctx.currentTime, 0.005);
+          _tmr.push(setTimeout(function() {
+            kitchenGain.gain.setTargetAtTime(0, ctx.currentTime, 0.02);
+            doDrip();
+          }, 50 + Math.random() * 80));
+        }, wait));
+      }
+      doDrip();
+
+      // ─── ⑤ 外の虫の声（夕方〜夜の秋の虫）───
+      var cricketBuf = ctx.createBuffer(1, Math.floor(sr * 3), sr);
+      var cd = cricketBuf.getChannelData(0);
+      for (var ci = 0; ci < cd.length; ci++) {
+        var cSec = ci / sr;
+        // コオロギ: 4kHz付近のパルス列（0.1秒ON, 0.15秒OFF）
+        var cPhase = cSec % 0.25;
+        if (cPhase < 0.1) {
+          cd[ci] = Math.sin(cSec * 4200 * Math.PI * 2) * 0.3
+                 * (0.5 + 0.5 * Math.sin(cSec * 40 * Math.PI * 2)); // トレモロ
+        }
+      }
+      var cricketLP = ctx.createBiquadFilter();
+      cricketLP.type = 'bandpass'; cricketLP.frequency.value = 4200; cricketLP.Q.value = 3;
+      play(cricketBuf, [cricketLP], 0.08);
+
+      // ─── ⑥ 風（外からの微かな風音）───
+      var windLP = ctx.createBiquadFilter();
+      windLP.type = 'lowpass'; windLP.frequency.value = 400; windLP.Q.value = 0.3;
+      play(noiseBuf(4), [windLP], 0.06);
+
+      this._ambientAudio = {
+        pause: function() {
+          _src.forEach(function(s) { try { s.stop(); } catch(e){} });
+          _tmr.forEach(function(t) { clearTimeout(t); });
+        },
+        volume: 0.30, _isWebAudio: true
+      };
+    } catch(e) { console.warn('homeAmbient error:', e); }
+  },
+
   // ガラス破砕音（1回再生）
   playGlassBreak() {
     try {
@@ -5416,7 +5537,62 @@ function showBriefing(stageNum) {
   // ブリーフィング表示時に背景＋キャラ画像を先行プリロード
   var bgMap = { 1: 'backgrounds/stage1/bg_classroom.png', 2: 'backgrounds/stage2/bg_office.png', 3: 'backgrounds/stage3/bg_living_room.png' };
   var bgUrl = bgMap[stageNum];
-  if (bgUrl && !NovelEngine._imageCache[bgUrl]) {
+  // Stage 3: 背景画像がない場合はプロシージャル生成
+  if (stageNum === 3 && !NovelEngine._imageCache[bgUrl]) {
+    var _bgC = document.createElement('canvas');
+    _bgC.width = 960; _bgC.height = 540;
+    var _bgCtx = _bgC.getContext('2d');
+    // 夕方の室内 — 暖かいオレンジ系グラデーション
+    var _grd = _bgCtx.createLinearGradient(0, 0, 0, 540);
+    _grd.addColorStop(0, '#3d2b1f');    // 天井（暗い茶色）
+    _grd.addColorStop(0.35, '#5c3a20'); // 上壁
+    _grd.addColorStop(0.6, '#7a5033');  // 下壁（夕日の暖色）
+    _grd.addColorStop(1, '#2a1810');    // 床（暗いフローリング）
+    _bgCtx.fillStyle = _grd;
+    _bgCtx.fillRect(0, 0, 960, 540);
+    // 窓（右上に夕焼け）
+    _bgCtx.fillStyle = '#d4763a';
+    _bgCtx.fillRect(650, 30, 250, 200);
+    var _wGrd = _bgCtx.createLinearGradient(650, 30, 650, 230);
+    _wGrd.addColorStop(0, '#ff8c42');
+    _wGrd.addColorStop(0.4, '#e8692a');
+    _wGrd.addColorStop(1, '#c44d22');
+    _bgCtx.fillStyle = _wGrd;
+    _bgCtx.fillRect(660, 40, 230, 180);
+    // 窓枠
+    _bgCtx.strokeStyle = '#4a3525'; _bgCtx.lineWidth = 3;
+    _bgCtx.strokeRect(650, 30, 250, 200);
+    _bgCtx.beginPath(); _bgCtx.moveTo(775, 30); _bgCtx.lineTo(775, 230); _bgCtx.stroke();
+    _bgCtx.beginPath(); _bgCtx.moveTo(650, 130); _bgCtx.lineTo(900, 130); _bgCtx.stroke();
+    // 床ライン
+    _bgCtx.strokeStyle = 'rgba(100,60,30,0.3)'; _bgCtx.lineWidth = 1;
+    for (var _fi = 0; _fi < 12; _fi++) {
+      var _fx = _fi * 80;
+      _bgCtx.beginPath(); _bgCtx.moveTo(_fx, 340); _bgCtx.lineTo(_fx, 540); _bgCtx.stroke();
+    }
+    // 暖かい光の円形グラデ（照明効果）
+    var _lGrd = _bgCtx.createRadialGradient(480, 200, 20, 480, 200, 350);
+    _lGrd.addColorStop(0, 'rgba(255,180,80,0.15)');
+    _lGrd.addColorStop(1, 'rgba(255,180,80,0)');
+    _bgCtx.fillStyle = _lGrd;
+    _bgCtx.fillRect(0, 0, 960, 540);
+    // 家具シルエット（ソファ）
+    _bgCtx.fillStyle = 'rgba(30,18,10,0.5)';
+    _bgCtx.fillRect(50, 320, 300, 100);
+    _bgCtx.fillRect(50, 280, 40, 50); // 背もたれ左
+    _bgCtx.fillRect(310, 280, 40, 50); // 背もたれ右
+    // TV台
+    _bgCtx.fillStyle = 'rgba(25,15,8,0.5)';
+    _bgCtx.fillRect(430, 300, 120, 80);
+    // ちゃぶ台
+    _bgCtx.fillStyle = 'rgba(80,50,25,0.4)';
+    _bgCtx.beginPath(); _bgCtx.ellipse(250, 400, 80, 30, 0, 0, Math.PI * 2); _bgCtx.fill();
+    var _bgDataUrl = _bgC.toDataURL('image/jpeg', 0.8);
+    var _bgImg = new Image();
+    _bgImg.src = _bgDataUrl;
+    NovelEngine._imageCache[bgUrl] = _bgImg;
+    bgUrl = _bgDataUrl;
+  } else if (bgUrl && !NovelEngine._imageCache[bgUrl]) {
     var bgImg = new Image();
     bgImg.src = bgUrl;
     NovelEngine._imageCache[bgUrl] = bgImg;
@@ -5431,6 +5607,15 @@ function showBriefing(stageNum) {
 // ============================================================
 // SECTION: TITLE SCREEN
 // ============================================================
+// Stage 3 ノベル背景のData URLを取得（プロシージャル生成済みのキャッシュから）
+function _getStage3NovelBg() {
+  var cacheKey = 'backgrounds/stage3/bg_living_room.png';
+  if (NovelEngine._imageCache[cacheKey] && NovelEngine._imageCache[cacheKey].src && NovelEngine._imageCache[cacheKey].src.startsWith('data:')) {
+    return NovelEngine._imageCache[cacheKey].src;
+  }
+  return cacheKey; // フォールバック（ファイルが存在すれば使用）
+}
+
 function showTitle() {
   showScreen('title-screen');
   applyI18N();
@@ -5655,15 +5840,20 @@ function initEventListeners() {
       if (stageNum === 2) {
         SoundManager.startOfficeAmbient();
       } else if (stageNum === 3) {
-        // Stage 3: 夜の一軒家の環境音（虫の声・時計の音など）
-        SoundManager.startClassroomAmbient(); // 暫定: 静かな環境音を流用
+        // Stage 3: 夕方の一軒家の環境音（虫の声・時計・TV・水滴）
+        SoundManager.startHomeAmbient();
       } else {
         SoundManager.startClassroomAmbient();
       }
       var prologueBgMap = { 1: 'backgrounds/stage1/bg_classroom.png', 2: 'backgrounds/stage2/bg_office.png', 3: 'backgrounds/stage3/bg_living_room.png' };
+      var _novelBgUrl = prologueBgMap[stageNum] || prologueBgMap[1];
+      // Stage 3: プロシージャル背景のData URLがキャッシュにあればそちらを使う
+      if (stageNum === 3 && NovelEngine._imageCache[_novelBgUrl] && NovelEngine._imageCache[_novelBgUrl].src && NovelEngine._imageCache[_novelBgUrl].src.startsWith('data:')) {
+        _novelBgUrl = NovelEngine._imageCache[_novelBgUrl].src;
+      }
       NovelEngine.start(
         NOVEL_SCRIPTS['stage' + stageNum].prologue,
-        prologueBgMap[stageNum] || prologueBgMap[1],
+        _novelBgUrl,
         function() { initGame(stageNum); }
       );
     } else {
@@ -5961,8 +6151,27 @@ function initGame(stageNum) {
     try { spawnOfficeNPCs(); } catch(e) { console.error('spawnOfficeNPCs:', e); }
     try { createMinimap(); } catch(e) { console.error('createMinimap:', e); }
   } else if (stageNum === 3) {
-    // Stage 3: 木造2階建て一軒家
+    // Stage 3: 木造2階建て一軒家（夕方の暖色ライティング）
+    // 夕焼け空・霧を暖色に変更
+    GAME.scene.fog = new THREE.FogExp2(0x332222, 0.008);
+    GAME.renderer.setClearColor(0x332222);
+    // HemisphereLight を夕方の暖色に調整
+    hemiLight.color.set(0xffaa66);     // 空：夕焼けオレンジ
+    hemiLight.groundColor.set(0x553322); // 地面：暖色ブラウン
+    hemiLight.intensity = 0.5;
+    // DirectionalLight を夕日の低い角度に
+    dirLight.color.set(0xffcc88);
+    dirLight.intensity = 0.55;
+    dirLight.position.set(-10, 5, -15); // 西日（低い角度）
+    dirLight.shadow.camera.left = -40;
+    dirLight.shadow.camera.right = 40;
+    dirLight.shadow.camera.top = 40;
+    dirLight.shadow.camera.bottom = -40;
+    dirLight.shadow.camera.far = 120;
+    dirLight.shadow.camera.updateProjectionMatrix();
+
     try { buildHouseFloor(); } catch(e) { console.error('buildHouseFloor:', e); }
+    try { buildStage3Exterior(); } catch(e) { console.error('buildStage3Exterior:', e); }
     try { createPlayerModel(3); } catch(e) { console.error('createPlayerModel:', e); }
     try { spawnHouseNPCs(); } catch(e) { console.error('spawnHouseNPCs:', e); }
     try { createMinimap(); } catch(e) { console.error('createMinimap:', e); }
@@ -6015,7 +6224,7 @@ function initGame(stageNum) {
   if (stageNum === 2) {
     SoundManager.startOfficeAmbient();
   } else if (stageNum === 3) {
-    SoundManager.startClassroomAmbient(); // 静かな環境音を流用
+    SoundManager.startHomeAmbient();
   } else {
     SoundManager.startClassroomAmbient();
   }
@@ -7580,7 +7789,7 @@ function buildOfficeFloor() {
   var monitorMat = new THREE.MeshStandardMaterial({ color: 0x222222, emissive: 0x111155, emissiveIntensity: 0.3, roughness: 0.3 });
   var cabinetMat = new THREE.MeshStandardMaterial({ color: 0x999999, roughness: 0.5, metalness: 0.3, emissive: 0x050505, emissiveIntensity: 0.05 });
   var copierMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.4, metalness: 0.1, emissive: 0x050505, emissiveIntensity: 0.05 });
-  var windowMat = new THREE.MeshStandardMaterial({ color: 0x88ccee, roughness: 0.1, metalness: 0.1, transparent: true, opacity: 0.3, emissive: 0x224466, emissiveIntensity: 0.3 });
+  var windowMat = new THREE.MeshStandardMaterial({ color: 0xddaa66, roughness: 0.1, metalness: 0.15, transparent: true, opacity: 0.35, emissive: 0x664422, emissiveIntensity: 0.4 });
   var serverGlassMat = new THREE.MeshStandardMaterial({ color: 0xaaddee, roughness: 0.1, transparent: true, opacity: 0.25, emissive: 0x112233, emissiveIntensity: 0.2 });
   var breakerMat = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.5, metalness: 0.5, emissive: 0x050505, emissiveIntensity: 0.1 });
   var doorMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.5, metalness: 0.3, emissive: 0x050505, emissiveIntensity: 0.1 });
@@ -8410,6 +8619,230 @@ var STAIR_TRIGGER_S3_EVAC = { minX: -6.5, maxX: -4.5, minZ: -11.5, maxZ: -10.5 }
 // ============================================================
 // buildHouseFloor() — Stage 3: 木造2階建て一軒家
 // ============================================================
+// ============================================================
+// buildStage3Exterior() — Stage 3: 夕方の住宅街環境（背景画像と一貫性のある3D地形）
+// ============================================================
+function buildStage3Exterior() {
+  var scene = GAME.scene;
+  var Y = HOUSE_1F_Y;
+
+  // --- 夕焼けスカイドーム ---
+  var skyGeo = new THREE.SphereGeometry(150, 32, 16);
+  var skyCanvas = document.createElement('canvas');
+  skyCanvas.width = 512; skyCanvas.height = 256;
+  var skyCtx = skyCanvas.getContext('2d');
+  // 夕焼けグラデーション（上：紫紺 → 中：オレンジ → 下：暖色）
+  var skyGrad = skyCtx.createLinearGradient(0, 0, 0, 256);
+  skyGrad.addColorStop(0, '#1a1133');    // 上空：紫紺
+  skyGrad.addColorStop(0.3, '#442244');  // 上空：暗紫
+  skyGrad.addColorStop(0.55, '#cc5522'); // 中：夕焼けオレンジ
+  skyGrad.addColorStop(0.7, '#ff8844');  // 地平線付近：明るいオレンジ
+  skyGrad.addColorStop(0.85, '#ffaa55'); // 地平線：黄金色
+  skyGrad.addColorStop(1.0, '#664422');  // 地面方向：暖色ブラウン
+  skyCtx.fillStyle = skyGrad;
+  skyCtx.fillRect(0, 0, 512, 256);
+  // 雲のシルエット
+  skyCtx.globalAlpha = 0.15;
+  skyCtx.fillStyle = '#ffddaa';
+  for (var ci = 0; ci < 8; ci++) {
+    var cx = Math.random() * 512, cy = 100 + Math.random() * 60;
+    var cw = 40 + Math.random() * 80, ch = 8 + Math.random() * 15;
+    skyCtx.beginPath();
+    skyCtx.ellipse(cx, cy, cw, ch, 0, 0, Math.PI * 2);
+    skyCtx.fill();
+  }
+  skyCtx.globalAlpha = 1.0;
+  var skyTex = new THREE.CanvasTexture(skyCanvas);
+  var skyMat = new THREE.MeshBasicMaterial({ map: skyTex, side: THREE.BackSide, fog: false });
+  var skyDome = new THREE.Mesh(skyGeo, skyMat);
+  skyDome.position.set(0, 0, -30);
+  scene.add(skyDome);
+
+  // --- 地面（広域）暖色の土/草 ---
+  var groundMat = new THREE.MeshStandardMaterial({ color: 0x5a6830, roughness: 0.95, emissive: 0x0a0804, emissiveIntensity: 0.1 });
+  var ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), groundMat);
+  ground.rotation.x = -Math.PI / 2; ground.position.set(0, Y - 0.05, -40);
+  ground.receiveShadow = true; scene.add(ground);
+
+  // --- 街灯（道沿い）---
+  var poleMat = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.6, metalness: 0.4 });
+  var lampMat = new THREE.MeshStandardMaterial({ color: 0xffdd88, emissive: 0xffaa44, emissiveIntensity: 0.8, roughness: 0.3 });
+  var streetLightPositions = [
+    [-3, -15], [3, -15], [-3, -25], [3, -25], [-3, -35], [3, -35],
+    [-3, -45], [3, -45], [-3, -55], [3, -55]
+  ];
+  for (var sli = 0; sli < streetLightPositions.length; sli++) {
+    var slx = streetLightPositions[sli][0], slz = streetLightPositions[sli][1];
+    // 支柱
+    var pole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.06, 4, 6), poleMat);
+    pole.position.set(slx, Y + 2, slz); scene.add(pole);
+    // アーム
+    var arm = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.04, 0.04), poleMat);
+    arm.position.set(slx + (slx > 0 ? -0.4 : 0.4), Y + 3.8, slz); scene.add(arm);
+    // ランプ
+    var lamp = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 6), lampMat);
+    lamp.position.set(slx + (slx > 0 ? -0.8 : 0.8), Y + 3.7, slz); scene.add(lamp);
+    // 街灯の光（夕方なのでやや暗め）
+    var slLight = new THREE.PointLight(0xffcc66, 0.3, 8);
+    slLight.position.set(slx + (slx > 0 ? -0.8 : 0.8), Y + 3.5, slz); scene.add(slLight);
+  }
+
+  // --- 電柱＋電線 ---
+  var telPoleMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.7 });
+  var telePositions = [[-8, -20], [8, -20], [-8, -40], [8, -40]];
+  for (var tpi = 0; tpi < telePositions.length; tpi++) {
+    var tpx = telePositions[tpi][0], tpz = telePositions[tpi][1];
+    var telPole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 8, 6), telPoleMat);
+    telPole.position.set(tpx, Y + 4, tpz); scene.add(telPole);
+    // 碍子
+    for (var gi = 0; gi < 3; gi++) {
+      var gaishi = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.15, 6), new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.3 }));
+      gaishi.position.set(tpx + (gi - 1) * 0.3, Y + 7.5, tpz); scene.add(gaishi);
+    }
+  }
+  // 電線（簡易カーブ）
+  var wireMat = new THREE.LineBasicMaterial({ color: 0x333333 });
+  for (var wi = 0; wi < 2; wi++) {
+    var wx = wi === 0 ? -8 : 8;
+    var wirePts = [];
+    for (var wj = 0; wj <= 20; wj++) {
+      var wt = wj / 20;
+      var wz = -20 + wt * (-20);
+      var sag = Math.sin(wt * Math.PI) * 0.5;
+      wirePts.push(new THREE.Vector3(wx, Y + 7.5 - sag, wz));
+    }
+    var wireGeo = new THREE.BufferGeometry().setFromPoints(wirePts);
+    scene.add(new THREE.Line(wireGeo, wireMat));
+  }
+
+  // --- 近隣の家（シルエット）---
+  var houseMat = new THREE.MeshStandardMaterial({ color: 0x6b5a48, roughness: 0.85, emissive: 0x0a0604, emissiveIntensity: 0.1 });
+  var houseRoofMat = new THREE.MeshStandardMaterial({ color: 0x3d3028, roughness: 0.75, emissive: 0x060402, emissiveIntensity: 0.08 });
+  var houseWinMat = new THREE.MeshStandardMaterial({ color: 0xffcc66, emissive: 0xffaa33, emissiveIntensity: 0.6, roughness: 0.3 });
+
+  var neighborHouses = [
+    { x: -15, z: -15, w: 8, d: 6, h: 5, roofAngle: 0.35 },
+    { x: 15, z: -18, w: 7, d: 7, h: 4.5, roofAngle: 0.3 },
+    { x: -14, z: -35, w: 6, d: 5, h: 4, roofAngle: 0.4 },
+    { x: 14, z: -38, w: 9, d: 6, h: 5.5, roofAngle: 0.3 },
+    { x: -12, z: -50, w: 7, d: 5, h: 4, roofAngle: 0.35 },
+    { x: 12, z: -52, w: 8, d: 6, h: 5, roofAngle: 0.3 },
+    { x: -16, z: -58, w: 6, d: 5, h: 4.5, roofAngle: 0.4 },
+    { x: 16, z: -60, w: 7, d: 5, h: 4, roofAngle: 0.35 },
+  ];
+
+  for (var ni = 0; ni < neighborHouses.length; ni++) {
+    var nh = neighborHouses[ni];
+    // 壁
+    var nBody = new THREE.Mesh(new THREE.BoxGeometry(nh.w, nh.h, nh.d), houseMat);
+    nBody.position.set(nh.x, Y + nh.h / 2, nh.z);
+    nBody.castShadow = true; nBody.receiveShadow = true; scene.add(nBody);
+    // 屋根
+    var nRoofL = new THREE.Mesh(new THREE.BoxGeometry(nh.w + 0.8, 0.1, nh.d / 2 + 0.5), houseRoofMat);
+    nRoofL.position.set(nh.x, Y + nh.h + 0.8, nh.z - nh.d / 4);
+    nRoofL.rotation.x = nh.roofAngle; scene.add(nRoofL);
+    var nRoofR = new THREE.Mesh(new THREE.BoxGeometry(nh.w + 0.8, 0.1, nh.d / 2 + 0.5), houseRoofMat);
+    nRoofR.position.set(nh.x, Y + nh.h + 0.8, nh.z + nh.d / 4);
+    nRoofR.rotation.x = -nh.roofAngle; scene.add(nRoofR);
+    // 窓の光（夕方の家の中の暖かい光）
+    for (var nwi = 0; nwi < 3; nwi++) {
+      var nwx = nh.x - nh.w / 3 + nwi * (nh.w / 3);
+      var nwy = Y + nh.h * 0.5 + (Math.random() - 0.5) * 0.5;
+      var nWin = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.8), houseWinMat);
+      nWin.position.set(nwx, nwy, nh.z - nh.d / 2 - 0.01); scene.add(nWin);
+    }
+  }
+
+  // --- 木（庭木 + 道沿い）---
+  var trunkMat = new THREE.MeshStandardMaterial({ color: 0x5a3d20, roughness: 0.8, emissive: 0x0a0604, emissiveIntensity: 0.08 });
+  var leafMat = new THREE.MeshStandardMaterial({ color: 0x4a6628, roughness: 0.85, emissive: 0x0a0804, emissiveIntensity: 0.1 });
+
+  var treePositions = [
+    // 庭木
+    { x: -3, z: -9, h: 3, r: 1.5 },
+    { x: 2, z: -7.5, h: 2.5, r: 1.2 },
+    // 道沿い
+    { x: -6, z: -16, h: 4, r: 2 },
+    { x: 7, z: -22, h: 3.5, r: 1.8 },
+    { x: -7, z: -30, h: 4.5, r: 2.2 },
+    { x: 6, z: -32, h: 3, r: 1.5 },
+    { x: -6, z: -42, h: 4, r: 2 },
+    { x: 7, z: -48, h: 3.5, r: 1.8 },
+    // 公園の木
+    { x: -8, z: -58, h: 5, r: 2.5 },
+    { x: 8, z: -56, h: 4.5, r: 2.2 },
+    { x: -6, z: -64, h: 4, r: 2 },
+    { x: 6, z: -62, h: 3.5, r: 1.8 },
+    { x: 0, z: -66, h: 5.5, r: 2.8 },
+  ];
+
+  for (var ti = 0; ti < treePositions.length; ti++) {
+    var tp = treePositions[ti];
+    // 幹
+    var trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.15, tp.h, 6), trunkMat);
+    trunk.position.set(tp.x, Y + tp.h / 2, tp.z);
+    trunk.castShadow = true; scene.add(trunk);
+    // 葉（球）
+    var leaves = new THREE.Mesh(new THREE.SphereGeometry(tp.r, 8, 6), leafMat);
+    leaves.position.set(tp.x, Y + tp.h + tp.r * 0.5, tp.z);
+    leaves.castShadow = true; scene.add(leaves);
+  }
+
+  // --- 生垣（庭の周り）---
+  var hedgeMat = new THREE.MeshStandardMaterial({ color: 0x3d5a20, roughness: 0.9, emissive: 0x060804, emissiveIntensity: 0.1 });
+  // 左側生垣
+  var hedgeL = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.8, 6), hedgeMat);
+  hedgeL.position.set(-5.5, Y + 0.4, -8); scene.add(hedgeL);
+  // 右側生垣
+  var hedgeR = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.8, 6), hedgeMat);
+  hedgeR.position.set(3.5, Y + 0.4, -8); scene.add(hedgeR);
+
+  // --- 道路ディテール ---
+  // 白線
+  var lineMat = new THREE.MeshBasicMaterial({ color: 0xccccaa });
+  for (var dli = 0; dli < 8; dli++) {
+    var dline = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 1.5), lineMat);
+    dline.rotation.x = -Math.PI / 2;
+    dline.position.set(0, Y - 0.015, -14 - dli * 5); scene.add(dline);
+  }
+  // 側溝
+  var gutterMat = new THREE.MeshStandardMaterial({ color: 0x444438, roughness: 0.9 });
+  var gutterL = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.08, 40), gutterMat);
+  gutterL.position.set(-2.15, Y - 0.01, -30); scene.add(gutterL);
+  var gutterR = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.08, 40), gutterMat);
+  gutterR.position.set(2.15, Y - 0.01, -30); scene.add(gutterR);
+
+  // --- 公園ベンチ ---
+  var benchMat = new THREE.MeshStandardMaterial({ color: 0x6d4c2e, roughness: 0.7, emissive: 0x0a0604, emissiveIntensity: 0.1 });
+  var benchPositions = [[-5, -58], [5, -58], [-3, -63], [3, -63]];
+  for (var bi = 0; bi < benchPositions.length; bi++) {
+    var bx = benchPositions[bi][0], bz = benchPositions[bi][1];
+    var benchSeat = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.06, 0.4), benchMat);
+    benchSeat.position.set(bx, Y + 0.45, bz); scene.add(benchSeat);
+    var benchBack = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.5, 0.04), benchMat);
+    benchBack.position.set(bx, Y + 0.7, bz + 0.2); scene.add(benchBack);
+    // 脚
+    for (var li = 0; li < 2; li++) {
+      var leg = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.45, 0.04), poleMat);
+      leg.position.set(bx + (li === 0 ? -0.5 : 0.5), Y + 0.225, bz); scene.add(leg);
+    }
+  }
+
+  // --- 公園遊具（ブランコ）---
+  var swingFrame = new THREE.Mesh(new THREE.BoxGeometry(2, 2.5, 0.06), poleMat);
+  swingFrame.position.set(0, Y + 1.25, -55); scene.add(swingFrame);
+  var swingPoleL = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 2.5, 6), poleMat);
+  swingPoleL.position.set(-0.8, Y + 1.25, -55); scene.add(swingPoleL);
+  var swingPoleR = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 2.5, 6), poleMat);
+  swingPoleR.position.set(0.8, Y + 1.25, -55); scene.add(swingPoleR);
+  var swingBar = new THREE.Mesh(new THREE.BoxGeometry(2, 0.04, 0.04), poleMat);
+  swingBar.position.set(0, Y + 2.5, -55); scene.add(swingBar);
+
+  // --- 夕日の光源（遠方の暖色アンビエント）---
+  var sunsetLight = new THREE.PointLight(0xff8844, 0.4, 200);
+  sunsetLight.position.set(-60, 10, -80); scene.add(sunsetLight);
+}
+
 function buildHouseFloor() {
   var scene = GAME.scene;
   if (!PROC_TEX) PROC_TEX = generateProceduralTextures();
@@ -8426,8 +8859,8 @@ function buildHouseFloor() {
   var wallMat = new THREE.MeshStandardMaterial({ map: T.wallPlaster, color: 0xf5f0e8, roughness: 0.75, emissive: 0x080604, emissiveIntensity: 0.08 });
   var ceilingMat = new THREE.MeshStandardMaterial({ map: T.ceiling, color: 0xf5f3ef, roughness: 0.6, emissive: 0x080808, emissiveIntensity: 0.05 });
   var kitchenTileMat = new THREE.MeshStandardMaterial({ color: 0xe0e0e0, roughness: 0.4, emissive: 0x050505, emissiveIntensity: 0.05 });
-  var exteriorWallMat = new THREE.MeshStandardMaterial({ color: 0xd4c4a0, roughness: 0.8, emissive: 0x080604, emissiveIntensity: 0.05 });
-  var roofMat = new THREE.MeshStandardMaterial({ color: 0x4a4a4a, roughness: 0.7, emissive: 0x050505, emissiveIntensity: 0.05 });
+  var exteriorWallMat = new THREE.MeshStandardMaterial({ color: 0xc4a878, roughness: 0.8, emissive: 0x110a04, emissiveIntensity: 0.08 });
+  var roofMat = new THREE.MeshStandardMaterial({ color: 0x4a3d30, roughness: 0.7, emissive: 0x0a0604, emissiveIntensity: 0.08 });
   var furnitureMat = new THREE.MeshStandardMaterial({ color: 0x8b6f47, roughness: 0.6, emissive: 0x0a0806, emissiveIntensity: 0.1 });
   var sofaMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.7, emissive: 0x080604, emissiveIntensity: 0.1 });
   var metalMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.4, metalness: 0.6, emissive: 0x050505, emissiveIntensity: 0.1 });
@@ -8436,9 +8869,9 @@ function buildHouseFloor() {
   var stoveMat = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.5, metalness: 0.5, emissive: 0x331100, emissiveIntensity: 0.2 });
   var bedMat = new THREE.MeshStandardMaterial({ color: 0xeeddcc, roughness: 0.8, emissive: 0x060504, emissiveIntensity: 0.05 });
   var deskMat = new THREE.MeshStandardMaterial({ color: 0xc4a67d, roughness: 0.6, emissive: 0x0a0806, emissiveIntensity: 0.1 });
-  var blockWallMat = new THREE.MeshStandardMaterial({ color: 0x9e9e9e, roughness: 0.8, emissive: 0x050505, emissiveIntensity: 0.05 });
-  var roadMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.9, emissive: 0x030303, emissiveIntensity: 0.05 });
-  var grassMat = new THREE.MeshStandardMaterial({ color: 0x4caf50, roughness: 0.9, emissive: 0x040804, emissiveIntensity: 0.08 });
+  var blockWallMat = new THREE.MeshStandardMaterial({ color: 0x8a8070, roughness: 0.8, emissive: 0x080604, emissiveIntensity: 0.08 });
+  var roadMat = new THREE.MeshStandardMaterial({ color: 0x4a4540, roughness: 0.85, emissive: 0x0a0804, emissiveIntensity: 0.08 });
+  var grassMat = new THREE.MeshStandardMaterial({ color: 0x5a6b30, roughness: 0.9, emissive: 0x0a0804, emissiveIntensity: 0.12 });
   var doorMat = new THREE.MeshStandardMaterial({ color: 0x6d4c2e, roughness: 0.6, emissive: 0x0a0804, emissiveIntensity: 0.1 });
   var windowMat = new THREE.MeshStandardMaterial({ color: 0x88ccee, roughness: 0.1, metalness: 0.1, transparent: true, opacity: 0.3, emissive: 0x224466, emissiveIntensity: 0.3 });
   var breakerMat = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.5, metalness: 0.5, emissive: 0x050505, emissiveIntensity: 0.1 });
@@ -8745,10 +9178,10 @@ function buildHouseFloor() {
 
   // 照明
   GAME._houseLights = [];
-  var lPos = [[0, Y1 + H - 0.1, 0, 0.4], [-4, Y1 + H - 0.1, 3.5, 0.3], [4, Y1 + H - 0.1, 3.5, 0.3],
-              [-3.5, Y2 + H - 0.1, -2.5, 0.4], [-3.5, Y2 + H - 0.1, 3.0, 0.3], [3.5, Y2 + H - 0.1, -2.5, 0.3]];
+  var lPos = [[0, Y1 + H - 0.1, 0, 0.5], [-4, Y1 + H - 0.1, 3.5, 0.4], [4, Y1 + H - 0.1, 3.5, 0.4],
+              [-3.5, Y2 + H - 0.1, -2.5, 0.5], [-3.5, Y2 + H - 0.1, 3.0, 0.4], [3.5, Y2 + H - 0.1, -2.5, 0.4]];
   for (var li = 0; li < lPos.length; li++) {
-    var hl = new THREE.PointLight(0xffeedd, lPos[li][3], li < 3 ? 10 : 8);
+    var hl = new THREE.PointLight(0xffcc88, lPos[li][3], li < 3 ? 10 : 8);
     hl.position.set(lPos[li][0], lPos[li][1], lPos[li][2]); scene.add(hl);
     GAME._houseLights.push(hl);
   }
@@ -8831,8 +9264,8 @@ function teleportToHouseExterior() {
   GAME.keys = {}; GAME.joystickMag = 0;
   GAME.player.isSprinting = false; GAME.player.isCrouching = false;
   GAME.player.isGuarding = false;
-  GAME.scene.fog = new THREE.FogExp2(0x332233, 0.008);
-  GAME.renderer.setClearColor(0x332233);
+  GAME.scene.fog = new THREE.FogExp2(0x221a14, 0.006);
+  GAME.renderer.setClearColor(0x221a14);
   GAME.scene.traverse(function(obj) {
     if (obj.isDirectionalLight) { obj.intensity = 0.4; obj.position.set(5, 15, -20); }
   });
@@ -11808,7 +12241,7 @@ function transitionPhase(newPhase) {
     SoundManager.stopAmbient(300);
     SoundManager.playBGM('BGM/JISHIN_earthquake.mp3', 0.35, false);
     SoundManager.playEarthquakeAlarm(); // J-Alert風警報音（ピロンピロン）
-    var eqBg = GAME.stageNum === 2 ? 'backgrounds/stage2/bg_office_shake.png' : GAME.stageNum === 3 ? 'backgrounds/stage3/bg_living_room.png' : 'backgrounds/stage1/bg_classroom_shake.png';
+    var eqBg = GAME.stageNum === 2 ? 'backgrounds/stage2/bg_office_shake.png' : GAME.stageNum === 3 ? _getStage3NovelBg() : 'backgrounds/stage1/bg_classroom_shake.png';
     NovelEngine.start(
       novelScripts.earthquake,
       eqBg,
@@ -11829,7 +12262,7 @@ function transitionPhase(newPhase) {
     GAME._novelAftershakeDone = true;
     GAME.running = false;
     if (document.pointerLockElement) document.exitPointerLock();
-    var asBg = GAME.stageNum === 2 ? 'backgrounds/stage2/bg_office_shake.png' : GAME.stageNum === 3 ? 'backgrounds/stage3/bg_living_room.png' : 'backgrounds/stage1/bg_classroom_shake.png';
+    var asBg = GAME.stageNum === 2 ? 'backgrounds/stage2/bg_office_shake.png' : GAME.stageNum === 3 ? _getStage3NovelBg() : 'backgrounds/stage1/bg_classroom_shake.png';
     NovelEngine.start(
       novelScripts.aftershake,
       asBg,
