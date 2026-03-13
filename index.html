@@ -1530,6 +1530,33 @@ html, body {
 }
 @keyframes dclFadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 #daily-class-label.active { display: block; animation: dclFadeIn 0.8s ease-out; }
+/* 日常フェーズ シネマティック演出 */
+#daily-cinematic {
+  display: none; position: fixed; bottom: 0; left: 0; width: 100%; z-index: 200;
+  pointer-events: none;
+}
+#daily-cinematic.active { display: block; }
+#daily-cinematic .cin-bars {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;
+}
+#daily-cinematic .cin-bar-top, #daily-cinematic .cin-bar-bottom {
+  position: absolute; left: 0; width: 100%; background: #000;
+  transition: height 0.8s ease;
+}
+#daily-cinematic .cin-bar-top { top: 0; height: 0; }
+#daily-cinematic .cin-bar-bottom { bottom: 0; height: 0; }
+#daily-cinematic.active .cin-bar-top { height: 8vh; }
+#daily-cinematic.active .cin-bar-bottom { height: 8vh; }
+#daily-cinematic .cin-text {
+  position: fixed; bottom: 10vh; left: 50%; transform: translateX(-50%);
+  font-family: 'Noto Sans JP', sans-serif; font-size: clamp(14px, 3vw, 20px);
+  color: rgba(255,255,255,0.85); text-align: center; letter-spacing: 3px;
+  text-shadow: 0 0 20px rgba(0,0,0,0.8), 0 2px 4px rgba(0,0,0,0.6);
+  opacity: 0; transition: opacity 1s ease;
+  white-space: nowrap;
+}
+#daily-cinematic .cin-text.show { opacity: 1; }
+#daily-cinematic .cin-text.hide { opacity: 0; transition: opacity 0.5s ease; }
 #hud-timer {
   font-size: 24px; color: #fff; letter-spacing: 2px;
   background: rgba(0,0,0,0.5); padding: 4px 14px;
@@ -2721,6 +2748,10 @@ html, body {
 <div id="game-screen" class="screen">
   <div id="game-container"></div>
   <div id="daily-class-label"></div>
+  <div id="daily-cinematic">
+    <div class="cin-bars"><div class="cin-bar-top"></div><div class="cin-bar-bottom"></div></div>
+    <div class="cin-text" id="cin-text"></div>
+  </div>
   <div id="interact-prompt"><span class="prompt-key">E</span><span class="prompt-label"></span></div>
   <div id="holdon-prompt"></div>
   <div id="holdon-indicator"><div class="holdon-title">🤲 HOLD ON!</div><div class="holdon-sub" data-i18n="HUD_HOLDON_SUB">机の脚を掴んでいる…</div></div>
@@ -5713,6 +5744,9 @@ function initGame(stageNum) {
   dclEl.className = 'active';
   document.getElementById('hud-safety-indicator').className = 'safe';
   document.getElementById('hud-safety-indicator').textContent = 'SAFE';
+
+  // 日常フェーズ シネマティック演出を初期化
+  initDailyCinematic();
 
   // 環境音: 日常パート開始（ステージ別）
   SoundManager.stopAll();
@@ -10352,6 +10386,8 @@ function _doTransitionPhase(newPhase) {
 
   switch (newPhase) {
     case 'earthquake':
+      // 日常シネマティック終了
+      endDailyCinematic();
       // 「授業中」ラベルを非表示
       var dclHide = document.getElementById('daily-class-label');
       if (dclHide) dclHide.className = '';
@@ -11707,10 +11743,129 @@ function updatePlayer(dt) {
   checkScoringTriggers();
 }
 
+// ============================================================
+// 日常フェーズ シネマティック演出
+// ============================================================
+function initDailyCinematic() {
+  var cinEl = document.getElementById('daily-cinematic');
+  var textEl = document.getElementById('cin-text');
+  if (!cinEl) return;
+  cinEl.className = 'active';
+  textEl.className = 'cin-text';
+  textEl.textContent = '';
+  GAME._cinPhase = 0;
+  GAME._cinTimer = 0;
+  GAME._cinTextShown = -1;
+
+  // ステージ別カメラアングル＋テロップ
+  var isS2 = GAME.stageNum === 2;
+  var en = currentLang === 'en';
+  var px = GAME.player.x, pz = GAME.player.z;
+
+  if (isS2) {
+    GAME._cinShots = [
+      // Shot 1: オフィス全景（斜め上から）
+      { camX: -6, camY: 4, camZ: 12, lookX: 2, lookY: 1, lookZ: 5, dur: 4,
+        text: en ? 'An ordinary afternoon at the office...' : 'いつもと変わらない、午後のオフィス…' },
+      // Shot 2: 窓の外（ビル群を映す）
+      { camX: -8, camY: 2, camZ: 1.5, lookX: -10, lookY: 2, lookZ: -1, dur: 3.5,
+        text: en ? 'The city skyline, as always.' : '見慣れたビル群。穏やかな空。' },
+      // Shot 3: 同僚がタイピングしている様子
+      { camX: -5, camY: 1.5, camZ: 5, lookX: -8, lookY: 1.2, lookZ: 4.5, dur: 3.5,
+        text: en ? 'Colleagues focused on their work.' : '同僚たちがそれぞれの仕事に集中している。' },
+      // Shot 4: プレイヤーに寄る（不穏な予兆）
+      { camX: px + 1.5, camY: 1.6, camZ: pz + 2, lookX: px, lookY: 1.0, lookZ: pz, dur: 4,
+        text: en ? '— Then, without warning.' : '— その時は、突然やってくる。' }
+    ];
+  } else {
+    GAME._cinShots = [
+      // Shot 1: 教室全景
+      { camX: -2, camY: 3.5, camZ: 8, lookX: 1, lookY: 1, lookZ: 3, dur: 4,
+        text: en ? 'A normal day in class...' : 'いつもと変わらない、授業中…' },
+      // Shot 2: 黒板方向
+      { camX: 0, camY: 1.8, camZ: 6, lookX: 0, lookY: 1.5, lookZ: -1, dur: 3.5,
+        text: en ? 'The teacher\'s lesson continues.' : '先生の授業が続いている。' },
+      // Shot 3: 窓の外
+      { camX: -3, camY: 2, camZ: 1, lookX: -5, lookY: 2, lookZ: -1, dur: 3.5,
+        text: en ? 'A peaceful schoolyard outside.' : '窓の外には穏やかな校庭。' },
+      // Shot 4: プレイヤーに戻る
+      { camX: px + 1.5, camY: 1.6, camZ: pz + 2, lookX: px, lookY: 1.0, lookZ: pz, dur: 4,
+        text: en ? '— Then, without warning.' : '— その時は、突然やってくる。' }
+    ];
+  }
+}
+
+function updateDailyCinematic() {
+  if (!GAME._cinShots) return;
+  var t = GAME.phaseTimer;
+  var shots = GAME._cinShots;
+  var cinEl = document.getElementById('daily-cinematic');
+  var textEl = document.getElementById('cin-text');
+
+  // 現在のショットを決定
+  var elapsed = 0;
+  var shotIdx = 0;
+  for (var i = 0; i < shots.length; i++) {
+    if (t < elapsed + shots[i].dur) {
+      shotIdx = i;
+      break;
+    }
+    elapsed += shots[i].dur;
+    if (i === shots.length - 1) shotIdx = i;
+  }
+  var shot = shots[shotIdx];
+  var shotT = t - elapsed; // このショット内の経過時間
+  var shotProgress = Math.min(1, shotT / shot.dur);
+
+  // カメラ: ゆっくりドリー（現在位置→少し前進）
+  var drift = shotProgress * 0.3;
+  var dirX = shot.lookX - shot.camX;
+  var dirZ = shot.lookZ - shot.camZ;
+  var dirLen = Math.sqrt(dirX * dirX + dirZ * dirZ) || 1;
+  var camX = shot.camX + (dirX / dirLen) * drift;
+  var camY = shot.camY;
+  var camZ = shot.camZ + (dirZ / dirLen) * drift;
+
+  GAME.camera.position.set(camX, camY, camZ);
+  GAME.camera.lookAt(shot.lookX, shot.lookY, shot.lookZ);
+
+  // テロップ表示
+  if (GAME._cinTextShown !== shotIdx) {
+    GAME._cinTextShown = shotIdx;
+    textEl.className = 'cin-text hide';
+    setTimeout(function() {
+      var s = shots[shotIdx];
+      if (s) {
+        textEl.textContent = s.text;
+        textEl.className = 'cin-text show';
+      }
+    }, 300);
+  }
+
+  // 最後のショットで不穏な効果（画面が微かに揺れる）
+  if (shotIdx === shots.length - 1 && shotProgress > 0.6) {
+    var intensity = (shotProgress - 0.6) * 0.008;
+    GAME.camera.position.x += Math.sin(t * 15) * intensity;
+    GAME.camera.position.y += Math.cos(t * 12) * intensity * 0.5;
+  }
+}
+
+function endDailyCinematic() {
+  var cinEl = document.getElementById('daily-cinematic');
+  if (cinEl) cinEl.className = '';
+  GAME._cinShots = null;
+}
+
 function updateCamera() {
   const p = GAME.player;
   const dist = GAME.cameraDistance;
   const pitch = GAME.cameraPitch;
+
+  // ===== dailyフェーズ: シネマティックカメラ =====
+  if (GAME.phase === 'daily') {
+    updateDailyCinematic();
+    return;
+  }
 
   // プレイヤー頭部位置（視点基点）— しゃがみ時は机の下まで下げる
   var lookY = p.isCrouching ? 0.35 : p.y + 0.5;
