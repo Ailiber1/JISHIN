@@ -11612,9 +11612,9 @@ function gameLoop(timestamp) {
   // Stage 3: 懐中電灯スポットライト更新
   if (GAME._flashSpot && GAME._hasFlashlight) {
     var fp = GAME.player;
-    GAME._flashSpot.position.set(fp.x, fp.y + 1.4, fp.z);
-    var fa = GAME.player.angle || 0;
-    GAME._flashSpotTarget.position.set(fp.x + Math.sin(fa) * 5, fp.y + 0.5, fp.z + Math.cos(fa) * 5);
+    GAME._flashSpot.position.set(fp.x, fp.y + 0.3, fp.z);
+    var fa = GAME.player.yaw || 0;
+    GAME._flashSpotTarget.position.set(fp.x + Math.sin(fa) * 5, fp.y - 0.5, fp.z + Math.cos(fa) * 5);
   }
 
   // 階段トリガー + 避難ポイントチェック + ブロック塀チェック + 余震
@@ -13061,9 +13061,13 @@ function downloadResultData(totalScore, categories, actions) {
 // 安全ゾーン定義（机の下 = 各デスクの位置）
 function isUnderDesk(px, pz) {
   if (GAME.stageNum === 3) {
-    // Stage 3: ちゃぶ台（1F: 0, -1）or 勉強机（2F: -4, -4）
-    if (Math.abs(px - 0) < 0.6 && Math.abs(pz - (-1)) < 0.4) return true;
-    if (GAME._onHouse2F && Math.abs(px - (-4)) < 0.6 && Math.abs(pz - (-4)) < 0.4) return true;
+    // Stage 3: ちゃぶ台（1F: 0, -1）or 勉強机（2F: -4, -4）— 半径1.5で判定
+    var cdx1 = px - 0, cdz1 = pz - (-1);
+    if (Math.sqrt(cdx1 * cdx1 + cdz1 * cdz1) < 1.5) return true;
+    if (GAME._onHouse2F) {
+      var cdx2 = px - (-4), cdz2 = pz - (-4);
+      if (Math.sqrt(cdx2 * cdx2 + cdz2 * cdz2) < 1.5) return true;
+    }
     return false;
   }
   if (GAME.stageNum === 2) {
