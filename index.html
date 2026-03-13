@@ -7170,7 +7170,7 @@ function buildSchoolyard() {
 // SECTION: Stage 2 定数・3D環境構築関数
 // ============================================================
 var EVAC_POINT_S2 = { x: 0, z: 30, radius: 3 };
-var STAIR_TRIGGER_S2 = { minX: -2, maxX: 2, minZ: 13.5, maxZ: 15.5 };
+var STAIR_TRIGGER_S2 = { minX: -12.5, maxX: -10.5, minZ: 13.5, maxZ: 15.5 };
 var GROUND_Y_S2 = 0;
 var OFFICE_FLOOR_Y = 0; // 12階だが座標上はY=0で構築
 
@@ -7262,20 +7262,13 @@ function buildOfficeFloor() {
   // カメラ透過用メッシュ（腰壁を代表として登録）
   GAME.cameraMeshes.push(frontSill);
 
-  // 後壁 (Z=15) — 中央に非常階段ドア開口(幅2m)
-  var backWallLeft = new THREE.Mesh(new THREE.BoxGeometry((W - 2) / 2, H, wallThick), wallMat);
-  backWallLeft.position.set(-(W - 2) / 4 - 1, H / 2, D);
-  backWallLeft.receiveShadow = true;
-  scene.add(backWallLeft);
-  GAME.cameraMeshes.push(backWallLeft);
-  GAME.walls.push({ minX: -W / 2, maxX: -1, minZ: D - wallThick / 2, maxZ: D + wallThick / 2, minY: 0, maxY: H });
-
-  var backWallRight = new THREE.Mesh(new THREE.BoxGeometry((W - 2) / 2, H, wallThick), wallMat);
-  backWallRight.position.set((W - 2) / 4 + 1, H / 2, D);
-  backWallRight.receiveShadow = true;
-  scene.add(backWallRight);
-  GAME.cameraMeshes.push(backWallRight);
-  GAME.walls.push({ minX: 1, maxX: W / 2, minZ: D - wallThick / 2, maxZ: D + wallThick / 2, minY: 0, maxY: H });
+  // 後壁 (Z=15) — 左端に非常階段ドア開口(幅2m: X=-12.5〜-10.5)
+  var backWallMain = new THREE.Mesh(new THREE.BoxGeometry(W - 2, H, wallThick), wallMat);
+  backWallMain.position.set(-W / 2 + 2 + (W - 2) / 2, H / 2, D);
+  backWallMain.receiveShadow = true;
+  scene.add(backWallMain);
+  GAME.cameraMeshes.push(backWallMain);
+  GAME.walls.push({ minX: -W / 2 + 2, maxX: W / 2, minZ: D - wallThick / 2, maxZ: D + wallThick / 2, minY: 0, maxY: H });
 
   // 左壁 (X=-12.5)
   var leftWall = new THREE.Mesh(new THREE.BoxGeometry(wallThick, H, D), wallMat);
@@ -7405,6 +7398,13 @@ function buildOfficeFloor() {
       monitor.position.set(dPosX, 0.92, dPosZ - 0.2);
       monitor.userData.isOfficeFurniture = true;
       scene.add(monitor);
+
+      // デスク当たり判定（しゃがみ時は潜れるようmaxY=0.65）
+      GAME.walls.push({
+        minX: dPosX - 0.65, maxX: dPosX + 0.65,
+        minZ: dPosZ - 0.4, maxZ: dPosZ + 0.4,
+        minY: 0, maxY: 0.65
+      });
     }
   }
 
@@ -7415,6 +7415,12 @@ function buildOfficeFloor() {
     copier.position.set(copierPositions[ci][0], copierPositions[ci][1], copierPositions[ci][2]);
     copier.receiveShadow = true;
     scene.add(copier);
+    // コピー機当たり判定
+    GAME.walls.push({
+      minX: copierPositions[ci][0] - 0.45, maxX: copierPositions[ci][0] + 0.45,
+      minZ: copierPositions[ci][2] - 0.35, maxZ: copierPositions[ci][2] + 0.35,
+      minY: 0, maxY: 1.0
+    });
   }
 
   // --- キャビネット（背の高い書棚4つ） ---
@@ -7424,6 +7430,12 @@ function buildOfficeFloor() {
     cabinet.position.set(cabinetPositions[cbi][0], cabinetPositions[cbi][1], cabinetPositions[cbi][2]);
     cabinet.receiveShadow = true;
     scene.add(cabinet);
+    // キャビネット当たり判定
+    GAME.walls.push({
+      minX: cabinetPositions[cbi][0] - 0.3, maxX: cabinetPositions[cbi][0] + 0.3,
+      minZ: cabinetPositions[cbi][2] - 0.45, maxZ: cabinetPositions[cbi][2] + 0.45,
+      minY: 0, maxY: 2.0
+    });
   }
 
   // --- ウォーターサーバー ---
@@ -7434,6 +7446,8 @@ function buildOfficeFloor() {
   var waterBottle = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.4, 12), new THREE.MeshStandardMaterial({ color: 0x88ccff, transparent: true, opacity: 0.5 }));
   waterBottle.position.set(10, 1.4, 2);
   scene.add(waterBottle);
+  // ウォーターサーバー当たり判定
+  GAME.walls.push({ minX: 9.78, maxX: 10.22, minZ: 1.78, maxZ: 2.22, minY: 0, maxY: 1.5 });
 
   // --- サーバールーム（ガラス壁）Z=13〜15, X=-5〜5 ---
   // ガラス前壁
@@ -7471,18 +7485,33 @@ function buildOfficeFloor() {
   breakerLever.position.set(-12, 1.5, 1.07);
   scene.add(breakerLever);
 
-  // --- 非常階段ドア ---
+  // --- 非常階段ドア（左端 X=-11.5） ---
+  var stairExitX = -W / 2 + 1; // X = -11.5
   var stairDoorMesh = new THREE.Mesh(new THREE.BoxGeometry(1.8, 2.4, 0.1), doorMat);
-  stairDoorMesh.position.set(0, 1.2, D - 0.05);
+  stairDoorMesh.position.set(stairExitX, 1.2, D - 0.05);
   scene.add(stairDoorMesh);
   GAME.cameraMeshes.push(stairDoorMesh);
   // ドアが閉じている間のコリジョン
-  GAME.walls.push({ minX: -1, maxX: 1, minZ: D - wallThick / 2, maxZ: D + wallThick / 2, minY: 0, maxY: 2.4, _isDoor: true, _doorId: 'stairDoorS2' });
+  GAME._stairDoorCollision = { minX: stairExitX - 1, maxX: stairExitX + 1, minZ: D - wallThick / 2, maxZ: D + wallThick / 2, minY: 0, maxY: 2.4, _isDoor: true, _doorId: 'stairDoorS2' };
+  GAME.walls.push(GAME._stairDoorCollision);
 
-  // 非常口サイン（ドア上部）
-  var exitSign = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.2, 0.05), new THREE.MeshStandardMaterial({ color: 0x00cc44, emissive: 0x00cc44, emissiveIntensity: 0.8 }));
-  exitSign.position.set(0, 2.6, D - 0.05);
+  // 非常口サイン（ドア上部 — 大きく目立つように）
+  var exitSign = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.3, 0.05), new THREE.MeshStandardMaterial({ color: 0x00cc44, emissive: 0x00cc44, emissiveIntensity: 1.0 }));
+  exitSign.position.set(stairExitX, 2.7, D - 0.05);
   scene.add(exitSign);
+  // 非常口周辺の緑ライト（視認性向上）
+  var stairExitLight = new THREE.PointLight(0x00ff44, 0.8, 15);
+  stairExitLight.position.set(stairExitX, H - 0.3, D - 1);
+  scene.add(stairExitLight);
+
+  // --- 非常口への床誘導ライン（緑の矢印 → 左端の非常階段ドア方向） ---
+  var guideFloorMat = new THREE.MeshStandardMaterial({ color: 0x00ff44, emissive: 0x00ff44, emissiveIntensity: 0.6, transparent: true, opacity: 0.7 });
+  for (var gfi = 0; gfi < 5; gfi++) {
+    var guideFloor = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.4), guideFloorMat);
+    guideFloor.rotation.x = -Math.PI / 2;
+    guideFloor.position.set(stairExitX + 2 + gfi * 2.5, 0.02, D - 1);
+    scene.add(guideFloor);
+  }
 
   // --- 天井照明（4×3 = 12個の PointLight） ---
   for (var lx = 0; lx < 4; lx++) {
@@ -7504,8 +7533,8 @@ function buildOfficeFloor() {
   // ブレーカー
   GAME.interactables.push({ x: -12, z: 1, radius: 1.5, action: 'turnOffBreaker', label: {ja: '⚡ ブレーカーを落とす', en: '⚡ Turn Off Breaker'}, phases: ['aftershake', 'evacuation'], used: false, mesh: breakerLever });
 
-  // 非常階段ドア
-  GAME.interactables.push({ x: 0, z: 14.5, radius: 2.0, action: 'openStairDoor', label: {ja: '🚪 非常階段のドアを開ける', en: '🚪 Open Stair Door'}, phases: ['aftershake', 'evacuation'], used: false, mesh: stairDoorMesh });
+  // 非常階段ドア（左端）
+  GAME.interactables.push({ x: stairExitX, z: 14.5, radius: 2.5, action: 'openStairDoor', label: {ja: '🚪 非常階段のドアを開ける', en: '🚪 Open Stair Door'}, phases: ['aftershake', 'evacuation'], used: false, mesh: stairDoorMesh });
 
   // 参照保存
   GAME._stairDoorS2 = stairDoorMesh;
@@ -8729,6 +8758,38 @@ function updateBlackboardText(elapsed) {
   GAME._bbTexture.needsUpdate = true;
 }
 
+// NPC用壁判定: 新しい位置が壁と衝突するかチェック
+function npcCheckWall(nx, nz, npcR) {
+  var R = npcR || 0.3;
+  for (var i = 0; i < GAME.walls.length; i++) {
+    var w = GAME.walls[i];
+    // 高さ0.65以下の家具（デスク）はNPCも無視（机の下を通過しない代わりに迂回処理で対応）
+    if (w.maxY !== undefined && w.maxY <= 0.65) continue;
+    if (nx + R > w.minX && nx - R < w.maxX && nz + R > w.minZ && nz - R < w.maxZ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// NPC移動: 壁判定付きで移動（壁にぶつかったらスライド移動を試行）
+function npcMoveWithCollision(npc, dx, dz, speed) {
+  var dist = Math.sqrt(dx * dx + dz * dz);
+  if (dist < 0.01) return;
+  var mx = (dx / dist) * speed;
+  var mz = (dz / dist) * speed;
+  // まずX軸移動
+  if (!npcCheckWall(npc.x + mx, npc.z, 0.3)) {
+    npc.x += mx;
+  }
+  // 次にZ軸移動
+  if (!npcCheckWall(npc.x, npc.z + mz, 0.3)) {
+    npc.z += mz;
+  }
+  npc.mesh.position.x = npc.x;
+  npc.mesh.position.z = npc.z;
+}
+
 function updateNPCs(dtSec) {
   for (var i = 0; i < GAME.npcs.length; i++) {
     var npc = GAME.npcs[i];
@@ -9087,10 +9148,7 @@ function updateSingleNPC(npc, dtSec) {
           var tdz = npc.targetZ - npc.z;
           var tdist = Math.sqrt(tdx * tdx + tdz * tdz);
           if (tdist > 0.3) {
-            npc.x += (tdx / tdist) * npc.speed;
-            npc.z += (tdz / tdist) * npc.speed;
-            mesh.position.x = npc.x;
-            mesh.position.z = npc.z;
+            npcMoveWithCollision(npc, tdx, tdz, npc.speed);
             mesh.rotation.y = Math.atan2(tdx, tdz);
             // 歩行アニメーション
             npc.phase += dtSec * 7;
@@ -9131,8 +9189,8 @@ function updateSingleNPC(npc, dtSec) {
           if (rur && rur.children[0]) rur.children[0].rotation.x = 0;
         }
         if (GAME.stageNum === 2) {
-          // Stage 2: 非常階段ドアへ (x=0, z=14.5)
-          npc.targetX = 0 + (Math.random() - 0.5) * 2;
+          // Stage 2: 非常階段ドアへ (左端 x=-11.5, z=14.5)
+          npc.targetX = -11.5 + (Math.random() - 0.5) * 1;
           npc.targetZ = 14.5;
         } else {
           npc.targetX = 4.2;
@@ -9150,10 +9208,7 @@ function updateSingleNPC(npc, dtSec) {
         else if (npc.role === 'boss') espeed = npc.speed * 1.4;
         else if (npc.behavior === 'panic') espeed = npc.speed * 1.2;
         else if (npc.behavior === 'injured') espeed = npc.speed * 0.5;
-        npc.x += (edx / edist) * espeed;
-        npc.z += (edz / edist) * espeed;
-        mesh.position.x = npc.x;
-        mesh.position.z = npc.z;
+        npcMoveWithCollision(npc, edx, edz, espeed);
         mesh.rotation.y = Math.atan2(edx, edz);
         // 歩行アニメーション（脚振り + 腕振り + 体の上下動）
         npc.phase += dtSec * 7;
@@ -9192,10 +9247,10 @@ function updateSingleNPC(npc, dtSec) {
             } else if (GAME._exitedNPCs >= 12) {
               showAdvisor({ja: 'ほとんどの社員が避難完了！急いで！', en: 'Most employees have evacuated! Hurry!'}, 'warning');
             }
-            // Stage 2 ウェイポイント: 非常階段ドア → 退出
+            // Stage 2 ウェイポイント: 非常階段ドア(左端) → 退出
             npc._waypoints = [
-              { x: 0, z: 15.5 },   // 非常階段ドア通過
-              { x: 0, z: 17.0 },   // 退出
+              { x: -11.5, z: 15.5 },   // 非常階段ドア通過
+              { x: -11.5, z: 17.0 },   // 退出
             ];
           } else {
             if (GAME._exitedNPCs === 3) {
@@ -9220,10 +9275,7 @@ function updateSingleNPC(npc, dtSec) {
           var hdist = Math.sqrt(hdx * hdx + hdz * hdz);
           if (hdist > 0.5) {
             var hspd = npc.speed * 1.5;
-            npc.x += (hdx / hdist) * hspd;
-            npc.z += (hdz / hdist) * hspd;
-            mesh.position.x = npc.x;
-            mesh.position.z = npc.z;
+            npcMoveWithCollision(npc, hdx, hdz, hspd);
             mesh.rotation.y = Math.atan2(hdx, hdz);
             npc.phase += dtSec * 7;
             if (mesh.userData.leftLeg) {
