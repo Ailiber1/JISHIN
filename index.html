@@ -9533,10 +9533,17 @@ function updateSingleNPC(npc, dtSec) {
           var deskTop = npc.role === 'teacher' ? 0.65 : 0.50;
           var crouchY = deskTop - (npcH * 0.75);
           mesh.position.y = crouchY;
-          // 関節ポーズ: 深いしゃがみ＋前かがみ
+          // 関節ポーズ: 深いしゃがみ＋前かがみ＋両手で頭を守る
           var body = mesh.userData.body;
           if (body) {
             body.rotation.x = 0.9; // 深い前かがみ
+            // 腕: 両手で頭を抱える（前かがみ状態で頭の上に手がくる）
+            if (body.children && body.children.length >= 3) {
+              body.children[1].rotation.x = -3.0; // 左腕を頭の上へ
+              body.children[1].rotation.z = 0.4;  // 内側に寄せる
+              body.children[2].rotation.x = -3.0; // 右腕を頭の上へ
+              body.children[2].rotation.z = -0.4; // 内側に寄せる
+            }
           }
           if (mesh.userData.leftLeg) {
             mesh.userData.leftLeg.rotation.x = -1.8;
@@ -9581,17 +9588,17 @@ function updateSingleNPC(npc, dtSec) {
             if (pUR && pUR.children[0]) pUR.children[0].rotation.x = 0;
           }
         }
-        // 腕: 頭を抱えるポーズ（両腕を上げて頭の横に）
+        // 腕: 両手で頭を抱えるポーズ（パニックで震えながら）
         var panicBody = mesh.userData.body;
         if (panicBody && panicBody.children && panicBody.children.length >= 3) {
-          panicBody.children[1].rotation.x = -2.5 + Math.sin(npc.phase * 3) * 0.15;
-          panicBody.children[1].rotation.z = 0.3;
-          panicBody.children[2].rotation.x = -2.5 + Math.sin(npc.phase * 3 + 1) * 0.15;
-          panicBody.children[2].rotation.z = -0.3;
+          panicBody.children[1].rotation.x = -3.0 + Math.sin(npc.phase * 3) * 0.15;
+          panicBody.children[1].rotation.z = 0.4;
+          panicBody.children[2].rotation.x = -3.0 + Math.sin(npc.phase * 3 + 1) * 0.15;
+          panicBody.children[2].rotation.z = -0.4;
         }
         // 体: 前かがみで揺れる
         if (panicBody) {
-          panicBody.rotation.x = 0.3 + Math.sin(npc.phase * 4) * 0.05;
+          panicBody.rotation.x = 0.4 + Math.sin(npc.phase * 4) * 0.08;
         }
         // ターゲットに向かって移動
         var dx = npc.targetX - npc.x;
