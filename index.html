@@ -8775,6 +8775,60 @@ function updateSchoolyardNPCs(dtSec) {
 }
 
 function checkEvacPointReached() {
+  if (GAME.stageNum === 3) {
+    // Stage 3: 近隣公園
+    if (GAME.scoring.reachedEvacPoint) return;
+    var p3 = GAME.player;
+
+    // ブロック塀警告（塀の近くを歩くと減点）
+    if (GAME._blockWallZones && !GAME._blockWallWarned) {
+      for (var bwi = 0; bwi < GAME._blockWallZones.length; bwi++) {
+        var bw = GAME._blockWallZones[bwi];
+        if (Math.abs(p3.x - bw.x) < 1.5 && Math.abs(p3.z - bw.z) < 1.5) {
+          GAME._blockWallWarned = true;
+          GAME.scoring.avoidedBlockWall = false;
+          showAdvisor({ja: '危険！ブロック塀に近づくな！倒壊の恐れがある！', en: 'Danger! Stay away from block walls! They may collapse!'}, 'warning');
+          SoundManager.playSE('error');
+          break;
+        }
+      }
+    }
+
+    // 家族を置いていかない警告
+    if (p3.z < -10 && !GAME._familyLeaveWarned) {
+      var allFamily = true;
+      if (GAME.npcs) {
+        for (var fi = 0; fi < GAME.npcs.length; fi++) {
+          if (!GAME.npcs[fi].exited && !GAME.npcs[fi].followingPlayer) {
+            allFamily = false;
+            break;
+          }
+        }
+      }
+      if (!allFamily) {
+        GAME._familyLeaveWarned = true;
+        showAdvisor({ja: '家族全員と合流してから避難しよう！1人で先に行くな！', en: 'Evacuate with your entire family! Don\'t leave anyone behind!'}, 'warning');
+      }
+    }
+
+    var dx3 = p3.x - EVAC_POINT_S3.x;
+    var dz3 = p3.z - EVAC_POINT_S3.z;
+    if (Math.sqrt(dx3 * dx3 + dz3 * dz3) < EVAC_POINT_S3.radius) {
+      GAME.scoring.reachedEvacPoint = true;
+      GAME.scoring.withinTimeLimit = GAME.totalTimer < GAME.timeLimit;
+      // 家族全員避難ボーナスチェック
+      var familyAll = true;
+      if (GAME.npcs) {
+        for (var fj = 0; fj < GAME.npcs.length; fj++) {
+          if (!GAME.npcs[fj].exited && !GAME.npcs[fj].followingPlayer) familyAll = false;
+        }
+      }
+      GAME.scoring.familyEvacuated = familyAll;
+      SoundManager.playSE('correct');
+      transitionPhase('result');
+    }
+    return;
+  }
   if (GAME.stageNum === 2) {
     // Stage 2: ビル前広場
     if (!GAME._inBuildingPlaza) return;
