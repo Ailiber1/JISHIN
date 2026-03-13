@@ -8495,6 +8495,30 @@ function checkEvacPointReached() {
     if (!GAME._inBuildingPlaza) return;
     if (GAME.scoring.reachedEvacPoint) return;
     var p2 = GAME.player;
+
+    // ビル出口（非常口ドア）に近づいたら赤い警告表示
+    var doorDist = Math.sqrt(p2.x * p2.x + (p2.z - 10.2) * (p2.z - 10.2));
+    var dangerLabel = document.getElementById('building-danger-label');
+    if (doorDist < 4) {
+      if (!dangerLabel) {
+        dangerLabel = document.createElement('div');
+        dangerLabel.id = 'building-danger-label';
+        dangerLabel.style.cssText = 'position:fixed;top:30%;left:50%;transform:translateX(-50%);background:rgba(200,0,0,0.85);color:#fff;font-family:"Noto Sans JP",sans-serif;font-size:clamp(14px,3vw,20px);font-weight:bold;padding:10px 24px;border-radius:8px;z-index:500;text-align:center;border:2px solid #ff4444;box-shadow:0 0 20px rgba(255,0,0,0.4);pointer-events:none;';
+        dangerLabel.textContent = currentLang === 'ja' ? '⚠️ 危険！建物内に戻るな！' : '⚠️ DANGER! Do not re-enter the building!';
+        document.body.appendChild(dangerLabel);
+      }
+      dangerLabel.style.display = 'block';
+      // スコア減点（初回のみ警告）
+      if (!GAME._buildingReturnWarned) {
+        GAME._buildingReturnWarned = true;
+        showAdvisor({ja: '危険！地震後に建物に戻るのは絶対にダメだ！余震で崩壊する恐れがある！', en: 'Danger! Never re-enter a building after an earthquake! It could collapse from aftershocks!'}, 'warning');
+        SoundManager.playSE('error');
+        GAME.score = Math.max(0, GAME.score - 5);
+      }
+    } else {
+      if (dangerLabel) dangerLabel.style.display = 'none';
+    }
+
     var dx2 = p2.x - EVAC_POINT_S2.x;
     var dz2 = p2.z - EVAC_POINT_S2.z;
     if (Math.sqrt(dx2 * dx2 + dz2 * dz2) < EVAC_POINT_S2.radius) {
