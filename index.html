@@ -3973,6 +3973,92 @@ var NovelEngine = {
     });
   },
 
+  // キャラ画像の背景除去（チェッカーボード/灰色背景をCanvas APIで透過に変換）
+  _removeCharaBg: function(img, cacheKey) {
+    var self = this;
+    try {
+      var c = document.createElement('canvas');
+      c.width = img.naturalWidth; c.height = img.naturalHeight;
+      if (c.width === 0 || c.height === 0) return;
+      var ctx = c.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      var idata = ctx.getImageData(0, 0, c.width, c.height);
+      var d = idata.data;
+      var w = c.width, h = c.height;
+      // 四隅のピクセルから背景色をサンプリング
+      var corners = [[0,0],[w-1,0],[0,h-1],[w-1,h-1],[Math.floor(w/2),0],[Math.floor(w/2),h-1]];
+      var bgSamples = [];
+      for (var ci = 0; ci < corners.length; ci++) {
+        var idx = (corners[ci][1] * w + corners[ci][0]) * 4;
+        bgSamples.push([d[idx], d[idx+1], d[idx+2]]);
+      }
+      // チェッカーボード検出: 隣接ピクセルが白/灰色系の交互パターン
+      var isChecker = false;
+      var topRow0 = [d[0], d[1], d[2]]; // (0,0)
+      var topRow1 = [d[4], d[5], d[6]]; // (1,0)
+      var lum0 = topRow0[0]*0.3+topRow0[1]*0.59+topRow0[2]*0.11;
+      var lum1 = topRow1[0]*0.3+topRow1[1]*0.59+topRow1[2]*0.11;
+      if (Math.abs(lum0 - lum1) > 15 && lum0 > 140 && lum1 > 140) isChecker = true;
+      // 背景ピクセル判定: 灰色系 or チェッカー色に近いピクセル
+      var bgAvg = [0,0,0];
+      for (var si = 0; si < bgSamples.length; si++) {
+        bgAvg[0] += bgSamples[si][0]; bgAvg[1] += bgSamples[si][1]; bgAvg[2] += bgSamples[si][2];
+      }
+      bgAvg[0] /= bgSamples.length; bgAvg[1] /= bgSamples.length; bgAvg[2] /= bgSamples.length;
+      // 背景が明るいグレー/白系（チェッカー or ソリッド）かチェック
+      var bgLum = bgAvg[0]*0.3+bgAvg[1]*0.59+bgAvg[2]*0.11;
+      if (bgLum < 100 && !isChecker) return; // 暗い背景は処理しない（意図的な背景の可能性）
+      // フラッドフィル: 四隅から背景色に近いピクセルを透過にする
+      var visited = new Uint8Array(w * h);
+      var queue = [];
+      var tolerance = isChecker ? 50 : 35;
+      function isBgPixel(idx4) {
+        var r = d[idx4], g = d[idx4+1], b = d[idx4+2], a = d[idx4+3];
+        if (a === 0) return true;
+        // チェッカーボード: 白(>200)系 or 灰色(150-220)系
+        if (isChecker) {
+          var lum = r*0.3+g*0.59+b*0.11;
+          var sat = Math.max(r,g,b) - Math.min(r,g,b);
+          return lum > 140 && sat < 40;
+        }
+        // 背景平均色との距離
+        var dr = r-bgAvg[0], dg = g-bgAvg[1], db = b-bgAvg[2];
+        return Math.sqrt(dr*dr+dg*dg+db*db) < tolerance;
+      }
+      // 四隅と上下辺中央からフラッドフィル開始
+      var startPts = [[0,0],[w-1,0],[0,h-1],[w-1,h-1],[Math.floor(w/2),0],[Math.floor(w/2),h-1],[0,Math.floor(h/2)],[w-1,Math.floor(h/2)]];
+      for (var sp = 0; sp < startPts.length; sp++) {
+        var sx = startPts[sp][0], sy = startPts[sp][1];
+        var si2 = sy * w + sx;
+        if (visited[si2] || !isBgPixel(si2 * 4)) continue;
+        queue.push(si2);
+        visited[si2] = 1;
+        while (queue.length > 0) {
+          var pos = queue.pop();
+          d[pos * 4 + 3] = 0; // 透過にする
+          var px = pos % w, py = Math.floor(pos / w);
+          var neighbors = [[px-1,py],[px+1,py],[px,py-1],[px,py+1]];
+          for (var ni = 0; ni < neighbors.length; ni++) {
+            var nx = neighbors[ni][0], ny = neighbors[ni][1];
+            if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+            var npos = ny * w + nx;
+            if (visited[npos]) continue;
+            visited[npos] = 1;
+            if (isBgPixel(npos * 4)) queue.push(npos);
+          }
+        }
+      }
+      ctx.putImageData(idata, 0, 0);
+      // 処理済み画像でキャッシュを上書き
+      var newImg = new Image();
+      newImg.src = c.toDataURL('image/png');
+      self._imageCache[cacheKey] = newImg;
+      self._processedKeys[cacheKey] = true;
+    } catch(e) { console.warn('CharaBg removal failed:', e); }
+  },
+
+  _processedKeys: {},
+
   // 画像プリロード（キャラ＋背景）
   preloadImages: function(script, bgUrl) {
     var self = this;
@@ -3989,8 +4075,17 @@ var NovelEngine = {
         var src = folder + line.speaker + '_' + resolvedExpr + '.png';
         if (!self._imageCache[src]) {
           var img = new Image();
+          img.crossOrigin = 'anonymous';
           img.src = src + CACHE_BUSTER;
           self._imageCache[src] = img;
+          // Stage 3キャラ画像は背景除去が必要な場合がある
+          if ((GAME.stageNum || 1) >= 3 && line.speaker !== 'bousai') {
+            (function(imgRef, key) {
+              imgRef.onload = function() {
+                if (!self._processedKeys[key]) self._removeCharaBg(imgRef, key);
+              };
+            })(img, src);
+          }
         }
       }
     });
@@ -5535,64 +5630,9 @@ function showBriefing(stageNum) {
   applyI18N();
 
   // ブリーフィング表示時に背景＋キャラ画像を先行プリロード
-  var bgMap = { 1: 'backgrounds/stage1/bg_classroom.png', 2: 'backgrounds/stage2/bg_office.png', 3: 'backgrounds/stage3/bg_living_room.png' };
+  var bgMap = { 1: 'backgrounds/stage1/bg_classroom.png', 2: 'backgrounds/stage2/bg_office.png', 3: 'backgrounds/stage3/bg_living_room.jpg' };
   var bgUrl = bgMap[stageNum];
-  // Stage 3: 背景画像がない場合はプロシージャル生成
-  if (stageNum === 3 && !NovelEngine._imageCache[bgUrl]) {
-    var _bgC = document.createElement('canvas');
-    _bgC.width = 960; _bgC.height = 540;
-    var _bgCtx = _bgC.getContext('2d');
-    // 夕方の室内 — 暖かいオレンジ系グラデーション
-    var _grd = _bgCtx.createLinearGradient(0, 0, 0, 540);
-    _grd.addColorStop(0, '#3d2b1f');    // 天井（暗い茶色）
-    _grd.addColorStop(0.35, '#5c3a20'); // 上壁
-    _grd.addColorStop(0.6, '#7a5033');  // 下壁（夕日の暖色）
-    _grd.addColorStop(1, '#2a1810');    // 床（暗いフローリング）
-    _bgCtx.fillStyle = _grd;
-    _bgCtx.fillRect(0, 0, 960, 540);
-    // 窓（右上に夕焼け）
-    _bgCtx.fillStyle = '#d4763a';
-    _bgCtx.fillRect(650, 30, 250, 200);
-    var _wGrd = _bgCtx.createLinearGradient(650, 30, 650, 230);
-    _wGrd.addColorStop(0, '#ff8c42');
-    _wGrd.addColorStop(0.4, '#e8692a');
-    _wGrd.addColorStop(1, '#c44d22');
-    _bgCtx.fillStyle = _wGrd;
-    _bgCtx.fillRect(660, 40, 230, 180);
-    // 窓枠
-    _bgCtx.strokeStyle = '#4a3525'; _bgCtx.lineWidth = 3;
-    _bgCtx.strokeRect(650, 30, 250, 200);
-    _bgCtx.beginPath(); _bgCtx.moveTo(775, 30); _bgCtx.lineTo(775, 230); _bgCtx.stroke();
-    _bgCtx.beginPath(); _bgCtx.moveTo(650, 130); _bgCtx.lineTo(900, 130); _bgCtx.stroke();
-    // 床ライン
-    _bgCtx.strokeStyle = 'rgba(100,60,30,0.3)'; _bgCtx.lineWidth = 1;
-    for (var _fi = 0; _fi < 12; _fi++) {
-      var _fx = _fi * 80;
-      _bgCtx.beginPath(); _bgCtx.moveTo(_fx, 340); _bgCtx.lineTo(_fx, 540); _bgCtx.stroke();
-    }
-    // 暖かい光の円形グラデ（照明効果）
-    var _lGrd = _bgCtx.createRadialGradient(480, 200, 20, 480, 200, 350);
-    _lGrd.addColorStop(0, 'rgba(255,180,80,0.15)');
-    _lGrd.addColorStop(1, 'rgba(255,180,80,0)');
-    _bgCtx.fillStyle = _lGrd;
-    _bgCtx.fillRect(0, 0, 960, 540);
-    // 家具シルエット（ソファ）
-    _bgCtx.fillStyle = 'rgba(30,18,10,0.5)';
-    _bgCtx.fillRect(50, 320, 300, 100);
-    _bgCtx.fillRect(50, 280, 40, 50); // 背もたれ左
-    _bgCtx.fillRect(310, 280, 40, 50); // 背もたれ右
-    // TV台
-    _bgCtx.fillStyle = 'rgba(25,15,8,0.5)';
-    _bgCtx.fillRect(430, 300, 120, 80);
-    // ちゃぶ台
-    _bgCtx.fillStyle = 'rgba(80,50,25,0.4)';
-    _bgCtx.beginPath(); _bgCtx.ellipse(250, 400, 80, 30, 0, 0, Math.PI * 2); _bgCtx.fill();
-    var _bgDataUrl = _bgC.toDataURL('image/jpeg', 0.8);
-    var _bgImg = new Image();
-    _bgImg.src = _bgDataUrl;
-    NovelEngine._imageCache[bgUrl] = _bgImg;
-    bgUrl = _bgDataUrl;
-  } else if (bgUrl && !NovelEngine._imageCache[bgUrl]) {
+  if (bgUrl && !NovelEngine._imageCache[bgUrl]) {
     var bgImg = new Image();
     bgImg.src = bgUrl;
     NovelEngine._imageCache[bgUrl] = bgImg;
@@ -5607,14 +5647,6 @@ function showBriefing(stageNum) {
 // ============================================================
 // SECTION: TITLE SCREEN
 // ============================================================
-// Stage 3 ノベル背景のData URLを取得（プロシージャル生成済みのキャッシュから）
-function _getStage3NovelBg() {
-  var cacheKey = 'backgrounds/stage3/bg_living_room.png';
-  if (NovelEngine._imageCache[cacheKey] && NovelEngine._imageCache[cacheKey].src && NovelEngine._imageCache[cacheKey].src.startsWith('data:')) {
-    return NovelEngine._imageCache[cacheKey].src;
-  }
-  return cacheKey; // フォールバック（ファイルが存在すれば使用）
-}
 
 function showTitle() {
   showScreen('title-screen');
@@ -5845,12 +5877,8 @@ function initEventListeners() {
       } else {
         SoundManager.startClassroomAmbient();
       }
-      var prologueBgMap = { 1: 'backgrounds/stage1/bg_classroom.png', 2: 'backgrounds/stage2/bg_office.png', 3: 'backgrounds/stage3/bg_living_room.png' };
+      var prologueBgMap = { 1: 'backgrounds/stage1/bg_classroom.png', 2: 'backgrounds/stage2/bg_office.png', 3: 'backgrounds/stage3/bg_living_room.jpg' };
       var _novelBgUrl = prologueBgMap[stageNum] || prologueBgMap[1];
-      // Stage 3: プロシージャル背景のData URLがキャッシュにあればそちらを使う
-      if (stageNum === 3 && NovelEngine._imageCache[_novelBgUrl] && NovelEngine._imageCache[_novelBgUrl].src && NovelEngine._imageCache[_novelBgUrl].src.startsWith('data:')) {
-        _novelBgUrl = NovelEngine._imageCache[_novelBgUrl].src;
-      }
       NovelEngine.start(
         NOVEL_SCRIPTS['stage' + stageNum].prologue,
         _novelBgUrl,
@@ -12241,7 +12269,7 @@ function transitionPhase(newPhase) {
     SoundManager.stopAmbient(300);
     SoundManager.playBGM('BGM/JISHIN_earthquake.mp3', 0.35, false);
     SoundManager.playEarthquakeAlarm(); // J-Alert風警報音（ピロンピロン）
-    var eqBg = GAME.stageNum === 2 ? 'backgrounds/stage2/bg_office_shake.png' : GAME.stageNum === 3 ? _getStage3NovelBg() : 'backgrounds/stage1/bg_classroom_shake.png';
+    var eqBg = GAME.stageNum === 2 ? 'backgrounds/stage2/bg_office_shake.png' : GAME.stageNum === 3 ? 'backgrounds/stage3/bg_house_shake.jpg' : 'backgrounds/stage1/bg_classroom_shake.png';
     NovelEngine.start(
       novelScripts.earthquake,
       eqBg,
@@ -12262,7 +12290,7 @@ function transitionPhase(newPhase) {
     GAME._novelAftershakeDone = true;
     GAME.running = false;
     if (document.pointerLockElement) document.exitPointerLock();
-    var asBg = GAME.stageNum === 2 ? 'backgrounds/stage2/bg_office_shake.png' : GAME.stageNum === 3 ? _getStage3NovelBg() : 'backgrounds/stage1/bg_classroom_shake.png';
+    var asBg = GAME.stageNum === 2 ? 'backgrounds/stage2/bg_office_shake.png' : GAME.stageNum === 3 ? 'backgrounds/stage3/bg_house_shake.jpg' : 'backgrounds/stage1/bg_classroom_shake.png';
     NovelEngine.start(
       novelScripts.aftershake,
       asBg,
@@ -12289,7 +12317,9 @@ function transitionPhase(newPhase) {
       : novelScripts.epilogue_success;
     if (epilogueScript) {
       var epilogueBg;
-      if (GAME.stageNum === 2) {
+      if (GAME.stageNum === 3) {
+        epilogueBg = (GAME.hitCount >= 3) ? 'backgrounds/stage3/bg_house_shake.jpg' : 'backgrounds/stage3/bg_evacuation_park.jpg';
+      } else if (GAME.stageNum === 2) {
         epilogueBg = (GAME.hitCount >= 3) ? 'backgrounds/stage2/bg_office_shake.png' : 'backgrounds/stage2/bg_building_plaza.png';
       } else {
         epilogueBg = (GAME.hitCount >= 3) ? 'backgrounds/stage1/bg_classroom_shake.png' : 'backgrounds/stage1/bg_schoolyard.png';
