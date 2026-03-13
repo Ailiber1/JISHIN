@@ -3992,13 +3992,22 @@ var NovelEngine = {
         var idx = (corners[ci][1] * w + corners[ci][0]) * 4;
         bgSamples.push([d[idx], d[idx+1], d[idx+2]]);
       }
-      // チェッカーボード検出: 隣接ピクセルが白/灰色系の交互パターン
+      // チェッカーボード検出: ブロックサイズ(8,10,16px)の交互パターンを検出
       var isChecker = false;
-      var topRow0 = [d[0], d[1], d[2]]; // (0,0)
-      var topRow1 = [d[4], d[5], d[6]]; // (1,0)
-      var lum0 = topRow0[0]*0.3+topRow0[1]*0.59+topRow0[2]*0.11;
-      var lum1 = topRow1[0]*0.3+topRow1[1]*0.59+topRow1[2]*0.11;
-      if (Math.abs(lum0 - lum1) > 15 && lum0 > 140 && lum1 > 140) isChecker = true;
+      var blockSizes = [1, 8, 10, 16];
+      for (var bsi = 0; bsi < blockSizes.length && !isChecker; bsi++) {
+        var bs = blockSizes[bsi];
+        if (bs >= w) continue;
+        var idx0 = 0; // (0,0)
+        var idx1 = bs * 4; // (bs,0)
+        var r0 = d[idx0], g0 = d[idx0+1], b0 = d[idx0+2];
+        var r1 = d[idx1], g1 = d[idx1+1], b1 = d[idx1+2];
+        var l0 = r0*0.3+g0*0.59+b0*0.11;
+        var l1 = r1*0.3+g1*0.59+b1*0.11;
+        var sat0 = Math.max(r0,g0,b0) - Math.min(r0,g0,b0);
+        var sat1 = Math.max(r1,g1,b1) - Math.min(r1,g1,b1);
+        if (Math.abs(l0-l1) > 10 && l0 > 130 && l1 > 130 && sat0 < 30 && sat1 < 30) isChecker = true;
+      }
       // 背景ピクセル判定
       var bgAvg = [0,0,0];
       for (var si = 0; si < bgSamples.length; si++) {
@@ -4009,13 +4018,51 @@ var NovelEngine = {
       if (bgLum < 100 && !isChecker) return; // 暗い背景は処理しない
 
       if (isChecker) {
-        // チェッカーボード検出時: 全ピクセルスキャンで高輝度・低彩度ピクセルを透過
-        for (var pi = 0; pi < d.length; pi += 4) {
-          var r = d[pi], g = d[pi+1], b = d[pi+2];
-          var lum = r*0.3+g*0.59+b*0.11;
-          var sat = Math.max(r,g,b) - Math.min(r,g,b);
-          if (lum > 130 && sat < 45) {
-            d[pi+3] = 0;
+        // チェッカーボード検出時: 四隅から2色を特定し、フラッドフィルで除去
+        // 四隅と辺の中点から背景2色をサンプリング
+        var bgColor1 = [d[0], d[1], d[2]];
+        var edgePts = [[0,0],[w-1,0],[0,h-1],[w-1,h-1],[1,0],[0,1],[w-2,0],[w-1,1]];
+        var bgColor2 = null;
+        for (var ei = 0; ei < edgePts.length; ei++) {
+          var eidx = (edgePts[ei][1] * w + edgePts[ei][0]) * 4;
+          var er = d[eidx], eg = d[eidx+1], eb = d[eidx+2];
+          var ediff = Math.abs(er-bgColor1[0]) + Math.abs(eg-bgColor1[1]) + Math.abs(eb-bgColor1[2]);
+          if (ediff > 20) { bgColor2 = [er, eg, eb]; break; }
+        }
+        if (!bgColor2) bgColor2 = bgColor1;
+        // フラッドフィルで四隅＋辺中点から背景除去
+        var visited = new Uint8Array(w * h);
+        var queue = [];
+        var cTol = 40;
+        function isCheckerBg(idx4) {
+          var cr = d[idx4], cg = d[idx4+1], cb = d[idx4+2];
+          if (d[idx4+3] === 0) return true;
+          var csat = Math.max(cr,cg,cb) - Math.min(cr,cg,cb);
+          if (csat > 50) return false; // 彩度が高いピクセルはキャラ部分
+          var d1 = Math.abs(cr-bgColor1[0])+Math.abs(cg-bgColor1[1])+Math.abs(cb-bgColor1[2]);
+          var d2 = Math.abs(cr-bgColor2[0])+Math.abs(cg-bgColor2[1])+Math.abs(cb-bgColor2[2]);
+          return d1 < cTol || d2 < cTol;
+        }
+        var cStartPts = [[0,0],[w-1,0],[0,h-1],[w-1,h-1],[Math.floor(w/2),0],[Math.floor(w/2),h-1],[0,Math.floor(h/2)],[w-1,Math.floor(h/2)]];
+        for (var csp = 0; csp < cStartPts.length; csp++) {
+          var csx = cStartPts[csp][0], csy = cStartPts[csp][1];
+          var csi = csy * w + csx;
+          if (visited[csi] || !isCheckerBg(csi * 4)) continue;
+          queue.push(csi);
+          visited[csi] = 1;
+          while (queue.length > 0) {
+            var cpos = queue.pop();
+            d[cpos * 4 + 3] = 0;
+            var cpx = cpos % w, cpy = Math.floor(cpos / w);
+            var cn = [[cpx-1,cpy],[cpx+1,cpy],[cpx,cpy-1],[cpx,cpy+1]];
+            for (var cni = 0; cni < cn.length; cni++) {
+              var cnx = cn[cni][0], cny = cn[cni][1];
+              if (cnx < 0 || cnx >= w || cny < 0 || cny >= h) continue;
+              var cnpos = cny * w + cnx;
+              if (visited[cnpos]) continue;
+              visited[cnpos] = 1;
+              if (isCheckerBg(cnpos * 4)) queue.push(cnpos);
+            }
           }
         }
       } else {
