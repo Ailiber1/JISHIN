@@ -9275,20 +9275,20 @@ function updateSingleNPC(npc, dtSec) {
       npc.phase += dtSec;
       if (npc.role === 'colleague') {
         // Stage 2: 同僚のオフィスワーク（PCに向かってタイピング）
-        var coSeatY = 0.42 - (npc.npcH || 1.6) * 0.38;
+        var coSeatY = 0.42 - (npc.npcH || 1.6) * 0.28;
         mesh.position.y = coSeatY + Math.sin(npc.phase * 1.5) * 0.002;
         mesh.rotation.y = Math.PI;
         var coSeed = (npc.deskX || 0) * 5 + (npc.deskZ || 0) * 3;
-        // 脚: 座りポーズ（膝90度曲げ）
+        // 脚: 座りポーズ（自然な角度 — 太ももやや前傾 + 膝軽く曲げ）
         if (mesh.userData.leftLeg) {
-          mesh.userData.leftLeg.rotation.x = -1.57;
+          mesh.userData.leftLeg.rotation.x = -0.9;
           var coUL = mesh.userData.leftLeg.children[0];
-          if (coUL && coUL.children[0]) coUL.children[0].rotation.x = 1.57;
+          if (coUL && coUL.children[0]) coUL.children[0].rotation.x = 0.9;
         }
         if (mesh.userData.rightLeg) {
-          mesh.userData.rightLeg.rotation.x = -1.57;
+          mesh.userData.rightLeg.rotation.x = -0.9;
           var coUR = mesh.userData.rightLeg.children[0];
-          if (coUR && coUR.children[0]) coUR.children[0].rotation.x = 1.57;
+          if (coUR && coUR.children[0]) coUR.children[0].rotation.x = 0.9;
         }
         // 頭: モニターを見る（時々視線を変える）
         var coHead = mesh.userData.head;
@@ -9572,7 +9572,7 @@ function updateSingleNPC(npc, dtSec) {
       var myDelay = npc.evacuationDelay || 0;
       if (GAME.phaseTimer < myDelay) {
         // まだ順番が来ていない — 立ち上がって待機（ポーズ完全リセット）
-        if (npc.state === 'crouching' || npc.state === 'idle' || npc.state === 'sitting') {
+        if (npc.state === 'crouching' || npc.state === 'idle' || npc.state === 'sitting' || npc.state === 'panicking' || npc.state === 'fallen') {
           npc.state = 'waiting';
           mesh.scale.set(1, 1, 1);
           mesh.position.y = 0;
@@ -11785,7 +11785,7 @@ function isUnderDesk(px, pz) {
       for (var or2 = 0; or2 < 5; or2++) {
         var odx = oStartX + oc * oGapX;
         var odz = oStartZ + or2 * oGapZ;
-        if (Math.abs(px - odx) < oDeskW && Math.abs(pz - odz) < oDeskD * 1.5) {
+        if (Math.abs(px - odx) < oDeskW && Math.abs(pz - odz) < oDeskD * 0.6) {
           return true;
         }
       }
