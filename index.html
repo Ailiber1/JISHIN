@@ -8815,9 +8815,10 @@ function updatePlayerModel() {
   if (GAME.phase === 'daily') {
     mesh.position.set(p.x, 0, p.z);
     mesh.rotation.y = Math.PI; // 黒板方向を向く
-    // 椅子に座る高さ（NPC生徒と同じ計算）
+    // 椅子に座る高さ（ステージの椅子座面に合わせる）
     var playerH = 0.82; // totalHeight相当
-    var seatY = 0.33 - playerH * 0.40;
+    var chairSeatH = GAME.stageNum === 2 ? 0.42 : 0.33;
+    var seatY = chairSeatH - playerH * 0.40;
     mesh.position.y = seatY + Math.sin((GAME.totalTimer || 0) * 2) * 0.003;
     // 座りポーズ: 脚を90度曲げる
     j.leftHip.rotation.x = -1.57;
@@ -9274,7 +9275,7 @@ function updateSingleNPC(npc, dtSec) {
       npc.phase += dtSec;
       if (npc.role === 'colleague') {
         // Stage 2: 同僚のオフィスワーク（PCに向かってタイピング）
-        var coSeatY = 0.33 - (npc.npcH || 1.6) * 0.38;
+        var coSeatY = 0.42 - (npc.npcH || 1.6) * 0.38;
         mesh.position.y = coSeatY + Math.sin(npc.phase * 1.5) * 0.002;
         mesh.rotation.y = Math.PI;
         var coSeed = (npc.deskX || 0) * 5 + (npc.deskZ || 0) * 3;
