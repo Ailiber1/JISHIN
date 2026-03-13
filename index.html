@@ -3803,6 +3803,11 @@ var NovelEngine = {
     boss: { name: {ja: '課長', en: 'Manager'}, pos: 'left', freq: 400 },
     colleague_a: { name: {ja: 'タカシ', en: 'Takashi'}, pos: 'right', freq: 700 },
     colleague_b: { name: {ja: 'ミサキ', en: 'Misaki'}, pos: 'right', freq: 800 },
+    // Stage 3
+    father: { name: {ja: '佐藤たけし', en: 'Takeshi Sato'}, color: '#757575', pos: 'left', freq: 400 },
+    mother: { name: {ja: '佐藤めぐみ', en: 'Megumi Sato'}, color: '#e91e63', pos: 'left', freq: 500 },
+    sister: { name: {ja: '佐藤ひなた', en: 'Hinata Sato'}, color: '#03a9f4', pos: 'right', freq: 800 },
+    grandma: { name: {ja: '佐藤はるよ', en: 'Haruyo Sato'}, color: '#795548', pos: 'right', freq: 300 },
     // Shared
     bousai: { name: {ja: 'ボウサイ', en: 'Bousai'}, pos: 'left', freq: 1000 },
     narrator: { name: '', pos: null, freq: 0 },
@@ -4676,6 +4681,231 @@ var NOVEL_VARIANTS = {
         { speaker: 'bousai', expr: 'smile', text: {ja: '知識確認テストに挑戦しよう！\n正しい知識を身につけて、\nもう一回やってみて！', en: 'Take the knowledge test!\nLearn the right actions\nand give it another try!'} },
       ],
     ],
+  },
+
+  // ============================================================
+  // Stage 3: 木造住宅（家族と自宅）
+  // ============================================================
+  stage3: {
+    // ====== プロローグ（3パターン）======
+    prologue: [
+      // パターンA: 夕食準備中の家族団らん
+      [
+        { speaker: 'narrator', text: {ja: '── 午後6時・佐藤家 ──', en: '── 6:00 PM — The Sato Residence ──'} },
+        { speaker: 'mother', expr: 'smile', text: {ja: 'もうすぐご飯できるわよー！\nみんな手を洗ってきてね。', en: 'Dinner will be ready soon!\nEveryone go wash your hands.'} },
+        { speaker: 'sister', expr: 'smile', text: {ja: 'は〜い！お母さん、\n今日のごはん何〜？', en: 'Okay! Mom,\nwhat\'s for dinner?'} },
+        { speaker: 'father', expr: 'normal', text: {ja: 'おい、ニュースでまた地震の話やってるぞ。\n南海トラフの特集だ。', en: 'Hey, they\'re talking about earthquakes on the news again.\nIt\'s a special on the Nankai Trough.'} },
+        { speaker: 'mother', expr: 'serious', text: {ja: 'うちは木造だから心配よね…\n非常持ち出し袋、確認しておこうかしら。', en: 'Our house is wooden, so it\'s worrying...\nMaybe I should check the emergency bag.'} },
+        { speaker: 'father', expr: 'normal', text: {ja: 'おばあちゃんは和室で休んでるから\n静かにしてやってくれ。', en: 'Grandma is resting in the Japanese room,\nso keep it down.'} },
+        { speaker: 'narrator', text: {ja: 'あなたは2階の自分の部屋で\n勉強をしている。', en: 'You are studying\nin your room upstairs.'} },
+        { speaker: 'bousai', expr: 'normal', text: {ja: '今日のポイント！\n① 揺れたらまずテーブルの下に入る\n② 揺れが収まったら火の始末\n③ 家族の安全を確認して避難する', en: 'Today\'s key points!\n① Get under a table when shaking starts\n② Turn off fire sources after shaking stops\n③ Check family safety and evacuate'} },
+        { speaker: 'narrator', text: {ja: '── その時 ──', en: '── Then ──'} },
+      ],
+      // パターンB: テレビを見ている家族
+      [
+        { speaker: 'narrator', text: {ja: '── 午後7時・佐藤家のリビング ──', en: '── 7:00 PM — The Sato Family Living Room ──'} },
+        { speaker: 'sister', expr: 'normal', text: {ja: 'お兄ちゃん（お姉ちゃん）、\n一緒にテレビ見よ〜！', en: 'Hey, come watch TV\nwith me!'} },
+        { speaker: 'father', expr: 'smile', text: {ja: 'ひなた、宿題は終わったのか？\nテレビはその後だぞ。', en: 'Hinata, did you finish your homework?\nTV comes after that.'} },
+        { speaker: 'sister', expr: 'surprise', text: {ja: 'えー！もうちょっとだけ〜！', en: 'Aww! Just a little more!'} },
+        { speaker: 'mother', expr: 'normal', text: {ja: 'あら、台所のコンロつけっぱなしだわ。\nお味噌汁温め直さないと。', en: 'Oh, I left the stove on.\nI need to reheat the miso soup.'} },
+        { speaker: 'father', expr: 'normal', text: {ja: 'おばあちゃんに夕飯の声かけてくれ。\n和室にいるはずだ。', en: 'Call Grandma for dinner.\nShe should be in the Japanese room.'} },
+        { speaker: 'narrator', text: {ja: 'あなたは2階で試験勉強中。\n家族の会話が階下から聞こえてくる。', en: 'You are studying for exams upstairs.\nYou can hear your family chatting below.'} },
+        { speaker: 'bousai', expr: 'normal', text: {ja: '今日のポイント！\n① 家では家具の転倒に注意\n② 火の始末は揺れが収まってから\n③ 家族で集合場所を決めておこう', en: 'Today\'s key points!\n① Watch out for falling furniture at home\n② Turn off fire after shaking stops\n③ Decide on a meeting point with family'} },
+        { speaker: 'narrator', text: {ja: '── 突然 ──', en: '── Suddenly ──'} },
+      ],
+      // パターンC: 勉強中のプレイヤー視点
+      [
+        { speaker: 'narrator', text: {ja: '── 夕方・佐藤家の2階 ──', en: '── Evening — Sato House, 2nd Floor ──'} },
+        { speaker: 'narrator', text: {ja: 'あなたは明日のテストに向けて\n部屋で勉強している。', en: 'You are in your room studying\nfor tomorrow\'s test.'} },
+        { speaker: 'mother', expr: 'normal', text: {ja: '（階下から）ごはんまであと30分よー！', en: '(From downstairs) Dinner in 30 minutes!'} },
+        { speaker: 'sister', expr: 'smile', text: {ja: '（ドアをノック）お兄ちゃん（お姉ちゃん）、\n遊ぼ〜！', en: '(Knocking on door) Hey,\nlet\'s play!'} },
+        { speaker: 'father', expr: 'serious', text: {ja: '（階下から）ひなた、邪魔するんじゃない。\n勉強してるんだから。', en: '(From downstairs) Hinata, don\'t bother them.\nThey\'re studying.'} },
+        { speaker: 'narrator', text: {ja: '本棚の横の机に向かっていると、\n窓の外から犬の鳴き声が聞こえた。\nなんだか騒がしい…', en: 'As you sit at your desk next to the bookshelf,\nyou hear a dog barking outside.\nSomething feels off...'} },
+        { speaker: 'bousai', expr: 'normal', text: {ja: '今日のポイント！\n① 本棚や家具から離れる\n② 2階にいる場合は1階に降りる前に安全確認\n③ スリッパや靴で足を保護する', en: 'Today\'s key points!\n① Stay away from bookshelves and furniture\n② If upstairs, check safety before going down\n③ Protect your feet with slippers or shoes'} },
+        { speaker: 'narrator', text: {ja: '── 次の瞬間 ──', en: '── The next moment ──'} },
+      ],
+    ],
+
+    // ====== 地震発生（3パターン）======
+    earthquake: [
+      // パターンA: 緊急地震速報から
+      [
+        { speaker: 'narrator', text: {ja: '── ﾋﾟﾛﾝﾋﾟﾛﾝ！緊急地震速報です ──', en: '── Beep beep! Earthquake Early Warning! ──'} },
+        { speaker: 'father', expr: 'surprise', text: {ja: '地震だ！！みんな気をつけろ！！', en: 'Earthquake!! Everyone be careful!!'} },
+        { speaker: 'sister', expr: 'panic', text: {ja: 'きゃあっ！！こわい！！', en: 'Aaah!! I\'m scared!!'} },
+        { speaker: 'mother', expr: 'surprise', text: {ja: 'ひなた！テーブルの下に入りなさい！！', en: 'Hinata! Get under the table!!'} },
+        {
+          type: 'choice', text: {ja: 'どうする？', en: 'What do you do?'},
+          choices: [
+            { label: {ja: 'テーブルの下に隠れる', en: 'Hide under the table'}, score: 5, correct: true,
+              response: { speaker: 'bousai', expr: 'smile', text: {ja: '正解！丈夫なテーブルの下に入って\n頭を守ろう！\n本棚が倒れてきても安全だ。', en: 'Correct! Get under a sturdy table\nand protect your head!\nYou\'ll be safe even if the bookshelf falls.'} }},
+            { label: {ja: 'すぐに外に飛び出す', en: 'Run outside immediately'}, score: -3, correct: false,
+              consequence: { icon: '💥', text: {ja: '屋根瓦が\n落ちてきた！', en: 'Roof tiles\nfell down!'}, flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: {ja: '危険！揺れている最中に外に出ると\n屋根瓦やガラスが落ちてくる。\n木造住宅は特に瓦の落下が多い。\nまず室内で身を守ろう。', en: 'Dangerous! Going outside during shaking\nmeans roof tiles and glass can fall on you.\nWooden houses are especially prone to falling tiles.\nProtect yourself indoors first.'} }},
+            { label: {ja: 'パニックで動けない', en: 'Freeze in panic'}, score: -2, correct: false,
+              consequence: { icon: '📚', text: {ja: '本棚が倒れてきた！', en: 'The bookshelf toppled over!'}, flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'serious', text: {ja: 'パニックで固まるのは危険だ。\n家具は揺れで簡単に倒れる。\n日頃から「揺れたらテーブルの下」と\n体に覚えさせておこう。', en: 'Freezing in panic is dangerous.\nFurniture topples easily during shaking.\nTrain yourself to automatically\nget under a table when shaking starts.'} }},
+          ]
+        },
+      ],
+      // パターンB: いきなり揺れ始め
+      [
+        { speaker: 'narrator', text: {ja: '── ガタガタガタ…！！──', en: '── Rattle rattle rattle...!! ──'} },
+        { speaker: 'narrator', text: {ja: '突然、激しい揺れが襲った！\n2階の部屋が大きく揺れている！', en: 'Suddenly, violent shaking hits!\nThe upstairs room is shaking hard!'} },
+        { speaker: 'mother', expr: 'surprise', text: {ja: '（階下から）きゃっ！！地震！！', en: '(From downstairs) Aah!! Earthquake!!'} },
+        { speaker: 'father', expr: 'serious', text: {ja: '（階下から）テーブルの下に入れ！！\nひなた、こっちに来い！！', en: '(From downstairs) Get under the table!!\nHinata, come here!!'} },
+        {
+          type: 'choice', text: {ja: 'どうする？', en: 'What do you do?'},
+          choices: [
+            { label: {ja: '机の下にもぐる', en: 'Get under the desk'}, score: 5, correct: true,
+              response: { speaker: 'bousai', expr: 'smile', text: {ja: '正解！勉強机の下に入って\n頭を守ろう。\n揺れが収まるまでじっとしていよう。', en: 'Correct! Get under your study desk\nand protect your head.\nStay still until the shaking stops.'} }},
+            { label: {ja: '階段を駆け下りる', en: 'Rush down the stairs'}, score: -3, correct: false,
+              consequence: { icon: '💥', text: {ja: '階段で転んだ！', en: 'You fell on the stairs!'}, flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: {ja: '揺れている最中の階段は超危険！\n手すりにつかまっても転倒しやすい。\n地震での階段事故は非常に多いんだ。\nまず揺れが収まるのを待とう。', en: 'Stairs during shaking are extremely dangerous!\nEven holding the railing, you can easily fall.\nStairway accidents during earthquakes are very common.\nWait for the shaking to stop first.'} }},
+            { label: {ja: '立ったまま様子を見る', en: 'Stand still and observe'}, score: -2, correct: false,
+              consequence: { icon: '📚', text: {ja: '本棚が倒れてきた！', en: 'The bookshelf toppled over!'}, flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'serious', text: {ja: '木造住宅の2階は揺れが大きい。\n立っていると家具の下敷きになる。\nすぐに低い姿勢になって\n丈夫な家具の下に入ろう。', en: 'The 2nd floor of wooden houses shakes more.\nStanding means furniture can fall on you.\nGet low immediately\nand take cover under sturdy furniture.'} }},
+          ]
+        },
+      ],
+      // パターンC: スマホの速報から
+      [
+        { speaker: 'narrator', text: {ja: 'スマホから緊急地震速報が鳴り響いた！', en: 'The Earthquake Early Warning blares from your phone!'} },
+        { speaker: 'narrator', text: {ja: '── ﾋﾟﾛﾝﾋﾟﾛﾝ！強い揺れに警戒！──', en: '── Beep beep! Brace for strong shaking! ──'} },
+        { speaker: 'sister', expr: 'panic', text: {ja: '（階下から）お兄ちゃーん！！こわいよー！！', en: '(From downstairs) Big brother/sister!! I\'m scared!!'} },
+        { speaker: 'father', expr: 'serious', text: {ja: '（階下から）落ち着け！\nまず自分の身を守れ！！', en: '(From downstairs) Stay calm!\nProtect yourself first!!'} },
+        {
+          type: 'choice', text: {ja: 'どうする？', en: 'What do you do?'},
+          choices: [
+            { label: {ja: 'クッションで頭を守り机の下へ', en: 'Grab a cushion, protect head, get under desk'}, score: 5, correct: true,
+              response: { speaker: 'bousai', expr: 'smile', text: {ja: '素晴らしい！クッションや枕で\n頭を守りながら机の下に入るのは\n最高の判断だ！', en: 'Excellent! Protecting your head with\na cushion or pillow while getting\nunder the desk is the best decision!'} }},
+            { label: {ja: 'ひなたを助けに1階へ走る', en: 'Run downstairs to help Hinata'}, score: -3, correct: false,
+              consequence: { icon: '💥', text: {ja: '階段で転倒した！', en: 'You fell on the stairs!'}, flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: {ja: '家族を心配する気持ちはわかるが、\n揺れの最中に動くのは危険だ。\nひなたにはお父さんがついている。\nまず自分の身を守ることが最優先！', en: 'I understand worrying about family,\nbut moving during shaking is dangerous.\nHinata has your father with her.\nProtecting yourself comes first!'} }},
+            { label: {ja: 'スマホで地震情報を確認する', en: 'Check earthquake info on phone'}, score: -2, correct: false,
+              consequence: { icon: '📚', text: {ja: '棚から物が\n降ってきた！', en: 'Things fell\nfrom the shelf!'}, flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'serious', text: {ja: 'スマホ確認は揺れが収まってから！\n揺れている最中は頭を守ることが\n最優先だ。情報は後で確認できる。', en: 'Check your phone after shaking stops!\nDuring shaking, protecting your head\nis the top priority. Info can wait.'} }},
+          ]
+        },
+      ],
+    ],
+
+    // ====== 揺れの後（3パターン）======
+    aftershake: [
+      // パターンA: 停電、父の指示
+      [
+        { speaker: 'narrator', text: {ja: '── 揺れが収まった…停電で真っ暗だ ──', en: '── The shaking stopped... It\'s pitch dark from the power outage ──'} },
+        { speaker: 'father', expr: 'serious', text: {ja: '火を止めろ！！コンロの火を確認しろ！\nひなたは2階にいるか確認してくれ！', en: 'Turn off the fire!! Check the stove!\nCheck if Hinata is upstairs!'} },
+        { speaker: 'mother', expr: 'worry', text: {ja: 'コンロは止めたわ！\nでも暗くて何も見えない…', en: 'I turned off the stove!\nBut I can\'t see anything in the dark...'} },
+        {
+          type: 'choice', text: {ja: 'どうする？', en: 'What do you do?'},
+          choices: [
+            { label: {ja: '懐中電灯を探す', en: 'Find a flashlight'}, score: 5, correct: true,
+              response: { speaker: 'bousai', expr: 'smile', text: {ja: '正解！まず明かりを確保しよう。\n停電時は懐中電灯やスマホのライトが\n頼りになる。\n枕元に懐中電灯を置く習慣が大事だ。', en: 'Correct! Secure a light source first.\nDuring blackouts, flashlights and phone lights\nare your lifeline.\nKeep a flashlight by your bedside.'} }},
+            { label: {ja: 'すぐに玄関に向かう', en: 'Head straight for the door'}, score: 2, correct: false,
+              response: { speaker: 'bousai', expr: 'normal', text: {ja: '玄関の確認は大切だが、\n暗闘の中で動くとガラスの破片を踏んだり\n倒れた家具につまずく。\nまず明かりを確保してから動こう。', en: 'Checking the door is important, but\nmoving in the dark risks stepping on glass\nor tripping over fallen furniture.\nGet a light first, then move.'} }},
+            { label: {ja: 'スマホで状況を確認する', en: 'Check the situation on your phone'}, score: -2, correct: false,
+              consequence: { icon: '🪟', text: {ja: '暗闘の中でガラス片を\n踏んでしまった！', en: 'You stepped on glass\nin the dark!'}, flash: 'red', shake: false },
+              response: { speaker: 'bousai', expr: 'worry', text: {ja: 'スマホの情報より先に\n足元の安全確保が大事！\nまず懐中電灯かスマホの「ライト」で\n足元を照らそう。SNSは後で。', en: 'Securing your footing is more important\nthan phone info!\nUse a flashlight or phone "light"\nto illuminate your path first. Social media can wait.'} }},
+          ]
+        },
+      ],
+      // パターンB: 余震への備え
+      [
+        { speaker: 'narrator', text: {ja: '── 揺れが収まった…が、電気が消えた ──', en: '── The shaking stopped... but the power is out ──'} },
+        { speaker: 'father', expr: 'serious', text: {ja: '余震が来るかもしれない。\nガスの元栓を閉めてくれ！\nおばあちゃんの様子も見てきてくれ。', en: 'Aftershocks might come.\nShut off the gas valve!\nAnd check on Grandma too.'} },
+        { speaker: 'sister', expr: 'panic', text: {ja: 'こわいよ〜…また揺れるの…？', en: 'I\'m scared... will it shake again...?'} },
+        { speaker: 'mother', expr: 'worry', text: {ja: 'ひなた、大丈夫よ。\nお母さんがついてるからね。', en: 'Hinata, it\'s okay.\nMommy is right here.'} },
+        {
+          type: 'choice', text: {ja: 'どうする？', en: 'What do you do?'},
+          choices: [
+            { label: {ja: '懐中電灯を持ってガス元栓を閉めに行く', en: 'Take flashlight and shut off gas valve'}, score: 5, correct: true,
+              response: { speaker: 'bousai', expr: 'smile', text: {ja: '素晴らしい判断！\nガスの元栓を閉めることで\n二次災害（ガス漏れ・火災）を防げる。\n行動する時は足元に注意しよう。', en: 'Great decision!\nShutting the gas valve\nprevents secondary disasters (gas leaks, fires).\nWatch your step while moving.'} }},
+            { label: {ja: 'すぐに外に逃げる', en: 'Escape outside immediately'}, score: 2, correct: false,
+              response: { speaker: 'bousai', expr: 'normal', text: {ja: '避難は大事だが、\nガスをつけたまま出ると\n火災やガス爆発の危険がある。\n出る前にガスの元栓だけは閉めよう。', en: 'Evacuation is important, but\nleaving gas on risks\nfire or gas explosion.\nAt least shut the gas valve before leaving.'} }},
+            { label: {ja: 'スマホでニュースを調べる', en: 'Check news on phone'}, score: -2, correct: false,
+              consequence: { icon: '🔥', text: {ja: 'キッチンから\n煙が出ている！', en: 'Smoke is coming\nfrom the kitchen!'}, flash: 'red', shake: false },
+              response: { speaker: 'bousai', expr: 'worry', text: {ja: 'ニュース確認より先に\n火の始末が最優先！\nコンロの火が食器棚の中身に\n引火する危険があるんだ。', en: 'Turning off fires comes before\nchecking the news!\nThe stove flame could ignite\nitems from fallen cupboards.'} }},
+          ]
+        },
+      ],
+      // パターンC: ブレーカー対応
+      [
+        { speaker: 'narrator', text: {ja: '── 揺れが止まった…家中が散乱している ──', en: '── The shaking stopped... the house is in disarray ──'} },
+        { speaker: 'mother', expr: 'relief', text: {ja: 'みんな無事！？\nひなた！おばあちゃん！', en: 'Is everyone okay!?\nHinata! Grandma!'} },
+        { speaker: 'father', expr: 'serious', text: {ja: 'ブレーカーを落とせ！\n通電火災が危険だ！\nそれから靴を履け、ガラスだらけだ！', en: 'Turn off the breaker!\nElectrical fires are a risk!\nAnd put on shoes, there\'s glass everywhere!'} },
+        {
+          type: 'choice', text: {ja: 'どうする？', en: 'What do you do?'},
+          choices: [
+            { label: {ja: 'スリッパを履いてブレーカーを落としに行く', en: 'Put on slippers and go turn off breaker'}, score: 5, correct: true,
+              response: { speaker: 'bousai', expr: 'smile', text: {ja: '完璧な判断！\n足を保護してからブレーカーを落とす。\n通電火災は地震後に多い火災原因だ。\n阪神淡路大震災の出火原因の6割が\n通電火災だったんだ。', en: 'Perfect decision!\nProtect your feet, then turn off the breaker.\nElectrical fires are a major cause after earthquakes.\n60% of fires in the Great Hanshin Earthquake\nwere caused by electrical restoration.'} }},
+            { label: {ja: '裸足のまま急いで避難する', en: 'Evacuate quickly barefoot'}, score: 2, correct: false,
+              consequence: { icon: '🪟', text: {ja: 'ガラスの破片を\n踏んでしまった！', en: 'You stepped on\nglass shards!'}, flash: 'red', shake: false },
+              response: { speaker: 'bousai', expr: 'worry', text: {ja: '裸足は絶対ダメ！\n地震後の室内はガラスや陶器の\n破片だらけ。足をケガすると\n避難そのものができなくなる。\n必ず靴やスリッパを履こう。', en: 'Never go barefoot!\nAfter an earthquake, floors are covered\nwith glass and ceramic shards.\nInjuring your feet prevents evacuation.\nAlways wear shoes or slippers.'} }},
+            { label: {ja: 'そのまま部屋で待つ', en: 'Stay in your room and wait'}, score: -2, correct: false,
+              response: { speaker: 'bousai', expr: 'serious', text: {ja: '木造住宅は余震で倒壊する危険がある。\n揺れが収まったら速やかに\n安全確認と避難準備をしよう。\nじっとしているだけでは危険だ。', en: 'Wooden houses may collapse in aftershocks.\nAfter shaking stops, promptly\ncheck safety and prepare to evacuate.\nJust staying put is dangerous.'} }},
+          ]
+        },
+      ],
+    ],
+
+    // ====== エピローグ成功（3パターン）======
+    epilogue_success: [
+      // パターンA
+      [
+        { speaker: 'narrator', text: {ja: '── 近くの公園（一時避難場所）──', en: '── Nearby park (temporary evacuation site) ──'} },
+        { speaker: 'father', expr: 'relief', text: {ja: '全員無事だな…よかった。\nおばあちゃんも大丈夫か？', en: 'Everyone\'s safe... thank goodness.\nIs Grandma okay too?'} },
+        { speaker: 'mother', expr: 'relief', text: {ja: 'ええ、おばあちゃんも一緒に\n避難できたわ。\n非常持ち出し袋も持ってきたの。', en: 'Yes, we evacuated with Grandma.\nI brought the emergency bag too.'} },
+        { speaker: 'sister', expr: 'smile', text: {ja: 'お兄ちゃん（お姉ちゃん）、\nすごかったね！かっこよかった！', en: 'You were amazing!\nSo cool!'} },
+        { speaker: 'father', expr: 'smile', text: {ja: 'お前のおかげで\n落ち着いて避難できた。\nよくやったぞ。', en: 'Thanks to you,\nwe evacuated calmly.\nWell done.'} },
+        { speaker: 'bousai', expr: 'smile', text: {ja: '素晴らしい判断の連続だった！\n家族の安全を守りながら\n正しい行動ができたね。\nこの経験を忘れないでほしい。', en: 'A series of great decisions!\nYou protected your family\nwhile taking the right actions.\nNever forget this experience.'} },
+      ],
+      // パターンB
+      [
+        { speaker: 'narrator', text: {ja: '── 避難所に到着 ──', en: '── Arrived at the evacuation shelter ──'} },
+        { speaker: 'mother', expr: 'relief', text: {ja: 'みんな無事で本当によかった…\nおばあちゃんも足は大丈夫？', en: 'I\'m so glad everyone is safe...\nGrandma, are your legs okay?'} },
+        { speaker: 'father', expr: 'normal', text: {ja: 'ガスの元栓も閉めたし、\nブレーカーも落とした。\n二次災害の心配はないだろう。', en: 'We shut the gas valve\nand turned off the breaker.\nNo worry about secondary disasters.'} },
+        { speaker: 'sister', expr: 'smile', text: {ja: 'お兄ちゃん（お姉ちゃん）が\n靴持ってきてくれたから\n足、痛くなかったよ！', en: 'You brought shoes for me,\nso my feet didn\'t hurt!'} },
+        { speaker: 'bousai', expr: 'smile', text: {ja: '家族全員の安全を確保し、\n火の始末もブレーカーも完璧だった。\n木造住宅での地震対応、\n見事にクリアだ！', en: 'You secured everyone\'s safety,\nhandled the fire and breaker perfectly.\nYou aced earthquake response\nin a wooden house!'} },
+      ],
+      // パターンC
+      [
+        { speaker: 'narrator', text: {ja: '── 公園の集合場所 ──', en: '── Meeting point at the park ──'} },
+        { speaker: 'father', expr: 'relief', text: {ja: '家族全員揃ったな。\n日頃の備えが役に立った。', en: 'The whole family is here.\nOur daily preparations paid off.'} },
+        { speaker: 'mother', expr: 'smile', text: {ja: 'あなたが冷静に行動してくれて\n本当に助かったわ。\nおばあちゃんの手を引いてくれてありがとう。', en: 'You staying calm really helped.\nThank you for guiding Grandma.'} },
+        { speaker: 'sister', expr: 'smile', text: {ja: 'もうこわくないよ！\nだってみんな一緒だもん！', en: 'I\'m not scared anymore!\nBecause we\'re all together!'} },
+        { speaker: 'bousai', expr: 'smile', text: {ja: '完璧な避難だった！\n家族を守りながら正しい判断を\n積み重ねることができた。\n君は立派な防災リーダーだ！', en: 'A perfect evacuation!\nYou made the right decisions\nwhile protecting your family.\nYou\'re a true disaster preparedness leader!'} },
+      ],
+    ],
+
+    // ====== エピローグ失敗（3パターン）======
+    epilogue_fail: [
+      // パターンA
+      [
+        { speaker: 'narrator', text: {ja: '── 避難所 ──', en: '── Evacuation shelter ──'} },
+        { speaker: 'father', expr: 'serious', text: {ja: 'ケガはないか？\n無茶な行動は命取りになるぞ。', en: 'Are you hurt?\nReckless actions can be fatal.'} },
+        { speaker: 'mother', expr: 'worry', text: {ja: 'あなた、腕にケガしてるじゃない！\nもっと気をつけないと…', en: 'You have a cut on your arm!\nYou need to be more careful...'} },
+        { speaker: 'bousai', expr: 'serious', text: {ja: '今回はいくつかの判断を\n間違えてしまったね。\nでも、失敗から学ぶことが大切だ。\n次は正しい判断ができるはず。', en: 'You made some wrong decisions\nthis time.\nBut learning from mistakes is important.\nYou\'ll make the right calls next time.'} },
+        { speaker: 'bousai', expr: 'normal', text: {ja: '木造住宅での地震は\n「火の始末」「足の保護」「避難経路」が\nキーポイントだ。\nしっかり覚えておこう。', en: 'In wooden houses during earthquakes,\n"fire safety," "foot protection," and "escape routes"\nare the key points.\nRemember them well.'} },
+        { speaker: 'bousai', expr: 'smile', text: {ja: 'テストで知識を確認して、\nもう一度チャレンジしてみよう！\n家族を守れる自分になろう！', en: 'Test your knowledge\nand try again!\nBecome someone who can protect your family!'} },
+      ],
+      // パターンB
+      [
+        { speaker: 'narrator', text: {ja: '── なんとか避難できたが… ──', en: '── You managed to evacuate, but... ──'} },
+        { speaker: 'mother', expr: 'worry', text: {ja: 'おばあちゃんの避難が遅れちゃったの。\nもう少し早く声をかけていれば…', en: 'Grandma\'s evacuation was delayed.\nIf only we had called out sooner...'} },
+        { speaker: 'father', expr: 'serious', text: {ja: '焦って行動すると\nかえって危険なんだ。\n正しい順序を覚えておけ。', en: 'Acting in a rush\nactually makes things more dangerous.\nRemember the correct order.'} },
+        { speaker: 'bousai', expr: 'serious', text: {ja: '家族がいる場面では、\n自分の安全を確保してから\n周りを助けることが大切だ。\n焦りは判断ミスの原因になる。', en: 'When family is around,\nsecure your own safety first,\nthen help others.\nPanic leads to poor decisions.'} },
+        { speaker: 'bousai', expr: 'smile', text: {ja: '知識テストで復習して、\n次こそ家族全員を\n安全に避難させよう！', en: 'Review with the knowledge test,\nand next time evacuate\nyour whole family safely!'} },
+      ],
+      // パターンC
+      [
+        { speaker: 'narrator', text: {ja: '── 避難所にて ──', en: '── At the evacuation shelter ──'} },
+        { speaker: 'father', expr: 'serious', text: {ja: 'ガスの元栓を閉め忘れたかもしれない。\n通電火災も心配だ…\n今度からは手順を覚えておこう。', en: 'We might have forgotten to shut the gas valve.\nElectrical fires are a concern too...\nLet\'s remember the steps next time.'} },
+        { speaker: 'mother', expr: 'serious', text: {ja: '命があっただけよかったけど…\n次はもっとちゃんと準備しないとね。', en: 'At least we\'re alive...\nbut we need to prepare better next time.'} },
+        { speaker: 'bousai', expr: 'serious', text: {ja: '木造住宅の地震対応で大事なのは\n「身を守る→火の始末→足の保護→避難」\nこの順番だ。', en: 'For earthquakes in wooden houses:\n"Protect yourself → Turn off fire → Protect feet → Evacuate"\nThat\'s the order.'} },
+        { speaker: 'bousai', expr: 'normal', text: {ja: '知識があれば家族を守れる。\nテストで確認して、\nもう一度挑戦してみよう！', en: 'Knowledge protects your family.\nTake the test to confirm,\nand try again!'} },
+      ],
+    ],
   }
 
 };
@@ -5407,7 +5637,7 @@ function initEventListeners() {
     SoundManager.playSE('click');
 
     // 未実装ステージチェック
-    var implementedStages = [1, 2]; // 実装済みステージ番号
+    var implementedStages = [1, 2, 3]; // 実装済みステージ番号
     if (implementedStages.indexOf(stageNum) === -1) {
       alert('Stage ' + stageNum + ' は現在開発中です。\ncoming soon...');
       return;
@@ -5423,10 +5653,13 @@ function initEventListeners() {
       // プロローグ中は環境音を流す
       if (stageNum === 2) {
         SoundManager.startOfficeAmbient();
+      } else if (stageNum === 3) {
+        // Stage 3: 夜の一軒家の環境音（虫の声・時計の音など）
+        SoundManager.startClassroomAmbient(); // 暫定: 静かな環境音を流用
       } else {
         SoundManager.startClassroomAmbient();
       }
-      var prologueBgMap = { 1: 'backgrounds/stage1/bg_classroom.png', 2: 'backgrounds/stage2/bg_office.png' };
+      var prologueBgMap = { 1: 'backgrounds/stage1/bg_classroom.png', 2: 'backgrounds/stage2/bg_office.png', 3: 'backgrounds/stage3/bg_living_room.png' };
       NovelEngine.start(
         NOVEL_SCRIPTS['stage' + stageNum].prologue,
         prologueBgMap[stageNum] || prologueBgMap[1],
@@ -5537,6 +5770,11 @@ const GAME = {
     checkedSafety: false,      // 安否確認
     usedStairs: false,         // 階段で避難
     avoidedBlockWall: true,    // ブロック塀回避（初期true）
+    turnedOffGas: false,       // ガス元栓を閉めた（Stage 3）
+    usedFlashlight: false,     // 懐中電灯を使用した（Stage 3）
+    rescuedChild: false,       // 子どもに声をかけた（Stage 3）
+    helpedGrandma: false,      // 祖母を手助けした（Stage 3）
+    familyEvacuated: false,    // 家族全員で避難した（Stage 3）
     reachedEvacPoint: false,   // 避難場所到達
     withinTimeLimit: false,    // 制限時間内
   },
@@ -5628,6 +5866,13 @@ function initGame(stageNum) {
     GAME.player.x = -8 + 2 * 4;  // 0
     GAME.player.y = 0.9;
     GAME.player.z = 2 + 1 * 2.5 + 0.4; // 4.9（椅子位置）
+    GAME.player.yaw = Math.PI;
+    GAME.timeLimit = 360; // 6分
+  } else if (sn === 3) {
+    // Stage 3: 一軒家 — プレイヤーは2Fの自室（勉強机に座っている）
+    GAME.player.x = 3;
+    GAME.player.y = 3.6;  // 2F (1F高さ2.7m + 床厚0.15m + 目線0.75m)
+    GAME.player.z = 2;
     GAME.player.yaw = Math.PI;
     GAME.timeLimit = 360; // 6分
   } else {
@@ -5737,12 +5982,15 @@ function initGame(stageNum) {
   }
 
   document.getElementById('hud-score').textContent = 'SCORE: 0';
-  document.getElementById('hud-phase').textContent = GAME.phase === 'daily' ? (currentLang === 'en' ? 'In Class' : '授業中') : '';
+  var dailyLabel = stageNum === 2 ? (currentLang === 'en' ? 'Working' : '業務中') : stageNum === 3 ? (currentLang === 'en' ? 'At Home' : '在宅中') : (currentLang === 'en' ? 'In Class' : '授業中');
+  document.getElementById('hud-phase').textContent = GAME.phase === 'daily' ? dailyLabel : '';
   document.getElementById('hud-timer').textContent = '--:--';
   // 日常ラベル表示（ステージ別）
   var dclEl = document.getElementById('daily-class-label');
   if (stageNum === 2) {
     dclEl.innerHTML = '<div class="dcl-main">💼 ' + (currentLang === 'en' ? 'Working' : '業務中') + '</div>';
+  } else if (stageNum === 3) {
+    dclEl.innerHTML = '<div class="dcl-main">🏠 ' + (currentLang === 'en' ? 'Relaxing at Home' : 'くつろぎ中') + '</div>';
   } else {
     dclEl.innerHTML = '<div class="dcl-main">📚 ' + (currentLang === 'en' ? 'In Class' : '授業中') + '</div>';
   }
@@ -7295,6 +7543,7 @@ function buildSchoolyard() {
 // SECTION: Stage 2 定数・3D環境構築関数
 // ============================================================
 var EVAC_POINT_S2 = { x: 8, z: 25, radius: 3 }; // ビル前広場（道路外・敷地内）
+var EVAC_POINT_S3 = { x: 0, z: -60, radius: 5 }; // 近隣公園（道路50m先）
 var STAIR_TRIGGER_S2 = { minX: -12.5, maxX: -10.5, minZ: 13.5, maxZ: 15.5 };
 var GROUND_Y_S2 = 0;
 var OFFICE_FLOOR_Y = 0; // 10階だが座標上はY=0で構築
@@ -10886,9 +11135,17 @@ function _doTransitionPhase(newPhase) {
       GAME._evacuationStarted = true;
       GAME.player.isCrouching = false;
 
-      if (GAME.stageNum === 2) {
+      if (GAME.stageNum === 3) {
+        // Stage 3: 一軒家 — 停電演出 + 家族の安全確保を促す
+        showAdvisor({ja: '停電だ！まずは懐中電灯を探そう。家族の安全を確認して！', en: 'Power out! Find a flashlight first. Check on your family!'}, 'warning');
+        // 停電: 室内照明を消す
+        if (GAME._houseLights) {
+          GAME._houseLights.forEach(function(l) { l.intensity = 0; });
+        }
+        // 薄暗い環境光に変更
+        if (GAME._ambientLight) GAME._ambientLight.intensity = 0.08;
+      } else if (GAME.stageNum === 2) {
         // Stage 2: オフィス — プレイヤーをデスク間の通路に移動
-        // デスクグリッド: X=-8,-4,0,4 / Z=2,4.5,7,9.5,12 なので間を選ぶ
         GAME.player.x = -2;
         GAME.player.z = 5.75;
         showAdvisor({ja: '避難開始！非常階段を目指そう！エレベーターは使うな！', en: 'Start evacuating! Head for the emergency stairs! Don\'t use the elevator!'}, 'normal');
@@ -10978,7 +11235,7 @@ function updateHUD() {
 
   // 震度表示
   var seismicEl = document.getElementById('hud-seismic');
-  if (seismicEl) seismicEl.textContent = '震度' + GAME.quake.intensity;
+  if (seismicEl) seismicEl.textContent = (currentLang === 'en' ? 'Intensity ' : '震度') + GAME.quake.intensity;
 }
 
 // ============================================================
@@ -11455,9 +11712,9 @@ function selectQuizAnswer(index) {
   // 次へボタン
   var nextBtn = document.getElementById('quiz-next-btn');
   if (quizState.current < quizState.total - 1) {
-    nextBtn.textContent = '次の問題';
+    nextBtn.textContent = (currentLang === 'en' ? 'Next Question' : '次の問題');
   } else {
-    nextBtn.textContent = '結果を見る';
+    nextBtn.textContent = (currentLang === 'en' ? 'View Results' : '結果を見る');
   }
   nextBtn.style.display = 'inline-block';
 }
@@ -11537,11 +11794,14 @@ function calculateScore() {
     if (s.noElevator) score += 6; // エレベーターに乗らなかったボーナス
     score += (GAME._novelChoiceScore || 0);
   } else if (stg === 3) {
-    // Stage3（自宅）: ストーブ消火+ブレーカー+靴+ドア = 24点
-    if (s.turnedOffFire) score += 6;
-    if (s.openedDoor) score += 6;
-    if (s.turnedOffBreaker) score += 6;
-    if (s.putOnShoes) score += 6;
+    // Stage3（自宅）: ガス元栓+ブレーカー+靴+懐中電灯+子ども救助+祖母支援+ノベル
+    if (s.turnedOffGas) score += 6;      // ガスの元栓を閉めた
+    if (s.turnedOffBreaker) score += 6;  // ブレーカーを落とした
+    if (s.putOnShoes) score += 6;        // 靴を履いた
+    if (s.usedFlashlight) score += 5;    // 懐中電灯を使用した
+    if (s.rescuedChild) score += 5;      // 子どもに声をかけた
+    if (s.helpedGrandma) score += 5;     // 祖母を手助けした
+    score += (GAME._novelChoiceScore || 0);
   } else {
     // その他: 全項目
     if (s.turnedOffFire) score += 6;
@@ -11649,10 +11909,14 @@ function showResult() {
         var novelPts2 = GAME._novelChoiceScore || 0;
         actions.push({ done: novelPts2 > 0, text: en ? 'Made correct choices in novel scenes' : 'ノベル選択肢で正しい判断をした', pts: novelPts2 > 0 ? '+' + novelPts2 : '0' });
       } else if (stg === 3) {
-        actions.push({ done: s.turnedOffFire, text: en ? 'Turned off the heater' : 'ストーブの火を消した', pts: '+6' });
-        actions.push({ done: s.openedDoor, text: en ? 'Opened door to secure evacuation route' : 'ドアを開けて避難経路を確保した', pts: '+6' });
-        actions.push({ done: s.turnedOffBreaker, text: en ? 'Turned off the breaker' : 'ブレーカーを落とした', pts: '+6' });
-        actions.push({ done: s.putOnShoes, text: en ? 'Put on shoes' : '靴を履いた', pts: '+6' });
+        actions.push({ done: s.turnedOffGas, text: en ? 'Turned off the gas valve' : 'ガスの元栓を閉めた', pts: '+6' });
+        actions.push({ done: s.turnedOffBreaker, text: en ? 'Turned off the breaker' : 'ブレーカーを落とした（通電火災防止）', pts: '+6' });
+        actions.push({ done: s.putOnShoes, text: en ? 'Put on shoes (glass protection)' : '靴を履いた（ガラス片対策）', pts: '+6' });
+        actions.push({ done: s.usedFlashlight, text: en ? 'Found and used flashlight' : '懐中電灯を見つけて使用した', pts: '+5' });
+        actions.push({ done: s.rescuedChild, text: en ? 'Called out to child upstairs' : '2階の子どもに声をかけた', pts: '+5' });
+        actions.push({ done: s.helpedGrandma, text: en ? 'Helped grandma evacuate' : '祖母の避難を手助けした', pts: '+5' });
+        var novelPts3 = GAME._novelChoiceScore || 0;
+        actions.push({ done: novelPts3 > 0, text: en ? 'Made correct choices in novel scenes' : 'ノベル選択肢で正しい判断をした', pts: novelPts3 > 0 ? '+' + novelPts3 : '0' });
       } else {
         actions.push({ done: s.turnedOffFire, text: en ? 'Turned off the heater' : 'ストーブの火を消した', pts: '+6' });
         actions.push({ done: s.openedDoor, text: en ? 'Opened door to secure evacuation route' : 'ドアを開けて避難経路を確保した', pts: '+6' });
@@ -11742,13 +12006,23 @@ function showResult() {
     // カテゴリ別分析
     var catEl = document.getElementById('result-categories');
     if (catEl) {
-      categories = [
-        { label: en ? 'Initial Response' : '初動対応', score: (s.crouchedIn3s ? 10 : 0) + (s.movedToSafe ? 10 : 0), max: 20 },
-        { label: en ? 'During Shaking' : '揺れ中の判断', score: (s.awayFromHazard ? 5 : 0) + (s.didNotRunOutside ? 5 : 0) + (s.noHitByFalling ? 5 : 0) + (GAME._holdOnBonus || 0), max: 18 },
-        { label: en ? 'Safety Actions' : '安全確保行動', score: (s.putOnShoes ? 7 : 0) + (s.openedDoor ? 8 : 0) + (s.checkedSafety ? 5 : 0), max: 20 },
-        { label: en ? 'Evacuation' : '避難行動', score: (GAME._guardEvacBonus || 0) + (s.usedEmergencyExit ? 5 : 0) + (s.usedStairs ? 5 : 0) + (s.avoidedBlockWall ? 5 : 0) + (s.reachedEvacPoint ? 10 : 0) + (s.withinTimeLimit ? 5 : 0), max: 40 },
-        { label: en ? 'Knowledge' : '知識・判断力', score: Math.max(0, GAME._novelChoiceScore || 0), max: 20 }
-      ];
+      if (stg === 3) {
+        categories = [
+          { label: en ? 'Initial Response' : '初動対応', score: (s.crouchedIn3s ? 10 : 0) + (s.movedToSafe ? 10 : 0), max: 20 },
+          { label: en ? 'During Shaking' : '揺れ中の判断', score: (s.awayFromHazard ? 5 : 0) + (s.didNotRunOutside ? 5 : 0) + (s.noHitByFalling ? 5 : 0) + (GAME._holdOnBonus || 0), max: 18 },
+          { label: en ? 'Home Safety' : '自宅の安全確保', score: (s.turnedOffGas ? 6 : 0) + (s.turnedOffBreaker ? 6 : 0) + (s.putOnShoes ? 6 : 0) + (s.usedFlashlight ? 5 : 0), max: 23 },
+          { label: en ? 'Family Rescue' : '家族の救助', score: (s.rescuedChild ? 5 : 0) + (s.helpedGrandma ? 5 : 0) + (s.reachedEvacPoint ? 10 : 0) + (s.withinTimeLimit ? 5 : 0), max: 25 },
+          { label: en ? 'Knowledge' : '知識・判断力', score: Math.max(0, GAME._novelChoiceScore || 0), max: 20 }
+        ];
+      } else {
+        categories = [
+          { label: en ? 'Initial Response' : '初動対応', score: (s.crouchedIn3s ? 10 : 0) + (s.movedToSafe ? 10 : 0), max: 20 },
+          { label: en ? 'During Shaking' : '揺れ中の判断', score: (s.awayFromHazard ? 5 : 0) + (s.didNotRunOutside ? 5 : 0) + (s.noHitByFalling ? 5 : 0) + (GAME._holdOnBonus || 0), max: 18 },
+          { label: en ? 'Safety Actions' : '安全確保行動', score: (s.putOnShoes ? 7 : 0) + (s.openedDoor ? 8 : 0) + (s.checkedSafety ? 5 : 0), max: 20 },
+          { label: en ? 'Evacuation' : '避難行動', score: (GAME._guardEvacBonus || 0) + (s.usedEmergencyExit ? 5 : 0) + (s.usedStairs ? 5 : 0) + (s.avoidedBlockWall ? 5 : 0) + (s.reachedEvacPoint ? 10 : 0) + (s.withinTimeLimit ? 5 : 0), max: 40 },
+          { label: en ? 'Knowledge' : '知識・判断力', score: Math.max(0, GAME._novelChoiceScore || 0), max: 20 }
+        ];
+      }
       var catHtml = '';
       for (var ci = 0; ci < categories.length; ci++) {
         var cat = categories[ci];
