@@ -1875,10 +1875,9 @@ html, body {
 .novel-chara {
   position: absolute; bottom: 0;
   height: 75%; width: 38%;
-  background-size: contain; background-repeat: no-repeat; background-position: bottom center;
+  background-size: contain, contain; background-repeat: no-repeat, no-repeat; background-position: bottom center, bottom center;
   transition: opacity 0.3s ease, transform 0.3s ease, filter 0.15s ease;
   filter: brightness(0.6);
-  /* mask-image削除: バストアップ画像の下端より半透明バグの方が目立つため */
 }
 .novel-chara.speaking { filter: brightness(1); }
 .novel-chara.hidden { opacity: 0; transform: translateY(20px); pointer-events: none; }
@@ -3455,7 +3454,71 @@ const SoundManager = {
 
   // ビル前広場の環境音（Stage 2避難後）
   startPlazaAmbient() {
-    this._playAmbientFile('sounds/schoolyard.mp3', 0.18, true);
+    if (GAME.stageNum === 2) {
+      // Stage 2: オフィスビル前広場 — 都市環境音をWeb Audio APIで生成
+      this._startCityAmbient();
+    } else {
+      this._playAmbientFile('sounds/schoolyard.mp3', 0.18, true);
+    }
+  },
+
+  _startCityAmbient() {
+    try {
+      var ctx = this.ctx || new (window.AudioContext || window.webkitAudioContext)();
+      this.ctx = ctx;
+      // 都市ノイズ（低音のブラウンノイズ = 交通音）
+      var bufLen = ctx.sampleRate * 4;
+      var buf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
+      var data = buf.getChannelData(0);
+      var prev = 0;
+      for (var i = 0; i < bufLen; i++) {
+        var white = Math.random() * 2 - 1;
+        prev = (prev + 0.02 * white) / 1.02;
+        data[i] = prev * 3.5;
+      }
+      var src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.loop = true;
+      // ローパスフィルター（こもった交通音）
+      var lp = ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = 300;
+      // ゲイン制御
+      var gain = ctx.createGain();
+      gain.gain.value = 0.12;
+      src.connect(lp);
+      lp.connect(gain);
+      gain.connect(ctx.destination);
+      src.start();
+      this._cityAmbientSrc = src;
+      this._cityAmbientGain = gain;
+      // サイレン音（遠くで鳴る救急車）を定期的に鳴らす
+      var self = this;
+      this._sirenInterval = setInterval(function() {
+        if (!GAME.running) return;
+        try {
+          var osc = ctx.createOscillator();
+          var oscGain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = 600;
+          osc.frequency.setValueAtTime(600, ctx.currentTime);
+          osc.frequency.linearRampToValueAtTime(800, ctx.currentTime + 0.5);
+          osc.frequency.linearRampToValueAtTime(600, ctx.currentTime + 1.0);
+          osc.frequency.linearRampToValueAtTime(800, ctx.currentTime + 1.5);
+          oscGain.gain.setValueAtTime(0, ctx.currentTime);
+          oscGain.gain.linearRampToValueAtTime(0.03, ctx.currentTime + 0.3);
+          oscGain.gain.linearRampToValueAtTime(0.03, ctx.currentTime + 1.5);
+          oscGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 2.0);
+          osc.connect(oscGain);
+          oscGain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 2.0);
+        } catch(e) {}
+      }, 8000 + Math.random() * 5000);
+    } catch(e) {
+      // フォールバック: 既存の風音
+      this._playAmbientFile('sounds/wind.mp3', 0.15, true);
+    }
   },
 
   // 非常ベル + 校庭環境音（避難フェーズ）
@@ -3502,6 +3565,15 @@ const SoundManager = {
 
   // 環境音停止
   stopAmbient(fadeMs) {
+    // 都市環境音の停止
+    if (this._cityAmbientSrc) {
+      try { this._cityAmbientSrc.stop(); } catch(e) {}
+      this._cityAmbientSrc = null;
+    }
+    if (this._sirenInterval) {
+      clearInterval(this._sirenInterval);
+      this._sirenInterval = null;
+    }
     if (!this._ambientAudio) return;
     var audio = this._ambientAudio;
     this._ambientAudio = null;
@@ -3774,7 +3846,7 @@ var NovelEngine = {
     colleague_a: { normal: 1, relief: 1, serious: 1, smile: 1, worry: 1 },
     colleague_b: { normal: 1, panic: 1, surprise: 1, worry: 1 }
   },
-  _EXPR_FALLBACK: { worry: 'serious', surprise: 'panic', panic: 'serious', relief: 'smile', relieved: 'smile', serious: 'normal', smile: 'normal' },
+  _EXPR_FALLBACK: { worry: 'serious', surprise: 'panic', panic: 'serious', relief: 'smile', relieved: 'smile', serious: 'normal', smile: 'normal', cry: 'worry' },
   _resolveExpr: function(speaker, expr) {
     var avail = this._EXPR_AVAILABLE[speaker];
     if (!avail) return expr;
@@ -3917,8 +3989,11 @@ var NovelEngine = {
       }
     }
 
+    // 画像を2枚重ねにして半透明ピクセルのアルファを強化
+    var dblSrc = 'url(' + src + '), url(' + src + ')';
+
     if (info.pos === 'left') {
-      this.charaLeft.style.backgroundImage = 'url(' + src + ')';
+      this.charaLeft.style.backgroundImage = dblSrc;
       this.charaLeft.classList.remove('hidden');
       this.charaLeft.classList.add('speaking');
       if (line.speaker === 'bousai') this.charaLeft.classList.add('chara-bousai');
@@ -3929,7 +4004,7 @@ var NovelEngine = {
         this.charaRight.classList.add('hidden');
       }
     } else if (info.pos === 'right') {
-      this.charaRight.style.backgroundImage = 'url(' + src + ')';
+      this.charaRight.style.backgroundImage = dblSrc;
       this.charaRight.classList.remove('hidden');
       this.charaRight.classList.add('speaking');
       if (line.speaker === 'bousai') this.charaRight.classList.add('chara-bousai');
@@ -4362,7 +4437,7 @@ var NOVEL_VARIANTS = {
         { speaker: 'colleague_a', expr: 'normal', text: {ja: '（ふぁ〜…午後は眠いな…）', en: '(Yawn... afternoons are so sleepy...)'} },
         { speaker: 'colleague_b', expr: 'normal', text: {ja: 'ねえ、来週の防災訓練の案内見た？\n今年は全館避難訓練だって。', en: 'Hey, did you see the notice about next week\'s disaster drill?\nApparently it\'s a full-building evacuation drill this year.'} },
         { speaker: 'colleague_a', expr: 'worry', text: {ja: 'えー、また？\n忙しいのに面倒だなぁ…', en: 'Ugh, again?\nWe\'re so busy, what a hassle...'} },
-        { speaker: 'colleague_b', expr: 'serious', text: {ja: '何言ってるの。\n去年、出張先で震度5に遭った時は\n本当に怖かったよ…', en: 'What are you saying?\nWhen I experienced a magnitude 5 quake\non a business trip last year, it was terrifying...'} },
+        { speaker: 'colleague_b', expr: 'worry', text: {ja: '何言ってるの。\n去年、出張先で震度5に遭った時は\n本当に怖かったよ…', en: 'What are you saying?\nWhen I experienced a magnitude 5 quake\non a business trip last year, it was terrifying...'} },
         { speaker: 'boss', expr: 'serious', text: {ja: '防災訓練は大事だ。\nこのビルは10階建てだからな。\nいざという時、判断を間違えると命に関わる。', en: 'Disaster drills are important.\nThis building has 10 floors.\nA wrong decision in an emergency could cost lives.'} },
         { speaker: 'bousai', expr: 'normal', text: {ja: 'オフィスでの地震対策ポイント！\n① 揺れたらデスクの下に入り脚を持つ\n② エレベーターは絶対に使わない\n③ 非常階段の位置を普段から確認しておく', en: 'Earthquake safety tips for the office!\n1. Get under your desk and hold the legs\n2. Never use the elevator\n3. Know your emergency stairway locations'} },
         { speaker: 'narrator', text: {ja: '── 数分後 ──', en: '── A few minutes later ──'} },
@@ -4485,7 +4560,7 @@ var NOVEL_VARIANTS = {
         { speaker: 'colleague_a', expr: 'relief', text: {ja: '大丈夫です…\nでもデスク周り散らかって…', en: 'I\'m okay...\nBut everything around my desk is a mess...'} },
         { speaker: 'colleague_b', expr: 'normal', text: {ja: '停電してますね…\nあの、ブレーカーを確認した方が\nいいんじゃないですか？', en: 'The power\'s out...\nUm, shouldn\'t we check\nthe circuit breaker?'} },
         { speaker: 'colleague_a', expr: 'surprise', text: {ja: 'え？なんで？\n早く逃げた方がよくない？', en: 'Huh? Why?\nShouldn\'t we just get out fast?'} },
-        { speaker: 'colleague_b', expr: 'serious', text: {ja: '「通電火災」って知ってる？\n停電が復旧した時に、\n倒れた機器から火が出ることがあるの。', en: 'Have you heard of "electrical restoration fires"?\nWhen power comes back on,\ntoppled equipment can catch fire.'} },
+        { speaker: 'colleague_b', expr: 'worry', text: {ja: '「通電火災」って知ってる？\n停電が復旧した時に、\n倒れた機器から火が出ることがあるの。', en: 'Have you heard of "electrical restoration fires"?\nWhen power comes back on,\ntoppled equipment can catch fire.'} },
         {
           type: 'choice', text: {ja: '避難前にどうする？', en: 'What do you do before evacuating?'},
           choices: [
@@ -4523,7 +4598,7 @@ var NOVEL_VARIANTS = {
         { speaker: 'narrator', text: {ja: '── オフィスビル前の広場 ──', en: '── Plaza in front of the office building ──'} },
         { speaker: 'boss', expr: 'relief', text: {ja: '…全員の安全を確認した。\n全員無事だ。よかった。', en: '...Everyone\'s safety confirmed.\nAll safe. Thank goodness.'} },
         { speaker: 'colleague_a', expr: 'relief', text: {ja: '正直、パニックになりかけました…\nでも、正しい行動ができてよかった。', en: 'Honestly, I almost panicked...\nBut I\'m glad we did the right thing.'} },
-        { speaker: 'colleague_b', expr: 'smile', text: {ja: '日頃から避難経路を確認していたから\n落ち着いて動けたんだと思う。\nやっぱり普段の備えが大事だね。', en: 'I think we stayed calm because\nwe knew the evacuation routes beforehand.\nDaily preparedness really matters.'} },
+        { speaker: 'colleague_b', expr: 'normal', text: {ja: '日頃から避難経路を確認していたから\n落ち着いて動けたんだと思う。\nやっぱり普段の備えが大事だね。', en: 'I think we stayed calm because\nwe knew the evacuation routes beforehand.\nDaily preparedness really matters.'} },
         { speaker: 'boss', expr: 'smile', text: {ja: 'その通りだ。\n今日の経験を忘れないようにしよう。', en: 'Exactly.\nLet\'s not forget today\'s experience.'} },
         { speaker: 'bousai', expr: 'smile', text: {ja: '素晴らしい避難だったよ！\n今回学んだことをおさらいしよう。', en: 'That was a great evacuation!\nLet\'s review what we learned.'} },
         { speaker: 'bousai', expr: 'normal', text: {ja: '① 揺れたらデスクの下で頭を守る\n② エレベーターは絶対に使わない\n③ ブレーカーを落として通電火災を防ぐ\n④ 非常階段で落ち着いて避難する', en: '1. Get under your desk and protect your head\n2. Never use the elevator\n3. Switch off breakers to prevent electrical fires\n4. Evacuate calmly via emergency stairs'} },
@@ -4533,7 +4608,7 @@ var NOVEL_VARIANTS = {
       [
         { speaker: 'narrator', text: {ja: '── オフィスビル前の広場 ──', en: '── Plaza in front of the office building ──'} },
         { speaker: 'colleague_a', expr: 'relief', text: {ja: 'はぁ…助かった…\nエレベーターに乗らなくて\n本当によかったです。', en: 'Phew... we made it...\nI\'m so glad we didn\'t\ntake the elevator.'} },
-        { speaker: 'colleague_b', expr: 'smile', text: {ja: '上司の判断が的確でしたね。\nあの状況で冷静に指示を出すなんて。', en: 'The boss made the right call.\nStaying calm and giving orders\nin that situation was impressive.'} },
+        { speaker: 'colleague_b', expr: 'normal', text: {ja: '上司の判断が的確でしたね。\nあの状況で冷静に指示を出すなんて。', en: 'The boss made the right call.\nStaying calm and giving orders\nin that situation was impressive.'} },
         { speaker: 'boss', expr: 'normal', text: {ja: '私も内心は焦っていたよ。\nだが、事前に対応を考えていたから\n動けたんだ。', en: 'I was nervous inside too.\nBut I could act because\nI had thought about it beforehand.'} },
         { speaker: 'bousai', expr: 'normal', text: {ja: 'ちなみに、東日本大震災では\n約14,000件のエレベーター閉じ込めが\n発生したんだ。\nエレベーターに乗らない判断は\n本当に正しかったよ。', en: 'By the way, during the 2011 earthquake,\nabout 14,000 elevator entrapments occurred.\nThe decision not to take the elevator\nwas absolutely right.'} },
         { speaker: 'bousai', expr: 'smile', text: {ja: 'さあ、テストで今日の知識を\n確認してみよう！\n家族や同僚にも教えてあげてね。', en: 'Now let\'s test what you learned today!\nShare this knowledge with\nyour family and coworkers too.'} },
@@ -4541,7 +4616,7 @@ var NOVEL_VARIANTS = {
       // パターンC
       [
         { speaker: 'narrator', text: {ja: '── オフィスビル前の広場 ──', en: '── Plaza in front of the office building ──'} },
-        { speaker: 'colleague_b', expr: 'smile', text: {ja: '非常階段の場所、\n知っていたからスムーズに避難できた。\n日頃から確認しておくのは大事だね。', en: 'Knowing where the emergency stairs were\nmade the evacuation smooth.\nIt\'s so important to check regularly.'} },
+        { speaker: 'colleague_b', expr: 'normal', text: {ja: '非常階段の場所、\n知っていたからスムーズに避難できた。\n日頃から確認しておくのは大事だね。', en: 'Knowing where the emergency stairs were\nmade the evacuation smooth.\nIt\'s so important to check regularly.'} },
         { speaker: 'colleague_a', expr: 'serious', text: {ja: '俺、正直あの非常階段の場所\n知らなかったら詰んでた…\n明日から毎日確認するよ。', en: 'Honestly, if I hadn\'t known where\nthose stairs were, I\'d have been in trouble...\nI\'m checking every day from now on.'} },
         { speaker: 'boss', expr: 'smile', text: {ja: 'この経験を忘れるな。\n次に備えて、防災マニュアルも\n見直しておこう。', en: 'Don\'t forget this experience.\nLet\'s review the disaster manual\nto prepare for next time.'} },
         { speaker: 'bousai', expr: 'normal', text: {ja: '高層ビルでは「長周期地震動」にも\n注意が必要だよ。\n遠くの地震でもゆっくり大きく揺れて、\n10分以上続くことがある。\n2011年の東日本大震災では\n東京や大阪の高層ビルも揺れたんだ。', en: 'In tall buildings, watch out for\n"long-period ground motion" too.\nEven distant earthquakes can cause slow,\nlarge swaying that lasts over 10 minutes.\nDuring the 2011 earthquake, high-rises\nin Tokyo and Osaka swayed significantly.'} },
@@ -7435,7 +7510,7 @@ function buildOfficeFloor() {
   }
 
   // --- キャビネット（背の高い書棚4つ） ---
-  var cabinetPositions = [[-11, 1.0, 3], [-11, 1.0, 7], [-11, 1.0, 11], [11, 1.0, 7]];
+  var cabinetPositions = [[-11, 1.0, 3], [-11, 1.0, 7], [-5, 1.0, 11], [11, 1.0, 7]];
   for (var cbi = 0; cbi < 4; cbi++) {
     var cabinet = new THREE.Mesh(new THREE.BoxGeometry(0.5, 2.0, 0.8), cabinetMat);
     cabinet.position.set(cabinetPositions[cbi][0], cabinetPositions[cbi][1], cabinetPositions[cbi][2]);
@@ -7759,6 +7834,31 @@ function buildBuildingPlaza() {
   scene.add(extWall);
   GAME.cameraMeshes.push(extWall);
   GAME.walls.push({ minX: -10, maxX: 10, minZ: 9.85, maxZ: 10.15, minY: 0, maxY: 40 });
+
+  // ビル外壁の非常口ドア（プレイヤーが出てきた場所）
+  var extDoorMat = new THREE.MeshStandardMaterial({ color: 0x4a6a4a, roughness: 0.5, metalness: 0.3, emissive: 0x0a1a0a, emissiveIntensity: 0.12 });
+  var extDoor = new THREE.Mesh(new THREE.BoxGeometry(1.8, 2.4, 0.15), extDoorMat);
+  extDoor.position.set(0, 1.2, 10.2);
+  scene.add(extDoor);
+  // ドア枠
+  var extDoorFrameMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.4, metalness: 0.6 });
+  var extDFTop = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.15, 0.2), extDoorFrameMat);
+  extDFTop.position.set(0, 2.47, 10.2);
+  scene.add(extDFTop);
+  var extDFL = new THREE.Mesh(new THREE.BoxGeometry(0.15, 2.5, 0.2), extDoorFrameMat);
+  extDFL.position.set(-1.05, 1.2, 10.2);
+  scene.add(extDFL);
+  var extDFR = new THREE.Mesh(new THREE.BoxGeometry(0.15, 2.5, 0.2), extDoorFrameMat);
+  extDFR.position.set(1.05, 1.2, 10.2);
+  scene.add(extDFR);
+  // 非常口サイン
+  var extExitSign = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.25, 0.05), new THREE.MeshStandardMaterial({ color: 0x00cc44, emissive: 0x00cc44, emissiveIntensity: 0.8 }));
+  extExitSign.position.set(0, 2.7, 10.25);
+  scene.add(extExitSign);
+  // 非常口ライト
+  var extExitLight = new THREE.PointLight(0x00ff44, 0.5, 8);
+  extExitLight.position.set(0, 2.7, 10.5);
+  scene.add(extExitLight);
 
   // ビル外壁の窓（オフィスビル風の格子状窓）
   var extWinMat = new THREE.MeshStandardMaterial({ color: 0x6699bb, roughness: 0.1, metalness: 0.1, transparent: true, opacity: 0.4, emissive: 0x334466, emissiveIntensity: 0.2 });
