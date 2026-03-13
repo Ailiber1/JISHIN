@@ -4,3 +4,7 @@ node_modules/
 .DS_Store
 .firebase/
 *.log
+tests/
+package.json
+package-lock.json
+playwright.config.js
