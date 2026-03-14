@@ -6179,7 +6179,7 @@ function initGame(stageNum) {
     container.innerHTML = '';
   }
 
-  GAME.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance', logarithmicDepthBuffer: true });
+  GAME.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
   GAME.renderer.setSize(window.innerWidth, window.innerHeight);
   GAME.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   GAME.renderer.shadowMap.enabled = true;
@@ -8907,11 +8907,25 @@ function buildStage3Exterior() {
   skyDome.position.set(0, 0, -30);
   scene.add(skyDome);
 
-  // --- 地面（広域）暖色の土/草 ---
-  var groundMat = new THREE.MeshStandardMaterial({ color: 0x5a6830, roughness: 0.95, emissive: 0x0a0804, emissiveIntensity: 0.1, depthWrite: true });
-  var ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), groundMat);
-  ground.rotation.x = -Math.PI / 2; ground.position.set(0, Y - 0.3, -40);
-  ground.receiveShadow = true; scene.add(ground);
+  // --- 地面（広域）家の下を避けて分割配置 ---
+  // 家のフットプリント: X=-7〜7, Z=-6〜6（外壁含む余裕）
+  var groundMat = new THREE.MeshStandardMaterial({ color: 0x5a6830, roughness: 0.95, emissive: 0x0a0804, emissiveIntensity: 0.1 });
+  // 前方地面（家の手前 Z < -6）
+  var gFront = new THREE.Mesh(new THREE.PlaneGeometry(200, 134), groundMat);
+  gFront.rotation.x = -Math.PI / 2; gFront.position.set(0, Y - 0.05, -73);
+  gFront.receiveShadow = true; scene.add(gFront);
+  // 後方地面（家の奥 Z > 6）
+  var gBack = new THREE.Mesh(new THREE.PlaneGeometry(200, 60), groundMat);
+  gBack.rotation.x = -Math.PI / 2; gBack.position.set(0, Y - 0.05, 36);
+  gBack.receiveShadow = true; scene.add(gBack);
+  // 左側地面（X < -7, 家の横）
+  var gLeft = new THREE.Mesh(new THREE.PlaneGeometry(93, 12), groundMat);
+  gLeft.rotation.x = -Math.PI / 2; gLeft.position.set(-53.5, Y - 0.05, 0);
+  gLeft.receiveShadow = true; scene.add(gLeft);
+  // 右側地面（X > 7, 家の横）
+  var gRight = new THREE.Mesh(new THREE.PlaneGeometry(93, 12), groundMat);
+  gRight.rotation.x = -Math.PI / 2; gRight.position.set(53.5, Y - 0.05, 0);
+  gRight.receiveShadow = true; scene.add(gRight);
 
   // --- 街灯（道沿い）---
   var poleMat = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.6, metalness: 0.4 });
