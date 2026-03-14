@@ -6255,15 +6255,15 @@ function initGame(stageNum) {
     // DirectionalLight を夕日の低い角度に（弱め — 室内は暗めに）
     dirLight.color.set(0xffaa66);
     dirLight.intensity = 0.3;
-    dirLight.position.set(-10, 5, -15); // 西日（低い角度）
-    dirLight.shadow.camera.left = -20;
-    dirLight.shadow.camera.right = 20;
-    dirLight.shadow.camera.top = 20;
-    dirLight.shadow.camera.bottom = -20;
+    dirLight.position.set(-8, 15, -10); // 西日（高めの角度でシャドウマップ安定化）
+    dirLight.shadow.camera.left = -15;
+    dirLight.shadow.camera.right = 15;
+    dirLight.shadow.camera.top = 15;
+    dirLight.shadow.camera.bottom = -15;
     dirLight.shadow.camera.near = 1;
-    dirLight.shadow.camera.far = 60;
-    dirLight.shadow.bias = -0.002;
-    dirLight.shadow.normalBias = 0.05;
+    dirLight.shadow.camera.far = 50;
+    dirLight.shadow.bias = -0.003;
+    dirLight.shadow.normalBias = 0.08;
     dirLight.shadow.camera.updateProjectionMatrix();
 
     // Stage 3 室内照明（オリジナル背景画像に合わせた暖色アンバー系）
@@ -8913,19 +8913,19 @@ function buildStage3Exterior() {
   // 前方地面（家の手前 Z < -6）
   var gFront = new THREE.Mesh(new THREE.PlaneGeometry(200, 134), groundMat);
   gFront.rotation.x = -Math.PI / 2; gFront.position.set(0, Y - 0.05, -73);
-  gFront.receiveShadow = true; scene.add(gFront);
+  gFront.receiveShadow = false; scene.add(gFront);
   // 後方地面（家の奥 Z > 6）
   var gBack = new THREE.Mesh(new THREE.PlaneGeometry(200, 60), groundMat);
   gBack.rotation.x = -Math.PI / 2; gBack.position.set(0, Y - 0.05, 36);
-  gBack.receiveShadow = true; scene.add(gBack);
+  gBack.receiveShadow = false; scene.add(gBack);
   // 左側地面（X < -7, 家の横）
   var gLeft = new THREE.Mesh(new THREE.PlaneGeometry(93, 12), groundMat);
   gLeft.rotation.x = -Math.PI / 2; gLeft.position.set(-53.5, Y - 0.05, 0);
-  gLeft.receiveShadow = true; scene.add(gLeft);
+  gLeft.receiveShadow = false; scene.add(gLeft);
   // 右側地面（X > 7, 家の横）
   var gRight = new THREE.Mesh(new THREE.PlaneGeometry(93, 12), groundMat);
   gRight.rotation.x = -Math.PI / 2; gRight.position.set(53.5, Y - 0.05, 0);
-  gRight.receiveShadow = true; scene.add(gRight);
+  gRight.receiveShadow = false; scene.add(gRight);
 
   // --- 街灯（道沿い）---
   var poleMat = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.6, metalness: 0.4 });
@@ -9144,15 +9144,15 @@ function buildHouseFloor() {
   // ===== 1F =====
   var floor1 = new THREE.Mesh(new THREE.PlaneGeometry(W, D), woodFloorMat);
   floor1.rotation.x = -Math.PI / 2; floor1.position.set(0, Y1, 0);
-  floor1.receiveShadow = true; scene.add(floor1);
+  floor1.receiveShadow = false; scene.add(floor1);
 
   var tatamiFloor = new THREE.Mesh(new THREE.PlaneGeometry(4, 3), tatamiMat);
   tatamiFloor.rotation.x = -Math.PI / 2; tatamiFloor.position.set(-4, Y1 + 0.05, 3.5);
-  tatamiFloor.receiveShadow = true; scene.add(tatamiFloor);
+  tatamiFloor.receiveShadow = false; scene.add(tatamiFloor);
 
   var kitchenFloor = new THREE.Mesh(new THREE.PlaneGeometry(4, 3), kitchenTileMat);
   kitchenFloor.rotation.x = -Math.PI / 2; kitchenFloor.position.set(4, Y1 + 0.05, 3.5);
-  kitchenFloor.receiveShadow = true; scene.add(kitchenFloor);
+  kitchenFloor.receiveShadow = false; scene.add(kitchenFloor);
 
   var ceiling1 = new THREE.Mesh(new THREE.PlaneGeometry(W, D), ceilingMat);
   ceiling1.rotation.x = Math.PI / 2; ceiling1.position.set(0, Y1 + H, 0); scene.add(ceiling1);
@@ -9467,7 +9467,7 @@ function buildHouseFloor() {
   // ===== 2F =====
   var floor2 = new THREE.Mesh(new THREE.PlaneGeometry(W, D), woodFloorMat);
   floor2.rotation.x = -Math.PI / 2; floor2.position.set(0, Y2, 0);
-  floor2.receiveShadow = true; scene.add(floor2);
+  floor2.receiveShadow = false; scene.add(floor2);
 
   var ceiling2 = new THREE.Mesh(new THREE.PlaneGeometry(W, D), ceilingMat);
   ceiling2.rotation.x = Math.PI / 2; ceiling2.position.set(0, Y2 + H, 0); scene.add(ceiling2);
@@ -9833,7 +9833,7 @@ function buildHouseFloor() {
   gardenGrassMat.polygonOffsetUnits = -1;
   var gardenFloor = new THREE.Mesh(new THREE.PlaneGeometry(8, 6), gardenGrassMat);
   gardenFloor.rotation.x = -Math.PI / 2; gardenFloor.position.set(-1, Y1 - 0.05, -8);
-  gardenFloor.receiveShadow = true; scene.add(gardenFloor);
+  gardenFloor.receiveShadow = false; scene.add(gardenFloor);
 
   // ブロック塀
   var bwH = 1.5;
@@ -9859,7 +9859,7 @@ function buildHouseFloor() {
   roadMatOffset.polygonOffsetUnits = -1;
   var road = new THREE.Mesh(new THREE.PlaneGeometry(4, 30), roadMatOffset);
   road.rotation.x = -Math.PI / 2; road.position.set(0, Y1 - 0.05, -26);
-  road.receiveShadow = true; scene.add(road);
+  road.receiveShadow = false; scene.add(road);
   var sideGrassMat = grassMat.clone();
   sideGrassMat.polygonOffset = true;
   sideGrassMat.polygonOffsetFactor = -1;
@@ -9874,7 +9874,7 @@ function buildHouseFloor() {
   // 避難公園
   var parkFloor = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), sideGrassMat);
   parkFloor.rotation.x = -Math.PI / 2; parkFloor.position.set(0, Y1 - 0.05, -60);
-  parkFloor.receiveShadow = true; scene.add(parkFloor);
+  parkFloor.receiveShadow = false; scene.add(parkFloor);
 
   var evacMat3 = new THREE.MeshStandardMaterial({ color: 0xff6b00, emissive: 0xff6b00, emissiveIntensity: 0.6, transparent: true, opacity: 0.7 });
   var evacMarker = new THREE.Mesh(new THREE.CylinderGeometry(EVAC_POINT_S3.radius, EVAC_POINT_S3.radius, 0.05, 32), evacMat3);
