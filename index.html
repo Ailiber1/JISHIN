@@ -9566,6 +9566,36 @@ function buildHouseFloor() {
   scene.add(new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, D), beamMat).translateY(Y2 + H - 0.01).translateX(-1));
   scene.add(new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, D), beamMat).translateY(Y2 + H - 0.01).translateX(1));
 
+  // ===== 2F→1F 階段（視覚メッシュ — 右奥エリア X:3.5〜5.5, Z:3〜5） =====
+  var stairWoodMat = new THREE.MeshStandardMaterial({ color: 0x7a5e3a, roughness: 0.6, emissive: 0x0a0804, emissiveIntensity: 0.1 });
+  var stairRailMat = new THREE.MeshStandardMaterial({ color: 0x6b5535, roughness: 0.5, emissive: 0x080604, emissiveIntensity: 0.1 });
+  // 階段の段（10段 — 2Fから1Fへ降りる）
+  var stairX = 4.5, stairZStart = 3.2, stairSteps = 10;
+  var stepW2 = 1.5, stepH2 = 0.15, stepD2 = 0.2;
+  for (var si2 = 0; si2 < stairSteps; si2++) {
+    var sStep = new THREE.Mesh(new THREE.BoxGeometry(stepW2, stepH2, stepD2), stairWoodMat);
+    sStep.position.set(stairX, Y2 - si2 * (Y2 / stairSteps) + stepH2 / 2, stairZStart + si2 * 0.18);
+    sStep.receiveShadow = true; scene.add(sStep);
+  }
+  // 階段の側板（左右）
+  var stairSideL = new THREE.Mesh(new THREE.BoxGeometry(0.08, Y2 + 0.3, 2.2), stairWoodMat);
+  stairSideL.position.set(stairX - stepW2 / 2 - 0.04, Y2 / 2, stairZStart + 0.9);
+  stairSideL.rotation.x = -0.13; scene.add(stairSideL);
+  var stairSideR = new THREE.Mesh(new THREE.BoxGeometry(0.08, Y2 + 0.3, 2.2), stairWoodMat);
+  stairSideR.position.set(stairX + stepW2 / 2 + 0.04, Y2 / 2, stairZStart + 0.9);
+  stairSideR.rotation.x = -0.13; scene.add(stairSideR);
+  // 手すり
+  var stairRail = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 2.2), stairRailMat);
+  stairRail.position.set(stairX - stepW2 / 2 - 0.04, Y2 + 0.5, stairZStart + 0.9);
+  stairRail.rotation.x = -0.13; scene.add(stairRail);
+  // 2F階段口の床開口マーカー（暗い色で「ここから降りる」を示す）
+  var stairOpeningMat = new THREE.MeshStandardMaterial({ color: 0x3a2a1a, roughness: 0.9 });
+  var stairOpening = new THREE.Mesh(new THREE.PlaneGeometry(stepW2 + 0.3, 2.0), stairOpeningMat);
+  stairOpening.rotation.x = -Math.PI / 2; stairOpening.position.set(stairX, Y2 + 0.01, stairZStart + 0.9);
+  scene.add(stairOpening);
+  // インタラクタブル: 階段を降りる
+  GAME.interactables.push({ x: stairX, z: stairZStart + 0.5, radius: 2.0, action: 'goDownstairs', label: {ja: '階段を降りる', en: 'Go Downstairs'}, phases: ['aftershake', 'evacuation'], used: false });
+
   // ベッド枕
   var pillowMat = new THREE.MeshStandardMaterial({ color: 0xf5f0e8, roughness: 0.85 });
   var pillow1 = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.08, 0.22), pillowMat);
@@ -12370,6 +12400,13 @@ function performInteract() {
       GAME.score += 10;
       showAdvisor({ja: '机の下に隠れた！頭を守って揺れがおさまるまで待とう！\n「E」で机の脚を掴んで体を固定しよう！', en: 'Hiding under the desk! Protect your head and wait for the shaking to stop!\nPress E to hold the desk legs!'}, 'praise');
       showItemGet('🛡️ 身を守る行動！ — 机の下に避難');
+      break;
+
+    case 'goDownstairs':
+      // Stage 3: 2F→1F階段を降りる
+      if (GAME._onHouse2F) {
+        startStairCutsceneS3Down();
+      }
       break;
   }
 }
