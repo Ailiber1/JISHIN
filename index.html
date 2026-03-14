@@ -9522,14 +9522,32 @@ function buildHouseFloor() {
   prWall.position.set(-3.5, Y2 + H / 2, 0); scene.add(prWall);
   GAME.walls.push({ minX: -6, maxX: -1, minZ: -wallThick / 2, maxZ: wallThick / 2, minY: Y2, maxY: Y2 + H });
 
-  // 2F家具
-  var studyDesk = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.72, 0.5), deskMat);
-  studyDesk.position.set(-4, Y2 + 0.36, -4.0); studyDesk.receiveShadow = true; scene.add(studyDesk);
-  var sdLeg1 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.72, 0.04), metalMat);
-  sdLeg1.position.set(-4.45, Y2 + 0.36, -4.2); scene.add(sdLeg1);
-  var sdLeg2 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.72, 0.04), metalMat);
-  sdLeg2.position.set(-3.55, Y2 + 0.36, -4.2); scene.add(sdLeg2);
+  // 2F家具 — 勉強机（天板＋4脚構造 — しゃがみで下に入れる）
+  var sdTop = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.04, 0.5), deskMat);
+  sdTop.position.set(-4, Y2 + 0.70, -4.0); sdTop.receiveShadow = true; scene.add(sdTop);
+  // 脚4本（細い金属脚）
+  var sdLegPositions = [[-4.45, -4.2], [-3.55, -4.2], [-4.45, -3.8], [-3.55, -3.8]];
+  for (var sli = 0; sli < sdLegPositions.length; sli++) {
+    var sdLeg = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.68, 0.04), metalMat);
+    sdLeg.position.set(sdLegPositions[sli][0], Y2 + 0.34, sdLegPositions[sli][1]); scene.add(sdLeg);
+  }
+  // 天板のみコリジョン（maxY低め — しゃがみで下に潜れる）
   GAME.walls.push({ minX: -4.55, maxX: -3.45, minZ: -4.3, maxZ: -3.7, minY: Y2, maxY: Y2 + 0.65 });
+
+  // 勉強椅子（プレイヤーが座る）
+  var chairMat = new THREE.MeshStandardMaterial({ color: 0x5a4a3a, roughness: 0.65, emissive: 0x0a0804, emissiveIntensity: 0.1 });
+  // 座面
+  var chairSeat = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.04, 0.4), chairMat);
+  chairSeat.position.set(-4, Y2 + 0.40, -3.4); scene.add(chairSeat);
+  // 背もたれ
+  var chairBack = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.35, 0.04), chairMat);
+  chairBack.position.set(-4, Y2 + 0.60, -3.2); scene.add(chairBack);
+  // 脚4本
+  var chairLegPos = [[-4.17, -3.57], [-3.83, -3.57], [-4.17, -3.23], [-3.83, -3.23]];
+  for (var cli = 0; cli < chairLegPos.length; cli++) {
+    var cLeg = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.38, 0.03), metalMat);
+    cLeg.position.set(chairLegPos[cli][0], Y2 + 0.19, chairLegPos[cli][1]); scene.add(cLeg);
+  }
 
   var playerBed = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.4, 2.0), bedMat);
   playerBed.position.set(-2.0, Y2 + 0.2, -3.5); playerBed.receiveShadow = true; scene.add(playerBed);
@@ -10848,10 +10866,11 @@ function updatePlayerModel() {
   // dailyフェーズ: 椅子に座ったポーズ
   if (GAME.phase === 'daily') {
     mesh.position.set(p.x, floorY, p.z);
-    mesh.rotation.y = Math.PI; // 黒板方向を向く
+    // Stage 3: 勉強机方向（奥壁）を向く、Stage 1・2: 黒板方向を向く
+    mesh.rotation.y = GAME.stageNum === 3 ? 0 : Math.PI;
     // 椅子に座る高さ（ステージの椅子座面に合わせる）
     var playerH = GAME.stageNum === 2 ? 0.95 : GAME.stageNum === 3 ? 0.88 : 0.82;
-    var chairSeatH = GAME.stageNum === 2 ? 0.42 : GAME.stageNum === 3 ? 0.36 : 0.33;
+    var chairSeatH = GAME.stageNum === 2 ? 0.42 : GAME.stageNum === 3 ? 0.40 : 0.33;
     var seatY = chairSeatH - playerH * 0.40;
     mesh.position.y = floorY + seatY + Math.sin((GAME.totalTimer || 0) * 2) * 0.003;
     // 座りポーズ: 脚を90度曲げる
@@ -14561,8 +14580,8 @@ function initDailyCinematic() {
       // Shot 2: 1Fリビング（父がくつろいでいる）
       { camX: 2, camY: 1.5, camZ: -0.5, lookX: 0, lookY: 1.2, lookZ: -1.8, dur: 3.5,
         text: en ? 'Dad relaxing in the living room.' : 'リビングでくつろぐ父。' },
-      // Shot 3: 1Fキッチン（母が料理中）＆和室の祖母 — カメラは部屋中央から奥を見渡す
-      { camX: 0, camY: 1.6, camZ: -1, lookX: 1, lookY: 1.0, lookZ: 4, dur: 3.5,
+      // Shot 3: 1Fキッチン（母が料理中）＆和室の祖母 — カメラはキッチン横から母を映す
+      { camX: 1.5, camY: 1.4, camZ: 4.5, lookX: 3.5, lookY: 0.8, lookZ: 3.5, dur: 3.5,
         text: en ? 'Mom cooking dinner. Grandma in the tatami room.' : 'キッチンで夕食を作る母。和室には祖母。' },
       // Shot 4: 2F（妹の部屋→プレイヤーの部屋）
       { camX: -2, camY: 4.5, camZ: 4, lookX: -3.5, lookY: 3.8, lookZ: 3.0, dur: 3,
