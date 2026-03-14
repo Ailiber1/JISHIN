@@ -6405,85 +6405,182 @@ function initGame(stageNum) {
 function generateProceduralTextures() {
   var T = {};
 
-  // --- 木目フローリング（教室床）256x256 ---
+  // --- 木目フローリング（高品質）512x512 ---
   var wc = document.createElement('canvas');
-  wc.width = 256; wc.height = 256;
+  wc.width = 512; wc.height = 512;
   var wx = wc.getContext('2d');
   wx.fillStyle = '#b89a6a';
-  wx.fillRect(0, 0, 256, 256);
-  // 木の板（横向き）
+  wx.fillRect(0, 0, 512, 512);
+  var plankH = 64;
   for (var pi = 0; pi < 8; pi++) {
-    var py = pi * 32;
-    var baseR = 160 + Math.floor(Math.random() * 30);
-    var baseG = 130 + Math.floor(Math.random() * 25);
-    var baseB = 85 + Math.floor(Math.random() * 20);
-    wx.fillStyle = 'rgb(' + baseR + ',' + baseG + ',' + baseB + ')';
-    wx.fillRect(0, py, 256, 30);
-    // 板の隙間
-    wx.fillStyle = 'rgba(60,40,20,0.4)';
-    wx.fillRect(0, py + 30, 256, 2);
-    // 木目線
-    for (var gi = 0; gi < 6; gi++) {
-      wx.strokeStyle = 'rgba(80,55,30,' + (0.08 + Math.random() * 0.12) + ')';
-      wx.lineWidth = 0.5 + Math.random();
+    var py = pi * plankH;
+    var baseR = 155 + Math.floor(Math.random() * 35);
+    var baseG = 125 + Math.floor(Math.random() * 30);
+    var baseB = 80 + Math.floor(Math.random() * 25);
+    // ベースカラー（微妙なグラデーション）
+    var grad = wx.createLinearGradient(0, py, 512, py + plankH - 2);
+    grad.addColorStop(0, 'rgb('+(baseR-8)+','+(baseG-5)+','+(baseB-3)+')');
+    grad.addColorStop(0.3, 'rgb('+baseR+','+baseG+','+baseB+')');
+    grad.addColorStop(0.7, 'rgb('+(baseR+5)+','+(baseG+3)+','+(baseB+2)+')');
+    grad.addColorStop(1, 'rgb('+(baseR-5)+','+(baseG-3)+','+(baseB-2)+')');
+    wx.fillStyle = grad;
+    wx.fillRect(0, py, 512, plankH - 2);
+    // 板の隙間（暗い溝）
+    wx.fillStyle = 'rgba(40,25,10,0.6)';
+    wx.fillRect(0, py + plankH - 2, 512, 2);
+    // 木目線（より細かく自然に）
+    for (var gi = 0; gi < 10; gi++) {
+      var grainAlpha = 0.04 + Math.random() * 0.1;
+      wx.strokeStyle = 'rgba(70,45,20,' + grainAlpha + ')';
+      wx.lineWidth = 0.3 + Math.random() * 0.8;
       wx.beginPath();
-      wx.moveTo(0, py + 3 + gi * 5 + Math.random() * 3);
-      for (var gx = 0; gx < 256; gx += 8) {
-        wx.lineTo(gx, py + 3 + gi * 5 + Math.sin(gx * 0.02 + gi) * 2 + Math.random() * 1.5);
+      var gy0 = py + 4 + gi * (plankH / 11) + Math.random() * 3;
+      wx.moveTo(0, gy0);
+      for (var gx = 0; gx < 512; gx += 4) {
+        wx.lineTo(gx, gy0 + Math.sin(gx * 0.015 + gi * 1.7) * 1.8 + Math.sin(gx * 0.05 + gi) * 0.5 + (Math.random() - 0.5) * 0.8);
       }
       wx.stroke();
     }
+    // 板の縦目地（ランダム配置）
+    var jointX = 128 + Math.floor(Math.random() * 256);
+    wx.fillStyle = 'rgba(40,25,10,0.35)';
+    wx.fillRect(jointX, py, 1.5, plankH - 2);
+    // 木の節（まれに）
+    if (Math.random() < 0.25) {
+      var knotX = 50 + Math.floor(Math.random() * 400);
+      var knotY = py + 15 + Math.floor(Math.random() * 30);
+      var knotR = 4 + Math.random() * 6;
+      var knotGrad = wx.createRadialGradient(knotX, knotY, 0, knotX, knotY, knotR);
+      knotGrad.addColorStop(0, 'rgba(60,35,15,0.4)');
+      knotGrad.addColorStop(0.6, 'rgba(80,50,25,0.25)');
+      knotGrad.addColorStop(1, 'rgba(100,70,40,0.05)');
+      wx.fillStyle = knotGrad;
+      wx.beginPath(); wx.arc(knotX, knotY, knotR, 0, Math.PI * 2); wx.fill();
+    }
+  }
+  // 全体に微細ノイズ（質感UP）
+  for (var wni = 0; wni < 2000; wni++) {
+    wx.fillStyle = Math.random() > 0.5 ? 'rgba(0,0,0,' + (Math.random()*0.03) + ')' : 'rgba(255,255,255,' + (Math.random()*0.02) + ')';
+    wx.fillRect(Math.random()*512, Math.random()*512, 1, 1);
   }
   T.woodFloor = new THREE.CanvasTexture(wc);
   T.woodFloor.wrapS = T.woodFloor.wrapT = THREE.RepeatWrapping;
   T.woodFloor.repeat.set(3, 3);
+  T.woodFloor.anisotropy = 4;
 
-  // --- 壁プラスター（教室・廊下壁）128x128 ---
+  // --- 壁プラスター（高品質）256x256 ---
   var pc = document.createElement('canvas');
-  pc.width = 128; pc.height = 128;
+  pc.width = 256; pc.height = 256;
   var px = pc.getContext('2d');
   px.fillStyle = '#e8dcc8';
-  px.fillRect(0, 0, 128, 128);
-  // 微細なノイズ
-  for (var ni = 0; ni < 600; ni++) {
-    var nx = Math.random() * 128;
-    var ny = Math.random() * 128;
-    var nb = Math.random() * 0.08;
-    px.fillStyle = 'rgba(0,0,0,' + nb + ')';
-    px.fillRect(nx, ny, 2, 2);
+  px.fillRect(0, 0, 256, 256);
+  // 微細なノイズ（密度UP）
+  for (var ni = 0; ni < 3000; ni++) {
+    var nv = Math.random();
+    px.fillStyle = nv > 0.5 ? 'rgba(0,0,0,' + (Math.random()*0.06) + ')' : 'rgba(255,255,255,' + (Math.random()*0.04) + ')';
+    px.fillRect(Math.random()*256, Math.random()*256, 1+Math.random(), 1+Math.random());
   }
-  // かすかな汚れ
-  for (var di = 0; di < 3; di++) {
-    px.fillStyle = 'rgba(100,80,60,0.03)';
-    px.beginPath();
-    px.arc(Math.random()*128, Math.random()*128, 10+Math.random()*20, 0, Math.PI*2);
-    px.fill();
+  // 壁の微妙なムラ（漆喰風）
+  for (var di = 0; di < 8; di++) {
+    var mx2 = Math.random()*256, my2 = Math.random()*256;
+    var mgrad = px.createRadialGradient(mx2,my2,0,mx2,my2,30+Math.random()*40);
+    mgrad.addColorStop(0, 'rgba(180,165,140,0.04)');
+    mgrad.addColorStop(1, 'rgba(180,165,140,0)');
+    px.fillStyle = mgrad;
+    px.fillRect(0,0,256,256);
   }
   T.wallPlaster = new THREE.CanvasTexture(pc);
   T.wallPlaster.wrapS = T.wallPlaster.wrapT = THREE.RepeatWrapping;
   T.wallPlaster.repeat.set(2, 1);
+  T.wallPlaster.anisotropy = 4;
 
-  // --- 天井タイル 128x128 ---
+  // --- 天井（和風木目パネル）256x256 ---
   var cc = document.createElement('canvas');
-  cc.width = 128; cc.height = 128;
+  cc.width = 256; cc.height = 256;
   var cx = cc.getContext('2d');
-  cx.fillStyle = '#f2f0ec';
-  cx.fillRect(0, 0, 128, 128);
-  // タイルグリッド
-  cx.strokeStyle = 'rgba(180,175,165,0.3)';
-  cx.lineWidth = 1;
-  for (var ti = 0; ti <= 4; ti++) {
-    cx.beginPath(); cx.moveTo(ti * 32, 0); cx.lineTo(ti * 32, 128); cx.stroke();
-    cx.beginPath(); cx.moveTo(0, ti * 32); cx.lineTo(128, ti * 32); cx.stroke();
-  }
-  // 微細テクスチャ
-  for (var cni = 0; cni < 200; cni++) {
-    cx.fillStyle = 'rgba(0,0,0,' + (Math.random() * 0.04) + ')';
-    cx.fillRect(Math.random()*128, Math.random()*128, 1, 1);
+  cx.fillStyle = '#d4c4a0';
+  cx.fillRect(0, 0, 256, 256);
+  // 木目パネル（縦方向）
+  for (var cpi = 0; cpi < 4; cpi++) {
+    var cpx = cpi * 64;
+    var cpR = 195 + Math.floor(Math.random()*15);
+    var cpG = 178 + Math.floor(Math.random()*12);
+    var cpB = 145 + Math.floor(Math.random()*15);
+    cx.fillStyle = 'rgb('+cpR+','+cpG+','+cpB+')';
+    cx.fillRect(cpx, 0, 62, 256);
+    cx.fillStyle = 'rgba(40,30,15,0.3)';
+    cx.fillRect(cpx + 62, 0, 2, 256);
+    // 木目
+    for (var cgi = 0; cgi < 8; cgi++) {
+      cx.strokeStyle = 'rgba(60,40,20,' + (0.04 + Math.random()*0.06) + ')';
+      cx.lineWidth = 0.3 + Math.random()*0.5;
+      cx.beginPath();
+      var cgx = cpx + 5 + cgi * 7 + Math.random()*3;
+      cx.moveTo(cgx, 0);
+      for (var cgy = 0; cgy < 256; cgy += 6) {
+        cx.lineTo(cgx + Math.sin(cgy*0.02+cgi)*1.5, cgy);
+      }
+      cx.stroke();
+    }
   }
   T.ceiling = new THREE.CanvasTexture(cc);
   T.ceiling.wrapS = T.ceiling.wrapT = THREE.RepeatWrapping;
   T.ceiling.repeat.set(3, 3);
+  T.ceiling.anisotropy = 4;
+
+  // --- 畳テクスチャ 256x256 ---
+  var ttc = document.createElement('canvas');
+  ttc.width = 256; ttc.height = 256;
+  var ttx = ttc.getContext('2d');
+  ttx.fillStyle = '#8b9a46';
+  ttx.fillRect(0, 0, 256, 256);
+  // 畳の目（横方向の繊維パターン）
+  for (var ty2 = 0; ty2 < 256; ty2 += 2) {
+    var tShade = Math.random() > 0.5 ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)';
+    ttx.fillStyle = tShade;
+    ttx.fillRect(0, ty2, 256, 1);
+  }
+  // 畳の境界線（縦に2分割）
+  ttx.fillStyle = 'rgba(30,20,5,0.4)';
+  ttx.fillRect(127, 0, 2, 256);
+  // 畳縁（ヘリ）
+  ttx.fillStyle = '#2a3a15';
+  ttx.fillRect(0, 0, 256, 4);
+  ttx.fillRect(0, 252, 256, 4);
+  ttx.fillStyle = '#3a4a20';
+  ttx.fillRect(0, 4, 256, 2);
+  ttx.fillRect(0, 250, 256, 2);
+  // 微細ノイズ
+  for (var tni = 0; tni < 1500; tni++) {
+    ttx.fillStyle = 'rgba(0,0,0,' + (Math.random()*0.04) + ')';
+    ttx.fillRect(Math.random()*256, Math.random()*256, 1, 1);
+  }
+  T.tatami = new THREE.CanvasTexture(ttc);
+  T.tatami.wrapS = T.tatami.wrapT = THREE.RepeatWrapping;
+  T.tatami.repeat.set(2, 2);
+  T.tatami.anisotropy = 4;
+
+  // --- キッチンタイルテクスチャ 256x256 ---
+  var ktc = document.createElement('canvas');
+  ktc.width = 256; ktc.height = 256;
+  var ktx = ktc.getContext('2d');
+  ktx.fillStyle = '#e0e0e0';
+  ktx.fillRect(0, 0, 256, 256);
+  var tileSize = 32;
+  for (var kty = 0; kty < 8; kty++) {
+    for (var ktx2 = 0; ktx2 < 8; ktx2++) {
+      var ktShade = 220 + Math.floor(Math.random()*15);
+      ktx.fillStyle = 'rgb('+ktShade+','+ktShade+','+(ktShade+2)+')';
+      ktx.fillRect(ktx2*tileSize+1, kty*tileSize+1, tileSize-2, tileSize-2);
+      // 目地
+      ktx.fillStyle = 'rgba(150,145,140,0.5)';
+      ktx.fillRect(ktx2*tileSize, kty*tileSize, tileSize, 1);
+      ktx.fillRect(ktx2*tileSize, kty*tileSize, 1, tileSize);
+    }
+  }
+  T.kitchenTile = new THREE.CanvasTexture(ktc);
+  T.kitchenTile.wrapS = T.kitchenTile.wrapT = THREE.RepeatWrapping;
+  T.kitchenTile.repeat.set(2, 2);
 
   // --- 廊下・通路の床タイル（ビニル）256x256 ---
   var vc = document.createElement('canvas');
@@ -9007,10 +9104,10 @@ function buildHouseFloor() {
 
   // --- マテリアル ---
   var woodFloorMat = new THREE.MeshStandardMaterial({ map: T.woodFloor, color: 0xb87333, roughness: 0.75, emissive: 0x0a0804, emissiveIntensity: 0.1 });
-  var tatamiMat = new THREE.MeshStandardMaterial({ color: 0x8b9a46, roughness: 0.85, emissive: 0x050804, emissiveIntensity: 0.08, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
+  var tatamiMat = new THREE.MeshStandardMaterial({ map: T.tatami, color: 0x99aa55, roughness: 0.85, emissive: 0x050804, emissiveIntensity: 0.08, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
   var wallMat = new THREE.MeshStandardMaterial({ map: T.wallPlaster, color: 0xe8d8c0, roughness: 0.8, emissive: 0x0a0806, emissiveIntensity: 0.05 });
   var ceilingMat = new THREE.MeshStandardMaterial({ map: T.ceiling, color: 0xd4c4a8, roughness: 0.7, emissive: 0x060504, emissiveIntensity: 0.03 });
-  var kitchenTileMat = new THREE.MeshStandardMaterial({ color: 0xe0e0e0, roughness: 0.4, emissive: 0x050505, emissiveIntensity: 0.05, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
+  var kitchenTileMat = new THREE.MeshStandardMaterial({ map: T.kitchenTile, color: 0xeeeeee, roughness: 0.35, emissive: 0x050505, emissiveIntensity: 0.05, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
   var exteriorWallMat = new THREE.MeshStandardMaterial({ color: 0xc4a878, roughness: 0.8, emissive: 0x110a04, emissiveIntensity: 0.08 });
   var roofMat = new THREE.MeshStandardMaterial({ color: 0x4a3d30, roughness: 0.7, emissive: 0x0a0604, emissiveIntensity: 0.08 });
   var furnitureMat = new THREE.MeshStandardMaterial({ color: 0x8b6f47, roughness: 0.6, emissive: 0x0a0806, emissiveIntensity: 0.1 });
@@ -9200,6 +9297,158 @@ function buildHouseFloor() {
   // 和室
   var futon = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.1, 1.8), futonMat);
   futon.position.set(-4.0, Y1 + 0.06, 4.0); futon.receiveShadow = true; scene.add(futon);
+  // 和室座布団
+  var zabutonMat = new THREE.MeshStandardMaterial({ color: 0x6b2244, roughness: 0.85, emissive: 0x0a0204, emissiveIntensity: 0.05 });
+  var zabuton1 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.04, 0.5), zabutonMat);
+  zabuton1.position.set(-3.5, Y1 + 0.07, 3.2); scene.add(zabuton1);
+  var zabuton2 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.04, 0.5), zabutonMat);
+  zabuton2.position.set(-4.5, Y1 + 0.07, 3.5); zabuton2.rotation.y = 0.3; scene.add(zabuton2);
+
+  // ===== 1F巾木（ベースボード） =====
+  var bbMat = new THREE.MeshStandardMaterial({ map: T.baseboard, color: 0x7a5e3a, roughness: 0.65 });
+  var bbH = 0.08, bbD = 0.03;
+  // 前壁巾木
+  scene.add(new THREE.Mesh(new THREE.BoxGeometry(W, bbH, bbD), bbMat).translateY(Y1 + bbH/2).translateZ(-D/2 + bbD/2));
+  // 後壁巾木
+  scene.add(new THREE.Mesh(new THREE.BoxGeometry(W, bbH, bbD), bbMat).translateY(Y1 + bbH/2).translateZ(D/2 - bbD/2));
+  // 左壁巾木
+  scene.add(new THREE.Mesh(new THREE.BoxGeometry(bbD, bbH, D), bbMat).translateY(Y1 + bbH/2).translateX(-W/2 + bbD/2));
+  // 右壁巾木
+  scene.add(new THREE.Mesh(new THREE.BoxGeometry(bbD, bbH, D), bbMat).translateY(Y1 + bbH/2).translateX(W/2 - bbD/2));
+
+  // ===== 1Fソファ・家具ディテール =====
+  // ソファ肘掛け
+  var armL = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.35, 0.6), sofaMat);
+  armL.position.set(-0.85, Y1 + 0.375, -2.5); scene.add(armL);
+  var armR = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.35, 0.6), sofaMat);
+  armR.position.set(0.85, Y1 + 0.375, -2.5); scene.add(armR);
+  // ソファクッション（2分割で立体感）
+  var cushMat = new THREE.MeshStandardMaterial({ color: 0x6d4e3a, roughness: 0.8, emissive: 0x080604, emissiveIntensity: 0.08 });
+  var cushL = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.12, 0.5), cushMat);
+  cushL.position.set(-0.38, Y1 + 0.46, -2.45); scene.add(cushL);
+  var cushR = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.12, 0.5), cushMat);
+  cushR.position.set(0.38, Y1 + 0.46, -2.45); scene.add(cushR);
+
+  // ちゃぶ台の脚（4本）
+  var legMat = new THREE.MeshStandardMaterial({ color: 0x7a5e3a, roughness: 0.55 });
+  var cLegPos = [[-0.4,-0.85],[-0.4,-1.15],[0.4,-0.85],[0.4,-1.15]];
+  for (var cli = 0; cli < 4; cli++) {
+    var cleg = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.025, 0.33, 6), legMat);
+    cleg.position.set(cLegPos[cli][0], Y1 + 0.165, cLegPos[cli][1]); scene.add(cleg);
+  }
+  // リビング座布団（ちゃぶ台周り）
+  var livCush1 = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.03, 0.45), zabutonMat);
+  livCush1.position.set(-0.6, Y1 + 0.015, -0.6); scene.add(livCush1);
+  var livCush2 = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.03, 0.45), zabutonMat);
+  livCush2.position.set(0.5, Y1 + 0.015, -1.3); livCush2.rotation.y = -0.2; scene.add(livCush2);
+
+  // TVスタンド引き出し装飾
+  var drawerLine = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.01, 0.01), new THREE.MeshStandardMaterial({ color: 0x5a4530, roughness: 0.5 }));
+  drawerLine.position.set(0, Y1 + 0.25, 1.3); scene.add(drawerLine);
+  var drawerLine2 = drawerLine.clone(); drawerLine2.position.y = Y1 + 0.4; scene.add(drawerLine2);
+  // TVスタンド取っ手
+  var handleMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.3, metalness: 0.7 });
+  for (var hi2 = 0; hi2 < 2; hi2++) {
+    var handle = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.015, 0.02), handleMat);
+    handle.position.set(hi2 === 0 ? -0.25 : 0.25, Y1 + 0.32, 1.28); scene.add(handle);
+  }
+
+  // 本棚の棚板＋本
+  var shelfMat = new THREE.MeshStandardMaterial({ color: 0x7a5e3a, roughness: 0.6 });
+  for (var shi = 0; shi < 4; shi++) {
+    var shelf = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.02, 0.78), shelfMat);
+    shelf.position.set(-1.8, Y1 + 0.3 + shi * 0.4, 1.2); scene.add(shelf);
+    // 本（色違い）
+    var bookColors = [0x8b2500, 0x1a4a1a, 0x2a2a6a, 0x6a4a2a, 0x4a1a3a];
+    var bkX = -1.95;
+    for (var bki = 0; bki < 4 + Math.floor(Math.random()*2); bki++) {
+      var bkW = 0.03 + Math.random()*0.04;
+      var bkH = 0.28 + Math.random()*0.08;
+      var book = new THREE.Mesh(new THREE.BoxGeometry(bkW, bkH, 0.2), new THREE.MeshStandardMaterial({ color: bookColors[bki % bookColors.length], roughness: 0.7 }));
+      book.position.set(bkX + bkW/2, Y1 + 0.32 + shi*0.4 + bkH/2, 1.2);
+      scene.add(book);
+      bkX += bkW + 0.005;
+    }
+  }
+
+  // キッチンシンク（カウンター上）
+  var sinkMat = new THREE.MeshStandardMaterial({ color: 0xbbbbbb, roughness: 0.2, metalness: 0.8 });
+  var sink = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.05, 0.35), sinkMat);
+  sink.position.set(3.5, Y1 + 0.88, 4.5); scene.add(sink);
+  // 蛇口
+  var faucet = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.25, 6), sinkMat);
+  faucet.position.set(3.5, Y1 + 1.0, 4.65); scene.add(faucet);
+  var faucetArm = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.015, 0.12), sinkMat);
+  faucetArm.position.set(3.5, Y1 + 1.12, 4.6); scene.add(faucetArm);
+
+  // キッチンキャビネット取っ手
+  for (var khi = 0; khi < 3; khi++) {
+    var kHandle = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.015, 0.02), handleMat);
+    kHandle.position.set(2.5 + khi * 0.7, Y1 + 0.5, 4.24); scene.add(kHandle);
+  }
+
+  // ===== 壁装飾 =====
+  // 壁掛け時計（リビング）
+  var clockFace = new THREE.Mesh(new THREE.CircleGeometry(0.18, 16), new THREE.MeshStandardMaterial({ color: 0xfff8f0, roughness: 0.4 }));
+  clockFace.position.set(0, Y1 + 2.0, 1.88); scene.add(clockFace);
+  var clockFrame = new THREE.Mesh(new THREE.RingGeometry(0.17, 0.2, 16), new THREE.MeshStandardMaterial({ color: 0x5a4a38, roughness: 0.5 }));
+  clockFrame.position.set(0, Y1 + 2.0, 1.89); scene.add(clockFrame);
+  // 時計の針
+  var hourHand = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.1, 0.005), new THREE.MeshBasicMaterial({ color: 0x333333 }));
+  hourHand.position.set(0, Y1 + 2.03, 1.895); hourHand.rotation.z = -0.8; scene.add(hourHand);
+  var minHand = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.14, 0.005), new THREE.MeshBasicMaterial({ color: 0x333333 }));
+  minHand.position.set(0, Y1 + 2.02, 1.895); minHand.rotation.z = 0.5; scene.add(minHand);
+
+  // 写真フレーム（リビング壁）
+  var frameMat2 = new THREE.MeshStandardMaterial({ color: 0x5a4a38, roughness: 0.55 });
+  var photoMat = new THREE.MeshStandardMaterial({ color: 0xccbb99, roughness: 0.7, emissive: 0x0a0804, emissiveIntensity: 0.05 });
+  var frame1 = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.28, 0.02), frameMat2);
+  frame1.position.set(-1.5, Y1 + 1.8, -4.88); scene.add(frame1);
+  var photo1 = new THREE.Mesh(new THREE.PlaneGeometry(0.28, 0.21), photoMat);
+  photo1.position.set(-1.5, Y1 + 1.8, -4.865); scene.add(photo1);
+  var frame2 = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.35, 0.02), frameMat2);
+  frame2.position.set(1.5, Y1 + 1.9, -4.88); scene.add(frame2);
+  var photo2 = new THREE.Mesh(new THREE.PlaneGeometry(0.21, 0.28), photoMat);
+  photo2.position.set(1.5, Y1 + 1.9, -4.865); scene.add(photo2);
+
+  // カーテン（リビング内窓）
+  var curtainMat = new THREE.MeshStandardMaterial({ color: 0xccbb99, roughness: 0.9, side: THREE.DoubleSide, emissive: 0x060504, emissiveIntensity: 0.03 });
+  // 前壁の窓にカーテン
+  var curtainL1 = new THREE.Mesh(new THREE.PlaneGeometry(0.35, 1.3), curtainMat);
+  curtainL1.position.set(-3.6, Y1 + 1.4, -4.82); scene.add(curtainL1);
+  var curtainR1 = new THREE.Mesh(new THREE.PlaneGeometry(0.35, 1.3), curtainMat);
+  curtainR1.position.set(-2.4, Y1 + 1.4, -4.82); scene.add(curtainR1);
+  var curtainL2 = new THREE.Mesh(new THREE.PlaneGeometry(0.35, 1.3), curtainMat);
+  curtainL2.position.set(0.4, Y1 + 1.4, -4.82); scene.add(curtainL2);
+  var curtainR2 = new THREE.Mesh(new THREE.PlaneGeometry(0.35, 1.3), curtainMat);
+  curtainR2.position.set(1.6, Y1 + 1.4, -4.82); scene.add(curtainR2);
+  // カーテンレール
+  var railMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.3, metalness: 0.5 });
+  scene.add(new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.02, 0.02), railMat).translateY(Y1 + 2.05).translateX(-3).translateZ(-4.83));
+  scene.add(new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.02, 0.02), railMat).translateY(Y1 + 2.05).translateX(1).translateZ(-4.83));
+
+  // 観葉植物（TVスタンド横）
+  var potMat = new THREE.MeshStandardMaterial({ color: 0x8b5a3a, roughness: 0.7 });
+  var pot = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.06, 0.15, 8), potMat);
+  pot.position.set(-0.75, Y1 + 0.075, 1.5); scene.add(pot);
+  var plantLeafMat = new THREE.MeshStandardMaterial({ color: 0x3a7a2a, roughness: 0.7, side: THREE.DoubleSide });
+  for (var pli = 0; pli < 5; pli++) {
+    var leaf = new THREE.Mesh(new THREE.PlaneGeometry(0.08, 0.18), plantLeafMat);
+    var leafAngle = (pli / 5) * Math.PI * 2;
+    leaf.position.set(-0.75 + Math.sin(leafAngle)*0.06, Y1 + 0.22 + Math.random()*0.08, 1.5 + Math.cos(leafAngle)*0.06);
+    leaf.rotation.set(-0.3 + Math.random()*0.2, leafAngle, 0.2);
+    scene.add(leaf);
+  }
+  // 幹
+  var stem = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.015, 0.15, 4), new THREE.MeshStandardMaterial({ color: 0x5a4a2a, roughness: 0.8 }));
+  stem.position.set(-0.75, Y1 + 0.15 + 0.075, 1.5); scene.add(stem);
+
+  // コンセント・スイッチプレート
+  var plateMat = new THREE.MeshStandardMaterial({ color: 0xf0ece0, roughness: 0.3 });
+  var switchPlate = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.1, 0.005), plateMat);
+  switchPlate.position.set(-1.95, Y1 + 1.2, 1.88); scene.add(switchPlate);
+  var switchBtn = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.04, 0.008), new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.2 }));
+  switchBtn.position.set(-1.95, Y1 + 1.2, 1.885); scene.add(switchBtn);
 
   // ===== 2F =====
   var floor2 = new THREE.Mesh(new THREE.PlaneGeometry(W, D), woodFloorMat);
@@ -9286,21 +9535,95 @@ function buildHouseFloor() {
   GAME._tansuMeshS3 = tansu;
   GAME.walls.push({ minX: 4.75, maxX: 5.65, minZ: -3.8, maxZ: -3.2, minY: Y2, maxY: Y2 + 1.8 });
 
+  // 2F巾木
+  scene.add(new THREE.Mesh(new THREE.BoxGeometry(W, bbH, bbD), bbMat).translateY(Y2 + bbH/2).translateZ(-D/2 + bbD/2));
+  scene.add(new THREE.Mesh(new THREE.BoxGeometry(W, bbH, bbD), bbMat).translateY(Y2 + bbH/2).translateZ(D/2 - bbD/2));
+  scene.add(new THREE.Mesh(new THREE.BoxGeometry(bbD, bbH, D), bbMat).translateY(Y2 + bbH/2).translateX(-W/2 + bbD/2));
+  scene.add(new THREE.Mesh(new THREE.BoxGeometry(bbD, bbH, D), bbMat).translateY(Y2 + bbH/2).translateX(W/2 - bbD/2));
+
+  // 2F天井梁
+  scene.add(new THREE.Mesh(new THREE.BoxGeometry(W, 0.1, 0.1), beamMat).translateY(Y2 + H - 0.01).translateZ(-2.5));
+  scene.add(new THREE.Mesh(new THREE.BoxGeometry(W, 0.1, 0.1), beamMat).translateY(Y2 + H - 0.01).translateZ(2));
+  scene.add(new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, D), beamMat).translateY(Y2 + H - 0.01).translateX(-1));
+  scene.add(new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, D), beamMat).translateY(Y2 + H - 0.01).translateX(1));
+
+  // ベッド枕
+  var pillowMat = new THREE.MeshStandardMaterial({ color: 0xf5f0e8, roughness: 0.85 });
+  var pillow1 = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.08, 0.22), pillowMat);
+  pillow1.position.set(-2.0, Y2 + 0.44, -2.6); scene.add(pillow1);
+  // 親ベッド枕（2つ）
+  var pillow2 = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.08, 0.22), pillowMat);
+  pillow2.position.set(3.1, Y2 + 0.44, -2.6); scene.add(pillow2);
+  var pillow3 = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.08, 0.22), pillowMat);
+  pillow3.position.set(3.8, Y2 + 0.44, -2.6); scene.add(pillow3);
+  // 掛け布団
+  var futonCoverMat = new THREE.MeshStandardMaterial({ color: 0xaab8cc, roughness: 0.85, emissive: 0x040608, emissiveIntensity: 0.03 });
+  var futonCover = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.06, 1.2), futonCoverMat);
+  futonCover.position.set(3.5, Y2 + 0.43, -3.8); scene.add(futonCover);
+
+  // 妹部屋おもちゃ追加
+  var toy2 = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6), new THREE.MeshStandardMaterial({ color: 0x44aaff, roughness: 0.5 }));
+  toy2.position.set(-3.2, Y2 + 0.06, 2.8); scene.add(toy2);
+  var toy3 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.12), new THREE.MeshStandardMaterial({ color: 0xffaa33, roughness: 0.5 }));
+  toy3.position.set(-4.2, Y2 + 0.06, 2.3); toy3.rotation.y = 0.6; scene.add(toy3);
+
+  // 勉強机上のランプ
+  var deskLampMat = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.4, metalness: 0.5 });
+  var deskLampBase = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.02, 8), deskLampMat);
+  deskLampBase.position.set(-4.3, Y2 + 0.73, -4.0); scene.add(deskLampBase);
+  var deskLampArm = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.25, 4), deskLampMat);
+  deskLampArm.position.set(-4.3, Y2 + 0.86, -4.0); deskLampArm.rotation.z = 0.3; scene.add(deskLampArm);
+  var deskLampShade = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.04, 0.05, 8), new THREE.MeshStandardMaterial({ color: 0xeeddcc, roughness: 0.6, emissive: 0xffcc88, emissiveIntensity: 0.3 }));
+  deskLampShade.position.set(-4.22, Y2 + 0.98, -4.0); scene.add(deskLampShade);
+
+  // タンス引き出し装飾
+  for (var tdi = 0; tdi < 4; tdi++) {
+    var tdLine = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.01, 0.01), new THREE.MeshStandardMaterial({ color: 0x5a4530, roughness: 0.5 }));
+    tdLine.position.set(5.2, Y2 + 0.3 + tdi * 0.4, -3.24); scene.add(tdLine);
+    var tdHandle = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.015, 0.02), handleMat);
+    tdHandle.position.set(5.2, Y2 + 0.45 + tdi * 0.4, -3.23); scene.add(tdHandle);
+  }
+
   // ===== 外部（木造住宅ディテール）=====
-  // 外壁テクスチャ（横板サイディング風）
+  // 外壁テクスチャ（横板サイディング風・高品質）
   var extCanvas = document.createElement('canvas');
-  extCanvas.width = 128; extCanvas.height = 128;
+  extCanvas.width = 256; extCanvas.height = 256;
   var extCtx = extCanvas.getContext('2d');
   extCtx.fillStyle = '#c4a878';
-  extCtx.fillRect(0, 0, 128, 128);
-  for (var ey = 0; ey < 128; ey += 16) {
-    extCtx.fillStyle = (ey / 16) % 2 === 0 ? '#bfa06a' : '#c9ad7e';
-    extCtx.fillRect(0, ey, 128, 14);
-    extCtx.fillStyle = '#9a8055';
-    extCtx.fillRect(0, ey + 14, 128, 2);
+  extCtx.fillRect(0, 0, 256, 256);
+  for (var ey = 0; ey < 256; ey += 20) {
+    var ebR = 175 + Math.floor(Math.random()*15);
+    var ebG = 148 + Math.floor(Math.random()*12);
+    var ebB = 100 + Math.floor(Math.random()*15);
+    var eGrad = extCtx.createLinearGradient(0, ey, 0, ey+18);
+    eGrad.addColorStop(0, 'rgb('+(ebR+5)+','+(ebG+3)+','+(ebB+3)+')');
+    eGrad.addColorStop(0.5, 'rgb('+ebR+','+ebG+','+ebB+')');
+    eGrad.addColorStop(1, 'rgb('+(ebR-8)+','+(ebG-5)+','+(ebB-5)+')');
+    extCtx.fillStyle = eGrad;
+    extCtx.fillRect(0, ey, 256, 18);
+    extCtx.fillStyle = 'rgba(60,40,20,0.5)';
+    extCtx.fillRect(0, ey + 18, 256, 2);
+    // 木目
+    for (var egi = 0; egi < 3; egi++) {
+      extCtx.strokeStyle = 'rgba(80,55,30,' + (0.04+Math.random()*0.06) + ')';
+      extCtx.lineWidth = 0.3;
+      extCtx.beginPath();
+      var egy = ey + 3 + egi*6;
+      extCtx.moveTo(0, egy);
+      for (var egx = 0; egx < 256; egx += 8) {
+        extCtx.lineTo(egx, egy + Math.sin(egx*0.03+egi)*0.8);
+      }
+      extCtx.stroke();
+    }
+  }
+  // 微細ノイズ
+  for (var eni = 0; eni < 1500; eni++) {
+    extCtx.fillStyle = Math.random()>0.5 ? 'rgba(0,0,0,'+(Math.random()*0.04)+')' : 'rgba(255,255,255,'+(Math.random()*0.03)+')';
+    extCtx.fillRect(Math.random()*256, Math.random()*256, 1, 1);
   }
   var extTex = new THREE.CanvasTexture(extCanvas);
   extTex.wrapS = extTex.wrapT = THREE.RepeatWrapping;
+  extTex.anisotropy = 4;
   var extDetailMat = new THREE.MeshStandardMaterial({ map: extTex, roughness: 0.8, emissive: 0x110a04, emissiveIntensity: 0.08 });
 
   // 基礎（コンクリート）
@@ -9418,25 +9741,39 @@ function buildHouseFloor() {
 
   // 屋根（切妻屋根 — 瓦テクスチャ）
   var roofCanvas = document.createElement('canvas');
-  roofCanvas.width = 128; roofCanvas.height = 128;
+  roofCanvas.width = 256; roofCanvas.height = 256;
   var roofCtx = roofCanvas.getContext('2d');
   roofCtx.fillStyle = '#3d3028';
-  roofCtx.fillRect(0, 0, 128, 128);
-  for (var ry2 = 0; ry2 < 128; ry2 += 12) {
-    roofCtx.fillStyle = ry2 % 24 < 12 ? '#4a3d30' : '#352820';
-    roofCtx.fillRect(0, ry2, 128, 10);
-    roofCtx.fillStyle = '#2a1f18';
-    roofCtx.fillRect(0, ry2 + 10, 128, 2);
-    // 瓦の縦目地
-    roofCtx.fillStyle = '#2a1f18';
-    var offset = (ry2 % 24 < 12) ? 0 : 16;
-    for (var rx2 = offset; rx2 < 128; rx2 += 32) {
-      roofCtx.fillRect(rx2, ry2, 1, 10);
+  roofCtx.fillRect(0, 0, 256, 256);
+  for (var ry2 = 0; ry2 < 256; ry2 += 18) {
+    var rtR = 65 + Math.floor(Math.random()*15);
+    var rtG = 52 + Math.floor(Math.random()*12);
+    var rtB = 38 + Math.floor(Math.random()*10);
+    var rtGrad = roofCtx.createLinearGradient(0, ry2, 0, ry2+16);
+    rtGrad.addColorStop(0, 'rgb('+(rtR+8)+','+(rtG+5)+','+(rtB+3)+')');
+    rtGrad.addColorStop(0.3, 'rgb('+rtR+','+rtG+','+rtB+')');
+    rtGrad.addColorStop(0.8, 'rgb('+(rtR-5)+','+(rtG-4)+','+(rtB-3)+')');
+    rtGrad.addColorStop(1, 'rgb('+(rtR-10)+','+(rtG-8)+','+(rtB-5)+')');
+    roofCtx.fillStyle = rtGrad;
+    roofCtx.fillRect(0, ry2, 256, 16);
+    roofCtx.fillStyle = 'rgba(20,12,5,0.6)';
+    roofCtx.fillRect(0, ry2 + 16, 256, 2);
+    // 瓦の縦目地（千鳥配置）
+    var rtOffset = (Math.floor(ry2/18) % 2 === 0) ? 0 : 20;
+    for (var rx2 = rtOffset; rx2 < 256; rx2 += 40) {
+      roofCtx.fillStyle = 'rgba(20,12,5,0.4)';
+      roofCtx.fillRect(rx2, ry2, 1.5, 16);
     }
+  }
+  // 瓦の微細ノイズ
+  for (var rni = 0; rni < 1500; rni++) {
+    roofCtx.fillStyle = 'rgba(0,0,0,' + (Math.random()*0.05) + ')';
+    roofCtx.fillRect(Math.random()*256, Math.random()*256, 1+Math.random(), 1+Math.random());
   }
   var roofDetailTex = new THREE.CanvasTexture(roofCanvas);
   roofDetailTex.wrapS = roofDetailTex.wrapT = THREE.RepeatWrapping;
   roofDetailTex.repeat.set(6, 4);
+  roofDetailTex.anisotropy = 4;
   var roofDetailMat = new THREE.MeshStandardMaterial({ map: roofDetailTex, roughness: 0.75, emissive: 0x0a0604, emissiveIntensity: 0.08 });
 
   var roofAngle = 0.38;
