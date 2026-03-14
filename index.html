@@ -6179,7 +6179,7 @@ function initGame(stageNum) {
     container.innerHTML = '';
   }
 
-  GAME.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+  GAME.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance', logarithmicDepthBuffer: true });
   GAME.renderer.setSize(window.innerWidth, window.innerHeight);
   GAME.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   GAME.renderer.shadowMap.enabled = true;
@@ -6207,12 +6207,14 @@ function initGame(stageNum) {
   dirLight.castShadow = true;
   dirLight.shadow.mapSize.width = 2048;
   dirLight.shadow.mapSize.height = 2048;
-  dirLight.shadow.camera.near = 0.1;
+  dirLight.shadow.camera.near = 0.5;
   dirLight.shadow.camera.far = 80;
   dirLight.shadow.camera.left = -25;
   dirLight.shadow.camera.right = 25;
   dirLight.shadow.camera.top = 30;
   dirLight.shadow.camera.bottom = -25;
+  dirLight.shadow.bias = -0.001;
+  dirLight.shadow.normalBias = 0.02;
   GAME.scene.add(dirLight);
 
   GAME._stairCutsceneActive = false;
@@ -6254,11 +6256,14 @@ function initGame(stageNum) {
     dirLight.color.set(0xffaa66);
     dirLight.intensity = 0.3;
     dirLight.position.set(-10, 5, -15); // 西日（低い角度）
-    dirLight.shadow.camera.left = -40;
-    dirLight.shadow.camera.right = 40;
-    dirLight.shadow.camera.top = 40;
-    dirLight.shadow.camera.bottom = -40;
-    dirLight.shadow.camera.far = 120;
+    dirLight.shadow.camera.left = -20;
+    dirLight.shadow.camera.right = 20;
+    dirLight.shadow.camera.top = 20;
+    dirLight.shadow.camera.bottom = -20;
+    dirLight.shadow.camera.near = 1;
+    dirLight.shadow.camera.far = 60;
+    dirLight.shadow.bias = -0.002;
+    dirLight.shadow.normalBias = 0.05;
     dirLight.shadow.camera.updateProjectionMatrix();
 
     // Stage 3 室内照明（オリジナル背景画像に合わせた暖色アンバー系）
