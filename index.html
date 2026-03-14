@@ -6179,11 +6179,12 @@ function initGame(stageNum) {
     container.innerHTML = '';
   }
 
-  GAME.renderer = new THREE.WebGLRenderer({ antialias: true });
+  GAME.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
   GAME.renderer.setSize(window.innerWidth, window.innerHeight);
   GAME.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   GAME.renderer.shadowMap.enabled = true;
   GAME.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  GAME.renderer.outputEncoding = THREE.sRGBEncoding;
   GAME.renderer.setClearColor(0x1a1a2e);
   container.appendChild(GAME.renderer.domElement);
 
@@ -6256,6 +6257,43 @@ function initGame(stageNum) {
     dirLight.shadow.camera.bottom = -40;
     dirLight.shadow.camera.far = 120;
     dirLight.shadow.camera.updateProjectionMatrix();
+
+    // Stage 3 室内天井照明（1F: リビング・キッチン・和室 / 2F: 各部屋）
+    var s3RoomLights = [
+      // 1F リビング
+      { x: 0, y: HOUSE_H - 0.1, z: -1, intensity: 0.6, distance: 8, color: 0xffeedd },
+      // 1F キッチン
+      { x: 4, y: HOUSE_H - 0.1, z: 3.5, intensity: 0.5, distance: 6, color: 0xffeedd },
+      // 1F 和室
+      { x: -4, y: HOUSE_H - 0.1, z: 3.5, intensity: 0.4, distance: 6, color: 0xffddaa },
+      // 1F 玄関
+      { x: -5, y: HOUSE_H - 0.1, z: -4, intensity: 0.3, distance: 4, color: 0xffeedd },
+      // 2F プレイヤー部屋
+      { x: -4, y: HOUSE_2F_Y + HOUSE_H - 0.1, z: -2, intensity: 0.5, distance: 7, color: 0xffeedd },
+      // 2F 妹部屋
+      { x: -4, y: HOUSE_2F_Y + HOUSE_H - 0.1, z: 3, intensity: 0.5, distance: 6, color: 0xffddcc },
+      // 2F 廊下
+      { x: 2, y: HOUSE_2F_Y + HOUSE_H - 0.1, z: 0, intensity: 0.35, distance: 6, color: 0xffeedd }
+    ];
+    GAME._s3RoomLights = [];
+    for (var rli = 0; rli < s3RoomLights.length; rli++) {
+      var rl = s3RoomLights[rli];
+      var roomPL = new THREE.PointLight(rl.color, rl.intensity, rl.distance);
+      roomPL.position.set(rl.x, rl.y, rl.z);
+      GAME.scene.add(roomPL);
+      GAME._s3RoomLights.push(roomPL);
+      // 天井灯の見た目（光る四角パネル）
+      var lampPanel = new THREE.Mesh(
+        new THREE.BoxGeometry(0.6, 0.04, 0.6),
+        new THREE.MeshStandardMaterial({ color: 0xffffee, emissive: 0xffeecc, emissiveIntensity: 0.9, roughness: 0.2 })
+      );
+      lampPanel.position.set(rl.x, rl.y + 0.05, rl.z);
+      GAME.scene.add(lampPanel);
+    }
+
+    // レンダリング品質向上（トーンマッピング）
+    GAME.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    GAME.renderer.toneMappingExposure = 1.3;
 
     try { buildHouseFloor(); } catch(e) { console.error('buildHouseFloor:', e); }
     try { buildStage3Exterior(); } catch(e) { console.error('buildStage3Exterior:', e); }
@@ -9480,10 +9518,10 @@ function spawnHouseNPCs() {
   });
 
   var fatherModel = createNPCModel(0x757575, 1.7, 0xf5c6a0, { isMale: true, tieColor: 0x424242 });
-  fatherModel.position.set(0, HOUSE_1F_Y, -2.5);
+  fatherModel.position.set(0, HOUSE_1F_Y, -1.8);
   GAME.scene.add(fatherModel);
   GAME.npcs.push({
-    mesh: fatherModel, role: 'father', x: 0, z: -2.5, targetX: 0, targetZ: -2.5,
+    mesh: fatherModel, role: 'father', x: 0, z: -1.8, targetX: 0, targetZ: -1.8,
     behavior: 'calm', state: 'idle', speed: 0.018, phase: 0,
     npcH: 1.7, evacuationDelay: 4, exited: false, deskX: 0, deskZ: -1, floorY: HOUSE_1F_Y,
   });
@@ -14026,7 +14064,7 @@ function initDailyCinematic() {
       { camX: 8, camY: 5, camZ: 10, lookX: 0, lookY: 2, lookZ: 0, dur: 4,
         text: en ? 'A quiet evening at home...' : '穏やかな夕暮れ。いつもの我が家…' },
       // Shot 2: 1Fリビング（父がくつろいでいる）
-      { camX: 2, camY: 1.5, camZ: -1, lookX: 0, lookY: 1.2, lookZ: -2.5, dur: 3.5,
+      { camX: 2, camY: 1.5, camZ: -0.5, lookX: 0, lookY: 1.2, lookZ: -1.8, dur: 3.5,
         text: en ? 'Dad relaxing in the living room.' : 'リビングでくつろぐ父。' },
       // Shot 3: 1Fキッチン（母が料理中）＆和室の祖母
       { camX: 5, camY: 1.8, camZ: 5, lookX: 3.5, lookY: 1.2, lookZ: 3.5, dur: 3.5,
