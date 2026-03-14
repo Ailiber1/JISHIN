@@ -9594,6 +9594,17 @@ function buildHouseFloor() {
   var stairOpening = new THREE.Mesh(new THREE.PlaneGeometry(stepW2 + 0.3, 2.0), stairOpeningMat);
   stairOpening.rotation.x = -Math.PI / 2; stairOpening.position.set(stairX, Y2 + 0.01, stairZStart + 0.9);
   scene.add(stairOpening);
+  // 階段室の壁（1F側から見えないように囲む）
+  var stairWallMat = new THREE.MeshStandardMaterial({ map: T.wallPlaster, color: 0xe8d8c0, roughness: 0.8, emissive: 0x0a0806, emissiveIntensity: 0.05 });
+  // 階段室 左壁（X=3.7, Z:3〜5）
+  var stairWallL = new THREE.Mesh(new THREE.BoxGeometry(wallThick, H, 2.0), stairWallMat);
+  stairWallL.position.set(stairX - stepW2 / 2 - 0.2, Y1 + H / 2, stairZStart + 1.0); scene.add(stairWallL);
+  GAME.walls.push({ minX: stairX - stepW2 / 2 - 0.3, maxX: stairX - stepW2 / 2 - 0.1, minZ: stairZStart, maxZ: stairZStart + 2.0, minY: Y1, maxY: Y1 + H });
+  GAME.cameraMeshes.push(stairWallL);
+  // 階段室 手前壁（Z=3.2付近、階段入口は開口）
+  var stairWallF = new THREE.Mesh(new THREE.BoxGeometry(stepW2 + 0.4, H - 2.1, wallThick), stairWallMat);
+  stairWallF.position.set(stairX, Y1 + 2.1 + (H - 2.1) / 2, stairZStart - 0.1); scene.add(stairWallF);
+
   // インタラクタブル: 階段を降りる
   GAME.interactables.push({ x: stairX, z: stairZStart + 0.5, radius: 2.0, action: 'goDownstairs', label: {ja: '階段を降りる', en: 'Go Downstairs'}, phases: ['aftershake', 'evacuation'], used: false });
 
@@ -14550,8 +14561,8 @@ function initDailyCinematic() {
       // Shot 2: 1Fリビング（父がくつろいでいる）
       { camX: 2, camY: 1.5, camZ: -0.5, lookX: 0, lookY: 1.2, lookZ: -1.8, dur: 3.5,
         text: en ? 'Dad relaxing in the living room.' : 'リビングでくつろぐ父。' },
-      // Shot 3: 1Fキッチン（母が料理中）＆和室の祖母
-      { camX: 5, camY: 1.8, camZ: 5, lookX: 3.5, lookY: 1.2, lookZ: 3.5, dur: 3.5,
+      // Shot 3: 1Fキッチン（母が料理中）＆和室の祖母 — カメラは部屋中央から奥を見渡す
+      { camX: 0, camY: 1.6, camZ: -1, lookX: 1, lookY: 1.0, lookZ: 4, dur: 3.5,
         text: en ? 'Mom cooking dinner. Grandma in the tatami room.' : 'キッチンで夕食を作る母。和室には祖母。' },
       // Shot 4: 2F（妹の部屋→プレイヤーの部屋）
       { camX: -2, camY: 4.5, camZ: 4, lookX: -3.5, lookY: 3.8, lookZ: 3.0, dur: 3,
