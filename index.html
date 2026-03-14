@@ -6781,6 +6781,7 @@ function buildClassroom() {
   ceiling.rotation.x = Math.PI / 2;
   ceiling.position.set(0, H, D / 2 - 1);
   scene.add(ceiling);
+  GAME.cameraMeshes.push(ceiling);
 
   const wallThick = 0.2;
 
@@ -8059,6 +8060,7 @@ function buildOfficeFloor() {
       cp.rotation.x = Math.PI / 2;
       cp.position.set(-W / 2 + cpW / 2 + cpi * cpW, H, cpD / 2 + cpj * cpD);
       scene.add(cp);
+      GAME.cameraMeshes.push(cp);
     }
   }
 
@@ -9156,6 +9158,7 @@ function buildHouseFloor() {
 
   var ceiling1 = new THREE.Mesh(new THREE.PlaneGeometry(W, D), ceilingMat);
   ceiling1.rotation.x = Math.PI / 2; ceiling1.position.set(0, Y1 + H, 0); scene.add(ceiling1);
+  GAME.cameraMeshes.push(ceiling1);
 
   // 和風の木の梁（天井 — オリジナル画像準拠）
   var beamMat = new THREE.MeshStandardMaterial({ color: 0x8b6f47, roughness: 0.65, emissive: 0x0a0804, emissiveIntensity: 0.08 });
@@ -9468,9 +9471,11 @@ function buildHouseFloor() {
   var floor2 = new THREE.Mesh(new THREE.PlaneGeometry(W, D), woodFloorMat);
   floor2.rotation.x = -Math.PI / 2; floor2.position.set(0, Y2, 0);
   floor2.receiveShadow = false; scene.add(floor2);
+  GAME.cameraMeshes.push(floor2);
 
   var ceiling2 = new THREE.Mesh(new THREE.PlaneGeometry(W, D), ceilingMat);
   ceiling2.rotation.x = Math.PI / 2; ceiling2.position.set(0, Y2 + H, 0); scene.add(ceiling2);
+  GAME.cameraMeshes.push(ceiling2);
 
   // 2F外壁
   var fw2 = new THREE.Mesh(new THREE.BoxGeometry(W, H, wallThick), wallMat);
@@ -14604,10 +14609,13 @@ function updateCamera() {
   var lookY = p.isCrouching ? 0.35 : p.y + 0.5;
   var playerPos = new THREE.Vector3(p.x, lookY, p.z);
 
+  // しゃがみ時はカメラ距離を短くして壁衝突を防ぐ（TPS維持）
+  var effectiveDist = p.isCrouching ? Math.min(dist, 1.8) : dist;
+
   // カメラの理想位置を計算
-  var idealX = p.x - Math.sin(p.yaw) * dist * Math.cos(pitch);
-  var idealY = lookY + dist * Math.sin(pitch);
-  var idealZ = p.z - Math.cos(p.yaw) * dist * Math.cos(pitch);
+  var idealX = p.x - Math.sin(p.yaw) * effectiveDist * Math.cos(pitch);
+  var idealY = lookY + effectiveDist * Math.sin(pitch);
+  var idealZ = p.z - Math.cos(p.yaw) * effectiveDist * Math.cos(pitch);
   var idealPos = new THREE.Vector3(idealX, idealY, idealZ);
 
   // Raycaster: プレイヤー→カメラ方向に壁があれば手前に止める
@@ -14621,8 +14629,10 @@ function updateCamera() {
 
   var hits = GAME._cameraRaycaster.intersectObjects(GAME.cameraMeshes);
   var finalDist = maxDist;
+  // しゃがみ時は壁にぶつかっても最低0.8維持（POV化防止）
+  var minDist = p.isCrouching ? 0.8 : 0.15;
   if (hits.length > 0) {
-    finalDist = Math.max(0.15, hits[0].distance - 0.3);
+    finalDist = Math.max(minDist, hits[0].distance - 0.3);
   }
 
   var camX = p.x + direction.x * finalDist;
