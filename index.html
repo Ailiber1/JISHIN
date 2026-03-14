@@ -10866,8 +10866,8 @@ function updatePlayerModel() {
   // dailyフェーズ: 椅子に座ったポーズ
   if (GAME.phase === 'daily') {
     mesh.position.set(p.x, floorY, p.z);
-    // Stage 3: 勉強机方向（奥壁）を向く、Stage 1・2: 黒板方向を向く
-    mesh.rotation.y = GAME.stageNum === 3 ? 0 : Math.PI;
+    // 全ステージ: 机/黒板方向（Z-=奥壁）を向く
+    mesh.rotation.y = Math.PI;
     // 椅子に座る高さ（ステージの椅子座面に合わせる）
     var playerH = GAME.stageNum === 2 ? 0.95 : GAME.stageNum === 3 ? 0.88 : 0.82;
     var chairSeatH = GAME.stageNum === 2 ? 0.42 : GAME.stageNum === 3 ? 0.40 : 0.33;
