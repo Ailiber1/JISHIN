@@ -6147,9 +6147,9 @@ function initGame(stageNum) {
     GAME.player.yaw = Math.PI;
     GAME.timeLimit = 360; // 6分
   } else if (stageNum === 3) {
-    // Stage 3: 一軒家 — プレイヤーは2Fの自室（勉強机に座っている）
+    // Stage 3: 一軒家 — プレイヤーはお兄ちゃん（中高生）、2Fの自室（勉強机に座っている）
     GAME.player.x = -4;
-    GAME.player.y = HOUSE_2F_Y + 0.9;  // 2F床(3.0m) + 目線高さ
+    GAME.player.y = HOUSE_2F_Y + 1.05;  // 2F床(3.0m) + 中高生の目線高さ
     GAME.player.z = -3.5;
     GAME.player.yaw = Math.PI;
     GAME.timeLimit = 420; // 7分（2階建て＋屋外避難のため長め）
@@ -10572,16 +10572,25 @@ function createPlayerModel(stageNum) {
   var figure = new THREE.Group();
   var sn = stageNum || GAME.stageNum || 1;
 
-  // --- パラメータ（KANKERI子どもキャラ完全準拠） ---
-  var headRadius = sn === 2 ? 0.16 : 0.17;
-  var torsoLength = sn === 2 ? 0.38 : 0.34;
-  var torsoRadius = sn === 2 ? 0.11 : 0.10;
-  var upperArmLength = sn === 2 ? 0.20 : 0.18;
-  var lowerArmLength = sn === 2 ? 0.18 : 0.16;
-  var armRadius = 0.045;
-  var upperLegLength = sn === 2 ? 0.25 : 0.22;
-  var lowerLegLength = sn === 2 ? 0.25 : 0.22;
-  var legRadius = 0.055;
+  // --- パラメータ（KANKERI棒人間準拠 — 身長バリエーション仕様書準拠） ---
+  // Stage 1: 小学生（1.0m/60%）、Stage 2: 大人（1.7m/100%）、Stage 3: お兄ちゃん/中高生（1.5m/88%）
+  var headRadius, torsoLength, torsoRadius, upperArmLength, lowerArmLength, armRadius, upperLegLength, lowerLegLength, legRadius;
+  if (sn === 2) {
+    // 大人（オフィスワーカー）
+    headRadius = 0.16; torsoLength = 0.38; torsoRadius = 0.11;
+    upperArmLength = 0.20; lowerArmLength = 0.18; armRadius = 0.045;
+    upperLegLength = 0.25; lowerLegLength = 0.25; legRadius = 0.055;
+  } else if (sn === 3) {
+    // 中高生お兄ちゃん（88%スケール — 大人と小学生の中間）
+    headRadius = 0.155; torsoLength = 0.36; torsoRadius = 0.10;
+    upperArmLength = 0.19; lowerArmLength = 0.17; armRadius = 0.045;
+    upperLegLength = 0.24; lowerLegLength = 0.24; legRadius = 0.055;
+  } else {
+    // 小学生（Stage 1）
+    headRadius = 0.17; torsoLength = 0.34; torsoRadius = 0.10;
+    upperArmLength = 0.18; lowerArmLength = 0.16; armRadius = 0.045;
+    upperLegLength = 0.22; lowerLegLength = 0.22; legRadius = 0.055;
+  }
 
   // --- マテリアル ---
   var bodyMat, pantsMat;
@@ -10590,9 +10599,9 @@ function createPlayerModel(stageNum) {
     bodyMat = new THREE.MeshStandardMaterial({ color: 0xf5f5f5, emissive: 0xf5f5f5, emissiveIntensity: 0.2, roughness: 0.6, metalness: 0.05 });
     pantsMat = new THREE.MeshStandardMaterial({ color: 0x424242, emissive: 0x424242, emissiveIntensity: 0.15, roughness: 0.7 });
   } else if (sn === 3) {
-    // Stage 3: カジュアル部屋着（Tシャツ＋スウェットパンツ）
-    bodyMat = new THREE.MeshStandardMaterial({ color: 0x6699cc, emissive: 0x6699cc, emissiveIntensity: 0.15, roughness: 0.7 });
-    pantsMat = new THREE.MeshStandardMaterial({ color: 0x555566, emissive: 0x555566, emissiveIntensity: 0.1, roughness: 0.8 });
+    // Stage 3: お兄ちゃん（中高生）— オレンジTシャツ＋ネイビースウェットパンツ（仕様書: プレイヤー=オレンジ #ff6b00）
+    bodyMat = new THREE.MeshStandardMaterial({ color: 0xff6b00, emissive: 0xff6b00, emissiveIntensity: 0.15, roughness: 0.7 });
+    pantsMat = new THREE.MeshStandardMaterial({ color: 0x2a3050, emissive: 0x2a3050, emissiveIntensity: 0.1, roughness: 0.8 });
   } else {
     // Stage 1: 学生服カラー
     bodyMat = new THREE.MeshStandardMaterial({ color: 0x223355, emissive: 0x223355, emissiveIntensity: 0.3, roughness: 0.7, metalness: 0.1 });
@@ -10796,7 +10805,7 @@ function updatePlayerModel() {
     mesh.position.set(p.x, 0, p.z);
     mesh.rotation.y = Math.PI; // 黒板方向を向く
     // 椅子に座る高さ（ステージの椅子座面に合わせる）
-    var playerH = 0.82; // totalHeight相当
+    var playerH = GAME.stageNum === 2 ? 0.95 : GAME.stageNum === 3 ? 0.88 : 0.82;
     var chairSeatH = GAME.stageNum === 2 ? 0.42 : GAME.stageNum === 3 ? 0.36 : 0.33;
     var seatY = chairSeatH - playerH * 0.40;
     mesh.position.y = seatY + Math.sin((GAME.totalTimer || 0) * 2) * 0.003;
