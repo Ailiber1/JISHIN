@@ -9293,6 +9293,7 @@ function buildHouseFloor() {
   // 玄関
   var shoeRack = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.4), furnitureMat);
   shoeRack.position.set(-5.3, Y1 + 0.4, -4.0); shoeRack.receiveShadow = true; scene.add(shoeRack);
+  GAME.walls.push({ minX: -5.75, maxX: -4.85, minZ: -4.25, maxZ: -3.75, minY: Y1, maxY: Y1 + 0.8 });
 
   var shoesMesh = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.08, 0.1), new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.6 }));
   shoesMesh.position.set(-5.3, Y1 + 0.04, -4.5); scene.add(shoesMesh);
@@ -14483,16 +14484,18 @@ function updatePlayer(dt) {
   }
 
   const R = 0.25;
+  // 足元Y座標（p.yは目線高さなので、足元はフロアレベル）
+  var footY = (GAME.stageNum === 3 && GAME._onHouse2F) ? 3.0 : 0;
 
   const newX = p.x + mx * speed;
   let blocked = false;
   for (let i = 0; i < GAME.walls.length; i++) {
     const w = GAME.walls[i];
-    // しゃがみ時のみ家具（机: maxY<=0.65）の衝突を無視（机の下に潜り込むため）
-    if (p.isCrouching && w.maxY !== undefined && w.maxY <= 0.65) continue;
-    // Stage 3: 2階建て — プレイヤーY位置で壁を高さフィルタリング
+    // しゃがみ時のみ家具（机: maxY<=足元+0.65）の衝突を無視（机の下に潜り込むため）
+    if (p.isCrouching && w.maxY !== undefined && w.maxY <= footY + 0.65) continue;
+    // 2階建て — 足元Y位置で壁を高さフィルタリング（足元が壁の範囲内かどうか）
     if (w.minY !== undefined && w.maxY !== undefined) {
-      if (p.y < w.minY - 0.5 || p.y > w.maxY + 0.5) continue;
+      if (footY + 1.5 < w.minY || footY > w.maxY) continue;
     }
     if (newX + R > w.minX && newX - R < w.maxX && p.z + R > w.minZ && p.z - R < w.maxZ) {
       blocked = true; break;
@@ -14504,10 +14507,10 @@ function updatePlayer(dt) {
   blocked = false;
   for (let i = 0; i < GAME.walls.length; i++) {
     const w = GAME.walls[i];
-    if (p.isCrouching && w.maxY !== undefined && w.maxY <= 0.65) continue;
-    // Stage 3: 2階建て — プレイヤーY位置で壁を高さフィルタリング
+    if (p.isCrouching && w.maxY !== undefined && w.maxY <= footY + 0.65) continue;
+    // 2階建て — 足元Y位置で壁を高さフィルタリング
     if (w.minY !== undefined && w.maxY !== undefined) {
-      if (p.y < w.minY - 0.5 || p.y > w.maxY + 0.5) continue;
+      if (footY + 1.5 < w.minY || footY > w.maxY) continue;
     }
     if (p.x + R > w.minX && p.x - R < w.maxX && newZ + R > w.minZ && newZ - R < w.maxZ) {
       blocked = true; break;
