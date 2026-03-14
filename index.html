@@ -9643,7 +9643,7 @@ function buildHouseFloor() {
   // 基礎（コンクリート）
   var foundMat = new THREE.MeshStandardMaterial({ color: 0x888880, roughness: 0.9 });
   var foundH = 0.4;
-  scene.add(new THREE.Mesh(new THREE.BoxGeometry(W + 0.6, foundH, D + 0.6), foundMat).translateY(Y1 + foundH / 2 - foundH));
+  scene.add(new THREE.Mesh(new THREE.BoxGeometry(W + 0.6, foundH, D + 0.6), foundMat).translateY(Y1 - foundH / 2 - 0.05));
 
   // 外壁1F（テクスチャ付き）
   var ext1FTex = extTex.clone(); ext1FTex.repeat.set(4, 1);
