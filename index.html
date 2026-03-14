@@ -12363,6 +12363,14 @@ function performInteract() {
         GAME._genkanDoorMesh.position.x -= 0.8;
       }
       break;
+
+    case 'hideUnderDesk':
+      // 机/ちゃぶ台/テーブルの下に隠れる（しゃがみ強制）
+      GAME.player.isCrouching = true;
+      GAME.score += 10;
+      showAdvisor({ja: '机の下に隠れた！頭を守って揺れがおさまるまで待とう！\n「E」で机の脚を掴んで体を固定しよう！', en: 'Hiding under the desk! Protect your head and wait for the shaking to stop!\nPress E to hold the desk legs!'}, 'praise');
+      showItemGet('🛡️ 身を守る行動！ — 机の下に避難');
+      break;
   }
 }
 
