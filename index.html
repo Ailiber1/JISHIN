@@ -10800,15 +10800,18 @@ function updatePlayerModel() {
   var p = GAME.player;
   var j = mesh.userData.joints;
 
+  // 足元のフロアY座標（Stage 3は2階建て）
+  var floorY = (GAME.stageNum === 3 && GAME._onHouse2F) ? 3.0 : 0;
+
   // dailyフェーズ: 椅子に座ったポーズ
   if (GAME.phase === 'daily') {
-    mesh.position.set(p.x, 0, p.z);
+    mesh.position.set(p.x, floorY, p.z);
     mesh.rotation.y = Math.PI; // 黒板方向を向く
     // 椅子に座る高さ（ステージの椅子座面に合わせる）
     var playerH = GAME.stageNum === 2 ? 0.95 : GAME.stageNum === 3 ? 0.88 : 0.82;
     var chairSeatH = GAME.stageNum === 2 ? 0.42 : GAME.stageNum === 3 ? 0.36 : 0.33;
     var seatY = chairSeatH - playerH * 0.40;
-    mesh.position.y = seatY + Math.sin((GAME.totalTimer || 0) * 2) * 0.003;
+    mesh.position.y = floorY + seatY + Math.sin((GAME.totalTimer || 0) * 2) * 0.003;
     // 座りポーズ: 脚を90度曲げる
     j.leftHip.rotation.x = -1.57;
     j.rightHip.rotation.x = -1.57;
@@ -10828,8 +10831,8 @@ function updatePlayerModel() {
     return;
   }
 
-  // 位置
-  mesh.position.set(p.x, 0, p.z);
+  // 位置（Stage 3は2階建て — フロアYを考慮）
+  mesh.position.set(p.x, floorY, p.z);
 
   // 回転: 移動方向に体を向ける（後退時に振り向いて顔が見える）
   if (p.moveYaw !== undefined) {
