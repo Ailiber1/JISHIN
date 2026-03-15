@@ -10005,10 +10005,10 @@ function buildHouseFloor() {
   GAME.interactables.push({ x: 0, z: -1, radius: 1.5, action: 'hideUnderDesk', label: {ja: 'ちゃぶ台の下に潜る', en: 'Hide Under Table'}, phases: ['earthquake', 'shaking'], used: false });
   GAME.interactables.push({ x: -4, z: -4, radius: 1.5, action: 'hideUnderDesk', label: {ja: '机の下に潜る', en: 'Hide Under Desk'}, phases: ['earthquake', 'shaking'], used: false, floorY: Y2 });
   GAME.interactables.push({ x: 4.5, z: 4.5, radius: 1.5, action: 'turnOffGas', label: {ja: '\uD83D\uDD25 ガスを止める', en: '\uD83D\uDD25 Turn Off Gas'}, phases: ['aftershake', 'evacuation'], used: false, mesh: gasStove });
-  GAME.interactables.push({ x: -4.5, z: -4.8, radius: 1.5, action: 'turnOffBreaker', label: {ja: '\u26A1 ブレーカーを落とす', en: '\u26A1 Turn Off Breaker'}, phases: ['aftershake', 'evacuation'], used: false, mesh: breakerLever });
-  GAME.interactables.push({ x: -5.3, z: -4.0, radius: 1.5, action: 'pickUpFlashlight', label: {ja: '\uD83D\uDD26 懐中電灯を取る', en: '\uD83D\uDD26 Pick Up Flashlight'}, phases: ['aftershake', 'evacuation'], used: false, mesh: flashlight });
-  GAME.interactables.push({ x: -5.3, z: -4.5, radius: 1.5, action: 'putOnShoes', label: {ja: '\uD83D\uDC5F 靴を履く', en: '\uD83D\uDC5F Put On Shoes'}, phases: ['aftershake', 'evacuation'], used: false, mesh: shoesMesh });
-  GAME.interactables.push({ x: -5, z: -4.8, radius: 2.0, action: 'openGenkanDoor', label: {ja: '\uD83D\uDEAA 玄関ドアを開ける', en: '\uD83D\uDEAA Open Front Door'}, phases: ['aftershake', 'evacuation'], used: false, mesh: genkanDoor });
+  GAME.interactables.push({ x: -4.5, z: -4.73, radius: 0.8, action: 'turnOffBreaker', label: {ja: '\u26A1 ブレーカーを落とす（通電火災防止）', en: '\u26A1 Turn Off Breaker (Prevent Fire)'}, phases: ['aftershake', 'evacuation'], used: false, mesh: breakerLever });
+  GAME.interactables.push({ x: -5.3, z: -4.0, radius: 0.8, action: 'pickUpFlashlight', label: {ja: '\uD83D\uDD26 懐中電灯を取る', en: '\uD83D\uDD26 Pick Up Flashlight'}, phases: ['aftershake', 'evacuation'], used: false, mesh: flashlight });
+  GAME.interactables.push({ x: -5.3, z: -4.5, radius: 0.8, action: 'putOnShoes', label: {ja: '\uD83D\uDC5F 靴を履く（ガラス対策）', en: '\uD83D\uDC5F Put On Shoes (Glass Protection)'}, phases: ['aftershake', 'evacuation'], used: false, mesh: shoesMesh });
+  GAME.interactables.push({ x: -5, z: -4.9, radius: 1.0, action: 'openGenkanDoor', label: {ja: '\uD83D\uDEAA 玄関ドアを開ける', en: '\uD83D\uDEAA Open Front Door'}, phases: ['aftershake', 'evacuation'], used: false, mesh: genkanDoor });
 }
 
 // ============================================================
@@ -10024,7 +10024,7 @@ function spawnHouseNPCs() {
   GAME.npcs.push({
     mesh: motherModel, role: 'mother', x: 3.5, z: 4.2, targetX: 3.5, targetZ: 4.2,
     behavior: 'calm', state: 'idle', speed: 0.015, phase: 0,
-    npcH: 1.55, evacuationDelay: 3, exited: false, deskX: 3.5, deskZ: 4.2, floorY: HOUSE_1F_Y,
+    npcH: 1.55, evacuationDelay: 3, exited: false, deskX: 3.5, deskZ: 3.5, floorY: HOUSE_1F_Y,
   });
 
   var fatherModel = createNPCModel(0x757575, 1.7, 0xf5c6a0, { isMale: true, tieColor: 0x424242 });
@@ -11918,18 +11918,27 @@ function updateSingleNPC(npc, dtSec) {
       if (npc.state === 'goToParents') {
         updateSisterGoToParents(npc, dtSec);
       }
-      // パニックNPCは立って震える
+      // パニックNPCは立って震える（妹はその場に留まる）
       if (npc.behavior === 'panic' && npc.state === 'panicking') {
         npc.state = 'aftershake_idle';
         mesh.position.y = npc.floorY || 0;
+        mesh.scale.set(1, 1, 1); // しゃがみscaleリセット
         var pb = mesh.userData.body;
         if (pb) { pb.rotation.x = 0; }
         if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = 0;
         if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = 0;
-        // 通路にオフセット
-        var pOff = (npc.deskX !== undefined && npc.deskX <= 0) ? 1.5 : -1.5;
-        npc.x = (npc.deskX || npc.x) + pOff;
-        mesh.position.x = npc.x;
+        // 妹（needsHelp）はその場に留まる — プレイヤーが助けに来るのを待つ
+        if (npc.needsHelp && !npc.helped) {
+          mesh.position.x = npc.deskX || npc.x;
+          mesh.position.z = npc.deskZ || npc.z;
+          npc.x = npc.deskX || npc.x;
+          npc.z = npc.deskZ || npc.z;
+        } else {
+          // 通路にオフセット
+          var pOff = (npc.deskX !== undefined && npc.deskX <= 0) ? 1.5 : -1.5;
+          npc.x = (npc.deskX || npc.x) + pOff;
+          mesh.position.x = npc.x;
+        }
       }
       break;
 
@@ -12114,19 +12123,23 @@ function updateSingleNPC(npc, dtSec) {
           npc.targetZ = 14.5;
         } else if (GAME.stageNum === 3) {
           // Stage 3: ウェイポイント経由で玄関へ（壁に挟まるのを防止）
-          // 2FのNPCは階段経由で1Fへ
+          // 2FのNPCは階段経由で1Fへ（未救助NPCはその場に留まる）
           if (npc.floorY && npc.floorY > 1) {
+            if (npc.needsHelp && !npc.helped) {
+              // 未救助NPC（妹など）は2Fに待機 — プレイヤーが助けに来るのを待つ
+              break;
+            }
             npc._stairPhase = 'goToStairs';
             npc.targetX = 5.3;
             npc.targetZ = 4.0;
           } else {
             // 1FのNPC: ロール別ウェイポイント
             if (npc.role === 'mother') {
-              // キッチン(3.5,4.2)→Z=2壁の南側→リビング→玄関方向
+              // キッチン→カウンター西端を回り込む→Z=2壁の南→リビング→玄関
               npc._waypoints = [
-                { x: 3.5, z: 1.5 },  // キッチンからZ=2壁の南へ（壁は X=1.5〜6, Z=2）
-                { x: 0, z: 0 },      // リビング中央（ちゃぶ台の横）
-                { x: -3, z: -2 },    // 左側通路（X=-2壁より左）
+                { x: 1.5, z: 3.5 },  // カウンター西端を回り込む（counter X=2.0-5.5）
+                { x: 0, z: 1.5 },    // Z=2壁の南（開口部X=-2.5〜1.5）
+                { x: -3, z: -2 },    // 左側通路
                 { x: -5, z: -4.5 },  // 玄関
               ];
             } else if (npc.role === 'grandma') {
@@ -12136,11 +12149,18 @@ function updateSingleNPC(npc, dtSec) {
                 { x: -3, z: -2 },    // 玄関方向
                 { x: -5, z: -4.5 },  // 玄関
               ];
-            } else {
-              // 父など: リビング→玄関
+            } else if (npc.role === 'father') {
+              // 父: ちゃぶ台南→ソファ避けて南西→玄関
               npc._waypoints = [
-                { x: 0, z: -1 },
-                { x: -3, z: -2 },
+                { x: 1.5, z: -2.5 }, // ちゃぶ台とソファを避けて南東へ
+                { x: -3, z: -3 },    // 南西通路
+                { x: -5, z: -4.5 },  // 玄関
+              ];
+            } else {
+              // その他: リビング→玄関
+              npc._waypoints = [
+                { x: 0, z: -2.5 },
+                { x: -3, z: -3 },
                 { x: -5, z: -4.5 },
               ];
             }
@@ -12371,8 +12391,14 @@ function trySafetyCheck() {
   if (GAME.scoring.checkedSafety) return false;
   if (GAME.phase !== 'aftershake' && GAME.phase !== 'evacuation') return false;
   var px = GAME.player.x, pz = GAME.player.z;
+  var playerFloorY = (GAME.stageNum === 3 && GAME._onHouse2F) ? 3.0 : 0;
   for (var i = 0; i < GAME.npcs.length; i++) {
     var npc = GAME.npcs[i];
+    // フロア判定: 別フロアのNPCはスキップ
+    var npcFloorY = npc.floorY || 0;
+    if (Math.abs(playerFloorY - npcFloorY) > 2) continue;
+    // needsHelp NPCは安否確認ではなくtryHelpInjuredNPCで処理
+    if (npc.needsHelp && !npc.helped) continue;
     var dx = px - npc.x;
     var dz = pz - npc.z;
     if (Math.sqrt(dx * dx + dz * dz) < 2.0) {
