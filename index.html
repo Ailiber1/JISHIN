@@ -10094,6 +10094,19 @@ function startStairCutsceneS3Down() {
     GAME.keys = {};
     GAME.joystickMag = 0;
 
+    // ついてきているNPCも1Fにテレポート
+    for (var fi = 0; fi < GAME.npcs.length; fi++) {
+      var fnpc = GAME.npcs[fi];
+      if (fnpc.followingPlayer && fnpc.helped) {
+        fnpc.x = GAME.player.x + 0.8;
+        fnpc.z = GAME.player.z;
+        fnpc.floorY = 0;
+        fnpc.mesh.position.x = fnpc.x;
+        fnpc.mesh.position.z = fnpc.z;
+        fnpc.mesh.position.y = 0;
+      }
+    }
+
     overlay.style.opacity = '0';
     text.style.opacity = '0';
     setTimeout(function() {
@@ -11468,7 +11481,7 @@ function updateSingleNPC(npc, dtSec) {
           }
         } else {
           // 6-10秒: 立ち止まって腕組み + 見回す
-          mesh.position.y = Math.sin(npc.phase * 2) * 0.003;
+          mesh.position.y = (npc.floorY || 0) + Math.sin(npc.phase * 2) * 0.003;
           mesh.position.x = npc.x;
           mesh.position.z = npc.z;
           mesh.rotation.y = Math.sin((bossT - 6) * 0.8) * 0.6; // 左右見回す
@@ -11769,7 +11782,7 @@ function updateSingleNPC(npc, dtSec) {
         if (npc.state !== 'fallen') {
           npc.state = 'fallen';
           mesh.rotation.z = Math.PI / 2; // 横倒し
-          mesh.position.y = 0.15;
+          mesh.position.y = (npc.floorY || 0) + 0.15;
         }
       }
 
@@ -11819,13 +11832,13 @@ function updateSingleNPC(npc, dtSec) {
         mesh.position.y = mesh.position.y * (1 - t); // Y位置を0に戻す
         if (t >= 1) {
           npc.state = 'aftershake_idle';
-          mesh.position.y = 0;
+          mesh.position.y = npc.floorY || 0;
         }
       }
       if (npc.state === 'aftershake_idle') {
         // 立ち上がった後のアイドル（周囲を見回す）
         npc.phase += dtSec;
-        mesh.position.y = Math.sin(npc.phase * 2) * 0.003;
+        mesh.position.y = (npc.floorY || 0) + Math.sin(npc.phase * 2) * 0.003;
         mesh.rotation.y = (npc._origYaw || mesh.rotation.y) + Math.sin(npc.phase * 0.6) * 0.25;
       }
       // パニックNPCは立って震える
@@ -11913,7 +11926,7 @@ function updateSingleNPC(npc, dtSec) {
         }
         // 待機中アイドルアニメーション（呼吸 + 周囲を見回す）
         npc.phase += dtSec;
-        mesh.position.y = Math.sin(npc.phase * 2) * 0.004;
+        mesh.position.y = (npc.floorY || 0) + Math.sin(npc.phase * 2) * 0.004;
         mesh.rotation.y = npc._origYaw !== undefined ? npc._origYaw + Math.sin(npc.phase * 0.8) * 0.3 : mesh.rotation.y + Math.sin(npc.phase * 0.8) * 0.003;
         var wbIdle = mesh.userData.body;
         if (wbIdle && wbIdle.children && wbIdle.children.length >= 3) {
@@ -11937,7 +11950,7 @@ function updateSingleNPC(npc, dtSec) {
           if (npc.state !== 'directing') {
             npc.state = 'directing';
             mesh.scale.set(1, 1, 1);
-            mesh.position.y = 0;
+            mesh.position.y = npc.floorY || 0;
             mesh.rotation.z = 0;
             // しゃがみポーズリセット
             var db = mesh.userData.body;
@@ -11990,7 +12003,7 @@ function updateSingleNPC(npc, dtSec) {
       if (npc.state !== 'evacuating') {
         npc.state = 'evacuating';
         mesh.scale.set(1, 1, 1);
-        mesh.position.y = 0;
+        mesh.position.y = npc.floorY || 0;
         mesh.rotation.z = 0;
         // しゃがみポーズを完全リセット（これがないと幽霊のように浮く）
         var resetBody = mesh.userData.body;
