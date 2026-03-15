@@ -13438,9 +13438,10 @@ function _doTransitionPhase(newPhase) {
       GAME.player.isSprinting = false;
       // Stage 3: プレイヤーを机から離す（椅子から立ち上がり＝貫通防止）
       if (GAME.stageNum === 3 && GAME._onHouse2F) {
-        GAME.player.x = -2.5;
+        GAME.player.x = -3.5;
         GAME.player.y = HOUSE_2F_Y + 1.05;
-        GAME.player.z = -2.0; // 机(-3.85,-4.05)から十分離れた部屋中央寄り
+        GAME.player.z = -2.5; // 部屋中央（机から離れた安全な位置）
+        GAME.player.yaw = 0; // 南向き（カメラが部屋内に収まるように）
       }
       // 「授業中」ラベルを非表示
       var dclHide = document.getElementById('daily-class-label');
