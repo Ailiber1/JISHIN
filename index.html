@@ -9655,6 +9655,20 @@ function buildHouseFloor() {
   var deskLampShade = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.04, 0.05, 8), new THREE.MeshStandardMaterial({ color: 0xeeddcc, roughness: 0.6, emissive: 0xffcc88, emissiveIntensity: 0.3 }));
   deskLampShade.position.set(-4.22, Y2 + 0.98, -4.0); scene.add(deskLampShade);
 
+  // 勉強机上のノートPC
+  var pcMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.3, metalness: 0.6 });
+  // PC本体（キーボード部分）
+  var pcBase = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.015, 0.22), pcMat);
+  pcBase.position.set(-3.85, Y2 + 0.715, -4.05); scene.add(pcBase);
+  // PC画面（開いた状態 — 奥に傾ける）
+  var pcScreen = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.20, 0.008), pcMat);
+  pcScreen.position.set(-3.85, Y2 + 0.82, -4.18);
+  pcScreen.rotation.x = -0.2; scene.add(pcScreen);
+  // 画面の発光部分
+  var screenGlow = new THREE.Mesh(new THREE.PlaneGeometry(0.25, 0.16), new THREE.MeshStandardMaterial({ color: 0x88bbff, emissive: 0x4488cc, emissiveIntensity: 0.5, roughness: 0.2 }));
+  screenGlow.position.set(-3.85, Y2 + 0.82, -4.175);
+  screenGlow.rotation.x = -0.2; scene.add(screenGlow);
+
   // タンス引き出し装飾
   for (var tdi = 0; tdi < 4; tdi++) {
     var tdLine = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.01, 0.01), new THREE.MeshStandardMaterial({ color: 0x5a4530, roughness: 0.5 }));
@@ -9993,12 +10007,12 @@ function spawnHouseNPCs() {
   GAME._exitedNPCs = 0;
 
   var motherModel = createNPCModel(0xe91e63, 1.55, 0xf5c6a0, { isFemale: true, hairColor: 0x333333, skirtColor: 0xe91e63 });
-  motherModel.position.set(3.5, HOUSE_1F_Y, 3.5);
+  motherModel.position.set(3.5, HOUSE_1F_Y, 4.2);
   GAME.scene.add(motherModel);
   GAME.npcs.push({
-    mesh: motherModel, role: 'mother', x: 3.5, z: 3.5, targetX: 3.5, targetZ: 3.5,
+    mesh: motherModel, role: 'mother', x: 3.5, z: 4.2, targetX: 3.5, targetZ: 4.2,
     behavior: 'calm', state: 'idle', speed: 0.015, phase: 0,
-    npcH: 1.55, evacuationDelay: 3, exited: false, deskX: 3.5, deskZ: 3.5, floorY: HOUSE_1F_Y,
+    npcH: 1.55, evacuationDelay: 3, exited: false, deskX: 3.5, deskZ: 4.2, floorY: HOUSE_1F_Y,
   });
 
   var fatherModel = createNPCModel(0x757575, 1.7, 0xf5c6a0, { isMale: true, tieColor: 0x424242 });
@@ -14590,7 +14604,7 @@ function initDailyCinematic() {
       { camX: 2, camY: 1.2, camZ: -0.5, lookX: 0, lookY: 0.8, lookZ: -2.25, dur: 3.5,
         text: en ? 'Dad relaxing in the living room.' : 'リビングでくつろぐ父。' },
       // Shot 3: 1Fキッチン（母が料理中）＆和室の祖母 — カメラはキッチン横から母を映す
-      { camX: 1.5, camY: 1.4, camZ: 4.5, lookX: 3.5, lookY: 0.8, lookZ: 3.5, dur: 3.5,
+      { camX: 1.5, camY: 1.4, camZ: 4.5, lookX: 3.5, lookY: 0.8, lookZ: 4.2, dur: 3.5,
         text: en ? 'Mom cooking dinner. Grandma in the tatami room.' : 'キッチンで夕食を作る母。和室には祖母。' },
       // Shot 4: 2F（妹の部屋→プレイヤーの部屋）
       { camX: -2, camY: 4.5, camZ: 4, lookX: -3.5, lookY: 3.8, lookZ: 3.0, dur: 3,
