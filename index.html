@@ -11420,6 +11420,51 @@ function npcMoveWithCollision(npc, dx, dz, speed) {
   npc.mesh.position.z = npc.z;
 }
 
+// 妹の独立移動（ウェイポイント経由で親のところへ向かう）
+function updateSisterGoToParents(npc, dtSec) {
+  if (!npc._goToParents || !npc._waypoints) return false;
+  var mesh = npc.mesh;
+  var wpTarget = npc._waypoints[npc._wpIndex || 0];
+  if (!wpTarget) return false;
+  var wdx = wpTarget.x - npc.x, wdz = wpTarget.z - npc.z;
+  var wdist = Math.sqrt(wdx * wdx + wdz * wdz);
+  if (wdist > 0.3) {
+    // ウェイポイントへ移動（壁判定あり）
+    npcMoveWithCollision(npc, wdx / wdist, wdz / wdist, npc.speed * 1.5);
+    mesh.position.x = npc.x; mesh.position.z = npc.z;
+    mesh.rotation.y = Math.atan2(wdx, wdz);
+    npc.phase += dtSec * 7;
+    if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = Math.sin(npc.phase) * 0.4;
+    if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = -Math.sin(npc.phase) * 0.4;
+  } else {
+    // ウェイポイント到達 → 次へ
+    npc._wpIndex = (npc._wpIndex || 0) + 1;
+    if (npc._wpIndex < npc._waypoints.length) {
+      // 次のウェイポイントへ進む
+    } else if (npc._stairPhase === 'goToStairs') {
+      // 2F階段到達 → 1Fへテレポート
+      npc._stairPhase = null;
+      npc.floorY = 0;
+      mesh.position.y = 0;
+      npc.x = 2; npc.z = 0;
+      mesh.position.x = npc.x; mesh.position.z = npc.z;
+      npc._waypoints = [
+        { x: 0, z: -1 },
+      ];
+      npc._wpIndex = 0;
+      showAdvisor({ja: '妹が1階に降りた！', en: 'Sister went downstairs!'}, 'normal');
+    } else {
+      // 親のところに到着
+      npc._goToParents = false;
+      npc._waypoints = null;
+      npc.state = 'idle';
+      if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = 0;
+      if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = 0;
+    }
+  }
+  return true;
+}
+
 function updateNPCs(dtSec) {
   for (var i = 0; i < GAME.npcs.length; i++) {
     var npc = GAME.npcs[i];
@@ -11862,10 +11907,16 @@ function updateSingleNPC(npc, dtSec) {
         }
       }
       if (npc.state === 'aftershake_idle') {
+        // 妹の独立移動（aftershakeフェーズ中でも動く）
+        if (updateSisterGoToParents(npc, dtSec)) break;
         // 立ち上がった後のアイドル（周囲を見回す）
         npc.phase += dtSec;
         mesh.position.y = (npc.floorY || 0) + Math.sin(npc.phase * 2) * 0.003;
         mesh.rotation.y = (npc._origYaw || mesh.rotation.y) + Math.sin(npc.phase * 0.6) * 0.25;
+      }
+      // 妹が goToParents 状態でも動く
+      if (npc.state === 'goToParents') {
+        updateSisterGoToParents(npc, dtSec);
       }
       // パニックNPCは立って震える
       if (npc.behavior === 'panic' && npc.state === 'panicking') {
@@ -11885,6 +11936,12 @@ function updateSingleNPC(npc, dtSec) {
     case 'evacuation':
       // 避難フェーズ — 列ごとに順番退出（ドア側の列から）
       if (npc.exited) break;
+
+      // 妹の独立移動（親のところへ向かう）
+      if (npc._goToParents) {
+        updateSisterGoToParents(npc, dtSec);
+        break;
+      }
 
       // followingPlayer: プレイヤーの後ろをついてくる
       if (npc.followingPlayer && npc.helped) {
@@ -12265,10 +12322,23 @@ function tryHelpInjuredNPC() {
         GAME.scoring.rescuedChild = true;
         GAME.score += 5;
         SoundManager.playSE('click');
-        showAdvisor({ja: '妹を落ち着かせた！一緒に避難しよう！', en: 'You calmed your sister! Let\'s evacuate together!'}, 'praise');
+        showAdvisor({ja: '妹を落ち着かせた！妹は1階のお父さんのところへ向かう。君も1階へ行こう！', en: 'You calmed your sister! She\'ll go to dad on 1F. You go downstairs too!'}, 'praise');
         showItemGet('👧 妹を救助！ — 家族を守る');
-        npc.behavior = 'calm'; npc.state = 'following';
+        npc.behavior = 'calm'; npc.state = 'goToParents';
+        npc.followingPlayer = false;
+        npc._goToParents = true;
+        npc._stairPhase = 'goToStairs';
+        // 2Fウェイポイント: 妹の部屋(-3.5,3.0) → X=-1壁の隙間 → X=1壁の隙間 → 階段
+        npc._waypoints = [
+          { x: -0.5, z: 3.0 },
+          { x: 1.5, z: 3.5 },
+          { x: 5.3, z: 4.0 },
+        ];
+        npc._wpIndex = 0;
+        npc.targetX = npc._waypoints[0].x;
+        npc.targetZ = npc._waypoints[0].z;
         var sMesh = npc.mesh;
+        sMesh.scale.set(1, 1, 1);
         if (sMesh.userData.body) {
           sMesh.userData.body.rotation.x = 0;
           if (sMesh.userData.body.children && sMesh.userData.body.children.length >= 3) {
@@ -13218,8 +13288,13 @@ function updateObjectiveBanner() {
     }
   } else if (GAME.phase === 'aftershake') {
     if (GAME.stageNum === 3) {
-      text = en ? '🔍 Check on your sister upstairs!' : '🔍 2階の妹に声をかけよう！';
-      sub = en ? 'Get close to sister and press E' : '妹に近づいてEキーで声かけ';
+      if (GAME.scoring.rescuedChild) {
+        text = en ? '🔽 Go downstairs! Find the stairs!' : '🔽 階段を見つけて1階に降りよう！';
+        sub = en ? 'Walk to the stair area (right side)' : '右奥の階段エリアへ向かおう';
+      } else {
+        text = en ? '🔍 Check on your sister upstairs!' : '🔍 2階の妹に声をかけよう！';
+        sub = en ? 'Get close to sister and press E' : '妹に近づいてEキーで声かけ';
+      }
     } else {
       text = en ? '🔍 Check surroundings for injuries' : '🔍 周囲の安全を確認しよう';
     }
