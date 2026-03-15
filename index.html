@@ -10002,10 +10002,10 @@ function spawnHouseNPCs() {
   });
 
   var fatherModel = createNPCModel(0x757575, 1.7, 0xf5c6a0, { isMale: true, tieColor: 0x424242 });
-  fatherModel.position.set(0, HOUSE_1F_Y, -1.8);
+  fatherModel.position.set(0, HOUSE_1F_Y, -2.5);
   GAME.scene.add(fatherModel);
   GAME.npcs.push({
-    mesh: fatherModel, role: 'father', x: 0, z: -1.8, targetX: 0, targetZ: -1.8,
+    mesh: fatherModel, role: 'father', x: 0, z: -2.5, targetX: 0, targetZ: -2.5,
     behavior: 'calm', state: 'idle', speed: 0.018, phase: 0,
     npcH: 1.7, evacuationDelay: 4, exited: false, deskX: 0, deskZ: -1, floorY: HOUSE_1F_Y,
   });
@@ -11500,9 +11500,12 @@ function updateSingleNPC(npc, dtSec) {
           }
           if (mesh.userData.head) mesh.userData.head.rotation.x = 0.15;
         } else if (npc.role === 'father') {
-          // 父: リビングでリラックス（ソファに座り読書）
-          var fSeatY = (npc.floorY || 0) - (npc.npcH || 1.7) * 0.15;
+          // 父: ソファに座りリラックス（座面Y=0.4に合わせる）
+          var fFloorY = npc.floorY || 0;
+          var fSeatSurface = fFloorY + 0.4; // ソファ座面の上端
+          var fSeatY = fSeatSurface - (npc.npcH || 1.7) * 0.40;
           mesh.position.y = fSeatY;
+          mesh.position.x = 0; mesh.position.z = -2.5; // ソファ位置に固定
           if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = -0.5;
           if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = -0.5;
           var fBody = mesh.userData.body;
