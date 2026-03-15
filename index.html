@@ -1707,6 +1707,17 @@ html, body {
 #guard-evac-indicator .holdon-sub { font-size: 12px; color: rgba(255,200,100,0.7); margin-top: 2px; }
 @keyframes guardGlow { 0%,100% { box-shadow: 0 0 20px rgba(255,160,0,0.3); } 50% { box-shadow: 0 0 35px rgba(255,160,0,0.6); } }
 /* HOLD ONプロンプト（Eキー長押し案内） */
+#objective-banner {
+  position: fixed; top: 55px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,0.88); border: 2px solid rgba(255,180,0,0.7);
+  border-radius: 10px; padding: 8px 20px; z-index: 60;
+  font-family: 'Share Tech Mono', monospace; font-size: clamp(13px,2.5vw,16px);
+  color: #ffcc00; text-align: center; display: none;
+  max-width: 90vw; line-height: 1.4;
+  animation: objPulse 3s ease-in-out infinite;
+}
+#objective-banner .obj-sub { color: #aaa; font-size: 0.8em; margin-top: 2px; }
+@keyframes objPulse { 0%,100%{border-color:rgba(255,180,0,0.7)} 50%{border-color:rgba(255,180,0,1)} }
 #holdon-prompt {
   position: fixed; bottom: 25%; left: 50%; transform: translateX(-50%);
   background: rgba(0,0,0,0.85); border: 2px solid rgba(0,180,255,0.6);
@@ -2754,6 +2765,7 @@ html, body {
     <div class="cin-text" id="cin-text"></div>
   </div>
   <div id="interact-prompt"><span class="prompt-key">E</span><span class="prompt-label"></span></div>
+  <div id="objective-banner" style="display:none;"></div>
   <div id="holdon-prompt"></div>
   <div id="holdon-indicator"><div class="holdon-title">🤲 HOLD ON!</div><div class="holdon-sub" data-i18n="HUD_HOLDON_SUB">机の脚を掴んでいる…</div></div>
   <div id="guard-evac-indicator" style="display:none;"><div class="holdon-title" data-i18n="HUD_GUARD_TITLE">🛡️ 頭を保護中</div><div class="holdon-sub" data-i18n="HUD_GUARD_SUB">頭を守りながら避難中…</div></div>
@@ -10085,12 +10097,12 @@ function startStairCutsceneS3Down() {
   SoundManager.playSE('click');
 
   setTimeout(function() {
-    // 1Fにテレポート
+    // 1Fにテレポート（リビング中央の安全な場所）
     GAME._onHouse2F = false;
-    GAME.player.x = 4.5;
+    GAME.player.x = 0;
     GAME.player.y = 0.9;
-    GAME.player.z = 2.5;
-    GAME.player.yaw = -Math.PI / 2;
+    GAME.player.z = 0;
+    GAME.player.yaw = Math.PI;
     GAME.keys = {};
     GAME.joystickMag = 0;
 
@@ -10098,8 +10110,8 @@ function startStairCutsceneS3Down() {
     for (var fi = 0; fi < GAME.npcs.length; fi++) {
       var fnpc = GAME.npcs[fi];
       if (fnpc.followingPlayer && fnpc.helped) {
-        fnpc.x = GAME.player.x + 0.8;
-        fnpc.z = GAME.player.z;
+        fnpc.x = GAME.player.x + 1.0;
+        fnpc.z = GAME.player.z + 0.5;
         fnpc.floorY = 0;
         fnpc.mesh.position.x = fnpc.x;
         fnpc.mesh.position.z = fnpc.z;
@@ -11377,9 +11389,10 @@ function npcCheckWall(nx, nz, npcR, npcY) {
     // 開いたドアのコリジョンはスキップ
     if (w._isDoor && w._doorId === 'stairDoorS2' && GAME._stairDoorOpen) continue;
     if (w._isDoor && w._doorId === 'genkanDoor' && GAME._genkanDoorOpen) continue;
-    // 2階建て: NPCのY位置で壁を高さフィルタリング
-    if (npcY !== undefined && w.minY !== undefined && w.maxY !== undefined) {
-      if (npcY < w.minY - 0.5 || npcY > w.maxY + 0.5) continue;
+    // 2階建て: NPCの足元Y位置で壁をフロアフィルタリング
+    if (npcY !== undefined && w.minY !== undefined) {
+      // NPCの足元がこの壁のフロアと異なる場合はスキップ
+      if (npcY > w.minY + 2.5 || npcY < w.minY - 0.5) continue;
     }
     if (nx + R > w.minX && nx - R < w.maxX && nz + R > w.minZ && nz - R < w.maxZ) {
       return true;
@@ -11394,12 +11407,13 @@ function npcMoveWithCollision(npc, dx, dz, speed) {
   if (dist < 0.01) return;
   var mx = (dx / dist) * speed;
   var mz = (dz / dist) * speed;
+  var npcFootY = npc.floorY || 0;
   // まずX軸移動
-  if (!npcCheckWall(npc.x + mx, npc.z, 0.3, npc.y)) {
+  if (!npcCheckWall(npc.x + mx, npc.z, 0.3, npcFootY)) {
     npc.x += mx;
   }
   // 次にZ軸移動
-  if (!npcCheckWall(npc.x, npc.z + mz, 0.3, npc.y)) {
+  if (!npcCheckWall(npc.x, npc.z + mz, 0.3, npcFootY)) {
     npc.z += mz;
   }
   npc.mesh.position.x = npc.x;
@@ -11721,8 +11735,13 @@ function updateSingleNPC(npc, dtSec) {
           npc.state = 'panicking';
           mesh.scale.set(1, 1, 1); // 座り状態から立ち上がり
           mesh.position.y = npc.floorY || 0;
-          npc.targetX = npc.x + (Math.random() - 0.5) * 4;
-          npc.targetZ = npc.z + (Math.random() - 0.5) * 4;
+          npc.targetX = npc.deskX + (Math.random() - 0.5) * 3;
+          npc.targetZ = npc.deskZ + (Math.random() - 0.5) * 2;
+          // フロア別クランプ（初期ターゲットにも適用）
+          if (GAME.stageNum === 3 && npc.floorY > 1) {
+            npc.targetX = Math.max(-5, Math.min(5, npc.targetX));
+            npc.targetZ = Math.max(-4, Math.min(4, npc.targetZ));
+          }
           // 脚の座りポーズをリセット
           if (mesh.userData.leftLeg) {
             mesh.userData.leftLeg.rotation.x = 0;
@@ -12039,26 +12058,26 @@ function updateSingleNPC(npc, dtSec) {
           } else {
             // 1FのNPC: ロール別ウェイポイント
             if (npc.role === 'mother') {
-              // キッチン(3.5,4.2)→カウンター手前→リビング→廊下→玄関
+              // キッチン(3.5,4.2)→Z=2壁の南側→リビング→玄関方向
               npc._waypoints = [
-                { x: 1.5, z: 2.0 },  // カウンター壁(x=2)の手前
-                { x: 0, z: 0 },      // リビング中央
-                { x: -2, z: -3 },    // 廊下方向
-                { x: -5, z: -5 },    // 玄関
+                { x: 3.5, z: 1.5 },  // キッチンからZ=2壁の南へ（壁は X=1.5〜6, Z=2）
+                { x: 0, z: 0 },      // リビング中央（ちゃぶ台の横）
+                { x: -3, z: -2 },    // 左側通路（X=-2壁より左）
+                { x: -5, z: -4.5 },  // 玄関
               ];
             } else if (npc.role === 'grandma') {
-              // 和室(-4,4)→リビング→廊下→玄関
+              // 和室(-4,4)→Z=2壁の開口部→リビング→玄関
               npc._waypoints = [
-                { x: -1, z: 1 },
-                { x: -2, z: -3 },
-                { x: -5, z: -5 },
+                { x: -1, z: 1.5 },   // Z=2壁の南（開口部X=-2.5〜1.5）
+                { x: -3, z: -2 },    // 玄関方向
+                { x: -5, z: -4.5 },  // 玄関
               ];
             } else {
-              // 父など: リビング→廊下→玄関
+              // 父など: リビング→玄関
               npc._waypoints = [
                 { x: 0, z: -1 },
-                { x: -2, z: -3 },
-                { x: -5, z: -5 },
+                { x: -3, z: -2 },
+                { x: -5, z: -4.5 },
               ];
             }
             npc._wpIndex = 0;
@@ -12890,34 +12909,22 @@ function shiftFurnitureAfterQuake() {
         obj.rotation.x += (Math.random() - 0.5) * 0.1;
       }
     }
-    // Stage 3: 家の家具を散乱・転倒させる
+    // Stage 3: 家の家具を少しずらす（通路を塞がない控えめな量）
     if (obj.isMesh && obj.userData && obj.userData.isHouseFurniture) {
-      obj.position.x += (Math.random() - 0.5) * 0.3;
-      obj.position.z += (Math.random() - 0.5) * 0.2;
-      obj.rotation.y += (Math.random() - 0.5) * 0.2;
-      if (Math.random() < 0.5) {
-        obj.rotation.z += (Math.random() - 0.5) * 0.4;
-        obj.rotation.x += (Math.random() - 0.5) * 0.2;
+      obj.position.x += (Math.random() - 0.5) * 0.1;
+      obj.position.z += (Math.random() - 0.5) * 0.08;
+      obj.rotation.y += (Math.random() - 0.5) * 0.12;
+      // 軽い傾き（転倒はしない — 通路を塞ぐため）
+      if (Math.random() < 0.3) {
+        obj.rotation.z += (Math.random() - 0.5) * 0.1;
       }
     }
   });
-  // タンスは大きく倒す演出
+  // タンスは壁際で軽く傾ける（2F、通路を塞がない位置）
   if (GAME._tansuMeshS3) {
-    GAME._tansuMeshS3.rotation.z = -0.8 + Math.random() * 0.3;
-    GAME._tansuMeshS3.position.x -= 0.3;
-    GAME._tansuMeshS3.position.y -= 0.4;
+    GAME._tansuMeshS3.rotation.z = -0.25;
+    GAME._tansuMeshS3.position.x -= 0.1;
   }
-  // 本棚も傾ける
-  GAME.scene.traverse(function(obj) {
-    if (obj.isMesh && obj.userData && obj.userData.isHouseFurniture && obj.geometry) {
-      var params = obj.geometry.parameters;
-      if (params && params.height > 1.5 && params.width < 0.5) {
-        // 縦長家具（本棚等）は大きく傾ける
-        obj.rotation.z += (Math.random() > 0.5 ? 1 : -1) * (0.3 + Math.random() * 0.3);
-        obj.position.y -= 0.2;
-      }
-    }
-  });
 }
 
 function gameLoop(timestamp) {
@@ -13179,6 +13186,78 @@ function updatePhase(dtSec) {
       // 結果画面へ（1回だけ）
       break;
   }
+
+  // ===== 常駐目標バナー更新 =====
+  updateObjectiveBanner();
+}
+
+function updateObjectiveBanner() {
+  var banner = document.getElementById('objective-banner');
+  if (!banner) return;
+  var en = currentLang === 'en';
+  var text = '';
+  var sub = '';
+
+  if (GAME.phase === 'earthquake') {
+    if (GAME.player.isHoldingDesk) {
+      text = en ? '🤲 Hold on! Stay under the desk!' : '🤲 机の脚を掴んで揺れに耐えよう！';
+    } else if (GAME.player.isCrouching && typeof isUnderDesk === 'function' && isUnderDesk(GAME.player.x, GAME.player.z)) {
+      text = en ? '🤲 Press E to grab desk legs!' : '🤲 Eキーで机の脚を掴もう！';
+    } else if (GAME.player.isCrouching) {
+      text = en ? '📍 Move under the desk!' : '📍 机の下に移動しよう！';
+    } else {
+      text = en ? '⚠️ EARTHQUAKE! Crouch (C) and hide under desk!' : '⚠️ 地震だ！Cキーでしゃがんで机の下に潜ろう！';
+      sub = en ? 'Press C to crouch → Move under desk → Press E' : 'C: しゃがむ → 机の下へ移動 → E: 机を掴む';
+    }
+  } else if (GAME.phase === 'aftershake') {
+    if (GAME.stageNum === 3) {
+      text = en ? '🔍 Check on your sister upstairs!' : '🔍 2階の妹に声をかけよう！';
+      sub = en ? 'Get close to sister and press E' : '妹に近づいてEキーで声かけ';
+    } else {
+      text = en ? '🔍 Check surroundings for injuries' : '🔍 周囲の安全を確認しよう';
+    }
+  } else if (GAME.phase === 'evacuation') {
+    if (GAME.stageNum === 3) {
+      if (GAME._onHouse2F) {
+        if (!GAME.scoring.rescuedChild) {
+          text = en ? '👧 Find and help your sister!' : '👧 妹を見つけてEキーで助けよう！';
+          sub = en ? 'Get close and press E' : '近づいてEキー';
+        } else {
+          text = en ? '🔽 Go downstairs! Find the stairs!' : '🔽 階段を見つけて1階に降りよう！';
+          sub = en ? 'Find stairs and press E' : '階段に近づいてEキー';
+        }
+      } else {
+        var tasks = [];
+        if (!GAME.scoring.turnedOffGas) tasks.push(en ? 'Turn off gas' : 'ガスを止める');
+        if (!GAME.scoring.putOnShoes) tasks.push(en ? 'Put on shoes' : '靴を履く');
+        if (!GAME.scoring.turnedOffBreaker) tasks.push(en ? 'Turn off breaker' : 'ブレーカーを落とす');
+        if (tasks.length > 0) {
+          text = (en ? '📋 Tasks: ' : '📋 やること: ') + tasks.join(' / ');
+          sub = en ? 'Get close to items and press E → Then exit through front door' : '各場所に近づいてEキー → 完了したら玄関から外へ';
+        } else if (!GAME.scoring.openedDoor) {
+          text = en ? '🚪 Open the front door and evacuate!' : '🚪 玄関ドアを開けて外に避難しよう！';
+          sub = en ? 'Go to entrance and press E' : '玄関に行ってEキー';
+        } else {
+          text = en ? '🏃 Evacuate outside!' : '🏃 外に出て避難場所へ！';
+        }
+      }
+    } else if (GAME.stageNum === 1) {
+      text = en ? '🚪 Follow teacher to emergency exit!' : '🚪 先生の指示に従い非常口へ！';
+    } else if (GAME.stageNum === 2) {
+      text = en ? '🚪 Find the emergency staircase!' : '🚪 非常階段を見つけよう！';
+      sub = en ? 'Do NOT use the elevator!' : 'エレベーターは使わない！';
+    }
+  } else {
+    banner.style.display = 'none';
+    return;
+  }
+
+  if (text) {
+    banner.innerHTML = text + (sub ? '<div class="obj-sub">' + sub + '</div>' : '');
+    banner.style.display = 'block';
+  } else {
+    banner.style.display = 'none';
+  }
 }
 
 function transitionPhase(newPhase) {
@@ -13277,9 +13356,9 @@ function _doTransitionPhase(newPhase) {
       GAME.player.isSprinting = false;
       // Stage 3: プレイヤーを机から離す（椅子から立ち上がり＝貫通防止）
       if (GAME.stageNum === 3 && GAME._onHouse2F) {
-        GAME.player.x = -4;
+        GAME.player.x = -2.5;
         GAME.player.y = HOUSE_2F_Y + 1.05;
-        GAME.player.z = -3.0; // 椅子の位置(Z=-3.4)から少し後退
+        GAME.player.z = -2.0; // 机(-3.85,-4.05)から十分離れた部屋中央寄り
       }
       // 「授業中」ラベルを非表示
       var dclHide = document.getElementById('daily-class-label');
