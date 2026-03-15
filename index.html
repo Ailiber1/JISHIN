@@ -11501,10 +11501,20 @@ function updateSingleNPC(npc, dtSec) {
           if (mesh.userData.head) mesh.userData.head.rotation.x = 0.15;
         } else if (npc.role === 'father') {
           // 父: ソファに座りリラックス（座面上端Y=0.4にお尻を乗せる）
-          mesh.position.y = (npc.floorY || 0) + 0.08;
+          // 父npcH=1.7: hipJointY(figure内)=0.73, seat=0.4 → figure.y = 0.4-0.73 = -0.33
+          mesh.position.y = (npc.floorY || 0) - 0.33;
           mesh.position.x = 0; mesh.position.z = -2.5; // ソファ位置に固定
-          if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = -0.5;
-          if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = -0.5;
+          // 座りポーズ: 太ももを水平に前方へ、膝を曲げて下腿を垂直に下ろす
+          if (mesh.userData.leftLeg) {
+            mesh.userData.leftLeg.rotation.x = -1.5; // 太もも水平（hip）
+            var lUpper = mesh.userData.leftLeg.children[0];
+            if (lUpper && lUpper.children[0]) lUpper.children[0].rotation.x = 1.5; // 膝曲げ（knee）
+          }
+          if (mesh.userData.rightLeg) {
+            mesh.userData.rightLeg.rotation.x = -1.5;
+            var rUpper = mesh.userData.rightLeg.children[0];
+            if (rUpper && rUpper.children[0]) rUpper.children[0].rotation.x = 1.5;
+          }
           var fBody = mesh.userData.body;
           if (fBody && fBody.children && fBody.children.length >= 3) {
             fBody.children[1].rotation.x = -0.6;
@@ -14578,7 +14588,7 @@ function initDailyCinematic() {
       { camX: 8, camY: 5, camZ: 10, lookX: 0, lookY: 2, lookZ: 0, dur: 4,
         text: en ? 'A quiet evening at home...' : '穏やかな夕暮れ。いつもの我が家…' },
       // Shot 2: 1Fリビング（父がくつろいでいる）
-      { camX: 2, camY: 1.5, camZ: -0.5, lookX: 0, lookY: 1.2, lookZ: -1.8, dur: 3.5,
+      { camX: 2, camY: 1.2, camZ: -0.5, lookX: 0, lookY: 0.7, lookZ: -2.5, dur: 3.5,
         text: en ? 'Dad relaxing in the living room.' : 'リビングでくつろぐ父。' },
       // Shot 3: 1Fキッチン（母が料理中）＆和室の祖母 — カメラはキッチン横から母を映す
       { camX: 1.5, camY: 1.4, camZ: 4.5, lookX: 3.5, lookY: 0.8, lookZ: 3.5, dur: 3.5,
