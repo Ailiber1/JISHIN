@@ -14719,7 +14719,9 @@ function updateCamera() {
   }
 
   // プレイヤー頭部位置（視点基点）— しゃがみ時は低くするが見やすさ維持
-  var lookY = p.isCrouching ? 0.55 : p.y + 0.5;
+  // 2F対応: 足元フロアYを基準にしゃがみ時の目線を計算
+  var floorY = (GAME.stageNum === 3 && GAME._onHouse2F) ? 3.0 : 0;
+  var lookY = p.isCrouching ? (floorY + 0.55) : p.y + 0.5;
   var playerPos = new THREE.Vector3(p.x, lookY, p.z);
 
   // しゃがみ時はカメラ距離を短くして室内壁衝突を軽減（TPS維持）
@@ -14867,9 +14869,10 @@ document.addEventListener('keydown', function(e) {
       var canStand = true;
       var pp = GAME.player;
       var sR = 0.25;
+      var standFootY = (GAME.stageNum === 3 && GAME._onHouse2F) ? 3.0 : 0;
       for (var wi = 0; wi < GAME.walls.length; wi++) {
         var ww = GAME.walls[wi];
-        if (ww.maxY !== undefined && ww.maxY <= 0.65) {
+        if (ww.maxY !== undefined && ww.maxY <= standFootY + 0.65) {
           if (pp.x + sR > ww.minX && pp.x - sR < ww.maxX && pp.z + sR > ww.minZ && pp.z - sR < ww.maxZ) {
             canStand = false; break;
           }
@@ -15039,9 +15042,10 @@ function initGameControls() {
         // 立ち上がり: 頭上にデスクがあるか判定
         var canStand = true;
         var pp = GAME.player, sR = 0.25;
+        var mobFootY = (GAME.stageNum === 3 && GAME._onHouse2F) ? 3.0 : 0;
         for (var wi = 0; wi < GAME.walls.length; wi++) {
           var ww = GAME.walls[wi];
-          if (ww.maxY !== undefined && ww.maxY <= 0.65) {
+          if (ww.maxY !== undefined && ww.maxY <= mobFootY + 0.65) {
             if (pp.x + sR > ww.minX && pp.x - sR < ww.maxX && pp.z + sR > ww.minZ && pp.z - sR < ww.maxZ) {
               canStand = false; break;
             }
