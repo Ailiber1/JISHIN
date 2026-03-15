@@ -12011,14 +12011,40 @@ function updateSingleNPC(npc, dtSec) {
           npc.targetX = -11.5 + (Math.random() - 0.5) * 1;
           npc.targetZ = 14.5;
         } else if (GAME.stageNum === 3) {
-          // Stage 3: 玄関ドアへ (X=-5, Z=-5)
-          npc.targetX = -5 + (Math.random() - 0.5) * 0.5;
-          npc.targetZ = -5;
+          // Stage 3: ウェイポイント経由で玄関へ（壁に挟まるのを防止）
           // 2FのNPCは階段経由で1Fへ
           if (npc.floorY && npc.floorY > 1) {
             npc._stairPhase = 'goToStairs';
             npc.targetX = 5.3;
             npc.targetZ = 4.0;
+          } else {
+            // 1FのNPC: ロール別ウェイポイント
+            if (npc.role === 'mother') {
+              // キッチン(3.5,4.2)→カウンター手前→リビング→廊下→玄関
+              npc._waypoints = [
+                { x: 1.5, z: 2.0 },  // カウンター壁(x=2)の手前
+                { x: 0, z: 0 },      // リビング中央
+                { x: -2, z: -3 },    // 廊下方向
+                { x: -5, z: -5 },    // 玄関
+              ];
+            } else if (npc.role === 'grandma') {
+              // 和室(-4,4)→リビング→廊下→玄関
+              npc._waypoints = [
+                { x: -1, z: 1 },
+                { x: -2, z: -3 },
+                { x: -5, z: -5 },
+              ];
+            } else {
+              // 父など: リビング→廊下→玄関
+              npc._waypoints = [
+                { x: 0, z: -1 },
+                { x: -2, z: -3 },
+                { x: -5, z: -5 },
+              ];
+            }
+            npc._wpIndex = 0;
+            npc.targetX = npc._waypoints[0].x;
+            npc.targetZ = npc._waypoints[0].z;
           }
         } else {
           // Stage 1: 教室ドア方向
@@ -12073,17 +12099,34 @@ function updateSingleNPC(npc, dtSec) {
           mesh.position.y = Math.abs(Math.sin(npc.phase * 2)) * 0.03;
         }
       } else {
-        // ドア到達 or 階段到達
+        // ターゲット到達
         // Stage 3: 2FのNPCが階段に到達 → 1Fへ降ろして玄関へ
         if (npc._stairPhase === 'goToStairs') {
           npc._stairPhase = null;
           npc.floorY = HOUSE_1F_Y;
           mesh.position.y = HOUSE_1F_Y;
-          npc.targetX = -5 + (Math.random() - 0.5) * 0.5;
-          npc.targetZ = -5;
-          break; // 次フレームで玄関へ向かう
+          // 1Fウェイポイントを設定（階段から玄関へ）
+          npc._waypoints = [
+            { x: 2, z: 0 },
+            { x: -2, z: -3 },
+            { x: -5, z: -5 },
+          ];
+          npc._wpIndex = 0;
+          npc.targetX = npc._waypoints[0].x;
+          npc.targetZ = npc._waypoints[0].z;
+          break;
         }
-        // ドア到達 → ウェイポイントで退出へ
+        // ウェイポイント到達 → 次のウェイポイントへ進む
+        if (npc._waypoints && npc._wpIndex !== undefined && !npc._hallwayPhase) {
+          npc._wpIndex++;
+          if (npc._wpIndex < npc._waypoints.length) {
+            npc.targetX = npc._waypoints[npc._wpIndex].x;
+            npc.targetZ = npc._waypoints[npc._wpIndex].z;
+            break; // 次フレームで次のウェイポイントへ
+          }
+          // 全ウェイポイント完了 → 退出フェーズへ
+        }
+        // ドア/玄関到達 → ウェイポイントで退出へ
         if (!npc._hallwayPhase) {
           npc._hallwayPhase = 1;
           GAME._exitedNPCs = (GAME._exitedNPCs || 0) + 1;
@@ -12245,6 +12288,15 @@ function getNearestInteractable() {
     if (GAME.stageNum === 1 && (obj.action === 'turnOffFire' || obj.action === 'turnOffBreaker')) continue;
     // 机の下に潜る: しゃがんでいないと選択不可（まずしゃがむ→机の下に入る手順）
     if (obj.action === 'hideUnderDesk' && !GAME.player.isCrouching) continue;
+    // Stage 3: フロア高さフィルタ（2Fにいるのに1Fのインタラクタブルを表示しない）
+    if (GAME.stageNum === 3 && obj.floorY !== undefined) {
+      var playerFloorY = GAME._onHouse2F ? 3.0 : 0;
+      if (Math.abs(playerFloorY - obj.floorY) > 1.5) continue;
+    }
+    if (GAME.stageNum === 3 && obj.floorY === undefined && GAME._onHouse2F) {
+      // floorY未指定 = 1Fのインタラクタブル → 2Fにいたらスキップ
+      continue;
+    }
 
     var dx = px - obj.x;
     var dz = pz - obj.z;
@@ -14329,12 +14381,13 @@ function downloadResultData(totalScore, categories, actions) {
 // 安全ゾーン定義（机の下 = 各デスクの位置）
 function isUnderDesk(px, pz) {
   if (GAME.stageNum === 3) {
-    // Stage 3: ちゃぶ台（1F: 0, -1）or 勉強机（2F: -4, -4）— 半径1.5で判定
-    var cdx1 = px - 0, cdz1 = pz - (-1);
-    if (Math.sqrt(cdx1 * cdx1 + cdz1 * cdz1) < 1.5) return true;
-    if (GAME._onHouse2F) {
-      var cdx2 = px - (-4), cdz2 = pz - (-4);
-      if (Math.sqrt(cdx2 * cdx2 + cdz2 * cdz2) < 1.5) return true;
+    // Stage 3: ちゃぶ台（1F: 0, -1）or 勉強机（2F: -4, -4）— Stage2同様に矩形判定
+    if (!GAME._onHouse2F) {
+      // 1F ちゃぶ台 (幅1.2 x 奥行0.8 中心0,-1)
+      if (Math.abs(px - 0) < 0.6 && Math.abs(pz - (-1)) < 0.4) return true;
+    } else {
+      // 2F 勉強机 (幅1.0 x 奥行0.5 中心-4,-4)
+      if (Math.abs(px - (-4)) < 0.5 && Math.abs(pz - (-4)) < 0.35) return true;
     }
     return false;
   }
@@ -14865,32 +14918,36 @@ document.addEventListener('keydown', function(e) {
   if (GAME.paused) return;
 
   // しゃがむ: Cトグル（KANKERIと同じ方式）
-  if (e.code === 'KeyC' && !GAME._cPrev) {
-    if (GAME.player.isCrouching) {
-      // 立ち上がり: 頭上にデスクがあるか判定
-      var canStand = true;
-      var pp = GAME.player;
-      var sR = 0.25;
-      var standFootY = (GAME.stageNum === 3 && GAME._onHouse2F) ? 3.0 : 0;
-      for (var wi = 0; wi < GAME.walls.length; wi++) {
-        var ww = GAME.walls[wi];
-        if (ww.maxY !== undefined && ww.maxY <= standFootY + 0.65) {
-          if (pp.x + sR > ww.minX && pp.x - sR < ww.maxX && pp.z + sR > ww.minZ && pp.z - sR < ww.maxZ) {
-            canStand = false; break;
+  if (e.code === 'KeyC') {
+    if (!GAME._cPrev) {
+      if (GAME.player.isCrouching) {
+        // 立ち上がり: 頭上にデスクがあるか判定
+        var canStand = true;
+        var pp = GAME.player;
+        var sR = 0.25;
+        var standFootY = (GAME.stageNum === 3 && GAME._onHouse2F) ? 3.0 : 0;
+        for (var wi = 0; wi < GAME.walls.length; wi++) {
+          var ww = GAME.walls[wi];
+          if (ww.maxY !== undefined && ww.maxY <= standFootY + 0.65) {
+            if (pp.x + sR > ww.minX && pp.x - sR < ww.maxX && pp.z + sR > ww.minZ && pp.z - sR < ww.maxZ) {
+              canStand = false; break;
+            }
           }
         }
+        if (canStand) GAME.player.isCrouching = false;
+      } else {
+        GAME.player.isCrouching = true;
       }
-      if (canStand) GAME.player.isCrouching = false;
-    } else {
-      GAME.player.isCrouching = true;
     }
+    GAME._cPrev = true;
   }
-  GAME._cPrev = true;
   // 頭を守る: Gトグル（しゃがみと同じ方式 — 小学生でも押しやすい）
-  if (e.code === 'KeyG' && !GAME._gPrev) {
-    GAME.player.isGuarding = !GAME.player.isGuarding;
+  if (e.code === 'KeyG') {
+    if (!GAME._gPrev) {
+      GAME.player.isGuarding = !GAME.player.isGuarding;
+    }
+    GAME._gPrev = true;
   }
-  GAME._gPrev = true;
   // E長押し: 机の脚を掴む（HOLD ON）/ インタラクト
   if (e.code === 'KeyE') {
     var isQuakePhase = GAME.phase === 'earthquake' || GAME.phase === 'shaking';
