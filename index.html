@@ -11730,68 +11730,75 @@ function updateSingleNPC(npc, dtSec) {
           mesh.position.z = npc.z + (Math.random() - 0.5) * 0.02;
         }
       } else if (npc.behavior === 'panic') {
-        // パニック: 頭を抱えながらランダムに動き回る
         if (npc.state !== 'panicking') {
           npc.state = 'panicking';
-          mesh.scale.set(1, 1, 1); // 座り状態から立ち上がり
           mesh.position.y = npc.floorY || 0;
-          npc.targetX = npc.deskX + (Math.random() - 0.5) * 3;
-          npc.targetZ = npc.deskZ + (Math.random() - 0.5) * 2;
-          // フロア別クランプ（初期ターゲットにも適用）
-          if (GAME.stageNum === 3 && npc.floorY > 1) {
-            npc.targetX = Math.max(-5, Math.min(5, npc.targetX));
-            npc.targetZ = Math.max(-4, Math.min(4, npc.targetZ));
-          }
-          // 脚の座りポーズをリセット
-          if (mesh.userData.leftLeg) {
-            mesh.userData.leftLeg.rotation.x = 0;
-            var pUL = mesh.userData.leftLeg.children[0];
-            if (pUL && pUL.children[0]) pUL.children[0].rotation.x = 0;
-          }
-          if (mesh.userData.rightLeg) {
-            mesh.userData.rightLeg.rotation.x = 0;
-            var pUR = mesh.userData.rightLeg.children[0];
-            if (pUR && pUR.children[0]) pUR.children[0].rotation.x = 0;
-          }
         }
-        // 腕: 両手で頭を抱えるポーズ（パニックで震えながら）
-        var panicBody = mesh.userData.body;
-        if (panicBody && panicBody.children && panicBody.children.length >= 3) {
-          panicBody.children[1].rotation.x = -3.0 + Math.sin(npc.phase * 3) * 0.15;
-          panicBody.children[1].rotation.z = 0.4;
-          panicBody.children[2].rotation.x = -3.0 + Math.sin(npc.phase * 3 + 1) * 0.15;
-          panicBody.children[2].rotation.z = -0.4;
-        }
-        // 体: 前かがみで揺れる
-        if (panicBody) {
-          panicBody.rotation.x = 0.4 + Math.sin(npc.phase * 4) * 0.08;
-        }
-        // ターゲットに向かって移動
-        var dx = npc.targetX - npc.x;
-        var dz = npc.targetZ - npc.z;
-        var dist = Math.sqrt(dx * dx + dz * dz);
-        if (dist > 0.1) {
-          npc.x += (dx / dist) * npc.speed * 2;
-          npc.z += (dz / dist) * npc.speed * 2;
-          mesh.position.x = npc.x;
-          mesh.position.z = npc.z;
-          mesh.rotation.y = Math.atan2(dx, dz);
-          // 歩行アニメ
-          npc.phase += dtSec * 8;
-          if (mesh.userData.leftLeg) {
-            mesh.userData.leftLeg.rotation.x = Math.sin(npc.phase) * 0.4;
-            mesh.userData.rightLeg.rotation.x = -Math.sin(npc.phase) * 0.4;
+        npc.phase += dtSec;
+
+        // Stage 3 妹: その場でしゃがんで怯える（動き回らない）
+        if (GAME.stageNum === 3 && npc.role === 'sister') {
+          // しゃがみポーズ: 体を縮める
+          mesh.scale.set(1, 0.7, 1);
+          mesh.position.x = npc.deskX;
+          mesh.position.z = npc.deskZ;
+          npc.x = npc.deskX;
+          npc.z = npc.deskZ;
+          // 体を前かがみ + 震え
+          var sBody = mesh.userData.body;
+          if (sBody) {
+            sBody.rotation.x = 0.6 + Math.sin(npc.phase * 6) * 0.05;
+          }
+          // 両腕で頭を抱える
+          if (sBody && sBody.children && sBody.children.length >= 3) {
+            sBody.children[1].rotation.x = -2.5;
+            sBody.children[1].rotation.z = 0.5;
+            sBody.children[2].rotation.x = -2.5;
+            sBody.children[2].rotation.z = -0.5;
+          }
+          // 脚: しゃがみ
+          if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = -1.2;
+          if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = -1.2;
+          // 揺れに合わせた微振動
+          if (GAME.quake.shaking) {
+            mesh.position.x = npc.x + (Math.random() - 0.5) * 0.03;
+            mesh.position.z = npc.z + (Math.random() - 0.5) * 0.03;
           }
         } else {
-          // 新しいランダム目標
-          npc.targetX = npc.deskX + (Math.random() - 0.5) * 6;
-          npc.targetZ = npc.deskZ + (Math.random() - 0.5) * 4;
-          // マップ境界クランプ（フロアに応じて範囲を調整）
-          if (GAME.stageNum === 3 && npc.floorY > 1) {
-            // 2F: 部屋範囲内
-            npc.targetX = Math.max(-5.5, Math.min(5.5, npc.targetX));
-            npc.targetZ = Math.max(-4.5, Math.min(4.5, npc.targetZ));
+          // 他ステージのパニックNPC: 頭を抱えて動き回る
+          mesh.scale.set(1, 1, 1);
+          // 脚のリセット（初回のみ）
+          if (!npc._panicInited) {
+            npc._panicInited = true;
+            if (mesh.userData.leftLeg) { mesh.userData.leftLeg.rotation.x = 0; }
+            if (mesh.userData.rightLeg) { mesh.userData.rightLeg.rotation.x = 0; }
+            npc.targetX = npc.deskX + (Math.random() - 0.5) * 3;
+            npc.targetZ = npc.deskZ + (Math.random() - 0.5) * 2;
+          }
+          var panicBody = mesh.userData.body;
+          if (panicBody && panicBody.children && panicBody.children.length >= 3) {
+            panicBody.children[1].rotation.x = -3.0 + Math.sin(npc.phase * 3) * 0.15;
+            panicBody.children[1].rotation.z = 0.4;
+            panicBody.children[2].rotation.x = -3.0 + Math.sin(npc.phase * 3 + 1) * 0.15;
+            panicBody.children[2].rotation.z = -0.4;
+          }
+          if (panicBody) { panicBody.rotation.x = 0.4 + Math.sin(npc.phase * 4) * 0.08; }
+          var dx = npc.targetX - npc.x;
+          var dz = npc.targetZ - npc.z;
+          var dist = Math.sqrt(dx * dx + dz * dz);
+          if (dist > 0.1) {
+            npc.x += (dx / dist) * npc.speed * 2;
+            npc.z += (dz / dist) * npc.speed * 2;
+            mesh.position.x = npc.x;
+            mesh.position.z = npc.z;
+            mesh.rotation.y = Math.atan2(dx, dz);
+            if (mesh.userData.leftLeg) {
+              mesh.userData.leftLeg.rotation.x = Math.sin(npc.phase * 8) * 0.4;
+              mesh.userData.rightLeg.rotation.x = -Math.sin(npc.phase * 8) * 0.4;
+            }
           } else {
+            npc.targetX = npc.deskX + (Math.random() - 0.5) * 6;
+            npc.targetZ = npc.deskZ + (Math.random() - 0.5) * 4;
             npc.targetX = Math.max(-4, Math.min(4, npc.targetX));
             npc.targetZ = Math.max(0, Math.min(8, npc.targetZ));
           }
@@ -13198,7 +13205,7 @@ function updateObjectiveBanner() {
   var text = '';
   var sub = '';
 
-  if (GAME.phase === 'earthquake') {
+  if (GAME.phase === 'earthquake' || GAME.phase === 'shaking') {
     if (GAME.player.isHoldingDesk) {
       text = en ? '🤲 Hold on! Stay under the desk!' : '🤲 机の脚を掴んで揺れに耐えよう！';
     } else if (GAME.player.isCrouching && typeof isUnderDesk === 'function' && isUnderDesk(GAME.player.x, GAME.player.z)) {
