@@ -12243,6 +12243,8 @@ function getNearestInteractable() {
     if (obj.phases && obj.phases.indexOf(GAME.phase) === -1) continue;
     // Stage1では火・ブレーカーは先生の役割（生徒は操作不可）
     if (GAME.stageNum === 1 && (obj.action === 'turnOffFire' || obj.action === 'turnOffBreaker')) continue;
+    // 机の下に潜る: しゃがんでいないと選択不可（まずしゃがむ→机の下に入る手順）
+    if (obj.action === 'hideUnderDesk' && !GAME.player.isCrouching) continue;
 
     var dx = px - obj.x;
     var dz = pz - obj.z;
