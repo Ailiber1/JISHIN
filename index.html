@@ -13299,6 +13299,10 @@ function _doTransitionPhase(newPhase) {
     case 'aftershake':
       // 揺れ収束
       GAME.quake.shaking = false;
+      // キー状態をリセット（地震中の入力残りで自動歩行するバグ防止）
+      GAME.keys = {};
+      GAME.joystickMag = 0;
+      GAME.player.isSprinting = false;
       SoundManager.stopQuakeSound();
       SoundManager.stopBGM(2000);
       SoundManager.playGlassBreak(); // ガラス破砕音（実ファイル）
@@ -13333,6 +13337,10 @@ function _doTransitionPhase(newPhase) {
       break;
 
     case 'evacuation':
+      // キー状態をリセット（フェーズ切替時の入力残り防止）
+      GAME.keys = {};
+      GAME.joystickMag = 0;
+      GAME.player.isSprinting = false;
       // 環境音: きしみ停止 → 非常ベル開始
       SoundManager.stopAmbient(500);
       setTimeout(function() { SoundManager.startEvacAlarm(); }, 600);
@@ -15068,6 +15076,8 @@ document.addEventListener('visibilitychange', function() {
 });
 // blur: ウィンドウからフォーカスが外れた場合（DevTools・別ウィンドウ等）
 window.addEventListener('blur', function() {
+  GAME.keys = {};
+  GAME.joystickMag = 0;
   autoPause();
 });
 
