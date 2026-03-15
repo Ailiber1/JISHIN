@@ -9257,14 +9257,14 @@ function buildHouseFloor() {
   GAME.walls.push({ minX: -0.85, maxX: 0.85, minZ: -3.0, maxZ: -2.2, minY: Y1, maxY: Y1 + 0.65 });
 
   var tvStand = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.5, 0.4), furnitureMat);
-  tvStand.position.set(0, Y1 + 0.25, 1.5); tvStand.receiveShadow = true; scene.add(tvStand);
+  tvStand.position.set(0, Y1 + 0.25, 1.5); tvStand.receiveShadow = true; tvStand.userData.isHouseFurniture = true; scene.add(tvStand);
   var tv = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.6, 0.05), tvMat);
-  tv.position.set(0, Y1 + 0.8, 1.5); scene.add(tv);
+  tv.position.set(0, Y1 + 0.8, 1.5); tv.userData.isHouseFurniture = true; scene.add(tv);
   GAME._tvMeshS3 = tv;
   GAME.walls.push({ minX: -0.65, maxX: 0.65, minZ: 1.25, maxZ: 1.75, minY: Y1, maxY: Y1 + 0.5 });
 
   var bookshelf = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.8, 0.8), furnitureMat);
-  bookshelf.position.set(-1.8, Y1 + 0.9, 1.2); bookshelf.receiveShadow = true; scene.add(bookshelf);
+  bookshelf.position.set(-1.8, Y1 + 0.9, 1.2); bookshelf.receiveShadow = true; bookshelf.userData.isHouseFurniture = true; scene.add(bookshelf);
   GAME.walls.push({ minX: -2.05, maxX: -1.55, minZ: 0.75, maxZ: 1.65, minY: Y1, maxY: Y1 + 1.8 });
 
   // キッチン
@@ -9282,17 +9282,17 @@ function buildHouseFloor() {
   GAME.walls.push({ minX: 2.0, maxX: 5.5, minZ: 4.2, maxZ: 4.8, minY: Y1, maxY: Y1 + 0.85 });
 
   var fridge = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.7, 0.6), fridgeMat);
-  fridge.position.set(5.5, Y1 + 0.85, 3.0); fridge.receiveShadow = true; scene.add(fridge);
+  fridge.position.set(5.5, Y1 + 0.85, 3.0); fridge.receiveShadow = true; fridge.userData.isHouseFurniture = true; scene.add(fridge);
   GAME._fridgeMeshS3 = fridge;
   GAME.walls.push({ minX: 5.15, maxX: 5.85, minZ: 2.65, maxZ: 3.35, minY: Y1, maxY: Y1 + 1.7 });
 
   var dishCabinet = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.6, 0.4), furnitureMat);
-  dishCabinet.position.set(3.0, Y1 + 0.8, 2.3); dishCabinet.receiveShadow = true; scene.add(dishCabinet);
+  dishCabinet.position.set(3.0, Y1 + 0.8, 2.3); dishCabinet.receiveShadow = true; dishCabinet.userData.isHouseFurniture = true; scene.add(dishCabinet);
   GAME.walls.push({ minX: 2.55, maxX: 3.45, minZ: 2.05, maxZ: 2.55, minY: Y1, maxY: Y1 + 1.6 });
 
   // 玄関
   var shoeRack = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.4), furnitureMat);
-  shoeRack.position.set(-5.3, Y1 + 0.4, -4.0); shoeRack.receiveShadow = true; scene.add(shoeRack);
+  shoeRack.position.set(-5.3, Y1 + 0.4, -4.0); shoeRack.receiveShadow = true; shoeRack.userData.isHouseFurniture = true; scene.add(shoeRack);
   GAME.walls.push({ minX: -5.75, maxX: -4.85, minZ: -4.25, maxZ: -3.75, minY: Y1, maxY: Y1 + 0.8 });
 
   var shoesMesh = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.08, 0.1), new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.6 }));
@@ -9569,7 +9569,7 @@ function buildHouseFloor() {
   GAME.walls.push({ minX: 2.55, maxX: 4.45, minZ: -4.55, maxZ: -2.45, minY: Y2, maxY: Y2 + 0.4 });
 
   var tansu = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.8, 0.5), furnitureMat);
-  tansu.position.set(5.2, Y2 + 0.9, -3.5); tansu.receiveShadow = true; scene.add(tansu);
+  tansu.position.set(5.2, Y2 + 0.9, -3.5); tansu.receiveShadow = true; tansu.userData.isHouseFurniture = true; scene.add(tansu);
   GAME._tansuMeshS3 = tansu;
   GAME.walls.push({ minX: 4.75, maxX: 5.65, minZ: -3.8, maxZ: -3.2, minY: Y2, maxY: Y2 + 1.8 });
 
@@ -9624,7 +9624,7 @@ function buildHouseFloor() {
   stairWallF.position.set(stairX, Y1 + 2.1 + (H - 2.1) / 2, stairZStart - 0.1); scene.add(stairWallF);
 
   // インタラクタブル: 階段を降りる
-  GAME.interactables.push({ x: stairX, z: stairZStart + 0.5, radius: 2.0, action: 'goDownstairs', label: {ja: '階段を降りる', en: 'Go Downstairs'}, phases: ['aftershake', 'evacuation'], used: false });
+  GAME.interactables.push({ x: stairX, z: stairZStart + 0.5, radius: 2.0, action: 'goDownstairs', label: {ja: '🔽 階段を降りる', en: '🔽 Go Downstairs'}, phases: ['aftershake', 'evacuation'], used: false, floorY: Y2 });
 
   // ベッド枕
   var pillowMat = new THREE.MeshStandardMaterial({ color: 0xf5f0e8, roughness: 0.85 });
@@ -11707,7 +11707,7 @@ function updateSingleNPC(npc, dtSec) {
         if (npc.state !== 'panicking') {
           npc.state = 'panicking';
           mesh.scale.set(1, 1, 1); // 座り状態から立ち上がり
-          mesh.position.y = 0;
+          mesh.position.y = npc.floorY || 0;
           npc.targetX = npc.x + (Math.random() - 0.5) * 4;
           npc.targetZ = npc.z + (Math.random() - 0.5) * 4;
           // 脚の座りポーズをリセット
@@ -11754,9 +11754,15 @@ function updateSingleNPC(npc, dtSec) {
           // 新しいランダム目標
           npc.targetX = npc.deskX + (Math.random() - 0.5) * 6;
           npc.targetZ = npc.deskZ + (Math.random() - 0.5) * 4;
-          // マップ境界クランプ
-          npc.targetX = Math.max(-4, Math.min(4, npc.targetX));
-          npc.targetZ = Math.max(0, Math.min(8, npc.targetZ));
+          // マップ境界クランプ（フロアに応じて範囲を調整）
+          if (GAME.stageNum === 3 && npc.floorY > 1) {
+            // 2F: 部屋範囲内
+            npc.targetX = Math.max(-5.5, Math.min(5.5, npc.targetX));
+            npc.targetZ = Math.max(-4.5, Math.min(4.5, npc.targetZ));
+          } else {
+            npc.targetX = Math.max(-4, Math.min(4, npc.targetX));
+            npc.targetZ = Math.max(0, Math.min(8, npc.targetZ));
+          }
         }
       } else if (npc.behavior === 'injured') {
         // 負傷: その場で倒れる
@@ -11775,7 +11781,7 @@ function updateSingleNPC(npc, dtSec) {
       // 揺れ収束 — NPCが段階的に机の下から出る演出
       if (npc.behavior === 'injured' && !npc.helped) {
         mesh.rotation.z = Math.PI / 2;
-        mesh.position.y = -0.2;
+        mesh.position.y = (npc.floorY || 0) - 0.2;
         break;
       }
       // 2秒後から順番に立ち上がる（列ごとにずらす）
@@ -11825,7 +11831,7 @@ function updateSingleNPC(npc, dtSec) {
       // パニックNPCは立って震える
       if (npc.behavior === 'panic' && npc.state === 'panicking') {
         npc.state = 'aftershake_idle';
-        mesh.position.y = 0;
+        mesh.position.y = npc.floorY || 0;
         var pb = mesh.userData.body;
         if (pb) { pb.rotation.x = 0; }
         if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = 0;
@@ -11864,7 +11870,7 @@ function updateSingleNPC(npc, dtSec) {
       // 負傷NPC（助けていない）はその場に留まる
       if (npc.behavior === 'injured' && !npc.helped) {
         mesh.rotation.z = Math.PI / 2;
-        mesh.position.y = -0.2;
+        mesh.position.y = (npc.floorY || 0) - 0.2;
         break;
       }
 
@@ -11875,7 +11881,7 @@ function updateSingleNPC(npc, dtSec) {
         if (npc.state === 'crouching' || npc.state === 'idle' || npc.state === 'sitting' || npc.state === 'panicking' || npc.state === 'fallen' || npc.state === 'standing_up' || npc.state === 'aftershake_idle') {
           npc.state = 'waiting';
           mesh.scale.set(1, 1, 1);
-          mesh.position.y = 0;
+          mesh.position.y = npc.floorY || 0;
           mesh.rotation.z = 0;
           // デスク・椅子貫通防止: 通路位置にオフセット
           if (npc.deskX !== undefined && GAME.stageNum === 2) {
@@ -12871,6 +12877,33 @@ function shiftFurnitureAfterQuake() {
         obj.rotation.x += (Math.random() - 0.5) * 0.1;
       }
     }
+    // Stage 3: 家の家具を散乱・転倒させる
+    if (obj.isMesh && obj.userData && obj.userData.isHouseFurniture) {
+      obj.position.x += (Math.random() - 0.5) * 0.3;
+      obj.position.z += (Math.random() - 0.5) * 0.2;
+      obj.rotation.y += (Math.random() - 0.5) * 0.2;
+      if (Math.random() < 0.5) {
+        obj.rotation.z += (Math.random() - 0.5) * 0.4;
+        obj.rotation.x += (Math.random() - 0.5) * 0.2;
+      }
+    }
+  });
+  // タンスは大きく倒す演出
+  if (GAME._tansuMeshS3) {
+    GAME._tansuMeshS3.rotation.z = -0.8 + Math.random() * 0.3;
+    GAME._tansuMeshS3.position.x -= 0.3;
+    GAME._tansuMeshS3.position.y -= 0.4;
+  }
+  // 本棚も傾ける
+  GAME.scene.traverse(function(obj) {
+    if (obj.isMesh && obj.userData && obj.userData.isHouseFurniture && obj.geometry) {
+      var params = obj.geometry.parameters;
+      if (params && params.height > 1.5 && params.width < 0.5) {
+        // 縦長家具（本棚等）は大きく傾ける
+        obj.rotation.z += (Math.random() > 0.5 ? 1 : -1) * (0.3 + Math.random() * 0.3);
+        obj.position.y -= 0.2;
+      }
+    }
   });
 }
 
@@ -13023,11 +13056,19 @@ function updatePhase(dtSec) {
       // 揺れ収束 → 避難判断フェーズ（8秒の猶予 + 段階的ガイダンス）
       if (!GAME._aftershakeGuide1 && GAME.phaseTimer >= 2) {
         GAME._aftershakeGuide1 = true;
-        showAdvisor({ja: 'まだ動くな。余震に備えて様子を見よう。', en: 'Don\'t move yet. Wait and watch for aftershocks.'}, 'normal');
+        if (GAME.stageNum === 3) {
+          showAdvisor({ja: '揺れが収まった…まず妹に声をかけよう！', en: 'Shaking stopped... Check on your sister first!'}, 'normal');
+        } else {
+          showAdvisor({ja: 'まだ動くな。余震に備えて様子を見よう。', en: 'Don\'t move yet. Wait and watch for aftershocks.'}, 'normal');
+        }
       }
       if (!GAME._aftershakeGuide2 && GAME.phaseTimer >= 5) {
         GAME._aftershakeGuide2 = true;
-        showAdvisor({ja: '周囲を確認して。けが人はいないか？', en: 'Check your surroundings. Anyone injured?'}, 'normal');
+        if (GAME.stageNum === 3) {
+          showAdvisor({ja: '妹を連れて階段で1階に降りよう！', en: 'Take your sister and go downstairs!'}, 'normal');
+        } else {
+          showAdvisor({ja: '周囲を確認して。けが人はいないか？', en: 'Check your surroundings. Anyone injured?'}, 'normal');
+        }
       }
       if (!GAME._aftershakeGuide3 && GAME.phaseTimer >= 7) {
         GAME._aftershakeGuide3 = true;
@@ -13043,6 +13084,22 @@ function updatePhase(dtSec) {
       if (GAME.totalTimer >= GAME.timeLimit) {
         GAME.scoring.withinTimeLimit = false;
         transitionPhase('result');
+      }
+
+      // Stage 3: 段階的ガイダンス（何をすべきかプレイヤーに伝える）
+      if (GAME.stageNum === 3) {
+        if (!GAME._evacGuide1 && GAME.phaseTimer >= 3 && GAME._onHouse2F) {
+          GAME._evacGuide1 = true;
+          showAdvisor({ja: '妹に声をかけて！近づいてEキーで助けよう！', en: 'Call out to your sister! Get close and press E!'}, 'warning');
+        }
+        if (!GAME._evacGuide2 && GAME.phaseTimer >= 8 && GAME._onHouse2F) {
+          GAME._evacGuide2 = true;
+          showAdvisor({ja: '階段で1階に降りよう！階段の方へ向かって！', en: 'Go downstairs! Head towards the stairs!'}, 'warning');
+        }
+        if (!GAME._evacGuide3 && GAME.phaseTimer >= 5 && !GAME._onHouse2F && !GAME.scoring.turnedOffGas) {
+          GAME._evacGuide3 = true;
+          showAdvisor({ja: '1階に着いた！ガスの元栓を閉めて、靴を履いて、ブレーカーを落とそう！', en: 'You\'re on the 1st floor! Close the gas valve, put on shoes, and turn off the breaker!'}, 'normal');
+        }
       }
 
       // === 余震イベント（避難開始15秒後に1回） ===
@@ -13205,6 +13262,12 @@ function _doTransitionPhase(newPhase) {
       GAME.keys = {};
       GAME.joystickMag = 0;
       GAME.player.isSprinting = false;
+      // Stage 3: プレイヤーを机から離す（椅子から立ち上がり＝貫通防止）
+      if (GAME.stageNum === 3 && GAME._onHouse2F) {
+        GAME.player.x = -4;
+        GAME.player.y = HOUSE_2F_Y + 1.05;
+        GAME.player.z = -3.0; // 椅子の位置(Z=-3.4)から少し後退
+      }
       // 「授業中」ラベルを非表示
       var dclHide = document.getElementById('daily-class-label');
       if (dclHide) dclHide.className = '';
@@ -13277,9 +13340,10 @@ function _doTransitionPhase(newPhase) {
       GAME._evacuationStarted = true;
       GAME.player.isCrouching = false;
 
+      GAME._evacGuide1 = false; GAME._evacGuide2 = false; GAME._evacGuide3 = false;
       if (GAME.stageNum === 3) {
         // Stage 3: 一軒家 — 停電演出 + 家族の安全確保を促す
-        showAdvisor({ja: '停電だ！まずは懐中電灯を探そう。家族の安全を確認して！', en: 'Power out! Find a flashlight first. Check on your family!'}, 'warning');
+        showAdvisor({ja: '避難開始！まず妹に声をかけて一緒に階段を降りよう！', en: 'Start evacuating! Call out to your sister and go downstairs together!'}, 'warning');
         // 停電: 室内照明を消す
         if (GAME._houseLights) {
           GAME._houseLights.forEach(function(l) { l.intensity = 0; });
