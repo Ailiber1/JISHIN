@@ -1720,8 +1720,8 @@ html, body {
 @keyframes objPulse { 0%,100%{border-color:rgba(255,180,0,0.7)} 50%{border-color:rgba(255,180,0,1)} }
 /* 家族行動ログ（左下・半透明） */
 #family-log {
-  position: fixed; bottom: 120px; left: 12px; z-index: 55;
-  width: clamp(200px, 28vw, 280px); max-height: 180px; overflow-y: hidden;
+  position: fixed; top: 90px; left: 12px; z-index: 55;
+  width: clamp(200px, 28vw, 280px); max-height: 200px; overflow-y: hidden;
   pointer-events: none; display: none;
   font-family: 'Share Tech Mono', monospace; font-size: clamp(10px, 1.8vw, 12px);
 }
@@ -11546,6 +11546,23 @@ function updateNPCTaskQueue(npc, dtSec) {
     case 'move':
       // ウェイポイント経由で移動
       if (!task._wpIndex) task._wpIndex = 0;
+      // 移動開始時にポーズを完全リセット（横倒し・しゃがみ等を解除）
+      if (!task._poseReset) {
+        task._poseReset = true;
+        mesh.rotation.z = 0;
+        mesh.scale.set(1, 1, 1);
+        mesh.position.y = npc.floorY || 0;
+        var mrb = mesh.userData.body;
+        if (mrb) {
+          mrb.rotation.x = 0; mrb.rotation.z = 0;
+          if (mrb.children && mrb.children.length >= 3) {
+            mrb.children[1].rotation.x = 0; mrb.children[1].rotation.z = 0;
+            mrb.children[2].rotation.x = 0; mrb.children[2].rotation.z = 0;
+          }
+        }
+        if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = 0;
+        if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = 0;
+      }
       var wp = task.waypoints[task._wpIndex];
       if (!wp) { npc._taskQueue.shift(); return true; }
       var mdx = wp.x - npc.x, mdz = wp.z - npc.z;
@@ -12133,29 +12150,67 @@ function updateSingleNPC(npc, dtSec) {
       if (npc.behavior === 'panic' && npc.state === 'panicking') {
         npc.state = 'aftershake_idle';
         mesh.position.y = npc.floorY || 0;
-        mesh.scale.set(1, 1, 1); // しゃがみscaleリセット
-        var pb = mesh.userData.body;
-        if (pb) { pb.rotation.x = 0; }
-        if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = 0;
-        if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = 0;
-        // 妹（needsHelp）はその場に留まる — プレイヤーが助けに来るのを待つ
+        // 妹（needsHelp）は救助されるまでしゃがみポーズを維持
         if (npc.needsHelp && !npc.helped) {
           mesh.position.x = npc.deskX || npc.x;
           mesh.position.z = npc.deskZ || npc.z;
           npc.x = npc.deskX || npc.x;
           npc.z = npc.deskZ || npc.z;
+          // しゃがみポーズ維持（cowering）
+          npc._cowering = true;
         } else {
+          mesh.scale.set(1, 1, 1);
+          var pb = mesh.userData.body;
+          if (pb) { pb.rotation.x = 0; }
+          if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = 0;
+          if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = 0;
           // 通路にオフセット
           var pOff = (npc.deskX !== undefined && npc.deskX <= 0) ? 1.5 : -1.5;
           npc.x = (npc.deskX || npc.x) + pOff;
           mesh.position.x = npc.x;
         }
       }
+      // 妹: 救助されるまでしゃがみ＋震えアニメーション継続
+      if (npc._cowering && npc.needsHelp && !npc.helped) {
+        npc.phase += dtSec;
+        mesh.scale.set(1, 0.7, 1);
+        mesh.position.x = npc.x;
+        mesh.position.z = npc.z;
+        mesh.position.y = npc.floorY || 0;
+        var cb = mesh.userData.body;
+        if (cb) {
+          cb.rotation.x = 0.6 + Math.sin(npc.phase * 5) * 0.06;
+        }
+        if (cb && cb.children && cb.children.length >= 3) {
+          cb.children[1].rotation.x = -2.5; cb.children[1].rotation.z = 0.5;
+          cb.children[2].rotation.x = -2.5; cb.children[2].rotation.z = -0.5;
+        }
+        if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = -1.2;
+        if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = -1.2;
+      }
       break;
 
     case 'evacuation':
       // 避難フェーズ — 列ごとに順番退出（ドア側の列から）
       if (npc.exited) break;
+
+      // 妹: 救助されるまでしゃがみ＋震えアニメーション継続
+      if (npc._cowering && npc.needsHelp && !npc.helped) {
+        npc.phase += dtSec;
+        mesh.scale.set(1, 0.7, 1);
+        mesh.position.x = npc.x;
+        mesh.position.z = npc.z;
+        mesh.position.y = npc.floorY || 0;
+        var ecb = mesh.userData.body;
+        if (ecb) ecb.rotation.x = 0.6 + Math.sin(npc.phase * 5) * 0.06;
+        if (ecb && ecb.children && ecb.children.length >= 3) {
+          ecb.children[1].rotation.x = -2.5; ecb.children[1].rotation.z = 0.5;
+          ecb.children[2].rotation.x = -2.5; ecb.children[2].rotation.z = -0.5;
+        }
+        if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = -1.2;
+        if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = -1.2;
+        break;
+      }
 
       // 妹の独立移動（親のところへ向かう）
       if (npc._goToParents) {
@@ -12565,8 +12620,11 @@ function tryHelpInjuredNPC() {
         addFamilyLog('player', '妹に声をかけて落ち着かせた');
         addFamilyLog('sister', '1階のお父さんのところへ向かう');
         npc.behavior = 'calm'; npc.state = 'goToParents';
+        npc._cowering = false; // しゃがみ解除
         npc.followingPlayer = false;
         npc._goToParents = true;
+        // ヒントライト消灯
+        if (GAME._sisterHintLight) { GAME._sisterHintLight.intensity = 0; }
         npc._stairPhase = 'goToStairs';
         // 2Fウェイポイント: 妹の部屋(-3.5,3.0) → X=-1壁の隙間 → X=1壁の隙間 → 階段
         npc._waypoints = [
@@ -13579,7 +13637,7 @@ function updateObjectiveBanner() {
           sub = en ? 'Go to entrance area and press E' : '玄関の靴箱に近づいてEキー';
         } else if (!GAME.scoring.helpedGrandma) {
           text = en ? '👵 Help grandma evacuate!' : '👵 おばあちゃんの避難を手伝おう！';
-          sub = en ? 'Get close to grandma and press E' : 'おばあちゃんに近づいてEキー';
+          sub = en ? 'Grandma is in the tatami room (north side, past the wall)' : 'おばあちゃんは和室にいる（奥の壁の向こう側）Eキーで助ける';
         } else if (!GAME._genkanDoorOpen) {
           text = en ? '🚪 Wait for dad to open the door...' : '🚪 お父さんがドアを開けるのを待とう...';
           sub = en ? 'Dad is handling the breaker and door' : 'お父さんがブレーカーとドアを対応中';
@@ -13743,6 +13801,22 @@ function _doTransitionPhase(newPhase) {
       GAME.keys = {};
       GAME.joystickMag = 0;
       GAME.player.isSprinting = false;
+      // しゃがみ解除 + 机コリジョン内にいる場合は安全な位置にテレポート
+      GAME.player.isCrouching = false;
+      GAME.player.isHoldingDesk = false;
+      if (GAME.stageNum === 3 && GAME._onHouse2F) {
+        // 2F勉強机のコリジョン: minX=-4.55, maxX=-3.45, minZ=-4.3, maxZ=-3.7
+        var pp = GAME.player;
+        if (pp.x > -4.55 && pp.x < -3.45 && pp.z > -4.3 && pp.z < -3.7) {
+          pp.x = -3.0; pp.z = -3.5; // 机の横の安全な位置
+        }
+      } else if (GAME.stageNum === 3 && !GAME._onHouse2F) {
+        // 1Fちゃぶ台のコリジョン付近にいる場合
+        var pp1 = GAME.player;
+        if (Math.abs(pp1.x) < 0.6 && Math.abs(pp1.z + 1) < 0.4) {
+          pp1.x = 1.0; pp1.z = -1.0;
+        }
+      }
       SoundManager.stopQuakeSound();
       SoundManager.stopBGM(2000);
       SoundManager.playGlassBreak(); // ガラス破砕音（実ファイル）
@@ -13873,6 +13947,16 @@ function _doTransitionPhase(newPhase) {
         }
         // 薄暗い環境光に変更
         if (GAME._hemiLight) GAME._hemiLight.intensity = 0.08;
+        // 妹の部屋に微かなライト（見つけやすくするため）
+        var sisterLight = new THREE.PointLight(0x88ccff, 0.4, 5);
+        sisterLight.position.set(-3.5, HOUSE_2F_Y + 1.5, 3.0);
+        scene.add(sisterLight);
+        GAME._sisterHintLight = sisterLight;
+        // 祖母の位置に微かなライト（暗い中で見つけやすく）
+        var grandmaLight = new THREE.PointLight(0xffaa66, 0.3, 4);
+        grandmaLight.position.set(-4.0, HOUSE_1F_Y + 1.0, 4.0);
+        scene.add(grandmaLight);
+        GAME._grandmaHintLight = grandmaLight;
       } else if (GAME.stageNum === 2) {
         // Stage 2: オフィス — プレイヤーをデスク間の通路に移動
         GAME.player.x = -2;
