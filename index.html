@@ -12171,6 +12171,7 @@ function updateSingleNPC(npc, dtSec) {
       if (npc.behavior === 'panic' && npc.state === 'panicking') {
         npc.state = 'aftershake_idle';
         mesh.position.y = npc.floorY || 0;
+        console.log('[NPC DEBUG] panic→aftershake_idle:', npc.role, 'pos:', mesh.position.x.toFixed(2), mesh.position.y.toFixed(2), mesh.position.z.toFixed(2), 'visible:', mesh.visible, 'needsHelp:', npc.needsHelp);
         // 妹（needsHelp）は救助されるまでしゃがみポーズを維持
         if (npc.needsHelp && !npc.helped) {
           mesh.position.x = npc.deskX || npc.x;
@@ -12179,6 +12180,7 @@ function updateSingleNPC(npc, dtSec) {
           npc.z = npc.deskZ || npc.z;
           // しゃがみポーズ維持（cowering）
           npc._cowering = true;
+          mesh.visible = true; // 明示的に表示
         } else {
           mesh.scale.set(1, 1, 1);
           var pb = mesh.userData.body;
@@ -12194,27 +12196,42 @@ function updateSingleNPC(npc, dtSec) {
       // 妹: 救助されるまでしゃがみ＋震えアニメーション継続
       if (npc._cowering && npc.needsHelp && !npc.helped) {
         npc.phase += dtSec;
-        mesh.scale.set(1, 0.7, 1);
+        mesh.visible = true;
+        mesh.scale.set(1, 1, 1); // Yスケールを1に戻す（縮小しない）
         mesh.position.x = npc.x;
         mesh.position.z = npc.z;
         mesh.position.y = npc.floorY || 0;
+        // デバッグ: 10フレームに1回ログ
+        if (!npc._debugCount) npc._debugCount = 0;
+        npc._debugCount++;
+        if (npc._debugCount % 600 === 1) {
+          console.log('[SISTER COWERING] pos:', mesh.position.x.toFixed(2), mesh.position.y.toFixed(2), mesh.position.z.toFixed(2), 'visible:', mesh.visible, 'scale:', mesh.scale.y.toFixed(2), 'parent:', mesh.parent ? 'scene' : 'null');
+        }
+        // 体を深くしゃがませる（torso位置を下げて足を曲げる）
         var cb = mesh.userData.body;
         if (cb) {
-          cb.rotation.x = 0.6 + Math.sin(npc.phase * 5) * 0.06;
+          // torsoを下げてしゃがみ姿勢に
+          cb.position.y = (cb.userData && cb.userData.origY !== undefined) ? cb.userData.origY : cb.position.y;
+          if (!cb.userData) cb.userData = {};
+          if (cb.userData.origY === undefined) cb.userData.origY = cb.position.y;
+          cb.position.y = cb.userData.origY - 0.25; // しゃがみで体を下げる
+          cb.rotation.x = 0.8 + Math.sin(npc.phase * 5) * 0.06; // 深い前かがみ + 震え
         }
         if (cb && cb.children && cb.children.length >= 3) {
+          // 両腕で頭を抱える
           cb.children[1].rotation.x = -2.5; cb.children[1].rotation.z = 0.5;
           cb.children[2].rotation.x = -2.5; cb.children[2].rotation.z = -0.5;
         }
-        if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = -1.2;
-        if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = -1.2;
+        // 脚: 深いしゃがみ
+        if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = -1.8;
+        if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = -1.8;
         // 妹のマテリアルを自発光させて暗闇でも確実に見えるようにする
         if (!npc._emissiveSet) {
           npc._emissiveSet = true;
           mesh.traverse(function(child) {
             if (child.material) {
-              child.material.emissive = new THREE.Color(0x2288ff);
-              child.material.emissiveIntensity = 0.4;
+              child.material.emissive = new THREE.Color(0x44aaff);
+              child.material.emissiveIntensity = 0.6;
             }
           });
         }
@@ -12228,25 +12245,31 @@ function updateSingleNPC(npc, dtSec) {
       // 妹: 救助されるまでしゃがみ＋震えアニメーション継続
       if (npc._cowering && npc.needsHelp && !npc.helped) {
         npc.phase += dtSec;
-        mesh.scale.set(1, 0.7, 1);
+        mesh.visible = true;
+        mesh.scale.set(1, 1, 1);
         mesh.position.x = npc.x;
         mesh.position.z = npc.z;
         mesh.position.y = npc.floorY || 0;
         var ecb = mesh.userData.body;
-        if (ecb) ecb.rotation.x = 0.6 + Math.sin(npc.phase * 5) * 0.06;
+        if (ecb) {
+          if (!ecb.userData) ecb.userData = {};
+          if (ecb.userData.origY === undefined) ecb.userData.origY = ecb.position.y;
+          ecb.position.y = ecb.userData.origY - 0.25;
+          ecb.rotation.x = 0.8 + Math.sin(npc.phase * 5) * 0.06;
+        }
         if (ecb && ecb.children && ecb.children.length >= 3) {
           ecb.children[1].rotation.x = -2.5; ecb.children[1].rotation.z = 0.5;
           ecb.children[2].rotation.x = -2.5; ecb.children[2].rotation.z = -0.5;
         }
-        if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = -1.2;
-        if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = -1.2;
+        if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = -1.8;
+        if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = -1.8;
         // 自発光（暗闇でも見える）
         if (!npc._emissiveSet) {
           npc._emissiveSet = true;
           mesh.traverse(function(child) {
             if (child.material) {
-              child.material.emissive = new THREE.Color(0x2288ff);
-              child.material.emissiveIntensity = 0.4;
+              child.material.emissive = new THREE.Color(0x44aaff);
+              child.material.emissiveIntensity = 0.6;
             }
           });
         }
