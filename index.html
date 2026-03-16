@@ -9302,11 +9302,11 @@ function buildHouseFloor() {
   var tv = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.6, 0.05), tvMat);
   tv.position.set(0, Y1 + 0.8, 1.5); tv.userData.isHouseFurniture = true; scene.add(tv);
   GAME._tvMeshS3 = tv;
-  GAME.walls.push({ minX: -0.65, maxX: 0.65, minZ: 1.25, maxZ: 1.75, minY: Y1, maxY: Y1 + 0.5 });
+  // TVスタンドは低い家具 — コリジョンなし（和室への通路を確保）
 
   var bookshelf = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.8, 0.8), furnitureMat);
-  bookshelf.position.set(-1.8, Y1 + 0.9, 1.2); bookshelf.receiveShadow = true; bookshelf.userData.isHouseFurniture = true; scene.add(bookshelf);
-  GAME.walls.push({ minX: -2.05, maxX: -1.55, minZ: 0.75, maxZ: 1.65, minY: Y1, maxY: Y1 + 1.8 });
+  bookshelf.position.set(-1.8, Y1 + 0.9, 0.5); bookshelf.receiveShadow = true; bookshelf.userData.isHouseFurniture = true; scene.add(bookshelf);
+  GAME.walls.push({ minX: -2.05, maxX: -1.55, minZ: 0.05, maxZ: 0.95, minY: Y1, maxY: Y1 + 1.8 });
 
   // キッチン
   var gasStove = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.85, 0.5), stoveMat);
