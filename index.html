@@ -9268,9 +9268,9 @@ function buildHouseFloor() {
   kitchenCounterWall.position.set(2, Y1 + 0.45, 3.5); scene.add(kitchenCounterWall);
   GAME.walls.push({ minX: 2 - wallThick / 2, maxX: 2 + wallThick / 2, minZ: 2, maxZ: 5, minY: Y1, maxY: Y1 + 0.9 });
 
-  var hallWallL = new THREE.Mesh(new THREE.BoxGeometry(3.5, H, wallThick), wallMat);
-  hallWallL.position.set(-4.25, Y1 + H / 2, 2); scene.add(hallWallL);
-  GAME.walls.push({ minX: -6, maxX: -2.5, minZ: 2 - wallThick / 2, maxZ: 2 + wallThick / 2, minY: Y1, maxY: Y1 + H });
+  var hallWallL = new THREE.Mesh(new THREE.BoxGeometry(2.5, H, wallThick), wallMat);
+  hallWallL.position.set(-4.75, Y1 + H / 2, 2); scene.add(hallWallL);
+  GAME.walls.push({ minX: -6, maxX: -3.5, minZ: 2 - wallThick / 2, maxZ: 2 + wallThick / 2, minY: Y1, maxY: Y1 + H });
 
   var hallWallR = new THREE.Mesh(new THREE.BoxGeometry(4.5, H, wallThick), wallMat);
   hallWallR.position.set(3.75, Y1 + H / 2, 2); scene.add(hallWallR);
@@ -11515,8 +11515,8 @@ function autoPerformAction(actionName) {
           // 父に懐中電灯ライトを追加
           if (!GAME._fatherFlashSpot) {
             var fs = new THREE.SpotLight(0xffffcc, 1.2, 12, Math.PI / 5, 0.3, 1);
-            fs.castShadow = false; scene.add(fs);
-            var ft = new THREE.Object3D(); scene.add(ft);
+            fs.castShadow = false; GAME.scene.add(fs);
+            var ft = new THREE.Object3D(); GAME.scene.add(ft);
             fs.target = ft;
             GAME._fatherFlashSpot = fs; GAME._fatherFlashTarget = ft;
           }
@@ -11654,9 +11654,16 @@ function updateNPCTaskQueue(npc, dtSec) {
         if (task.onComplete) task.onComplete();
         npc._taskQueue.shift();
       } else {
-        // 待機中: 周囲を見回す
+        // 待機中: 周囲を見回す + 腕を自然な位置にリセット
         npc.phase += dtSec;
         mesh.rotation.y = (npc._origYaw || 0) + Math.sin(npc.phase * 0.8) * 0.3;
+        var wb = mesh.userData.body;
+        if (wb && wb.children && wb.children.length >= 3) {
+          wb.children[1].rotation.x = Math.sin(npc.phase * 0.7) * 0.05;
+          wb.children[1].rotation.z = 0;
+          wb.children[2].rotation.x = Math.sin(npc.phase * 0.7 + 0.5) * 0.05;
+          wb.children[2].rotation.z = 0;
+        }
       }
       return true;
 
@@ -11729,7 +11736,11 @@ function updateSisterGoToParents(npc, dtSec) {
 function updateNPCs(dtSec) {
   for (var i = 0; i < GAME.npcs.length; i++) {
     var npc = GAME.npcs[i];
-    updateSingleNPC(npc, dtSec);
+    try {
+      updateSingleNPC(npc, dtSec);
+    } catch (e) {
+      console.error('NPC update error (' + (npc.role || i) + '):', e);
+    }
   }
 }
 
@@ -12990,9 +13001,9 @@ function performInteract() {
       if (!GAME._flashSpot) {
         var fSpot = new THREE.SpotLight(0xffffcc, 1.5, 15, Math.PI / 6, 0.3, 1);
         fSpot.castShadow = false;
-        scene.add(fSpot);
+        GAME.scene.add(fSpot);
         var fTarget = new THREE.Object3D();
-        scene.add(fTarget);
+        GAME.scene.add(fTarget);
         fSpot.target = fTarget;
         GAME._flashSpot = fSpot;
         GAME._flashSpotTarget = fTarget;
