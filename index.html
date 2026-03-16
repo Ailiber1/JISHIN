@@ -12208,6 +12208,16 @@ function updateSingleNPC(npc, dtSec) {
         }
         if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = -1.2;
         if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = -1.2;
+        // 妹のマテリアルを自発光させて暗闇でも確実に見えるようにする
+        if (!npc._emissiveSet) {
+          npc._emissiveSet = true;
+          mesh.traverse(function(child) {
+            if (child.material) {
+              child.material.emissive = new THREE.Color(0x2288ff);
+              child.material.emissiveIntensity = 0.4;
+            }
+          });
+        }
       }
       break;
 
@@ -12230,6 +12240,16 @@ function updateSingleNPC(npc, dtSec) {
         }
         if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = -1.2;
         if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = -1.2;
+        // 自発光（暗闇でも見える）
+        if (!npc._emissiveSet) {
+          npc._emissiveSet = true;
+          mesh.traverse(function(child) {
+            if (child.material) {
+              child.material.emissive = new THREE.Color(0x2288ff);
+              child.material.emissiveIntensity = 0.4;
+            }
+          });
+        }
         break;
       }
 
@@ -12646,6 +12666,7 @@ function tryHelpInjuredNPC() {
         npc._goToParents = true;
         // ヒントライト消灯
         if (GAME._sisterHintLight) { GAME._sisterHintLight.intensity = 0; }
+        if (GAME._sisterSpotLight) { GAME._sisterSpotLight.intensity = 0; }
         npc._stairPhase = 'goToStairs';
         // 2Fウェイポイント: 妹の部屋(-3.5,3.0) → X=-1壁の隙間 → X=1壁の隙間 → 階段
         npc._waypoints = [
@@ -12665,6 +12686,12 @@ function tryHelpInjuredNPC() {
             sMesh.userData.body.children[2].rotation.x = 0; sMesh.userData.body.children[2].rotation.z = 0;
           }
         }
+        // 自発光を解除（救助後は通常の明るさに戻す）
+        sMesh.traverse(function(child) {
+          if (child.material && child.material.emissive) {
+            child.material.emissiveIntensity = 0;
+          }
+        });
       } else if (npc.role === 'grandma') {
         GAME.scoring.helpedGrandma = true;
         GAME.score += 5;
@@ -13969,11 +13996,16 @@ function _doTransitionPhase(newPhase) {
         }
         // 薄暗い環境光に変更
         if (GAME._hemiLight) GAME._hemiLight.intensity = 0.08;
-        // 妹の部屋に微かなライト（見つけやすくするため）
-        var sisterLight = new THREE.PointLight(0x88ccff, 0.4, 5);
+        // 妹の部屋に明るいライト（妹を確実に視認できるように）
+        var sisterLight = new THREE.PointLight(0x88ccff, 1.0, 8);
         sisterLight.position.set(-3.5, HOUSE_2F_Y + 1.5, 3.0);
         scene.add(sisterLight);
         GAME._sisterHintLight = sisterLight;
+        // 妹の足元にスポットライト（直接照らす）
+        var sisterSpot = new THREE.PointLight(0xffffff, 0.6, 4);
+        sisterSpot.position.set(-3.5, HOUSE_2F_Y + 0.5, 3.0);
+        scene.add(sisterSpot);
+        GAME._sisterSpotLight = sisterSpot;
         // 祖母の位置に微かなライト（暗い中で見つけやすく）
         var grandmaLight = new THREE.PointLight(0xffaa66, 0.3, 4);
         grandmaLight.position.set(-4.0, HOUSE_1F_Y + 1.0, 4.0);
