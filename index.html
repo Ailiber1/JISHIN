@@ -5070,7 +5070,7 @@ var NOVEL_VARIANTS = {
         { speaker: 'narrator', text: {ja: '── ガタガタガタ…！！──', en: '── Rattle rattle rattle...!! ──'} },
         { speaker: 'narrator', text: {ja: '突然、激しい揺れが襲った！\n2階の部屋が大きく揺れている！', en: 'Suddenly, violent shaking hits!\nThe upstairs room is shaking hard!'} },
         { speaker: 'mother', expr: 'surprise', text: {ja: '（階下から）きゃっ！！地震！！', en: '(From downstairs) Aah!! Earthquake!!'} },
-        { speaker: 'father', expr: 'serious', text: {ja: '（階下から）テーブルの下に入れ！！\nひなた、こっちに来い！！', en: '(From downstairs) Get under the table!!\nHinata, come here!!'} },
+        { speaker: 'father', expr: 'serious', text: {ja: '（階下から）テーブルの下に入れ！！\nひなた、机の下に隠れろ！！', en: '(From downstairs) Get under the table!!\nHinata, hide under your desk!!'} },
         {
           type: 'choice', text: {ja: 'どうする？', en: 'What do you do?'},
           choices: [
@@ -5089,16 +5089,16 @@ var NOVEL_VARIANTS = {
       [
         { speaker: 'narrator', text: {ja: 'スマホから緊急地震速報が鳴り響いた！', en: 'The Earthquake Early Warning blares from your phone!'} },
         { speaker: 'narrator', text: {ja: '── ﾋﾟﾛﾝﾋﾟﾛﾝ！強い揺れに警戒！──', en: '── Beep beep! Brace for strong shaking! ──'} },
-        { speaker: 'sister', expr: 'panic', text: {ja: '（階下から）お兄ちゃーん！！こわいよー！！', en: '(From downstairs) Big brother/sister!! I\'m scared!!'} },
+        { speaker: 'sister', expr: 'panic', text: {ja: '（隣の部屋から）お兄ちゃーん！！こわいよー！！', en: '(From the next room) Big brother!! I\'m scared!!'} },
         { speaker: 'father', expr: 'serious', text: {ja: '（階下から）落ち着け！\nまず自分の身を守れ！！', en: '(From downstairs) Stay calm!\nProtect yourself first!!'} },
         {
           type: 'choice', text: {ja: 'どうする？', en: 'What do you do?'},
           choices: [
             { label: {ja: 'クッションで頭を守り机の下へ', en: 'Grab a cushion, protect head, get under desk'}, score: 5, correct: true,
               response: { speaker: 'bousai', expr: 'smile', text: {ja: '素晴らしい！クッションや枕で\n頭を守りながら机の下に入るのは\n最高の判断だ！', en: 'Excellent! Protecting your head with\na cushion or pillow while getting\nunder the desk is the best decision!'} }},
-            { label: {ja: 'ひなたを助けに1階へ走る', en: 'Run downstairs to help Hinata'}, score: -3, correct: false,
-              consequence: { icon: '💥', text: {ja: '階段で転倒した！', en: 'You fell on the stairs!'}, flash: 'red', shake: true },
-              response: { speaker: 'bousai', expr: 'worry', text: {ja: '家族を心配する気持ちはわかるが、\n揺れの最中に動くのは危険だ。\nひなたにはお父さんがついている。\nまず自分の身を守ることが最優先！', en: 'I understand worrying about family,\nbut moving during shaking is dangerous.\nHinata has your father with her.\nProtecting yourself comes first!'} }},
+            { label: {ja: 'ひなたを助けに隣の部屋へ行く', en: 'Go to the next room to help Hinata'}, score: -3, correct: false,
+              consequence: { icon: '📚', text: {ja: '廊下で物が落ちてきた！', en: 'Things fell in the hallway!'}, flash: 'red', shake: true },
+              response: { speaker: 'bousai', expr: 'worry', text: {ja: '家族を心配する気持ちはわかるが、\n揺れの最中に動くのは危険だ。\nひなたは隣の部屋にいる。\n揺れが収まってから確認しよう！', en: 'I understand worrying about family,\nbut moving during shaking is dangerous.\nHinata is in the next room.\nCheck on her after the shaking stops!'} }},
             { label: {ja: 'スマホで地震情報を確認する', en: 'Check earthquake info on phone'}, score: -2, correct: false,
               consequence: { icon: '📚', text: {ja: '棚から物が\n降ってきた！', en: 'Things fell\nfrom the shelf!'}, flash: 'red', shake: true },
               response: { speaker: 'bousai', expr: 'serious', text: {ja: 'スマホ確認は揺れが収まってから！\n揺れている最中は頭を守ることが\n最優先だ。情報は後で確認できる。', en: 'Check your phone after shaking stops!\nDuring shaking, protecting your head\nis the top priority. Info can wait.'} }},
