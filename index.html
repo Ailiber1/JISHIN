@@ -10979,7 +10979,7 @@ function updatePlayerModel() {
 
   // しゃがみ（机の下に完全に隠れる深い姿勢）— スムーズ遷移
   if (p.isCrouching) {
-    var crouchLerp = 0.1; // 補間速度
+    var crouchLerp = 0.3; // 補間速度（高速）
     j.leftHip.rotation.x += (-1.6 - j.leftHip.rotation.x) * crouchLerp;
     j.rightHip.rotation.x += (-1.6 - j.rightHip.rotation.x) * crouchLerp;
     j.leftKnee.rotation.x += (2.2 - j.leftKnee.rotation.x) * crouchLerp;
@@ -15310,7 +15310,7 @@ function updatePlayer(dt) {
   const p = GAME.player;
   let mx = 0, mz = 0;
   var guardMult = (p.isGuarding && (GAME.phase === 'aftershake' || GAME.phase === 'evacuation')) ? 0.7 : 1;
-  const speed = p.speed * (p.isSprinting ? p.sprintMult : 1) * (p.isCrouching ? 0.4 : 1) * guardMult * dt;
+  const speed = p.speed * (p.isSprinting ? p.sprintMult : 1) * (p.isCrouching ? 0.5 : 1) * guardMult * dt;
 
   if (!GAME.isMobile) {
     if (GAME.keys['KeyW'] || GAME.keys['ArrowUp']) mz += 1;
@@ -15527,7 +15527,7 @@ function updateCamera() {
   var targetLookY = p.isCrouching ? (floorY + 0.55) : p.y + 0.5;
   // しゃがみ時のカメラ高さをスムーズに補間（滑り防止）
   if (GAME._currentLookY === undefined) GAME._currentLookY = targetLookY;
-  GAME._currentLookY += (targetLookY - GAME._currentLookY) * 0.15;
+  GAME._currentLookY += (targetLookY - GAME._currentLookY) * 0.25;
   var lookY = GAME._currentLookY;
   var playerPos = new THREE.Vector3(p.x, lookY, p.z);
 
