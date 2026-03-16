@@ -10076,15 +10076,15 @@ function spawnHouseNPCs() {
   });
 
   var grandmaModel = createNPCModel(0x795548, 1.45, 0xf5c6a0, { isFemale: true, hairColor: 0xaaaaaa, skirtColor: 0x795548 });
-  grandmaModel.position.set(-4.0, HOUSE_1F_Y, 4.0);
+  grandmaModel.position.set(-1.0, HOUSE_1F_Y, 3.5);
   GAME.scene.add(grandmaModel);
   var cane = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.9, 6), new THREE.MeshStandardMaterial({ color: 0x6d4c2e, roughness: 0.6 }));
   cane.position.set(0.2, -0.3, 0.1); cane.rotation.z = 0.15;
   grandmaModel.userData.body.add(cane);
   GAME.npcs.push({
-    mesh: grandmaModel, role: 'grandma', x: -4.0, z: 4.0, targetX: -4.0, targetZ: 4.0,
+    mesh: grandmaModel, role: 'grandma', x: -1.0, z: 3.5, targetX: -1.0, targetZ: 3.5,
     behavior: 'injured', state: 'idle', speed: 0.005, phase: 0,
-    npcH: 1.45, evacuationDelay: 8, exited: false, deskX: -4.0, deskZ: 4.0, floorY: HOUSE_1F_Y,
+    npcH: 1.45, evacuationDelay: 8, exited: false, deskX: -1.0, deskZ: 3.5, floorY: HOUSE_1F_Y,
     needsHelp: true, helpMessage: {ja: 'おばあちゃんは一人では歩けない！手を貸して一緒に避難しよう！', en: 'Grandma can\'t walk alone! Help her evacuate!'},
   });
 }
@@ -11589,6 +11589,7 @@ function updateNPCTaskQueue(npc, dtSec) {
       var mdx = wp.x - npc.x, mdz = wp.z - npc.z;
       var mdist = Math.sqrt(mdx * mdx + mdz * mdz);
       if (mdist > 0.3) {
+        var prevX = npc.x, prevZ = npc.z;
         var mspd = task.speed || npc.speed * 1.5;
         npcMoveWithCollision(npc, mdx / mdist, mdz / mdist, mspd);
         mesh.position.x = npc.x; mesh.position.z = npc.z;
@@ -11601,6 +11602,21 @@ function updateNPCTaskQueue(npc, dtSec) {
         if (tb && tb.children && tb.children.length >= 3) {
           tb.children[1].rotation.x = -Math.sin(npc.phase) * 0.3;
           tb.children[2].rotation.x = Math.sin(npc.phase) * 0.3;
+        }
+        // スタック検出: 壁に当たって動けない場合は次のウェイポイントへスキップ
+        var moved = Math.abs(npc.x - prevX) + Math.abs(npc.z - prevZ);
+        if (moved < 0.001) {
+          task._stuckTime = (task._stuckTime || 0) + dtSec;
+          if (task._stuckTime > 2.0) {
+            // 2秒以上スタックしたら次のウェイポイントへ強制スキップ
+            task._stuckTime = 0;
+            task._wpIndex++;
+            if (task._wpIndex >= task.waypoints.length) {
+              npc._taskQueue.shift();
+            }
+          }
+        } else {
+          task._stuckTime = 0;
         }
       } else {
         task._wpIndex++;
@@ -12111,6 +12127,19 @@ function updateSingleNPC(npc, dtSec) {
       if (npc.behavior === 'injured' && !npc.helped) {
         mesh.rotation.z = Math.PI / 2;
         mesh.position.y = (npc.floorY || 0) - 0.2;
+        mesh.position.x = npc.x;
+        mesh.position.z = npc.z;
+        mesh.visible = true;
+        // 自発光で暗闇でも視認できるように（祖母など）
+        if (!npc._emissiveSet) {
+          npc._emissiveSet = true;
+          mesh.traverse(function(child) {
+            if (child.material) {
+              child.material.emissive = new THREE.Color(0xffaa66);
+              child.material.emissiveIntensity = 0.5;
+            }
+          });
+        }
         break;
       }
       // 2秒後から順番に立ち上がる（列ごとにずらす）
@@ -12171,7 +12200,6 @@ function updateSingleNPC(npc, dtSec) {
       if (npc.behavior === 'panic' && npc.state === 'panicking') {
         npc.state = 'aftershake_idle';
         mesh.position.y = npc.floorY || 0;
-        console.log('[NPC DEBUG] panic→aftershake_idle:', npc.role, 'pos:', mesh.position.x.toFixed(2), mesh.position.y.toFixed(2), mesh.position.z.toFixed(2), 'visible:', mesh.visible, 'needsHelp:', npc.needsHelp);
         // 妹（needsHelp）は救助されるまでしゃがみポーズを維持
         if (npc.needsHelp && !npc.helped) {
           mesh.position.x = npc.deskX || npc.x;
@@ -12201,12 +12229,6 @@ function updateSingleNPC(npc, dtSec) {
         mesh.position.x = npc.x;
         mesh.position.z = npc.z;
         mesh.position.y = npc.floorY || 0;
-        // デバッグ: 10フレームに1回ログ
-        if (!npc._debugCount) npc._debugCount = 0;
-        npc._debugCount++;
-        if (npc._debugCount % 600 === 1) {
-          console.log('[SISTER COWERING] pos:', mesh.position.x.toFixed(2), mesh.position.y.toFixed(2), mesh.position.z.toFixed(2), 'visible:', mesh.visible, 'scale:', mesh.scale.y.toFixed(2), 'parent:', mesh.parent ? 'scene' : 'null');
-        }
         // 体を深くしゃがませる（torso位置を下げて足を曲げる）
         var cb = mesh.userData.body;
         if (cb) {
@@ -13708,7 +13730,7 @@ function updateObjectiveBanner() {
           sub = en ? 'Go to entrance area and press E' : '玄関の靴箱に近づいてEキー';
         } else if (!GAME.scoring.helpedGrandma) {
           text = en ? '👵 Help grandma evacuate!' : '👵 おばあちゃんの避難を手伝おう！';
-          sub = en ? 'Grandma is in the tatami room (north side, past the wall)' : 'おばあちゃんは和室にいる（奥の壁の向こう側）Eキーで助ける';
+          sub = en ? 'Grandma is in the tatami room entrance. Press E to help.' : 'おばあちゃんは和室の入口付近にいる。Eキーで助ける';
         } else if (!GAME._genkanDoorOpen) {
           text = en ? '🚪 Wait for dad to open the door...' : '🚪 お父さんがドアを開けるのを待とう...';
           sub = en ? 'Dad is handling the breaker and door' : 'お父さんがブレーカーとドアを対応中';
@@ -13935,17 +13957,19 @@ function _doTransitionPhase(newPhase) {
               { type: 'delay', duration: 1.5 },
               { type: 'log', role: 'father', message: 'ガスを止めに行く！' },
               { type: 'move', waypoints: [
-                { x: 1.0, z: -1.5 },
-                { x: 1.0, z: 1.5 },
-                { x: 1.5, z: 3.5 },
+                { x: 0, z: -1.0 },
+                { x: 0, z: 1.5 },
+                { x: 0, z: 2.5 },
+                { x: 1.0, z: 3.5 },
                 { x: 4.5, z: 3.8 }
               ], speed: 0.025 },
               { type: 'action', actionName: 'turnOffGas', duration: 1.5 },
               { type: 'log', role: 'father', message: '懐中電灯を取りに行く' },
               { type: 'move', waypoints: [
-                { x: 1.5, z: 3.5 },
+                { x: 1.0, z: 3.5 },
+                { x: 0, z: 2.5 },
                 { x: 0, z: 1.5 },
-                { x: -3, z: -2 },
+                { x: -1.5, z: -2 },
                 { x: -5.3, z: -4.0 }
               ], speed: 0.025 },
               { type: 'action', actionName: 'pickUpFlashlight', duration: 1.0 },
@@ -13969,8 +13993,11 @@ function _doTransitionPhase(newPhase) {
               { type: 'delay', duration: 2.0 },
               { type: 'log', role: 'mother', message: 'おばあちゃんの様子を見に行く' },
               { type: 'move', waypoints: [
-                { x: -1, z: 1.5 },
-                { x: -3.5, z: 3.5 }
+                { x: -0.5, z: 0 },
+                { x: -0.5, z: 1.5 },
+                { x: -0.5, z: 2.5 },
+                { x: -1.5, z: 3.5 },
+                { x: -1.0, z: 3.5 }
               ], speed: 0.02 },
               { type: 'log', role: 'mother', message: 'おばあちゃん、大丈夫？一緒に避難しましょう' },
               { type: 'delay', duration: 3.0 },
@@ -13982,8 +14009,10 @@ function _doTransitionPhase(newPhase) {
                 addFamilyLog('mother', 'ドアが開いた！おばあちゃんと外へ');
               }},
               { type: 'evacuate', waypoints: [
-                { x: -1, z: 1.5 },
-                { x: -3, z: -2 },
+                { x: -1.5, z: 3.5 },
+                { x: -0.5, z: 2.5 },
+                { x: -0.5, z: 1.5 },
+                { x: -1.5, z: -2 },
                 { x: -5, z: -4.5 },
                 { x: -5, z: -7 },
                 { x: -3, z: -12 }
@@ -14030,8 +14059,8 @@ function _doTransitionPhase(newPhase) {
         GAME.scene.add(sisterSpot);
         GAME._sisterSpotLight = sisterSpot;
         // 祖母の位置に微かなライト（暗い中で見つけやすく）
-        var grandmaLight = new THREE.PointLight(0xffaa66, 0.3, 4);
-        grandmaLight.position.set(-4.0, HOUSE_1F_Y + 1.0, 4.0);
+        var grandmaLight = new THREE.PointLight(0xffaa66, 0.8, 6);
+        grandmaLight.position.set(-1.0, HOUSE_1F_Y + 1.0, 3.5);
         GAME.scene.add(grandmaLight);
         GAME._grandmaHintLight = grandmaLight;
       } else if (GAME.stageNum === 2) {
