@@ -1718,6 +1718,33 @@ html, body {
 }
 #objective-banner .obj-sub { color: #aaa; font-size: 0.8em; margin-top: 2px; }
 @keyframes objPulse { 0%,100%{border-color:rgba(255,180,0,0.7)} 50%{border-color:rgba(255,180,0,1)} }
+/* 家族行動ログ（左下・半透明） */
+#family-log {
+  position: fixed; bottom: 120px; left: 12px; z-index: 55;
+  width: clamp(200px, 28vw, 280px); max-height: 180px; overflow-y: hidden;
+  pointer-events: none; display: none;
+  font-family: 'Share Tech Mono', monospace; font-size: clamp(10px, 1.8vw, 12px);
+}
+.family-log-entry {
+  background: rgba(0,0,0,0.6); color: #ccc; padding: 3px 8px; margin-bottom: 2px;
+  border-radius: 4px; border-left: 3px solid #666;
+  animation: logFadeIn 0.4s ease-out;
+  line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.family-log-entry.father { border-left-color: #64b5f6; }
+.family-log-entry.mother { border-left-color: #f06292; }
+.family-log-entry.sister { border-left-color: #4fc3f7; }
+.family-log-entry.grandma { border-left-color: #a1887f; }
+.family-log-entry.player { border-left-color: #ffcc00; }
+.family-log-entry.system { border-left-color: #ff8a65; }
+.family-log-entry .log-name { font-weight: bold; margin-right: 4px; }
+.family-log-entry.father .log-name { color: #64b5f6; }
+.family-log-entry.mother .log-name { color: #f06292; }
+.family-log-entry.sister .log-name { color: #4fc3f7; }
+.family-log-entry.grandma .log-name { color: #a1887f; }
+.family-log-entry.player .log-name { color: #ffcc00; }
+.family-log-entry.system .log-name { color: #ff8a65; }
+@keyframes logFadeIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
 #holdon-prompt {
   position: fixed; bottom: 25%; left: 50%; transform: translateX(-50%);
   background: rgba(0,0,0,0.85); border: 2px solid rgba(0,180,255,0.6);
@@ -2766,6 +2793,7 @@ html, body {
   </div>
   <div id="interact-prompt"><span class="prompt-key">E</span><span class="prompt-label"></span></div>
   <div id="objective-banner" style="display:none;"></div>
+  <div id="family-log"></div>
   <div id="holdon-prompt"></div>
   <div id="holdon-indicator"><div class="holdon-title">🤲 HOLD ON!</div><div class="holdon-sub" data-i18n="HUD_HOLDON_SUB">机の脚を掴んでいる…</div></div>
   <div id="guard-evac-indicator" style="display:none;"><div class="holdon-title" data-i18n="HUD_GUARD_TITLE">🛡️ 頭を保護中</div><div class="holdon-sub" data-i18n="HUD_GUARD_SUB">頭を守りながら避難中…</div></div>
@@ -10004,11 +10032,11 @@ function buildHouseFloor() {
   // インタラクタブル
   GAME.interactables.push({ x: 0, z: -1, radius: 1.5, action: 'hideUnderDesk', label: {ja: 'ちゃぶ台の下に潜る', en: 'Hide Under Table'}, phases: ['earthquake', 'shaking'], used: false });
   GAME.interactables.push({ x: -4, z: -4, radius: 1.5, action: 'hideUnderDesk', label: {ja: '机の下に潜る', en: 'Hide Under Desk'}, phases: ['earthquake', 'shaking'], used: false, floorY: Y2 });
-  GAME.interactables.push({ x: 4.5, z: 4.5, radius: 1.5, action: 'turnOffGas', label: {ja: '\uD83D\uDD25 ガスを止める', en: '\uD83D\uDD25 Turn Off Gas'}, phases: ['aftershake', 'evacuation'], used: false, mesh: gasStove });
-  GAME.interactables.push({ x: -4.5, z: -4.73, radius: 0.8, action: 'turnOffBreaker', label: {ja: '\u26A1 ブレーカーを落とす（通電火災防止）', en: '\u26A1 Turn Off Breaker (Prevent Fire)'}, phases: ['aftershake', 'evacuation'], used: false, mesh: breakerLever });
-  GAME.interactables.push({ x: -5.3, z: -4.0, radius: 0.8, action: 'pickUpFlashlight', label: {ja: '\uD83D\uDD26 懐中電灯を取る', en: '\uD83D\uDD26 Pick Up Flashlight'}, phases: ['aftershake', 'evacuation'], used: false, mesh: flashlight });
+  GAME.interactables.push({ x: 4.5, z: 4.5, radius: 1.5, action: 'turnOffGas', label: {ja: '\uD83D\uDD25 ガスを止める', en: '\uD83D\uDD25 Turn Off Gas'}, phases: ['aftershake', 'evacuation'], used: false, mesh: gasStove, autoHandled: true });
+  GAME.interactables.push({ x: -4.5, z: -4.73, radius: 0.8, action: 'turnOffBreaker', label: {ja: '\u26A1 ブレーカーを落とす（通電火災防止）', en: '\u26A1 Turn Off Breaker (Prevent Fire)'}, phases: ['aftershake', 'evacuation'], used: false, mesh: breakerLever, autoHandled: true });
+  GAME.interactables.push({ x: -5.3, z: -4.0, radius: 0.8, action: 'pickUpFlashlight', label: {ja: '\uD83D\uDD26 懐中電灯を取る', en: '\uD83D\uDD26 Pick Up Flashlight'}, phases: ['aftershake', 'evacuation'], used: false, mesh: flashlight, autoHandled: true });
   GAME.interactables.push({ x: -5.3, z: -4.5, radius: 0.8, action: 'putOnShoes', label: {ja: '\uD83D\uDC5F 靴を履く（ガラス対策）', en: '\uD83D\uDC5F Put On Shoes (Glass Protection)'}, phases: ['aftershake', 'evacuation'], used: false, mesh: shoesMesh });
-  GAME.interactables.push({ x: -5, z: -4.9, radius: 1.0, action: 'openGenkanDoor', label: {ja: '\uD83D\uDEAA 玄関ドアを開ける', en: '\uD83D\uDEAA Open Front Door'}, phases: ['aftershake', 'evacuation'], used: false, mesh: genkanDoor });
+  GAME.interactables.push({ x: -5, z: -4.9, radius: 1.0, action: 'openGenkanDoor', label: {ja: '\uD83D\uDEAA 玄関ドアを開ける', en: '\uD83D\uDEAA Open Front Door'}, phases: ['aftershake', 'evacuation'], used: false, mesh: genkanDoor, autoHandled: true });
 }
 
 // ============================================================
@@ -10024,7 +10052,7 @@ function spawnHouseNPCs() {
   GAME.npcs.push({
     mesh: motherModel, role: 'mother', x: 3.5, z: 4.2, targetX: 3.5, targetZ: 4.2,
     behavior: 'calm', state: 'idle', speed: 0.015, phase: 0,
-    npcH: 1.55, evacuationDelay: 3, exited: false, deskX: 3.5, deskZ: 3.5, floorY: HOUSE_1F_Y,
+    npcH: 1.55, evacuationDelay: 3, exited: false, deskX: -0.5, deskZ: -1.0, floorY: HOUSE_1F_Y,
   });
 
   var fatherModel = createNPCModel(0x757575, 1.7, 0xf5c6a0, { isMale: true, tieColor: 0x424242 });
@@ -10099,6 +10127,7 @@ function startStairCutsceneS3Down() {
   setTimeout(function() {
     // 1Fにテレポート（リビング中央の安全な場所）
     GAME._onHouse2F = false;
+    addFamilyLog('player', '1階に降りた');
     GAME.player.x = 0;
     GAME.player.y = 0.9;
     GAME.player.z = 0;
@@ -11420,6 +11449,184 @@ function npcMoveWithCollision(npc, dx, dz, speed) {
   npc.mesh.position.z = npc.z;
 }
 
+// ============================================================
+// 家族行動ログ（Stage 3）
+// ============================================================
+function addFamilyLog(role, message) {
+  if (GAME.stageNum !== 3) return;
+  var logEl = document.getElementById('family-log');
+  if (!logEl) return;
+  logEl.style.display = 'block';
+  var nameMap = { father: '👨 父', mother: '👩 母', sister: '👧 妹', grandma: '👵 祖母', player: '🧑 自分', system: '⚠️' };
+  var entry = document.createElement('div');
+  entry.className = 'family-log-entry ' + role;
+  entry.innerHTML = '<span class="log-name">' + (nameMap[role] || role) + '</span>' + escapeHTML(message);
+  logEl.appendChild(entry);
+  // 最大8エントリ
+  while (logEl.children.length > 8) logEl.removeChild(logEl.firstChild);
+  // 古いエントリをフェードアウト
+  var children = logEl.children;
+  for (var i = 0; i < children.length; i++) {
+    children[i].style.opacity = Math.max(0.3, 1 - (children.length - 1 - i) * 0.12);
+  }
+}
+
+// ============================================================
+// 父の自動アクション実行（インタラクタブルを自動的に使用）
+// ============================================================
+function autoPerformAction(actionName) {
+  for (var i = 0; i < GAME.interactables.length; i++) {
+    var obj = GAME.interactables[i];
+    if (obj.action === actionName && !obj.used) {
+      obj.used = true;
+      switch (actionName) {
+        case 'turnOffGas':
+          GAME.scoring.turnedOffGas = true;
+          if (GAME._gasFlameS3) GAME._gasFlameS3.visible = false;
+          if (GAME._gasLightS3) GAME._gasLightS3.visible = false;
+          if (obj.mesh) obj.mesh.material = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.6, metalness: 0.3, emissive: 0x000000, emissiveIntensity: 0 });
+          addFamilyLog('father', 'ガスの元栓を閉めた');
+          break;
+        case 'pickUpFlashlight':
+          GAME.scoring.usedFlashlight = true;
+          if (obj.mesh) obj.mesh.visible = false;
+          addFamilyLog('father', '懐中電灯を取った');
+          // 父に懐中電灯ライトを追加
+          if (!GAME._fatherFlashSpot) {
+            var fs = new THREE.SpotLight(0xffffcc, 1.2, 12, Math.PI / 5, 0.3, 1);
+            fs.castShadow = false; scene.add(fs);
+            var ft = new THREE.Object3D(); scene.add(ft);
+            fs.target = ft;
+            GAME._fatherFlashSpot = fs; GAME._fatherFlashTarget = ft;
+          }
+          break;
+        case 'turnOffBreaker':
+          GAME.scoring.turnedOffBreaker = true;
+          if (obj.mesh) obj.mesh.material = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.4, metalness: 0.5, emissive: 0x003300, emissiveIntensity: 0.3 });
+          if (GAME._breakerLight) GAME._breakerLight.visible = false;
+          addFamilyLog('father', 'ブレーカーを落とした（通電火災防止）');
+          break;
+        case 'openGenkanDoor':
+          GAME.scoring.openedDoor = true;
+          GAME._genkanDoorOpen = true;
+          SoundManager.playSE('door');
+          if (GAME._genkanDoorCollision) {
+            var gdIdx = GAME.walls.indexOf(GAME._genkanDoorCollision);
+            if (gdIdx >= 0) GAME.walls.splice(gdIdx, 1);
+          }
+          if (GAME._genkanDoorMesh) {
+            GAME._genkanDoorMesh.rotation.y = -Math.PI / 2;
+            GAME._genkanDoorMesh.position.x -= 0.8;
+          }
+          addFamilyLog('father', '玄関ドアを開けた！');
+          break;
+      }
+      return;
+    }
+  }
+}
+
+// ============================================================
+// NPCタスクキュー処理（父・母の自動行動）
+// ============================================================
+function updateNPCTaskQueue(npc, dtSec) {
+  if (!npc._taskQueue || npc._taskQueue.length === 0) return false;
+  var task = npc._taskQueue[0];
+  var mesh = npc.mesh;
+
+  switch (task.type) {
+    case 'delay':
+      // 待機時間
+      task._elapsed = (task._elapsed || 0) + dtSec;
+      if (task._elapsed >= task.duration) {
+        npc._taskQueue.shift();
+      }
+      return true;
+
+    case 'move':
+      // ウェイポイント経由で移動
+      if (!task._wpIndex) task._wpIndex = 0;
+      var wp = task.waypoints[task._wpIndex];
+      if (!wp) { npc._taskQueue.shift(); return true; }
+      var mdx = wp.x - npc.x, mdz = wp.z - npc.z;
+      var mdist = Math.sqrt(mdx * mdx + mdz * mdz);
+      if (mdist > 0.3) {
+        var mspd = task.speed || npc.speed * 1.5;
+        npcMoveWithCollision(npc, mdx / mdist, mdz / mdist, mspd);
+        mesh.position.x = npc.x; mesh.position.z = npc.z;
+        mesh.rotation.y = Math.atan2(mdx, mdz);
+        npc.phase += dtSec * 7;
+        if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = Math.sin(npc.phase) * 0.4;
+        if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = -Math.sin(npc.phase) * 0.4;
+        // 腕振り
+        var tb = mesh.userData.body;
+        if (tb && tb.children && tb.children.length >= 3) {
+          tb.children[1].rotation.x = -Math.sin(npc.phase) * 0.3;
+          tb.children[2].rotation.x = Math.sin(npc.phase) * 0.3;
+        }
+      } else {
+        task._wpIndex++;
+        if (task._wpIndex >= task.waypoints.length) {
+          npc._taskQueue.shift();
+        }
+      }
+      return true;
+
+    case 'action':
+      // アクション実行（一定時間後に完了）
+      task._elapsed = (task._elapsed || 0) + dtSec;
+      // アクション開始時の演出
+      if (task._elapsed < dtSec * 2 && task.actionName) {
+        autoPerformAction(task.actionName);
+      }
+      // アクション中: しゃがんで作業するポーズ
+      if (mesh.userData.body && mesh.userData.body.children && mesh.userData.body.children.length >= 3) {
+        mesh.userData.body.children[1].rotation.x = -0.8;
+        mesh.userData.body.children[2].rotation.x = -0.8;
+      }
+      if (task._elapsed >= (task.duration || 1.5)) {
+        // ポーズリセット
+        if (mesh.userData.body && mesh.userData.body.children && mesh.userData.body.children.length >= 3) {
+          mesh.userData.body.children[1].rotation.x = 0;
+          mesh.userData.body.children[2].rotation.x = 0;
+        }
+        npc._taskQueue.shift();
+      }
+      return true;
+
+    case 'wait':
+      // 条件待ち
+      if (task.condition && task.condition()) {
+        if (task.onComplete) task.onComplete();
+        npc._taskQueue.shift();
+      } else {
+        // 待機中: 周囲を見回す
+        npc.phase += dtSec;
+        mesh.rotation.y = (npc._origYaw || 0) + Math.sin(npc.phase * 0.8) * 0.3;
+      }
+      return true;
+
+    case 'log':
+      // ログ出力（即座に次へ）
+      if (task.role && task.message) addFamilyLog(task.role, task.message);
+      npc._taskQueue.shift();
+      return true;
+
+    case 'evacuate':
+      // 避難モードに切り替え（通常の避難処理に委譲）
+      npc._taskQueue = [];
+      npc._tasksDone = true;
+      // 玄関方向にウェイポイント設定
+      npc._waypoints = task.waypoints || [{ x: -5, z: -7 }, { x: -3, z: -12 }];
+      npc._wpIndex = 0;
+      npc.targetX = npc._waypoints[0].x;
+      npc.targetZ = npc._waypoints[0].z;
+      npc.state = 'evacuating';
+      return false; // 通常の避難処理に委譲
+  }
+  return false;
+}
+
 // 妹の独立移動（ウェイポイント経由で親のところへ向かう）
 function updateSisterGoToParents(npc, dtSec) {
   if (!npc._goToParents || !npc._waypoints) return false;
@@ -11909,6 +12116,10 @@ function updateSingleNPC(npc, dtSec) {
       if (npc.state === 'aftershake_idle') {
         // 妹の独立移動（aftershakeフェーズ中でも動く）
         if (updateSisterGoToParents(npc, dtSec)) break;
+        // 父・母のタスクキュー処理（Stage 3）
+        if (npc._taskQueue && npc._taskQueue.length > 0) {
+          if (updateNPCTaskQueue(npc, dtSec)) break;
+        }
         // 立ち上がった後のアイドル（周囲を見回す）
         npc.phase += dtSec;
         mesh.position.y = (npc.floorY || 0) + Math.sin(npc.phase * 2) * 0.003;
@@ -11950,6 +12161,11 @@ function updateSingleNPC(npc, dtSec) {
       if (npc._goToParents) {
         updateSisterGoToParents(npc, dtSec);
         break;
+      }
+
+      // 父・母のタスクキュー処理（Stage 3 — 避難フェーズでも継続）
+      if (npc._taskQueue && npc._taskQueue.length > 0) {
+        if (updateNPCTaskQueue(npc, dtSec)) break;
       }
 
       // followingPlayer: プレイヤーの後ろをついてくる
@@ -12134,13 +12350,16 @@ function updateSingleNPC(npc, dtSec) {
             npc.targetZ = 4.0;
           } else {
             // 1FのNPC: ロール別ウェイポイント
+            // 父・母はタスクキューで自動行動中の場合スキップ
+            if ((npc.role === 'father' || npc.role === 'mother') && npc._taskQueue && npc._taskQueue.length > 0) {
+              break; // タスクキューに委譲
+            }
             if (npc.role === 'mother') {
-              // キッチン→カウンター西端を回り込む→Z=2壁の南→リビング→玄関
+              // 母: ちゃぶ台エリア→Z=2壁の開口部→リビング→玄関
               npc._waypoints = [
-                { x: 1.5, z: 3.5 },  // カウンター西端を回り込む（counter X=2.0-5.5）
-                { x: 0, z: 1.5 },    // Z=2壁の南（開口部X=-2.5〜1.5）
-                { x: -3, z: -2 },    // 左側通路
-                { x: -5, z: -4.5 },  // 玄関
+                { x: -1, z: 1.5 },
+                { x: -3, z: -2 },
+                { x: -5, z: -4.5 },
               ];
             } else if (npc.role === 'grandma') {
               // 和室(-4,4)→Z=2壁の開口部→リビング→玄関
@@ -12150,11 +12369,10 @@ function updateSingleNPC(npc, dtSec) {
                 { x: -5, z: -4.5 },  // 玄関
               ];
             } else if (npc.role === 'father') {
-              // 父: ちゃぶ台南→ソファ避けて南西→玄関
+              // 父: タスク完了後の避難ルート
               npc._waypoints = [
-                { x: 1.5, z: -2.5 }, // ちゃぶ台とソファを避けて南東へ
-                { x: -3, z: -3 },    // 南西通路
-                { x: -5, z: -4.5 },  // 玄関
+                { x: -5, z: -7 },
+                { x: -3, z: -12 },
               ];
             } else {
               // その他: リビング→玄関
@@ -12344,6 +12562,8 @@ function tryHelpInjuredNPC() {
         SoundManager.playSE('click');
         showAdvisor({ja: '妹を落ち着かせた！妹は1階のお父さんのところへ向かう。君も1階へ行こう！', en: 'You calmed your sister! She\'ll go to dad on 1F. You go downstairs too!'}, 'praise');
         showItemGet('👧 妹を救助！ — 家族を守る');
+        addFamilyLog('player', '妹に声をかけて落ち着かせた');
+        addFamilyLog('sister', '1階のお父さんのところへ向かう');
         npc.behavior = 'calm'; npc.state = 'goToParents';
         npc.followingPlayer = false;
         npc._goToParents = true;
@@ -12372,6 +12592,8 @@ function tryHelpInjuredNPC() {
         SoundManager.playSE('click');
         showAdvisor({ja: 'おばあちゃんを手助けした！一緒に避難しよう！', en: 'You helped grandma! Let\'s evacuate together!'}, 'praise');
         showItemGet('👵 おばあちゃんを支援！ — 家族を守る');
+        addFamilyLog('player', 'おばあちゃんの避難を手伝った');
+        addFamilyLog('grandma', 'ありがとう...一緒に避難する');
         npc.state = 'following';
         npc.mesh.rotation.z = 0;
         npc.mesh.position.y = npc.floorY || 0;
@@ -12427,6 +12649,8 @@ function getNearestInteractable() {
     if (obj.phases && obj.phases.indexOf(GAME.phase) === -1) continue;
     // Stage1では火・ブレーカーは先生の役割（生徒は操作不可）
     if (GAME.stageNum === 1 && (obj.action === 'turnOffFire' || obj.action === 'turnOffBreaker')) continue;
+    // Stage3: 父が自動で処理するインタラクタブルはプレイヤー操作不可
+    if (obj.autoHandled) continue;
     // 机の下に潜る: しゃがんでいないと選択不可（まずしゃがむ→机の下に入る手順）
     if (obj.action === 'hideUnderDesk' && !GAME.player.isCrouching) continue;
     // Stage 3: フロア高さフィルタ（2Fにいるのに1Fのインタラクタブルを表示しない）
@@ -12502,8 +12726,9 @@ function performInteract() {
     case 'putOnShoes':
       GAME.scoring.putOnShoes = true;
       GAME.score += 5;
-      showAdvisor({ja: '上履きを履いた！ガラスや瓦礫の上も安全に歩けるよ。', en: 'Shoes on! You can safely walk over glass and debris now.'}, 'praise');
-      showItemGet('👟 上履きを装備！ — ガラス破片から足を保護');
+      showAdvisor({ja: '靴を履いた！ガラスや瓦礫の上も安全に歩けるよ。', en: 'Shoes on! You can safely walk over glass and debris now.'}, 'praise');
+      showItemGet('👟 靴を装備！ — ガラス破片から足を保護');
+      addFamilyLog('player', '靴を履いた（ガラス片対策）');
       // 靴箱の上履きを非表示（取得済み）
       if (target.mesh) target.mesh.visible = false;
       // 上履きハイライトも消す
@@ -13090,6 +13315,18 @@ function gameLoop(timestamp) {
     var fa = GAME.player.yaw || 0;
     GAME._flashSpotTarget.position.set(fp.x + Math.sin(fa) * 5, fp.y - 0.5, fp.z + Math.cos(fa) * 5);
   }
+  // 父の懐中電灯更新
+  if (GAME._fatherFlashSpot) {
+    for (var ffi = 0; ffi < GAME.npcs.length; ffi++) {
+      if (GAME.npcs[ffi].role === 'father') {
+        var ff = GAME.npcs[ffi];
+        GAME._fatherFlashSpot.position.set(ff.x, (ff.floorY || 0) + 1.3, ff.z);
+        var ffy = ff.mesh.rotation.y || 0;
+        GAME._fatherFlashTarget.position.set(ff.x + Math.sin(ffy) * 5, (ff.floorY || 0) + 0.3, ff.z + Math.cos(ffy) * 5);
+        break;
+      }
+    }
+  }
 
   // 階段トリガー + 避難ポイントチェック + ブロック塀チェック + 余震
   checkStairTrigger();
@@ -13335,18 +13572,20 @@ function updateObjectiveBanner() {
           sub = en ? 'Find stairs and press E' : '階段に近づいてEキー';
         }
       } else {
-        var tasks = [];
-        if (!GAME.scoring.turnedOffGas) tasks.push(en ? 'Turn off gas' : 'ガスを止める');
-        if (!GAME.scoring.putOnShoes) tasks.push(en ? 'Put on shoes' : '靴を履く');
-        if (!GAME.scoring.turnedOffBreaker) tasks.push(en ? 'Turn off breaker' : 'ブレーカーを落とす');
-        if (tasks.length > 0) {
-          text = (en ? '📋 Tasks: ' : '📋 やること: ') + tasks.join(' / ');
-          sub = en ? 'Get close to items and press E → Then exit through front door' : '各場所に近づいてEキー → 完了したら玄関から外へ';
-        } else if (!GAME.scoring.openedDoor) {
-          text = en ? '🚪 Open the front door and evacuate!' : '🚪 玄関ドアを開けて外に避難しよう！';
-          sub = en ? 'Go to entrance and press E' : '玄関に行ってEキー';
+        // 1F: プレイヤーのタスク（靴・祖母支援・避難）
+        // ガス・ブレーカー・懐中電灯・ドアは父が自動で処理
+        if (!GAME.scoring.putOnShoes) {
+          text = en ? '👟 Put on shoes! (glass protection)' : '👟 靴を履こう！（ガラス片対策）';
+          sub = en ? 'Go to entrance area and press E' : '玄関の靴箱に近づいてEキー';
+        } else if (!GAME.scoring.helpedGrandma) {
+          text = en ? '👵 Help grandma evacuate!' : '👵 おばあちゃんの避難を手伝おう！';
+          sub = en ? 'Get close to grandma and press E' : 'おばあちゃんに近づいてEキー';
+        } else if (!GAME._genkanDoorOpen) {
+          text = en ? '🚪 Wait for dad to open the door...' : '🚪 お父さんがドアを開けるのを待とう...';
+          sub = en ? 'Dad is handling the breaker and door' : 'お父さんがブレーカーとドアを対応中';
         } else {
           text = en ? '🏃 Evacuate outside!' : '🏃 外に出て避難場所へ！';
+          sub = en ? 'Head through the front door!' : '玄関から外に出よう！';
         }
       }
     } else if (GAME.stageNum === 1) {
@@ -13535,6 +13774,79 @@ function _doTransitionPhase(newPhase) {
       GAME._aftershakeGuide1 = false;
       GAME._aftershakeGuide2 = false;
       GAME._aftershakeGuide3 = false;
+
+      // Stage 3: 家族行動ログ & 父・母のタスクキュー初期化
+      if (GAME.stageNum === 3) {
+        addFamilyLog('system', '揺れが収まった — 避難準備開始');
+        // 父のタスクキュー: ガス→懐中電灯→プレイヤー待ち→ブレーカー→玄関ドア→避難
+        for (var fi = 0; fi < GAME.npcs.length; fi++) {
+          var fnpc = GAME.npcs[fi];
+          if (fnpc.role === 'father') {
+            fnpc._taskQueue = [
+              { type: 'delay', duration: 1.5 },
+              { type: 'log', role: 'father', message: 'ガスを止めに行く！' },
+              { type: 'move', waypoints: [
+                { x: 1.0, z: -1.5 },
+                { x: 1.0, z: 1.5 },
+                { x: 1.5, z: 3.5 },
+                { x: 4.5, z: 3.8 }
+              ], speed: 0.025 },
+              { type: 'action', actionName: 'turnOffGas', duration: 1.5 },
+              { type: 'log', role: 'father', message: '懐中電灯を取りに行く' },
+              { type: 'move', waypoints: [
+                { x: 1.5, z: 3.5 },
+                { x: 0, z: 1.5 },
+                { x: -3, z: -2 },
+                { x: -5.3, z: -4.0 }
+              ], speed: 0.025 },
+              { type: 'action', actionName: 'pickUpFlashlight', duration: 1.0 },
+              { type: 'log', role: 'father', message: '家族が揃うのを待っている...' },
+              { type: 'wait', condition: function() {
+                // プレイヤーが1Fに降りてくるまで待つ
+                return !GAME._onHouse2F;
+              }, onComplete: function() {
+                addFamilyLog('father', 'みんな揃った！ブレーカーを落とす');
+              }},
+              { type: 'move', waypoints: [{ x: -4.5, z: -4.73 }], speed: 0.025 },
+              { type: 'action', actionName: 'turnOffBreaker', duration: 1.0 },
+              { type: 'move', waypoints: [{ x: -5, z: -4.9 }], speed: 0.025 },
+              { type: 'action', actionName: 'openGenkanDoor', duration: 1.0 },
+              { type: 'log', role: 'father', message: '外に出よう！' },
+              { type: 'evacuate', waypoints: [{ x: -5, z: -7 }, { x: -3, z: -12 }] }
+            ];
+          }
+          if (fnpc.role === 'mother') {
+            fnpc._taskQueue = [
+              { type: 'delay', duration: 2.0 },
+              { type: 'log', role: 'mother', message: 'おばあちゃんの様子を見に行く' },
+              { type: 'move', waypoints: [
+                { x: -1, z: 1.5 },
+                { x: -3.5, z: 3.5 }
+              ], speed: 0.02 },
+              { type: 'log', role: 'mother', message: 'おばあちゃん、大丈夫？一緒に避難しましょう' },
+              { type: 'delay', duration: 3.0 },
+              { type: 'log', role: 'mother', message: 'おばあちゃんを支えて待機中...' },
+              { type: 'wait', condition: function() {
+                // 父が玄関ドアを開けるまで待つ
+                return GAME._genkanDoorOpen;
+              }, onComplete: function() {
+                addFamilyLog('mother', 'ドアが開いた！おばあちゃんと外へ');
+              }},
+              { type: 'evacuate', waypoints: [
+                { x: -1, z: 1.5 },
+                { x: -3, z: -2 },
+                { x: -5, z: -4.5 },
+                { x: -5, z: -7 },
+                { x: -3, z: -12 }
+              ] }
+            ];
+          }
+        }
+        // 地震中のログ
+        addFamilyLog('mother', 'ちゃぶ台の下に避難した');
+        addFamilyLog('father', 'ちゃぶ台の下で身を守っている');
+        addFamilyLog('sister', '2階で怖がっている...');
+      }
       break;
 
     case 'evacuation':
@@ -13552,7 +13864,9 @@ function _doTransitionPhase(newPhase) {
       GAME._evacGuide1 = false; GAME._evacGuide2 = false; GAME._evacGuide3 = false;
       if (GAME.stageNum === 3) {
         // Stage 3: 一軒家 — 停電演出 + 家族の安全確保を促す
-        showAdvisor({ja: '避難開始！まず妹に声をかけて一緒に階段を降りよう！', en: 'Start evacuating! Call out to your sister and go downstairs together!'}, 'warning');
+        showAdvisor({ja: '避難開始！2階の妹に声をかけよう！お父さんは1階の安全を確保してくれる！', en: 'Start evacuating! Check on your sister upstairs! Dad is securing downstairs!'}, 'warning');
+        addFamilyLog('system', '避難フェーズ開始 — 各自の役割を果たそう');
+        addFamilyLog('player', '2階の妹に声をかけに行く');
         // 停電: 室内照明を消す
         if (GAME._houseLights) {
           GAME._houseLights.forEach(function(l) { l.intensity = 0; });
@@ -14337,11 +14651,11 @@ function showResult() {
         var novelPts2 = GAME._novelChoiceScore || 0;
         actions.push({ done: novelPts2 > 0, text: en ? 'Made correct choices in novel scenes' : 'ノベル選択肢で正しい判断をした', pts: novelPts2 > 0 ? '+' + novelPts2 : '0' });
       } else if (stg === 3) {
-        actions.push({ done: s.turnedOffGas, text: en ? 'Turned off the gas valve' : 'ガスの元栓を閉めた', pts: '+6' });
-        actions.push({ done: s.turnedOffBreaker, text: en ? 'Turned off the breaker' : 'ブレーカーを落とした（通電火災防止）', pts: '+6' });
+        actions.push({ done: s.turnedOffGas, text: en ? '[Dad] Turned off the gas valve' : '【父】ガスの元栓を閉めた', pts: '+6' });
+        actions.push({ done: s.turnedOffBreaker, text: en ? '[Dad] Turned off the breaker' : '【父】ブレーカーを落とした（通電火災防止）', pts: '+6' });
         actions.push({ done: s.putOnShoes, text: en ? 'Put on shoes (glass protection)' : '靴を履いた（ガラス片対策）', pts: '+6' });
-        actions.push({ done: s.usedFlashlight, text: en ? 'Found and used flashlight' : '懐中電灯を見つけて使用した', pts: '+5' });
-        actions.push({ done: s.rescuedChild, text: en ? 'Called out to child upstairs' : '2階の子どもに声をかけた', pts: '+5' });
+        actions.push({ done: s.usedFlashlight, text: en ? '[Dad] Found and used flashlight' : '【父】懐中電灯を取った', pts: '+5' });
+        actions.push({ done: s.rescuedChild, text: en ? 'Called out to sister upstairs' : '2階の妹に声をかけた', pts: '+5' });
         actions.push({ done: s.helpedGrandma, text: en ? 'Helped grandma evacuate' : '祖母の避難を手助けした', pts: '+5' });
         var novelPts3 = GAME._novelChoiceScore || 0;
         actions.push({ done: novelPts3 > 0, text: en ? 'Made correct choices in novel scenes' : 'ノベル選択肢で正しい判断をした', pts: novelPts3 > 0 ? '+' + novelPts3 : '0' });
@@ -15152,6 +15466,11 @@ function cleanupGame() {
   // advisor非表示
   var advBox = document.getElementById('advisor-box');
   if (advBox) advBox.classList.remove('visible');
+  // 家族行動ログ非表示・クリア
+  var famLog = document.getElementById('family-log');
+  if (famLog) { famLog.style.display = 'none'; famLog.innerHTML = ''; }
+  // 父の懐中電灯クリーンアップ
+  GAME._fatherFlashSpot = null; GAME._fatherFlashTarget = null;
 
   document.getElementById('mobile-joystick').style.display = 'none';
   document.getElementById('mobile-buttons').style.display = 'none';
