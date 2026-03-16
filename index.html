@@ -10977,21 +10977,23 @@ function updatePlayerModel() {
     mesh.rotation.y = p.yaw;
   }
 
-  // しゃがみ（机の下に完全に隠れる深い姿勢）
+  // しゃがみ（机の下に完全に隠れる深い姿勢）— スムーズ遷移
   if (p.isCrouching) {
-    j.leftHip.rotation.x = -1.6;
-    j.rightHip.rotation.x = -1.6;
-    j.leftKnee.rotation.x = 2.2;
-    j.rightKnee.rotation.x = 2.2;
-    j.torso.position.y = mesh.userData.baseY - 0.50;
-    j.torso.rotation.x = 0.5;
-    j.neckPivot.rotation.x = 0.3;
-    j.leftShoulder.rotation.x = -0.5;
-    j.leftShoulder.rotation.z = 0.3;
-    j.rightShoulder.rotation.x = -0.5;
-    j.rightShoulder.rotation.z = -0.3;
-    j.leftElbow.rotation.x = -1.0;
-    j.rightElbow.rotation.x = -1.0;
+    var crouchLerp = 0.1; // 補間速度
+    j.leftHip.rotation.x += (-1.6 - j.leftHip.rotation.x) * crouchLerp;
+    j.rightHip.rotation.x += (-1.6 - j.rightHip.rotation.x) * crouchLerp;
+    j.leftKnee.rotation.x += (2.2 - j.leftKnee.rotation.x) * crouchLerp;
+    j.rightKnee.rotation.x += (2.2 - j.rightKnee.rotation.x) * crouchLerp;
+    var targetTorsoY = mesh.userData.baseY - 0.50;
+    j.torso.position.y += (targetTorsoY - j.torso.position.y) * crouchLerp;
+    j.torso.rotation.x += (0.5 - j.torso.rotation.x) * crouchLerp;
+    j.neckPivot.rotation.x += (0.3 - j.neckPivot.rotation.x) * crouchLerp;
+    j.leftShoulder.rotation.x += (-0.5 - j.leftShoulder.rotation.x) * crouchLerp;
+    j.leftShoulder.rotation.z += (0.3 - j.leftShoulder.rotation.z) * crouchLerp;
+    j.rightShoulder.rotation.x += (-0.5 - j.rightShoulder.rotation.x) * crouchLerp;
+    j.rightShoulder.rotation.z += (-0.3 - j.rightShoulder.rotation.z) * crouchLerp;
+    j.leftElbow.rotation.x += (-1.0 - j.leftElbow.rotation.x) * crouchLerp;
+    j.rightElbow.rotation.x += (-1.0 - j.rightElbow.rotation.x) * crouchLerp;
     return;
   }
 
@@ -15253,7 +15255,7 @@ function updatePlayer(dt) {
   const p = GAME.player;
   let mx = 0, mz = 0;
   var guardMult = (p.isGuarding && (GAME.phase === 'aftershake' || GAME.phase === 'evacuation')) ? 0.7 : 1;
-  const speed = p.speed * (p.isSprinting ? p.sprintMult : 1) * (p.isCrouching ? 0.5 : 1) * guardMult * dt;
+  const speed = p.speed * (p.isSprinting ? p.sprintMult : 1) * (p.isCrouching ? 0.25 : 1) * guardMult * dt;
 
   if (!GAME.isMobile) {
     if (GAME.keys['KeyW'] || GAME.keys['ArrowUp']) mz += 1;
@@ -15467,7 +15469,11 @@ function updateCamera() {
   // プレイヤー頭部位置（視点基点）— しゃがみ時は低くするが見やすさ維持
   // 2F対応: 足元フロアYを基準にしゃがみ時の目線を計算
   var floorY = (GAME.stageNum === 3 && GAME._onHouse2F) ? 3.0 : 0;
-  var lookY = p.isCrouching ? (floorY + 0.55) : p.y + 0.5;
+  var targetLookY = p.isCrouching ? (floorY + 0.55) : p.y + 0.5;
+  // しゃがみ時のカメラ高さをスムーズに補間（滑り防止）
+  if (GAME._currentLookY === undefined) GAME._currentLookY = targetLookY;
+  GAME._currentLookY += (targetLookY - GAME._currentLookY) * 0.08;
+  var lookY = GAME._currentLookY;
   var playerPos = new THREE.Vector3(p.x, lookY, p.z);
 
   // しゃがみ時はカメラ距離を短くして室内壁衝突を軽減（TPS維持）
