@@ -1737,6 +1737,7 @@ html, body {
 .family-log-entry.grandma { border-left-color: #a1887f; }
 .family-log-entry.player { border-left-color: #ffcc00; }
 .family-log-entry.system { border-left-color: #ff8a65; }
+.family-log-entry .log-time { color: #888; font-size: 0.85em; margin-right: 6px; }
 .family-log-entry .log-name { font-weight: bold; margin-right: 4px; }
 .family-log-entry.father .log-name { color: #64b5f6; }
 .family-log-entry.mother .log-name { color: #f06292; }
@@ -11454,21 +11455,39 @@ function npcMoveWithCollision(npc, dx, dz, speed) {
 // ============================================================
 function addFamilyLog(role, message) {
   if (GAME.stageNum !== 3) return;
+  if (!GAME.running && GAME.phase !== 'aftershake' && GAME.phase !== 'evacuation') return;
   var logEl = document.getElementById('family-log');
   if (!logEl) return;
   logEl.style.display = 'block';
   var nameMap = { father: '👨 父', mother: '👩 母', sister: '👧 妹', grandma: '👵 祖母', player: '🧑 自分', system: '⚠️' };
+  // 経過時間をタイムスタンプとして表示
+  var elapsed = Math.floor(GAME.totalTimer || 0);
+  var mm = Math.floor(elapsed / 60);
+  var ss = elapsed % 60;
+  var timeStr = mm + ':' + (ss < 10 ? '0' : '') + ss;
   var entry = document.createElement('div');
   entry.className = 'family-log-entry ' + role;
-  entry.innerHTML = '<span class="log-name">' + (nameMap[role] || role) + '</span>' + escapeHTML(message);
+  entry.innerHTML = '<span class="log-time">' + timeStr + '</span>'
+    + '<span class="log-name">' + (nameMap[role] || role) + '</span>'
+    + escapeHTML(message);
   logEl.appendChild(entry);
-  // 最大8エントリ
-  while (logEl.children.length > 8) logEl.removeChild(logEl.firstChild);
-  // 古いエントリをフェードアウト
+  // 最大6エントリ（少なめにしてリアルタイム感を出す）
+  while (logEl.children.length > 6) logEl.removeChild(logEl.firstChild);
+  // 古いエントリの透明度を段階的に下げる
   var children = logEl.children;
   for (var i = 0; i < children.length; i++) {
-    children[i].style.opacity = Math.max(0.3, 1 - (children.length - 1 - i) * 0.12);
+    children[i].style.opacity = Math.max(0.2, 1 - (children.length - 1 - i) * 0.18);
   }
+  // 8秒後に最古エントリを自動フェードアウト
+  setTimeout(function() {
+    if (logEl.children.length > 0 && logEl.contains(entry)) {
+      entry.style.transition = 'opacity 1s';
+      entry.style.opacity = '0';
+      setTimeout(function() {
+        if (logEl.contains(entry)) logEl.removeChild(entry);
+      }, 1000);
+    }
+  }, 12000);
 }
 
 // ============================================================
@@ -13851,7 +13870,11 @@ function _doTransitionPhase(newPhase) {
 
       // Stage 3: 家族行動ログ & 父・母のタスクキュー初期化
       if (GAME.stageNum === 3) {
-        addFamilyLog('system', '揺れが収まった — 避難準備開始');
+        addFamilyLog('system', '揺れが収まった...');
+        // 時間差でログ追加（リアルタイム感）
+        setTimeout(function() { addFamilyLog('mother', 'ちゃぶ台の下から出てきた'); }, 1500);
+        setTimeout(function() { addFamilyLog('father', '大丈夫か？みんな怪我はないか？'); }, 2500);
+        setTimeout(function() { addFamilyLog('sister', '（2階から泣き声が聞こえる...）'); }, 4000);
         // 父のタスクキュー: ガス→懐中電灯→プレイヤー待ち→ブレーカー→玄関ドア→避難
         for (var fi = 0; fi < GAME.npcs.length; fi++) {
           var fnpc = GAME.npcs[fi];
@@ -13916,10 +13939,6 @@ function _doTransitionPhase(newPhase) {
             ];
           }
         }
-        // 地震中のログ
-        addFamilyLog('mother', 'ちゃぶ台の下に避難した');
-        addFamilyLog('father', 'ちゃぶ台の下で身を守っている');
-        addFamilyLog('sister', '2階で怖がっている...');
       }
       break;
 
@@ -13939,8 +13958,9 @@ function _doTransitionPhase(newPhase) {
       if (GAME.stageNum === 3) {
         // Stage 3: 一軒家 — 停電演出 + 家族の安全確保を促す
         showAdvisor({ja: '避難開始！2階の妹に声をかけよう！お父さんは1階の安全を確保してくれる！', en: 'Start evacuating! Check on your sister upstairs! Dad is securing downstairs!'}, 'warning');
-        addFamilyLog('system', '避難フェーズ開始 — 各自の役割を果たそう');
-        addFamilyLog('player', '2階の妹に声をかけに行く');
+        addFamilyLog('system', '停電発生 — 避難準備を開始');
+        setTimeout(function() { addFamilyLog('player', '2階の妹に声をかけに行く'); }, 1500);
+        setTimeout(function() { addFamilyLog('father', '俺がガスと電気を止める！'); }, 3000);
         // 停電: 室内照明を消す
         if (GAME._houseLights) {
           GAME._houseLights.forEach(function(l) { l.intensity = 0; });
