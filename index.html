@@ -14022,17 +14022,17 @@ function _doTransitionPhase(newPhase) {
         // 妹の部屋に明るいライト（妹を確実に視認できるように）
         var sisterLight = new THREE.PointLight(0x88ccff, 1.0, 8);
         sisterLight.position.set(-3.5, HOUSE_2F_Y + 1.5, 3.0);
-        scene.add(sisterLight);
+        GAME.scene.add(sisterLight);
         GAME._sisterHintLight = sisterLight;
         // 妹の足元にスポットライト（直接照らす）
         var sisterSpot = new THREE.PointLight(0xffffff, 0.6, 4);
         sisterSpot.position.set(-3.5, HOUSE_2F_Y + 0.5, 3.0);
-        scene.add(sisterSpot);
+        GAME.scene.add(sisterSpot);
         GAME._sisterSpotLight = sisterSpot;
         // 祖母の位置に微かなライト（暗い中で見つけやすく）
         var grandmaLight = new THREE.PointLight(0xffaa66, 0.3, 4);
         grandmaLight.position.set(-4.0, HOUSE_1F_Y + 1.0, 4.0);
-        scene.add(grandmaLight);
+        GAME.scene.add(grandmaLight);
         GAME._grandmaHintLight = grandmaLight;
       } else if (GAME.stageNum === 2) {
         // Stage 2: オフィス — プレイヤーをデスク間の通路に移動
