@@ -1,8 +1,13 @@
 {
   "rules": {
     "rankings": {
-      ".read": true,
-      ".write": true
+      "$stageId": {
+        ".read": true,
+        "$deviceId": {
+          ".write": true,
+          ".validate": "newData.hasChildren(['username', 'score']) && newData.child('username').isString() && newData.child('username').val().length <= 16 && newData.child('score').isNumber()"
+        }
+      }
     }
   }
 }
