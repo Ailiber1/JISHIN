@@ -15287,7 +15287,7 @@ function updatePlayer(dt) {
   const p = GAME.player;
   let mx = 0, mz = 0;
   var guardMult = (p.isGuarding && (GAME.phase === 'aftershake' || GAME.phase === 'evacuation')) ? 0.7 : 1;
-  const speed = p.speed * (p.isSprinting ? p.sprintMult : 1) * (p.isCrouching ? 0.25 : 1) * guardMult * dt;
+  const speed = p.speed * (p.isSprinting ? p.sprintMult : 1) * (p.isCrouching ? 0.4 : 1) * guardMult * dt;
 
   if (!GAME.isMobile) {
     if (GAME.keys['KeyW'] || GAME.keys['ArrowUp']) mz += 1;
@@ -15504,7 +15504,7 @@ function updateCamera() {
   var targetLookY = p.isCrouching ? (floorY + 0.55) : p.y + 0.5;
   // しゃがみ時のカメラ高さをスムーズに補間（滑り防止）
   if (GAME._currentLookY === undefined) GAME._currentLookY = targetLookY;
-  GAME._currentLookY += (targetLookY - GAME._currentLookY) * 0.08;
+  GAME._currentLookY += (targetLookY - GAME._currentLookY) * 0.15;
   var lookY = GAME._currentLookY;
   var playerPos = new THREE.Vector3(p.x, lookY, p.z);
 
