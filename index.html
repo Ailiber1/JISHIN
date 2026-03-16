@@ -10076,15 +10076,15 @@ function spawnHouseNPCs() {
   });
 
   var grandmaModel = createNPCModel(0x795548, 1.45, 0xf5c6a0, { isFemale: true, hairColor: 0xaaaaaa, skirtColor: 0x795548 });
-  grandmaModel.position.set(-1.0, HOUSE_1F_Y, 3.5);
+  grandmaModel.position.set(-3.5, HOUSE_1F_Y, 3.5);
   GAME.scene.add(grandmaModel);
   var cane = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.9, 6), new THREE.MeshStandardMaterial({ color: 0x6d4c2e, roughness: 0.6 }));
   cane.position.set(0.2, -0.3, 0.1); cane.rotation.z = 0.15;
   grandmaModel.userData.body.add(cane);
   GAME.npcs.push({
-    mesh: grandmaModel, role: 'grandma', x: -1.0, z: 3.5, targetX: -1.0, targetZ: 3.5,
+    mesh: grandmaModel, role: 'grandma', x: -3.5, z: 3.5, targetX: -3.5, targetZ: 3.5,
     behavior: 'injured', state: 'idle', speed: 0.005, phase: 0,
-    npcH: 1.45, evacuationDelay: 8, exited: false, deskX: -1.0, deskZ: 3.5, floorY: HOUSE_1F_Y,
+    npcH: 1.45, evacuationDelay: 8, exited: false, deskX: -3.5, deskZ: 3.5, floorY: HOUSE_1F_Y,
     needsHelp: true, helpMessage: {ja: 'おばあちゃんは一人では歩けない！手を貸して一緒に避難しよう！', en: 'Grandma can\'t walk alone! Help her evacuate!'},
   });
 }
@@ -11414,10 +11414,11 @@ function updateBlackboardText(elapsed) {
 // NPC用壁判定: 新しい位置が壁と衝突するかチェック
 function npcCheckWall(nx, nz, npcR, npcY) {
   var R = npcR || 0.3;
+  var floorRef = npcY || 0;
   for (var i = 0; i < GAME.walls.length; i++) {
     var w = GAME.walls[i];
-    // 高さ0.65以下の家具（デスク）はNPCも無視
-    if (w.maxY !== undefined && w.maxY <= 0.65) continue;
+    // 低い家具（デスク等）はNPCも無視 — フロア基準で0.65m以下
+    if (w.maxY !== undefined && w.maxY <= floorRef + 0.65) continue;
     // 開いたドアのコリジョンはスキップ
     if (w._isDoor && w._doorId === 'stairDoorS2' && GAME._stairDoorOpen) continue;
     if (w._isDoor && w._doorId === 'genkanDoor' && GAME._genkanDoorOpen) continue;
@@ -11677,6 +11678,20 @@ function updateNPCTaskQueue(npc, dtSec) {
       // 避難モードに切り替え（通常の避難処理に委譲）
       npc._taskQueue = [];
       npc._tasksDone = true;
+      // ポーズ完全リセット（前のタスクの腕ポーズ残りを防止）
+      mesh.scale.set(1, 1, 1);
+      mesh.position.y = npc.floorY || 0;
+      mesh.rotation.z = 0;
+      var evBody = mesh.userData.body;
+      if (evBody) {
+        evBody.rotation.x = 0; evBody.rotation.z = 0;
+        if (evBody.children && evBody.children.length >= 3) {
+          evBody.children[1].rotation.x = 0; evBody.children[1].rotation.z = 0;
+          evBody.children[2].rotation.x = 0; evBody.children[2].rotation.z = 0;
+        }
+      }
+      if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = 0;
+      if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = 0;
       // 玄関方向にウェイポイント設定
       npc._waypoints = task.waypoints || [{ x: -5, z: -7 }, { x: -3, z: -12 }];
       npc._wpIndex = 0;
@@ -12258,13 +12273,13 @@ function updateSingleNPC(npc, dtSec) {
         // 脚: 深いしゃがみ
         if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = -1.8;
         if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = -1.8;
-        // 妹のマテリアルを自発光させて暗闇でも確実に見えるようにする
+        // 妹のマテリアルを自発光させて暗闇でも確実に見えるようにする（暖色・控えめ）
         if (!npc._emissiveSet) {
           npc._emissiveSet = true;
           mesh.traverse(function(child) {
             if (child.material) {
-              child.material.emissive = new THREE.Color(0x44aaff);
-              child.material.emissiveIntensity = 0.6;
+              child.material.emissive = new THREE.Color(0xffcc88);
+              child.material.emissiveIntensity = 0.25;
             }
           });
         }
@@ -12296,13 +12311,13 @@ function updateSingleNPC(npc, dtSec) {
         }
         if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = -1.8;
         if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = -1.8;
-        // 自発光（暗闇でも見える）
+        // 自発光（暗闇でも見える — 暖色・控えめ）
         if (!npc._emissiveSet) {
           npc._emissiveSet = true;
           mesh.traverse(function(child) {
             if (child.material) {
-              child.material.emissive = new THREE.Color(0x44aaff);
-              child.material.emissiveIntensity = 0.6;
+              child.material.emissive = new THREE.Color(0xffcc88);
+              child.material.emissiveIntensity = 0.25;
             }
           });
         }
@@ -12514,11 +12529,11 @@ function updateSingleNPC(npc, dtSec) {
                 { x: -5, z: -4.5 },
               ];
             } else if (npc.role === 'grandma') {
-              // 和室(-4,4)→Z=2壁の開口部→リビング→玄関
+              // 和室(-3.5,3.5)→Z=2壁の開口部→リビング→玄関
               npc._waypoints = [
-                { x: -1, z: 1.5 },   // Z=2壁の南（開口部X=-2.5〜1.5）
-                { x: -3, z: -2 },    // 玄関方向
-                { x: -5, z: -4.5 },  // 玄関
+                { x: -3.0, z: 1.5 },  // Z=2壁の南（開口部X=-3.5〜-2を通過）
+                { x: -3, z: -2 },     // 玄関方向
+                { x: -5, z: -4.5 },   // 玄関
               ];
             } else if (npc.role === 'father') {
               // 父: タスク完了後の避難ルート
@@ -12724,11 +12739,12 @@ function tryHelpInjuredNPC() {
         if (GAME._sisterHintLight) { GAME._sisterHintLight.intensity = 0; }
         if (GAME._sisterSpotLight) { GAME._sisterSpotLight.intensity = 0; }
         npc._stairPhase = 'goToStairs';
-        // 2Fウェイポイント: 妹の部屋(-3.5,3.0) → X=-1壁の隙間 → X=1壁の隙間 → 階段
+        // 2Fウェイポイント: 妹の部屋(-3.5,3.0) → 机を避けて南へ → X=-1壁の隙間(Z=2-4) → 廊下 → 階段
         npc._waypoints = [
-          { x: -0.5, z: 3.0 },
-          { x: 1.5, z: 3.5 },
-          { x: 5.3, z: 4.0 },
+          { x: -3.5, z: 1.5 },  // まず南へ（机を避ける）
+          { x: -0.5, z: 2.5 },  // X=-1壁のドア隙間を通過
+          { x: 1.5, z: 3.5 },   // 廊下→右壁の隙間
+          { x: 5.3, z: 4.0 },   // 階段到着
         ];
         npc._wpIndex = 0;
         npc.targetX = npc._waypoints[0].x;
@@ -13909,10 +13925,10 @@ function _doTransitionPhase(newPhase) {
       GAME.player.isCrouching = false;
       GAME.player.isHoldingDesk = false;
       if (GAME.stageNum === 3 && GAME._onHouse2F) {
-        // 2F勉強机のコリジョン: minX=-4.55, maxX=-3.45, minZ=-4.3, maxZ=-3.7
+        // 2F勉強机・椅子・ベッドの間に挟まるのを防止 — 部屋中央にテレポート
         var pp = GAME.player;
-        if (pp.x > -4.55 && pp.x < -3.45 && pp.z > -4.3 && pp.z < -3.7) {
-          pp.x = -3.0; pp.z = -3.5; // 机の横の安全な位置
+        if (pp.x > -5.0 && pp.x < -1.5 && pp.z > -4.8 && pp.z < -2.0) {
+          pp.x = -3.5; pp.z = -1.5; // 部屋中央の安全な位置（家具から離れた場所）
         }
       } else if (GAME.stageNum === 3 && !GAME._onHouse2F) {
         // 1Fちゃぶ台のコリジョン付近にいる場合
@@ -14006,9 +14022,8 @@ function _doTransitionPhase(newPhase) {
               { type: 'move', waypoints: [
                 { x: -0.5, z: 0 },
                 { x: -0.5, z: 1.5 },
-                { x: -0.5, z: 2.5 },
-                { x: -1.5, z: 3.5 },
-                { x: -1.0, z: 3.5 }
+                { x: -3.0, z: 2.5 },
+                { x: -3.5, z: 3.5 }
               ], speed: 0.02 },
               { type: 'log', role: 'mother', message: 'おばあちゃん、大丈夫？一緒に避難しましょう' },
               { type: 'delay', duration: 3.0 },
@@ -14020,10 +14035,9 @@ function _doTransitionPhase(newPhase) {
                 addFamilyLog('mother', 'ドアが開いた！おばあちゃんと外へ');
               }},
               { type: 'evacuate', waypoints: [
-                { x: -1.5, z: 3.5 },
-                { x: -0.5, z: 2.5 },
-                { x: -0.5, z: 1.5 },
-                { x: -1.5, z: -2 },
+                { x: -3.0, z: 2.5 },
+                { x: -3.0, z: 1.5 },
+                { x: -3, z: -2 },
                 { x: -5, z: -4.5 },
                 { x: -5, z: -7 },
                 { x: -3, z: -12 }
@@ -14071,7 +14085,7 @@ function _doTransitionPhase(newPhase) {
         GAME._sisterSpotLight = sisterSpot;
         // 祖母の位置に微かなライト（暗い中で見つけやすく）
         var grandmaLight = new THREE.PointLight(0xffaa66, 0.8, 6);
-        grandmaLight.position.set(-1.0, HOUSE_1F_Y + 1.0, 3.5);
+        grandmaLight.position.set(-3.5, HOUSE_1F_Y + 1.0, 3.5);
         GAME.scene.add(grandmaLight);
         GAME._grandmaHintLight = grandmaLight;
       } else if (GAME.stageNum === 2) {
@@ -14580,6 +14594,63 @@ var QUIZ_DATA = {
       ],
       answer: 3,
       explain: {ja: '地震の3原則「落ちてこない・倒れてこない・移動してこない」場所を選びましょう。柱の近くは構造的に強く、丈夫なデスクの下なら落下物からも身を守れます。', en: 'Follow the 3 earthquake principles: nothing falls on you, nothing topples on you, nothing slides into you. Areas near pillars are structurally strong, and under a sturdy desk protects from falling objects.'}
+    }
+  ],
+  3: [
+    {
+      q: {ja: '自宅で地震が発生した時、最初にすべき行動は？', en: 'What should you do first when an earthquake strikes at home?'},
+      choices: [
+        {ja: 'すぐに外に飛び出す', en: 'Run outside immediately'},
+        {ja: '低い姿勢を取り、丈夫な家具の下で頭を守る', en: 'Get low and protect your head under sturdy furniture'},
+        {ja: 'ガスの元栓を閉める', en: 'Turn off the gas valve'},
+        {ja: '家族に電話をかける', en: 'Call your family'}
+      ],
+      answer: 1,
+      explain: {ja: '揺れている最中に動くのは非常に危険です。まず低い姿勢を取り、テーブルや机の下で頭を守りましょう。ガスの元栓は揺れが収まってから閉めます。慌てて外に飛び出すと落下物に当たる危険があります。', en: 'Moving during shaking is very dangerous. First get low and protect your head under a table or desk. Turn off gas after shaking stops. Running outside risks being hit by falling objects.'}
+    },
+    {
+      q: {ja: '揺れが収まった後、家庭でまず確認すべきことは？', en: 'What should you check first at home after the shaking stops?'},
+      choices: [
+        {ja: 'テレビのニュースを見る', en: 'Watch the TV news'},
+        {ja: '家族の安全を確認し、火の元を消す', en: 'Check family safety and turn off fire sources'},
+        {ja: 'SNSに投稿する', en: 'Post on social media'},
+        {ja: '壊れたものを片付ける', en: 'Clean up broken items'}
+      ],
+      answer: 1,
+      explain: {ja: '揺れが収まったら、まず家族の安否を確認し、ガスコンロやストーブなどの火の元を消しましょう。2次災害（火災・ガス漏れ）を防ぐことが最優先です。片付けは避難の安全を確保してからです。', en: 'After shaking stops, first check if family members are safe and turn off gas stoves and heaters. Preventing secondary disasters (fires, gas leaks) is the top priority.'}
+    },
+    {
+      q: {ja: '自宅の2階にいる家族が動けない時、正しい対応は？', en: 'What is the correct response when a family member upstairs cannot move?'},
+      choices: [
+        {ja: 'そのまま放置して自分だけ避難する', en: 'Leave them and evacuate alone'},
+        {ja: '声をかけて安心させ、安全な経路で一緒に避難する', en: 'Reassure them and evacuate together via a safe route'},
+        {ja: '窓から飛び降りさせる', en: 'Have them jump from the window'},
+        {ja: '余震が来るまで待つ', en: 'Wait until an aftershock comes'}
+      ],
+      answer: 1,
+      explain: {ja: 'パニック状態の家族には声をかけて落ち着かせましょう。ケガがないか確認し、階段を使って一緒に避難します。窓からの飛び降りは非常に危険です。1人で避難できない高齢者や子供には特に声かけが大切です。', en: 'Calm panicking family members by speaking to them. Check for injuries and evacuate together using stairs. Jumping from windows is very dangerous. Voice reassurance is especially important for elderly or children who cannot evacuate alone.'}
+    },
+    {
+      q: {ja: '自宅から避難する際、玄関で気をつけるべきことは？', en: 'What should you be careful about at the entrance when evacuating from home?'},
+      choices: [
+        {ja: '鍵をかけてから避難する', en: 'Lock the door before evacuating'},
+        {ja: '靴を履き、頭を守れるもので頭を保護する', en: 'Wear shoes and protect your head with something'},
+        {ja: '傘を持っていく', en: 'Bring an umbrella'},
+        {ja: '玄関のドアは閉めたままにする', en: 'Keep the entrance door closed'}
+      ],
+      answer: 1,
+      explain: {ja: '避難時は割れたガラスや落下物から足を守るため必ず靴を履きましょう。また、余震で瓦やブロック塀が落ちてくる可能性があるので、防災頭巾やカバン等で頭を保護しながら避難します。', en: 'Always wear shoes to protect from broken glass and debris. Protect your head from aftershock-dislodged roof tiles or falling walls using a disaster hood or bag.'}
+    },
+    {
+      q: {ja: '地震後、自宅から避難する時に家族全員ですべきことは？', en: 'What should the whole family do when evacuating from home after an earthquake?'},
+      choices: [
+        {ja: 'バラバラに最寄りの避難所へ行く', en: 'Go to the nearest shelter separately'},
+        {ja: '全員で集合し、一緒に指定避難場所へ向かう', en: 'Gather everyone and head to the designated evacuation site together'},
+        {ja: '自宅に残って余震に備える', en: 'Stay home and prepare for aftershocks'},
+        {ja: '車で遠くへ逃げる', en: 'Escape far away by car'}
+      ],
+      answer: 1,
+      explain: {ja: '家族全員の安全を確認した上で、一緒に指定の避難場所へ向かいましょう。事前に家族で避難場所と連絡方法を決めておくことが大切です。車での避難は渋滞や救急車の妨げになるため、徒歩が原則です。', en: 'After confirming everyone\'s safety, head to the designated evacuation site together. It\'s important to decide on evacuation locations and communication methods with your family in advance. Evacuate on foot, as cars cause traffic jams and block emergency vehicles.'}
     }
   ]
 };
