@@ -15959,16 +15959,18 @@ document.addEventListener('keydown', function(e) {
   if (e.code === 'KeyC') {
     if (!GAME._cPrev) {
       if (GAME.player.isCrouching) {
-        // 立ち上がり: 頭上にデスクがあるか判定
+        // 立ち上がり: 地震中のみ頭上デスク判定（避難中は即立ち上がれる）
         var canStand = true;
-        var pp = GAME.player;
-        var sR = 0.25;
-        var standFootY = (GAME.stageNum === 3 && GAME._onHouse2F) ? 3.0 : 0;
-        for (var wi = 0; wi < GAME.walls.length; wi++) {
-          var ww = GAME.walls[wi];
-          if (ww.maxY !== undefined && ww.maxY <= standFootY + 0.65) {
-            if (pp.x + sR > ww.minX && pp.x - sR < ww.maxX && pp.z + sR > ww.minZ && pp.z - sR < ww.maxZ) {
-              canStand = false; break;
+        if (GAME.phase === 'earthquake' || GAME.phase === 'shaking') {
+          var pp = GAME.player;
+          var sR = 0.25;
+          var standFootY = (GAME.stageNum === 3 && GAME._onHouse2F) ? 3.0 : 0;
+          for (var wi = 0; wi < GAME.walls.length; wi++) {
+            var ww = GAME.walls[wi];
+            if (ww.maxY !== undefined && ww.maxY <= standFootY + 0.65) {
+              if (pp.x + sR > ww.minX && pp.x - sR < ww.maxX && pp.z + sR > ww.minZ && pp.z - sR < ww.maxZ) {
+                canStand = false; break;
+              }
             }
           }
         }
@@ -16005,12 +16007,12 @@ document.addEventListener('keydown', function(e) {
 });
 
 document.addEventListener('keyup', function(e) {
-  if (!GAME.running) return;
-  GAME.keys[e.code] = false;
-  // キー解除はポーズ中でも処理する（早期returnの前に配置 — KANKERI教訓）
+  // トグルフラグは常にリセット（GAME.running関係なく — フリーズ復帰後にキーが効かなくなるのを防止）
   if (e.code === 'KeyC') GAME._cPrev = false;
   if (e.code === 'KeyG') GAME._gPrev = false;
   if (e.code === 'KeyE') GAME.player.isHoldingDesk = false;
+  if (!GAME.running) return;
+  GAME.keys[e.code] = false;
 });
 
 // --- マウス（ポインターロック）---
