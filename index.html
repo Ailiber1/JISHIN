@@ -9342,7 +9342,8 @@ function buildHouseFloor() {
   var tv = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.6, 0.05), tvMat);
   tv.position.set(0, Y1 + 0.8, 1.5); tv.userData.isHouseFurniture = true; scene.add(tv);
   GAME._tvMeshS3 = tv;
-  // TVスタンドは低い家具 — コリジョンなし（和室への通路を確保）
+  // TVスタンド+テレビ — コリジョンあり（NPCの貫通防止、高さ1.1mでNPCの低家具スキップ閾値0.65mを超える）
+  GAME.walls.push({ minX: -0.65, maxX: 0.65, minZ: 1.25, maxZ: 1.75, minY: Y1, maxY: Y1 + 1.1 });
 
   var bookshelf = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.8, 0.8), furnitureMat);
   bookshelf.position.set(-1.8, Y1 + 0.9, 0.5); bookshelf.receiveShadow = true; bookshelf.userData.isHouseFurniture = true; scene.add(bookshelf);
@@ -11692,6 +11693,13 @@ function updateNPCTaskQueue(npc, dtSec) {
       }
       return true;
 
+    case 'teleport':
+      // NPCを指定位置に即座に移動（壁閉じ込め回避用）
+      npc.x = task.x; npc.z = task.z;
+      mesh.position.x = task.x; mesh.position.z = task.z;
+      npc._taskQueue.shift();
+      return true;
+
     case 'log':
       // ログ出力（即座に次へ）
       if (task.role && task.message) addFamilyLog(task.role, task.message);
@@ -11702,6 +11710,11 @@ function updateNPCTaskQueue(npc, dtSec) {
       // 避難モードに切り替え（通常の避難処理に委譲）
       npc._taskQueue = [];
       npc._tasksDone = true;
+      // Z=2仕切り壁の北側に居る場合は開口部南側にテレポート（壁閉じ込め防止）
+      if (npc.z > 2) {
+        npc.x = 0; npc.z = 1.5;
+        mesh.position.x = 0; mesh.position.z = 1.5;
+      }
       // ポーズ完全リセット（前のタスクの腕ポーズ残りを防止）
       mesh.scale.set(1, 1, 1);
       mesh.position.y = npc.floorY || 0;
@@ -11712,8 +11725,8 @@ function updateNPCTaskQueue(npc, dtSec) {
       if (mesh.userData.rightArm) { mesh.userData.rightArm.rotation.x = 0; mesh.userData.rightArm.rotation.z = 0; }
       if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = 0;
       if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = 0;
-      // 玄関方向にウェイポイント設定
-      npc._waypoints = task.waypoints || [{ x: -5, z: -7 }, { x: -3, z: -12 }];
+      // 玄関方向にウェイポイント設定（テレポート済みなので直行ルート）
+      npc._waypoints = [{ x: -3, z: -2 }, { x: -5, z: -4.5 }, { x: -5, z: -7 }, { x: -3, z: -12 }];
       npc._wpIndex = 0;
       npc.targetX = npc._waypoints[0].x;
       npc.targetZ = npc._waypoints[0].z;
@@ -12606,17 +12619,24 @@ function updateSingleNPC(npc, dtSec) {
               break; // タスクキューに委譲
             }
             if (npc.role === 'mother') {
-              // 母: ちゃぶ台エリア→Z=2壁の開口部→リビング→玄関
+              // 母: キッチンエリア(X>1.5,Z>2)に居る場合は開口部にテレポート
+              if (npc.x > 1.5 && npc.z > 2) {
+                npc.x = 0; npc.z = 1.5;
+                npc.mesh.position.x = 0; npc.mesh.position.z = 1.5;
+              }
+              // 母: 開口部南→玄関（テレポート済みなら直行）
               npc._waypoints = [
-                { x: -1, z: 1.5 },
-                { x: -3, z: -2 },
-                { x: -5, z: -4.5 },
+                { x: 0, z: 0 },      // リビング中央
+                { x: -5, z: -4.5 },  // 玄関
               ];
             } else if (npc.role === 'grandma') {
-              // 和室(-3.5,3.5)→Z=2壁の開口部→リビング→玄関
+              // おばあちゃん: 和室(X=-3.5)は左壁境界ギリギリなので開口部内にテレポート
+              if (npc.z > 2) {
+                npc.x = -1.0; npc.z = 1.5;
+                npc.mesh.position.x = -1.0; npc.mesh.position.z = 1.5;
+              }
               npc._waypoints = [
-                { x: -3.0, z: 1.5 },  // Z=2壁の南（開口部X=-3.5〜-2を通過）
-                { x: -3, z: -2 },     // 玄関方向
+                { x: -3, z: -2 },     // リビング経由
                 { x: -5, z: -4.5 },   // 玄関
               ];
             } else if (npc.role === 'father') {
@@ -12692,11 +12712,14 @@ function updateSingleNPC(npc, dtSec) {
           npc._stairPhase = null;
           npc.floorY = HOUSE_1F_Y;
           mesh.position.y = HOUSE_1F_Y;
-          // 1Fウェイポイントを設定（階段から玄関へ）
+          // 階段(X=5.3)はキッチンエリア内でZ=2右壁に閉じ込められるため、
+          // 開口部南側(X=0,Z=1.5)にテレポートして確実に玄関へ向かわせる
+          npc.x = 0; npc.z = 1.5;
+          mesh.position.x = 0; mesh.position.z = 1.5;
+          // 1Fウェイポイント: 開口部南→玄関
           npc._waypoints = [
-            { x: 2, z: 0 },
-            { x: -2, z: -3 },
-            { x: -5, z: -5 },
+            { x: -3, z: -2 },     // リビング経由
+            { x: -5, z: -4.5 },   // 玄関
           ];
           npc._wpIndex = 0;
           npc.targetX = npc._waypoints[0].x;
@@ -12879,12 +12902,12 @@ function tryHelpInjuredNPC() {
           }
         });
         npc._emissiveSet = false;
-        // 和室→Z=2壁の開口部→玄関方向のウェイポイント
+        // 和室→開口部にテレポート→玄関
+        npc.x = -1.0; npc.z = 1.5;
+        npc.mesh.position.x = -1.0; npc.mesh.position.z = 1.5;
         npc._waypoints = [
-          { x: -3.0, z: 2.5 },
-          { x: -3.0, z: 1.5 },
-          { x: -3, z: -2 },
-          { x: -5, z: -4.5 },
+          { x: -3, z: -2 },      // リビング経由
+          { x: -5, z: -4.5 },    // 玄関
         ];
         npc._wpIndex = 0;
         npc.targetX = npc._waypoints[0].x;
@@ -14143,10 +14166,10 @@ function _doTransitionPhase(newPhase) {
             fnpc._taskQueue = [
               { type: 'delay', duration: 2.0 },
               { type: 'log', role: 'mother', message: 'おばあちゃんの様子を見に行く' },
+              { type: 'teleport', x: 0, z: 1.5 },
               { type: 'move', waypoints: [
-                { x: -0.5, z: 0 },
-                { x: -0.5, z: 1.5 },
-                { x: -3.0, z: 2.5 },
+                { x: -1.0, z: 1.5 },
+                { x: -2.0, z: 2.5 },
                 { x: -3.5, z: 3.5 }
               ], speed: 0.02 },
               { type: 'log', role: 'mother', message: 'おばあちゃん、大丈夫？一緒に避難しましょう' },
