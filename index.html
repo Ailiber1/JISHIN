@@ -11499,16 +11499,15 @@ function autoPerformAction(actionName) {
     var obj = GAME.interactables[i];
     if (obj.action === actionName && !obj.used) {
       obj.used = true;
+      // 父親の自動行動 — スコアには反映しない（視覚効果のみ）
       switch (actionName) {
         case 'turnOffGas':
-          GAME.scoring.turnedOffGas = true;
           if (GAME._gasFlameS3) GAME._gasFlameS3.visible = false;
           if (GAME._gasLightS3) GAME._gasLightS3.visible = false;
           if (obj.mesh) obj.mesh.material = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.6, metalness: 0.3, emissive: 0x000000, emissiveIntensity: 0 });
           addFamilyLog('father', 'ガスの元栓を閉めた');
           break;
         case 'pickUpFlashlight':
-          GAME.scoring.usedFlashlight = true;
           if (obj.mesh) obj.mesh.visible = false;
           addFamilyLog('father', '懐中電灯を取った');
           // 父に懐中電灯ライトを追加
@@ -11521,13 +11520,11 @@ function autoPerformAction(actionName) {
           }
           break;
         case 'turnOffBreaker':
-          GAME.scoring.turnedOffBreaker = true;
           if (obj.mesh) obj.mesh.material = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.4, metalness: 0.5, emissive: 0x003300, emissiveIntensity: 0.3 });
           if (GAME._breakerLight) GAME._breakerLight.visible = false;
           addFamilyLog('father', 'ブレーカーを落とした（通電火災防止）');
           break;
         case 'openGenkanDoor':
-          GAME.scoring.openedDoor = true;
           GAME._genkanDoorOpen = true;
           SoundManager.playSE('door');
           if (GAME._genkanDoorCollision) {
@@ -12191,7 +12188,7 @@ function updateSingleNPC(npc, dtSec) {
           mesh.traverse(function(child) {
             if (child.material) {
               child.material.emissive = new THREE.Color(0xffaa66);
-              child.material.emissiveIntensity = 0.6;
+              child.material.emissiveIntensity = 0.3;
             }
           });
         }
@@ -12408,11 +12405,15 @@ function updateSingleNPC(npc, dtSec) {
           mesh.traverse(function(child) {
             if (child.material) {
               child.material.emissive = new THREE.Color(0xffaa66);
-              child.material.emissiveIntensity = 0.6;
+              child.material.emissiveIntensity = 0.3;
             }
           });
         }
         break;
+      }
+      // 祖母（救助済み）の独立歩行処理
+      if (npc.role === 'grandma' && npc.helped && npc.state === 'evacuating') {
+        // 通常の避難処理に委譲（state='evacuating'のまま通過させる）
       }
 
       // 避難開始までの遅延チェック（列ごとにずらす）
@@ -12846,6 +12847,7 @@ function tryHelpInjuredNPC() {
         npc.speed = 0.012; // 少し遅め（高齢者）
         // ヒントライト消灯
         if (GAME._grandmaHintLight) { GAME._grandmaHintLight.intensity = 0; }
+        if (GAME._grandmaSpotLight) { GAME._grandmaSpotLight.intensity = 0; }
         // ポーズリセット
         var gBody = npc.mesh.userData.body;
         if (gBody) {
@@ -14193,8 +14195,13 @@ function _doTransitionPhase(newPhase) {
         GAME.scene.add(sisterSpot);
         GAME._sisterSpotLight = sisterSpot;
         // 祖母の位置に微かなライト（暗い中で見つけやすく）
-        var grandmaLight = new THREE.PointLight(0xffaa66, 0.8, 6);
-        grandmaLight.position.set(-3.5, HOUSE_1F_Y + 1.0, 3.5);
+        var grandmaLight = new THREE.PointLight(0xffaa66, 1.2, 8);
+        grandmaLight.position.set(-3.5, HOUSE_1F_Y + 1.5, 3.5);
+        // 祖母の足元スポットライト（暗闘でも確実に見える）
+        var grandmaSpot = new THREE.PointLight(0xffffff, 0.5, 4);
+        grandmaSpot.position.set(-3.5, HOUSE_1F_Y + 0.5, 3.5);
+        GAME.scene.add(grandmaSpot);
+        GAME._grandmaSpotLight = grandmaSpot;
         GAME.scene.add(grandmaLight);
         GAME._grandmaHintLight = grandmaLight;
         // 妹の_coweringフラグを確実にセット（aftershakeから引き継がれなかった場合の保険）
@@ -14929,12 +14936,9 @@ function calculateScore() {
     if (s.noElevator) score += 6; // エレベーターに乗らなかったボーナス
     score += (GAME._novelChoiceScore || 0);
   } else if (stg === 3) {
-    // Stage3（自宅）: ガス元栓+ブレーカー+靴+懐中電灯+子ども救助+祖母支援+ノベル
-    if (s.turnedOffGas) score += 6;      // ガスの元栓を閉めた
-    if (s.turnedOffBreaker) score += 6;  // ブレーカーを落とした
+    // Stage3（自宅）: プレイヤー行動のみ — 父親の自動行動はスコアに含めない
     if (s.putOnShoes) score += 6;        // 靴を履いた
-    if (s.usedFlashlight) score += 5;    // 懐中電灯を使用した
-    if (s.rescuedChild) score += 5;      // 子どもに声をかけた
+    if (s.rescuedChild) score += 5;      // 妹に声をかけた
     if (s.helpedGrandma) score += 5;     // 祖母を手助けした
     score += (GAME._novelChoiceScore || 0);
   } else {
@@ -15044,10 +15048,8 @@ function showResult() {
         var novelPts2 = GAME._novelChoiceScore || 0;
         actions.push({ done: novelPts2 > 0, text: en ? 'Made correct choices in novel scenes' : 'ノベル選択肢で正しい判断をした', pts: novelPts2 > 0 ? '+' + novelPts2 : '0' });
       } else if (stg === 3) {
-        actions.push({ done: s.turnedOffGas, text: en ? '[Dad] Turned off the gas valve' : '【父】ガスの元栓を閉めた', pts: '+6' });
-        actions.push({ done: s.turnedOffBreaker, text: en ? '[Dad] Turned off the breaker' : '【父】ブレーカーを落とした（通電火災防止）', pts: '+6' });
+        // Stage 3: プレイヤー行動のみ（父親の自動行動は含めない）
         actions.push({ done: s.putOnShoes, text: en ? 'Put on shoes (glass protection)' : '靴を履いた（ガラス片対策）', pts: '+6' });
-        actions.push({ done: s.usedFlashlight, text: en ? '[Dad] Found and used flashlight' : '【父】懐中電灯を取った', pts: '+5' });
         actions.push({ done: s.rescuedChild, text: en ? 'Called out to sister upstairs' : '2階の妹に声をかけた', pts: '+5' });
         actions.push({ done: s.helpedGrandma, text: en ? 'Helped grandma evacuate' : '祖母の避難を手助けした', pts: '+5' });
         var novelPts3 = GAME._novelChoiceScore || 0;
@@ -15145,7 +15147,7 @@ function showResult() {
         categories = [
           { label: en ? 'Initial Response' : '初動対応', score: (s.crouchedIn3s ? 10 : 0) + (s.movedToSafe ? 10 : 0), max: 20 },
           { label: en ? 'During Shaking' : '揺れ中の判断', score: (s.awayFromHazard ? 5 : 0) + (s.didNotRunOutside ? 5 : 0) + (s.noHitByFalling ? 5 : 0) + (GAME._holdOnBonus || 0), max: 18 },
-          { label: en ? 'Home Safety' : '自宅の安全確保', score: (s.turnedOffGas ? 6 : 0) + (s.turnedOffBreaker ? 6 : 0) + (s.putOnShoes ? 6 : 0) + (s.usedFlashlight ? 5 : 0), max: 23 },
+          { label: en ? 'Home Safety' : '自宅の安全確保', score: (s.putOnShoes ? 6 : 0), max: 6 },
           { label: en ? 'Family Rescue' : '家族の救助', score: (s.rescuedChild ? 5 : 0) + (s.helpedGrandma ? 5 : 0) + (s.reachedEvacPoint ? 10 : 0) + (s.withinTimeLimit ? 5 : 0), max: 25 },
           { label: en ? 'Knowledge' : '知識・判断力', score: Math.max(0, GAME._novelChoiceScore || 0), max: 20 }
         ];
