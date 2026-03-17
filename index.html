@@ -9070,13 +9070,11 @@ function buildStage3Exterior() {
 
   var neighborHouses = [
     { x: -15, z: -15, w: 8, d: 6, h: 5, roofAngle: 0.35 },
-    { x: 15, z: -18, w: 7, d: 7, h: 4.5, roofAngle: 0.3 },
+    { x: 22, z: -10, w: 6, d: 5, h: 4.5, roofAngle: 0.3 },  // 公園の北東（公園と重ならない）
     { x: -14, z: -35, w: 6, d: 5, h: 4, roofAngle: 0.4 },
-    { x: 14, z: -38, w: 9, d: 6, h: 5.5, roofAngle: 0.3 },
+    { x: 22, z: -32, w: 7, d: 6, h: 5, roofAngle: 0.3 },    // 公園の南東
     { x: -12, z: -50, w: 7, d: 5, h: 4, roofAngle: 0.35 },
-    { x: 12, z: -52, w: 8, d: 6, h: 5, roofAngle: 0.3 },
-    { x: -16, z: -58, w: 6, d: 5, h: 4.5, roofAngle: 0.4 },
-    { x: 16, z: -60, w: 7, d: 5, h: 4, roofAngle: 0.35 },
+    { x: -14, z: -60, w: 8, d: 6, h: 5, roofAngle: 0.3 },
   ];
 
   for (var ni = 0; ni < neighborHouses.length; ni++) {
@@ -9116,12 +9114,10 @@ function buildStage3Exterior() {
     { x: 6, z: -32, h: 3, r: 1.5 },
     { x: -6, z: -42, h: 4, r: 2 },
     { x: 7, z: -48, h: 3.5, r: 1.8 },
-    // 公園の木（X=12, Z=-20付近）
-    { x: 5, z: -17, h: 5, r: 2.5 },
-    { x: 19, z: -15, h: 4.5, r: 2.2 },
-    { x: 6, z: -24, h: 4, r: 2 },
-    { x: 18, z: -23, h: 3.5, r: 1.8 },
-    { x: 12, z: -27, h: 5.5, r: 2.8 },
+    // 公園の木（X=12, Z=-20付近 — 入口を塞がないように配置）
+    { x: 18, z: -14, h: 4, r: 1.8 },
+    { x: 7, z: -26, h: 3.5, r: 1.5 },
+    { x: 17, z: -25, h: 4, r: 1.8 },
   ];
 
   for (var ti = 0; ti < treePositions.length; ti++) {
@@ -10053,10 +10049,20 @@ function buildHouseFloor() {
   var evacBoard = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.5, 0.05), new THREE.MeshStandardMaterial({ color: 0x00aa44, emissive: 0x00aa44, emissiveIntensity: 0.4 }));
   evacBoard.position.set(EVAC_POINT_S3.x, Y1 + 2.3, EVAC_POINT_S3.z - EVAC_POINT_S3.radius - 0.5); scene.add(evacBoard);
 
-  var glowGeo = new THREE.CircleGeometry(EVAC_POINT_S3.radius + 0.5, 32);
-  var glowMat2 = new THREE.MeshBasicMaterial({ color: 0xff6b00, transparent: true, opacity: 0.15, side: THREE.DoubleSide, depthWrite: false });
+  var glowGeo = new THREE.CircleGeometry(EVAC_POINT_S3.radius + 1, 32);
+  var glowMat2 = new THREE.MeshBasicMaterial({ color: 0x00ff44, transparent: true, opacity: 0.25, side: THREE.DoubleSide, depthWrite: false });
   var glow = new THREE.Mesh(glowGeo, glowMat2);
   glow.rotation.x = -Math.PI / 2; glow.position.set(EVAC_POINT_S3.x, Y1 + 0.02, EVAC_POINT_S3.z); scene.add(glow);
+  // 公園をさらに目立たせる: 高いビーコンライト
+  var beaconPole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 6, 8), metalMat);
+  beaconPole.position.set(EVAC_POINT_S3.x, Y1 + 3, EVAC_POINT_S3.z); scene.add(beaconPole);
+  var beaconLight = new THREE.PointLight(0x00ff44, 2.5, 30);
+  beaconLight.position.set(EVAC_POINT_S3.x, Y1 + 6, EVAC_POINT_S3.z); scene.add(beaconLight);
+  // 公園入口の矢印サイン（道路側）
+  var arrowSign = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.8, 0.05), new THREE.MeshStandardMaterial({ color: 0x00cc44, emissive: 0x00ff44, emissiveIntensity: 0.8 }));
+  arrowSign.position.set(3, Y1 + 2.0, -20); scene.add(arrowSign);
+  var arrowPole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 2, 6), metalMat);
+  arrowPole.position.set(3, Y1 + 1.0, -20); scene.add(arrowPole);
 
   // 照明
   GAME._houseLights = [];
