@@ -15820,8 +15820,6 @@ function updateCamera() {
   if (GAME._currentLookY === undefined) GAME._currentLookY = targetLookY;
   GAME._currentLookY += (targetLookY - GAME._currentLookY) * 0.25;
   var lookY = GAME._currentLookY;
-  var playerPos = new THREE.Vector3(p.x, lookY, p.z);
-
   // しゃがみ時はカメラ距離を短くして室内壁衝突を軽減（TPS維持）
   var effectiveDist = p.isCrouching ? Math.min(dist, 2.5) : dist;
 
@@ -15829,86 +15827,46 @@ function updateCamera() {
   var idealX = p.x - Math.sin(p.yaw) * effectiveDist * Math.cos(pitch);
   var idealY = lookY + effectiveDist * Math.sin(pitch);
   var idealZ = p.z - Math.cos(p.yaw) * effectiveDist * Math.cos(pitch);
-  var idealPos = new THREE.Vector3(idealX, idealY, idealZ);
 
-  // Raycaster: プレイヤー→カメラ方向に壁があれば手前に止める
-  var direction = idealPos.clone().sub(playerPos);
-  var maxDist = direction.length();
-  direction.normalize();
-
+  // Raycaster: プレイヤー→カメラ方向に壁があれば手前に止める（オブジェクト再利用で軽量化）
+  if (!GAME._camPlayerPos) GAME._camPlayerPos = new THREE.Vector3();
+  if (!GAME._camDir) GAME._camDir = new THREE.Vector3();
   if (!GAME._cameraRaycaster) GAME._cameraRaycaster = new THREE.Raycaster();
-  GAME._cameraRaycaster.set(playerPos, direction);
+
+  GAME._camPlayerPos.set(p.x, lookY, p.z);
+  GAME._camDir.set(idealX - p.x, idealY - lookY, idealZ - p.z);
+  var maxDist = GAME._camDir.length();
+  GAME._camDir.normalize();
+
+  GAME._cameraRaycaster.set(GAME._camPlayerPos, GAME._camDir);
   GAME._cameraRaycaster.far = maxDist;
 
   var hits = GAME._cameraRaycaster.intersectObjects(GAME.cameraMeshes);
   var finalDist = maxDist;
   if (hits.length > 0) {
-    finalDist = Math.max(0.3, hits[0].distance - 0.2);
+    finalDist = Math.max(0.5, hits[0].distance - 0.2);
   }
 
-  // === 壁貫通防止: 壁に近すぎる場合、カメラを上に持ち上げて見下ろし視点にする ===
-  var camX, camY, camZ;
-  var camLookY = lookY;
+  // 壁が近い場合: カメラを少し上に持ち上げて壁越しを回避
+  var camX = p.x + GAME._camDir.x * finalDist;
+  var camY = lookY + GAME._camDir.y * finalDist;
+  var camZ = p.z + GAME._camDir.z * finalDist;
 
-  if (finalDist < 1.2) {
-    // 壁が近い → プレイヤー真上から見下ろし（スムーズ遷移）
-    // finalDistが小さいほど真上に近づく（0.3→ほぼ真上、1.2→通常TPS）
-    var liftRatio = 1.0 - ((finalDist - 0.3) / 0.9); // 0.0(通常)〜1.0(真上)
-    liftRatio = Math.max(0, Math.min(1, liftRatio));
-
-    // 通常カメラ位置（壁手前）
-    var normalX = p.x + direction.x * finalDist;
-    var normalY = lookY + direction.y * finalDist;
-    var normalZ = p.z + direction.z * finalDist;
-
-    // 真上カメラ位置（プレイヤーの真上、少し後方オフセット）
-    var overheadY = lookY + effectiveDist * 1.2;
-    var overheadX = p.x - Math.sin(p.yaw) * 0.5;
-    var overheadZ = p.z - Math.cos(p.yaw) * 0.5;
-
-    // 真上位置も壁にぶつからないかチェック
-    var upDir = new THREE.Vector3(overheadX - p.x, overheadY - lookY, overheadZ - p.z);
-    var upDist = upDir.length();
-    upDir.normalize();
-    GAME._cameraRaycaster.set(playerPos, upDir);
-    GAME._cameraRaycaster.far = upDist;
-    var upHits = GAME._cameraRaycaster.intersectObjects(GAME.cameraMeshes);
-    if (upHits.length > 0 && upHits[0].distance < upDist) {
-      overheadY = lookY + Math.max(0.5, upHits[0].distance - 0.2);
-    }
-
-    // 通常位置と真上位置を補間
-    camX = normalX + (overheadX - normalX) * liftRatio;
-    camY = normalY + (overheadY - normalY) * liftRatio;
-    camZ = normalZ + (overheadZ - normalZ) * liftRatio;
-  } else {
-    // 壁に当たらない → 通常TPS
-    camX = p.x + direction.x * finalDist;
-    camY = lookY + direction.y * finalDist;
-    camZ = p.z + direction.z * finalDist;
+  if (finalDist < 1.5) {
+    // 壁に近い → カメラを上にオフセット（壁の上から覗く）
+    var liftAmount = (1.5 - finalDist) * 1.5; // 最大で約1.5m持ち上げ
+    camY += liftAmount;
   }
-
-  // スムーズカメラ移動（急なジャンプを防止）
-  if (GAME._smoothCamX === undefined) {
-    GAME._smoothCamX = camX; GAME._smoothCamY = camY; GAME._smoothCamZ = camZ;
-  }
-  var smoothSpeed = 0.2;
-  GAME._smoothCamX += (camX - GAME._smoothCamX) * smoothSpeed;
-  GAME._smoothCamY += (camY - GAME._smoothCamY) * smoothSpeed;
-  GAME._smoothCamZ += (camZ - GAME._smoothCamZ) * smoothSpeed;
 
   // 地震揺れオフセット
-  var finalCamX = GAME._smoothCamX;
-  var finalCamY = GAME._smoothCamY;
-  var finalCamZ = GAME._smoothCamZ;
   if (GAME.quake.shaking && GAME._quakeOffsetX !== undefined) {
-    finalCamX += GAME._quakeOffsetX;
-    finalCamY += GAME._quakeOffsetY;
-    finalCamZ += GAME._quakeOffsetZ;
+    camX += GAME._quakeOffsetX;
+    camY += GAME._quakeOffsetY;
+    camZ += GAME._quakeOffsetZ;
   }
 
-  GAME.camera.position.set(finalCamX, finalCamY, finalCamZ);
-  GAME.camera.lookAt(p.x, camLookY, p.z);
+  GAME.camera.position.set(camX, camY, camZ);
+  GAME.camera.lookAt(p.x, lookY, p.z);
 }
 
 function cleanupGame() {
