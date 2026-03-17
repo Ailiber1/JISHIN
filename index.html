@@ -8901,7 +8901,7 @@ function buildBuildingPlaza() {
 // ============================================================
 // Stage 3: 木造2階建て一軒家 — EVAC_POINT / 定数
 // ============================================================
-var EVAC_POINT_S3 = { x: 0, z: -60, radius: 5 };
+var EVAC_POINT_S3 = { x: 0, z: -25, radius: 4 };
 var HOUSE_1F_Y = 0;
 var HOUSE_2F_Y = 3.0;
 var HOUSE_H = 2.8;
@@ -9989,11 +9989,11 @@ function buildHouseFloor() {
   var sideGrassR = new THREE.Mesh(new THREE.PlaneGeometry(8, 30), sideGrassMat);
   sideGrassR.rotation.x = -Math.PI / 2; sideGrassR.position.set(6, Y1 - 0.05, -26); scene.add(sideGrassR);
   var farGrass = new THREE.Mesh(new THREE.PlaneGeometry(30, 20), sideGrassMat);
-  farGrass.rotation.x = -Math.PI / 2; farGrass.position.set(0, Y1 - 0.05, -51); scene.add(farGrass);
+  farGrass.rotation.x = -Math.PI / 2; farGrass.position.set(0, Y1 - 0.05, -35); scene.add(farGrass);
 
   // 避難公園
   var parkFloor = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), sideGrassMat);
-  parkFloor.rotation.x = -Math.PI / 2; parkFloor.position.set(0, Y1 - 0.05, -60);
+  parkFloor.rotation.x = -Math.PI / 2; parkFloor.position.set(0, Y1 - 0.05, -30);
   parkFloor.receiveShadow = false; scene.add(parkFloor);
 
   var evacMat3 = new THREE.MeshStandardMaterial({ color: 0xff6b00, emissive: 0xff6b00, emissiveIntensity: 0.6, transparent: true, opacity: 0.7 });
@@ -10038,6 +10038,8 @@ function buildHouseFloor() {
   GAME.interactables.push({ x: -5.3, z: -4.0, radius: 0.8, action: 'pickUpFlashlight', label: {ja: '\uD83D\uDD26 懐中電灯を取る', en: '\uD83D\uDD26 Pick Up Flashlight'}, phases: ['aftershake', 'evacuation'], used: false, mesh: flashlight, autoHandled: true });
   GAME.interactables.push({ x: -5.3, z: -4.5, radius: 0.8, action: 'putOnShoes', label: {ja: '\uD83D\uDC5F 靴を履く（ガラス対策）', en: '\uD83D\uDC5F Put On Shoes (Glass Protection)'}, phases: ['aftershake', 'evacuation'], used: false, mesh: shoesMesh });
   GAME.interactables.push({ x: -5, z: -4.9, radius: 1.0, action: 'openGenkanDoor', label: {ja: '\uD83D\uDEAA 玄関ドアを開ける', en: '\uD83D\uDEAA Open Front Door'}, phases: ['aftershake', 'evacuation'], used: false, mesh: genkanDoor, autoHandled: true });
+  // 玄関の外に出るインタラクション（ドアが開いてから有効）
+  GAME.interactables.push({ x: -5, z: -5.5, radius: 1.5, action: 'exitGenkan', label: {ja: '🚪 外に出る', en: '🚪 Go Outside'}, phases: ['evacuation'], used: false, requiresGenkanOpen: true });
 }
 
 // ============================================================
@@ -10181,12 +10183,8 @@ function checkStairTrigger() {
         startStairCutsceneS3Down();
       }
     }
-    // 玄関ドアが開いて外に出たら庭→道路→公園
-    if (!GAME._onHouse2F && GAME._genkanDoorOpen && !GAME._inHouseGarden) {
-      if (p.z < -5.5) {
-        teleportToHouseExterior();
-      }
-    }
+    // 玄関ドアが開いたら「外に出る」インタラクションを有効化（Eキーで遷移）
+    // 自動テレポートではなくプレイヤーの意思で外に出る
     return;
   }
 
@@ -12136,11 +12134,28 @@ function updateSingleNPC(npc, dtSec) {
           }
         }
       } else if (npc.behavior === 'injured') {
-        // 負傷: その場で倒れる
+        // 負傷: その場でしゃがんで怯える
         if (npc.state !== 'fallen') {
           npc.state = 'fallen';
-          mesh.rotation.z = Math.PI / 2; // 横倒し
-          mesh.position.y = (npc.floorY || 0) + 0.15;
+          mesh.rotation.z = 0;
+          mesh.position.y = npc.floorY || 0;
+          mesh.visible = true;
+        }
+        // しゃがみ + 震え
+        npc.phase += dtSec;
+        var injB = mesh.userData.body;
+        if (injB) {
+          injB.rotation.x = 0.7 + Math.sin(npc.phase * 5) * 0.06;
+          if (injB.children && injB.children.length >= 3) {
+            injB.children[1].rotation.x = -2.2; injB.children[1].rotation.z = 0.4;
+            injB.children[2].rotation.x = -2.2; injB.children[2].rotation.z = -0.4;
+          }
+        }
+        if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = -1.5;
+        if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = -1.5;
+        if (GAME.quake.shaking) {
+          mesh.position.x = npc.x + (Math.random() - 0.5) * 0.03;
+          mesh.position.z = npc.z + (Math.random() - 0.5) * 0.03;
         }
       }
 
@@ -12151,18 +12166,32 @@ function updateSingleNPC(npc, dtSec) {
     case 'aftershake':
       // 揺れ収束 — NPCが段階的に机の下から出る演出
       if (npc.behavior === 'injured' && !npc.helped) {
-        mesh.rotation.z = Math.PI / 2;
-        mesh.position.y = (npc.floorY || 0) - 0.2;
+        // 祖母: 地面にしゃがんで怯えている演出（横倒しではなく座りポーズ）
+        mesh.rotation.z = 0;
+        mesh.position.y = npc.floorY || 0;
         mesh.position.x = npc.x;
         mesh.position.z = npc.z;
         mesh.visible = true;
+        mesh.scale.set(1, 1, 1);
+        // しゃがみ + 前かがみ + 震え
+        npc.phase += dtSec;
+        var injBody = mesh.userData.body;
+        if (injBody) {
+          injBody.rotation.x = 0.7 + Math.sin(npc.phase * 4) * 0.05; // 前かがみ + 震え
+          if (injBody.children && injBody.children.length >= 3) {
+            injBody.children[1].rotation.x = -2.2; injBody.children[1].rotation.z = 0.4;
+            injBody.children[2].rotation.x = -2.2; injBody.children[2].rotation.z = -0.4;
+          }
+        }
+        if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = -1.5;
+        if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = -1.5;
         // 自発光で暗闇でも視認できるように（祖母など）
         if (!npc._emissiveSet) {
           npc._emissiveSet = true;
           mesh.traverse(function(child) {
             if (child.material) {
               child.material.emissive = new THREE.Color(0xffaa66);
-              child.material.emissiveIntensity = 0.5;
+              child.material.emissiveIntensity = 0.6;
             }
           });
         }
@@ -12355,10 +12384,34 @@ function updateSingleNPC(npc, dtSec) {
         break;
       }
 
-      // 負傷NPC（助けていない）はその場に留まる
+      // 負傷NPC（助けていない）はその場にしゃがんで怯えている
       if (npc.behavior === 'injured' && !npc.helped) {
-        mesh.rotation.z = Math.PI / 2;
-        mesh.position.y = (npc.floorY || 0) - 0.2;
+        mesh.visible = true;
+        mesh.rotation.z = 0;
+        mesh.position.y = npc.floorY || 0;
+        mesh.position.x = npc.x;
+        mesh.position.z = npc.z;
+        mesh.scale.set(1, 1, 1);
+        npc.phase += dtSec;
+        var eInjBody = mesh.userData.body;
+        if (eInjBody) {
+          eInjBody.rotation.x = 0.7 + Math.sin(npc.phase * 4) * 0.05;
+          if (eInjBody.children && eInjBody.children.length >= 3) {
+            eInjBody.children[1].rotation.x = -2.2; eInjBody.children[1].rotation.z = 0.4;
+            eInjBody.children[2].rotation.x = -2.2; eInjBody.children[2].rotation.z = -0.4;
+          }
+        }
+        if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = -1.5;
+        if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = -1.5;
+        if (!npc._emissiveSet) {
+          npc._emissiveSet = true;
+          mesh.traverse(function(child) {
+            if (child.material) {
+              child.material.emissive = new THREE.Color(0xffaa66);
+              child.material.emissiveIntensity = 0.6;
+            }
+          });
+        }
         break;
       }
 
@@ -12689,7 +12742,18 @@ function updateSingleNPC(npc, dtSec) {
             if (mesh.userData.rightLeg) {
               mesh.userData.rightLeg.rotation.x = -Math.sin(npc.phase) * 0.55;
             }
-            mesh.position.y = Math.abs(Math.sin(npc.phase * 2)) * 0.03;
+            // 両手で頭を守る避難姿勢（hallwayPhaseでも維持）
+            var hpBody = mesh.userData.body;
+            if (hpBody) {
+              hpBody.rotation.x = 0.15;
+              if (hpBody.children && hpBody.children.length >= 3) {
+                hpBody.children[1].rotation.x = -2.8 + Math.sin(npc.phase * 1.5) * 0.08;
+                hpBody.children[1].rotation.z = 0.35;
+                hpBody.children[2].rotation.x = -2.8 + Math.sin(npc.phase * 1.5 + 0.5) * 0.08;
+                hpBody.children[2].rotation.z = -0.35;
+              }
+            }
+            mesh.position.y = (npc.floorY || 0) + Math.abs(Math.sin(npc.phase * 2)) * 0.03;
           } else {
             // 次のウェイポイントへ
             npc._wpIndex++;
@@ -12768,13 +12832,48 @@ function tryHelpInjuredNPC() {
         GAME.scoring.helpedGrandma = true;
         GAME.score += 5;
         SoundManager.playSE('click');
-        showAdvisor({ja: 'おばあちゃんを手助けした！一緒に避難しよう！', en: 'You helped grandma! Let\'s evacuate together!'}, 'praise');
+        showAdvisor({ja: 'おばあちゃんを手助けした！おばあちゃんは玄関へ向かう！', en: 'You helped grandma! She\'s heading to the entrance!'}, 'praise');
         showItemGet('👵 おばあちゃんを支援！ — 家族を守る');
         addFamilyLog('player', 'おばあちゃんの避難を手伝った');
-        addFamilyLog('grandma', 'ありがとう...一緒に避難する');
-        npc.state = 'following';
+        addFamilyLog('grandma', 'ありがとう...玄関へ向かう');
+        // 独立歩行で玄関へ（プレイヤーについてくるのではなく自力避難）
+        npc.behavior = 'calm';
+        npc.state = 'evacuating';
+        npc.followingPlayer = false;
         npc.mesh.rotation.z = 0;
+        npc.mesh.scale.set(1, 1, 1);
         npc.mesh.position.y = npc.floorY || 0;
+        npc.speed = 0.012; // 少し遅め（高齢者）
+        // ヒントライト消灯
+        if (GAME._grandmaHintLight) { GAME._grandmaHintLight.intensity = 0; }
+        // ポーズリセット
+        var gBody = npc.mesh.userData.body;
+        if (gBody) {
+          gBody.rotation.x = 0;
+          if (gBody.children && gBody.children.length >= 3) {
+            gBody.children[1].rotation.x = 0; gBody.children[1].rotation.z = 0;
+            gBody.children[2].rotation.x = 0; gBody.children[2].rotation.z = 0;
+          }
+        }
+        if (npc.mesh.userData.leftLeg) npc.mesh.userData.leftLeg.rotation.x = 0;
+        if (npc.mesh.userData.rightLeg) npc.mesh.userData.rightLeg.rotation.x = 0;
+        // 自発光解除
+        npc.mesh.traverse(function(child) {
+          if (child.material && child.material.emissive) {
+            child.material.emissiveIntensity = 0;
+          }
+        });
+        npc._emissiveSet = false;
+        // 和室→Z=2壁の開口部→玄関方向のウェイポイント
+        npc._waypoints = [
+          { x: -3.0, z: 2.5 },
+          { x: -3.0, z: 1.5 },
+          { x: -3, z: -2 },
+          { x: -5, z: -4.5 },
+        ];
+        npc._wpIndex = 0;
+        npc.targetX = npc._waypoints[0].x;
+        npc.targetZ = npc._waypoints[0].z;
       } else {
         GAME.score += 6;
         SoundManager.playSE('rescue');
@@ -12840,6 +12939,10 @@ function getNearestInteractable() {
       // floorY未指定 = 1Fのインタラクタブル → 2Fにいたらスキップ
       continue;
     }
+    // 玄関が開いていないと「外に出る」は表示しない
+    if (obj.requiresGenkanOpen && !GAME._genkanDoorOpen) continue;
+    // 既に外に出ている場合は非表示
+    if (obj.action === 'exitGenkan' && GAME._inHouseGarden) continue;
 
     var dx = px - obj.x;
     var dz = pz - obj.z;
@@ -13044,6 +13147,12 @@ function performInteract() {
         GAME._genkanDoorMesh.rotation.y = -Math.PI / 2;
         GAME._genkanDoorMesh.position.x -= 0.8;
       }
+      break;
+
+    case 'exitGenkan':
+      // Stage 3: 玄関から外に出る
+      if (GAME._inHouseGarden) break; // 既に外にいる
+      teleportToHouseExterior();
       break;
 
     case 'hideUnderDesk':
@@ -13275,7 +13384,7 @@ function updateMinimap() {
     ctx.setLineDash([]);
   } else if (GAME.stageNum === 3) {
     // === Stage 3: 一軒家 + 避難公園 ===
-    var mapMinX = -10, mapMaxX = 10, mapMinZ = -65, mapMaxZ = 10;
+    var mapMinX = -10, mapMaxX = 10, mapMinZ = -35, mapMaxZ = 10;
     var scaleX = w / (mapMaxX - mapMinX);
     var scaleZ = h / (mapMaxZ - mapMinZ);
     function toMap(x, z) {
@@ -14088,6 +14197,18 @@ function _doTransitionPhase(newPhase) {
         grandmaLight.position.set(-3.5, HOUSE_1F_Y + 1.0, 3.5);
         GAME.scene.add(grandmaLight);
         GAME._grandmaHintLight = grandmaLight;
+        // 妹の_coweringフラグを確実にセット（aftershakeから引き継がれなかった場合の保険）
+        for (var si = 0; si < GAME.npcs.length; si++) {
+          var snpc = GAME.npcs[si];
+          if (snpc.role === 'sister' && snpc.needsHelp && !snpc.helped) {
+            snpc._cowering = true;
+            snpc.state = 'aftershake_idle';
+            snpc.mesh.visible = true;
+            snpc.mesh.position.x = snpc.x;
+            snpc.mesh.position.z = snpc.z;
+            snpc.mesh.position.y = snpc.floorY || 0;
+          }
+        }
       } else if (GAME.stageNum === 2) {
         // Stage 2: オフィス — プレイヤーをデスク間の通路に移動
         GAME.player.x = -2;
