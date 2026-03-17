@@ -1731,17 +1731,14 @@ html, body {
 #family-log::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
 .family-log-entry {
   display: flex; flex-direction: column; margin-bottom: 6px;
-  animation: logSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  max-width: 88%;
+  max-width: 88%; opacity: 1; transition: opacity 0.3s;
 }
 .family-log-entry.player { align-self: flex-end; margin-left: auto; }
 .family-log-bubble {
-  background: rgba(30,30,40,0.85); color: #e0e0e0;
+  background: rgba(20,20,30,0.92); color: #e0e0e0;
   padding: 8px 12px; border-radius: 12px;
   font-size: clamp(12px, 2.2vw, 14px); line-height: 1.5;
-  word-break: break-word; backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  word-break: break-word;
 }
 .family-log-entry.player .family-log-bubble {
   background: rgba(255,204,0,0.2); border: 1px solid rgba(255,204,0,0.4);
@@ -11523,26 +11520,12 @@ function addFamilyLog(role, message) {
       + '<div class="family-log-bubble">' + escapeHTML(message) + '</div>';
   }
   logEl.appendChild(entry);
-  // 最大8エントリ
-  while (logEl.children.length > 8) {
-    logEl.firstChild.style.transition = 'opacity 0.3s, max-height 0.3s';
-    logEl.firstChild.style.opacity = '0';
-    logEl.firstChild.style.maxHeight = '0';
-    var old = logEl.firstChild;
-    setTimeout(function() { if (logEl.contains(old)) logEl.removeChild(old); }, 300);
+  // 最大6エントリ — 古いものは即削除（setTimeout不使用で軽量化）
+  while (logEl.children.length > 6) {
+    logEl.removeChild(logEl.firstChild);
   }
   // スクロールを最下部に
   logEl.scrollTop = logEl.scrollHeight;
-  // 15秒後に自動フェードアウト
-  setTimeout(function() {
-    if (logEl.contains(entry)) {
-      entry.style.transition = 'opacity 1s, max-height 0.5s 0.5s';
-      entry.style.opacity = '0';
-      setTimeout(function() {
-        if (logEl.contains(entry)) logEl.removeChild(entry);
-      }, 1500);
-    }
-  }, 15000);
 }
 
 // ============================================================
