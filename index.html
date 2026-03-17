@@ -15842,10 +15842,61 @@ function updateCamera() {
 
   var hits = GAME._cameraRaycaster.intersectObjects(GAME.cameraMeshes);
   var finalDist = maxDist;
-  // 仕様書準拠: 障害物ヒット時の最小カメラ距離1.5m（POV化防止）
   if (hits.length > 0) {
-    finalDist = Math.max(1.5, hits[0].distance - 0.3);
+    finalDist = Math.max(0.8, hits[0].distance - 0.3);
   }
+
+  // === 壁透明化: カメラとプレイヤーの間にある壁を半透明にする ===
+  if (!GAME._fadedMeshes) GAME._fadedMeshes = new Set();
+  var newFaded = new Set();
+
+  // カメラ〜プレイヤー間の全ヒットオブジェクトを収集
+  if (hits.length > 0) {
+    for (var hi = 0; hi < hits.length; hi++) {
+      var hitMesh = hits[hi].object;
+      if (!hitMesh || !hitMesh.material) continue;
+      newFaded.add(hitMesh);
+      // 初回: 元のopacityを保存して透明化
+      if (!GAME._fadedMeshes.has(hitMesh)) {
+        if (hitMesh._origOpacity === undefined) hitMesh._origOpacity = hitMesh.material.opacity;
+        if (!hitMesh._origTransparent) hitMesh._origTransparent = hitMesh.material.transparent;
+        hitMesh.material.transparent = true;
+        hitMesh.material.needsUpdate = true;
+      }
+    }
+  }
+
+  // フェード処理: 透明化対象はopacity→0.15へ、対象外は元に戻す
+  GAME._fadedMeshes.forEach(function(mesh) {
+    if (!newFaded.has(mesh) && mesh.material) {
+      // カメラ視線から外れた → 元に戻す（スムーズ復帰）
+      var targetOp = mesh._origOpacity !== undefined ? mesh._origOpacity : 1.0;
+      mesh.material.opacity += (targetOp - mesh.material.opacity) * 0.15;
+      if (Math.abs(mesh.material.opacity - targetOp) < 0.02) {
+        mesh.material.opacity = targetOp;
+        mesh.material.transparent = mesh._origTransparent || false;
+        mesh.material.needsUpdate = true;
+      }
+    }
+  });
+  newFaded.forEach(function(mesh) {
+    if (mesh.material) {
+      // カメラ視線上 → 半透明化（スムーズフェード）
+      mesh.material.opacity += (0.15 - mesh.material.opacity) * 0.2;
+    }
+  });
+
+  // 完全復帰したメッシュをセットから除去、新規を追加
+  var updatedFaded = new Set();
+  GAME._fadedMeshes.forEach(function(mesh) {
+    if (newFaded.has(mesh)) { updatedFaded.add(mesh); return; }
+    var targetOp = mesh._origOpacity !== undefined ? mesh._origOpacity : 1.0;
+    if (mesh.material && Math.abs(mesh.material.opacity - targetOp) > 0.02) {
+      updatedFaded.add(mesh); // まだ復帰途中
+    }
+  });
+  newFaded.forEach(function(mesh) { updatedFaded.add(mesh); });
+  GAME._fadedMeshes = updatedFaded;
 
   var camX = p.x + direction.x * finalDist;
   var camY = lookY + direction.y * finalDist;
