@@ -11771,16 +11771,20 @@ function updateSisterGoToParents(npc, dtSec) {
     if (npc._wpIndex < npc._waypoints.length) {
       // 次のウェイポイントへ進む
     } else if (npc._stairPhase === 'goToStairs') {
-      // 2F階段到達 → 1Fへテレポート
+      // 2F階段到達 → 1Fへテレポート（キッチン閉じ込め回避）
       npc._stairPhase = null;
       npc.floorY = 0;
       mesh.position.y = 0;
-      npc.x = 2; npc.z = 0;
+      npc.x = -1.0; npc.z = 0;
       mesh.position.x = npc.x; mesh.position.z = npc.z;
+      mesh.visible = true; // 明示的に表示
+      npc._goToParents = false; // goToParents完了→通常の避難処理へ
       npc._waypoints = [
-        { x: 0, z: -1 },
+        { x: -3, z: -2 },
+        { x: -5, z: -4.5 },
       ];
       npc._wpIndex = 0;
+      npc.state = 'evacuating';
       showAdvisor({ja: '妹が1階に降りた！', en: 'Sister went downstairs!'}, 'normal');
     } else {
       // 親のところに到着
@@ -14207,9 +14211,8 @@ function _doTransitionPhase(newPhase) {
               { type: 'log', role: 'mother', message: 'おばあちゃんの様子を見に行く' },
               { type: 'teleport', x: -1.0, z: 0 },
               { type: 'move', waypoints: [
-                { x: -1.0, z: 0.5 },
-                { x: -2.0, z: 2.5 },
-                { x: -3.5, z: 3.5 }
+                { x: -1.0, z: 2.0 },   // 本棚(X=-2,Z=0.5)を避けて北上（開口部内X=-1.0）
+                { x: -3.0, z: 3.5 },   // 和室のおばあちゃん付近（X=-3.0で左壁-3.5と余裕）
               ], speed: 0.02 },
               { type: 'log', role: 'mother', message: 'おばあちゃん、大丈夫？一緒に避難しましょう' },
               { type: 'delay', duration: 3.0 },
