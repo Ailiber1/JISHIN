@@ -11115,6 +11115,12 @@ function updatePlayerModel() {
 // ============================================================
 GAME.npcs = [];
 
+// NPC腕アクセサ: body.children[N]ではなくuserDataから安全に取得
+function npcArms(mesh) {
+  if (!mesh || !mesh.userData) return { L: null, R: null };
+  return { L: mesh.userData.leftArm || null, R: mesh.userData.rightArm || null };
+}
+
 function createNPCModel(color, height, headColor, opts) {
   opts = opts || {};
   var figure = new THREE.Group();
@@ -11222,7 +11228,8 @@ function createNPCModel(color, height, headColor, opts) {
 
   // 腕（torsoの子 — 回転時に破綻しない）
   var armMat = opts.jacket ? new THREE.MeshStandardMaterial({ color: opts.jacketColor || 0x1a237e, roughness: 0.6, emissive: opts.jacketColor || 0x1a237e, emissiveIntensity: 0.15 }) : mat;
-  [-1, 1].forEach(function(side) {
+  var npcLeftArm, npcRightArm;
+  [-1, 1].forEach(function(side, aIdx) {
     var shoulderPivot = new THREE.Object3D();
     shoulderPivot.position.set(side * (torsoR + armR + 0.01), torsoLen / 2 - 0.03, 0);
     var upperArm = new THREE.Mesh(new THREE.CylinderGeometry(armR, armR * 0.88, upperArmLen, 8), armMat);
@@ -11238,6 +11245,7 @@ function createNPCModel(color, height, headColor, opts) {
     hand.position.y = -lowerArmLen / 2;
     lowerArm.add(hand);
     torso.add(shoulderPivot);
+    if (aIdx === 0) npcLeftArm = shoulderPivot; else npcRightArm = shoulderPivot;
   });
 
   // 脚（torsoの子）
@@ -11269,7 +11277,7 @@ function createNPCModel(color, height, headColor, opts) {
   figure.add(torso);
 
   // アニメーション用参照
-  figure.userData = { body: torso, head: head, leftLeg: npcLeftLeg, rightLeg: npcRightLeg };
+  figure.userData = { body: torso, head: head, leftLeg: npcLeftLeg, rightLeg: npcRightLeg, leftArm: npcLeftArm, rightArm: npcRightArm };
   return figure;
 }
 
@@ -11607,13 +11615,9 @@ function updateNPCTaskQueue(npc, dtSec) {
         mesh.scale.set(1, 1, 1);
         mesh.position.y = npc.floorY || 0;
         var mrb = mesh.userData.body;
-        if (mrb) {
-          mrb.rotation.x = 0; mrb.rotation.z = 0;
-          if (mrb.children && mrb.children.length >= 3) {
-            mrb.children[1].rotation.x = 0; mrb.children[1].rotation.z = 0;
-            mrb.children[2].rotation.x = 0; mrb.children[2].rotation.z = 0;
-          }
-        }
+        if (mrb) { mrb.rotation.x = 0; mrb.rotation.z = 0; }
+        if (mesh.userData.leftArm) { mesh.userData.leftArm.rotation.x = 0; mesh.userData.leftArm.rotation.z = 0; }
+        if (mesh.userData.rightArm) { mesh.userData.rightArm.rotation.x = 0; mesh.userData.rightArm.rotation.z = 0; }
         if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = 0;
         if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = 0;
       }
@@ -11631,11 +11635,8 @@ function updateNPCTaskQueue(npc, dtSec) {
         if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = Math.sin(npc.phase) * 0.4;
         if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = -Math.sin(npc.phase) * 0.4;
         // 腕振り
-        var tb = mesh.userData.body;
-        if (tb && tb.children && tb.children.length >= 3) {
-          tb.children[1].rotation.x = -Math.sin(npc.phase) * 0.3;
-          tb.children[2].rotation.x = Math.sin(npc.phase) * 0.3;
-        }
+        if (mesh.userData.leftArm) mesh.userData.leftArm.rotation.x = -Math.sin(npc.phase) * 0.3;
+        if (mesh.userData.rightArm) mesh.userData.rightArm.rotation.x = Math.sin(npc.phase) * 0.3;
         // スタック検出: 壁に当たって動けない場合は次のウェイポイントへスキップ
         var moved = Math.abs(npc.x - prevX) + Math.abs(npc.z - prevZ);
         if (moved < 0.001) {
@@ -11667,16 +11668,12 @@ function updateNPCTaskQueue(npc, dtSec) {
         autoPerformAction(task.actionName);
       }
       // アクション中: しゃがんで作業するポーズ
-      if (mesh.userData.body && mesh.userData.body.children && mesh.userData.body.children.length >= 3) {
-        mesh.userData.body.children[1].rotation.x = -0.8;
-        mesh.userData.body.children[2].rotation.x = -0.8;
-      }
+      if (mesh.userData.leftArm) mesh.userData.leftArm.rotation.x = -0.8;
+      if (mesh.userData.rightArm) mesh.userData.rightArm.rotation.x = -0.8;
       if (task._elapsed >= (task.duration || 1.5)) {
         // ポーズリセット
-        if (mesh.userData.body && mesh.userData.body.children && mesh.userData.body.children.length >= 3) {
-          mesh.userData.body.children[1].rotation.x = 0;
-          mesh.userData.body.children[2].rotation.x = 0;
-        }
+        if (mesh.userData.leftArm) mesh.userData.leftArm.rotation.x = 0;
+        if (mesh.userData.rightArm) mesh.userData.rightArm.rotation.x = 0;
         npc._taskQueue.shift();
       }
       return true;
@@ -11690,13 +11687,8 @@ function updateNPCTaskQueue(npc, dtSec) {
         // 待機中: 周囲を見回す + 腕を自然な位置にリセット
         npc.phase += dtSec;
         mesh.rotation.y = (npc._origYaw || 0) + Math.sin(npc.phase * 0.8) * 0.3;
-        var wb = mesh.userData.body;
-        if (wb && wb.children && wb.children.length >= 3) {
-          wb.children[1].rotation.x = Math.sin(npc.phase * 0.7) * 0.05;
-          wb.children[1].rotation.z = 0;
-          wb.children[2].rotation.x = Math.sin(npc.phase * 0.7 + 0.5) * 0.05;
-          wb.children[2].rotation.z = 0;
-        }
+        if (mesh.userData.leftArm) { mesh.userData.leftArm.rotation.x = Math.sin(npc.phase * 0.7) * 0.05; mesh.userData.leftArm.rotation.z = 0; }
+        if (mesh.userData.rightArm) { mesh.userData.rightArm.rotation.x = Math.sin(npc.phase * 0.7 + 0.5) * 0.05; mesh.userData.rightArm.rotation.z = 0; }
       }
       return true;
 
@@ -11715,13 +11707,9 @@ function updateNPCTaskQueue(npc, dtSec) {
       mesh.position.y = npc.floorY || 0;
       mesh.rotation.z = 0;
       var evBody = mesh.userData.body;
-      if (evBody) {
-        evBody.rotation.x = 0; evBody.rotation.z = 0;
-        if (evBody.children && evBody.children.length >= 3) {
-          evBody.children[1].rotation.x = 0; evBody.children[1].rotation.z = 0;
-          evBody.children[2].rotation.x = 0; evBody.children[2].rotation.z = 0;
-        }
-      }
+      if (evBody) { evBody.rotation.x = 0; evBody.rotation.z = 0; }
+      if (mesh.userData.leftArm) { mesh.userData.leftArm.rotation.x = 0; mesh.userData.leftArm.rotation.z = 0; }
+      if (mesh.userData.rightArm) { mesh.userData.rightArm.rotation.x = 0; mesh.userData.rightArm.rotation.z = 0; }
       if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = 0;
       if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = 0;
       // 玄関方向にウェイポイント設定
@@ -11751,6 +11739,12 @@ function updateSisterGoToParents(npc, dtSec) {
     npc.phase += dtSec * 7;
     if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = Math.sin(npc.phase) * 0.4;
     if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = -Math.sin(npc.phase) * 0.4;
+    // 腕: 頭を守る避難姿勢（ガッツポーズ防止）
+    var sgBody = mesh.userData.body;
+    if (sgBody) sgBody.rotation.x = 0.15;
+    var _sla = mesh.userData.leftArm, _sra = mesh.userData.rightArm;
+    if (_sla) { _sla.rotation.x = -2.8 + Math.sin(npc.phase * 1.5) * 0.08; _sla.rotation.z = 0.35; }
+    if (_sra) { _sra.rotation.x = -2.8 + Math.sin(npc.phase * 1.5 + 0.5) * 0.08; _sra.rotation.z = -0.35; }
   } else {
     // ウェイポイント到達 → 次へ
     npc._wpIndex = (npc._wpIndex || 0) + 1;
@@ -12576,14 +12570,10 @@ function updateSingleNPC(npc, dtSec) {
         mesh.rotation.z = 0;
         // しゃがみポーズを完全リセット（これがないと幽霊のように浮く）
         var resetBody = mesh.userData.body;
-        if (resetBody) {
-          resetBody.rotation.x = 0; resetBody.rotation.z = 0;
-          // 腕もリセット（手錠ポーズ防止）
-          if (resetBody.children && resetBody.children.length >= 3) {
-            resetBody.children[1].rotation.x = 0; resetBody.children[1].rotation.z = 0;
-            resetBody.children[2].rotation.x = 0; resetBody.children[2].rotation.z = 0;
-          }
-        }
+        if (resetBody) { resetBody.rotation.x = 0; resetBody.rotation.z = 0; }
+        // 腕もリセット（ガッツポーズ防止）
+        if (mesh.userData.leftArm) { mesh.userData.leftArm.rotation.x = 0; mesh.userData.leftArm.rotation.z = 0; }
+        if (mesh.userData.rightArm) { mesh.userData.rightArm.rotation.x = 0; mesh.userData.rightArm.rotation.z = 0; }
         if (mesh.userData.leftLeg) {
           mesh.userData.leftLeg.rotation.x = 0;
           var rul = mesh.userData.leftLeg.children[0];
@@ -12689,13 +12679,9 @@ function updateSingleNPC(npc, dtSec) {
         var bodyNode = mesh.userData.body;
         if (bodyNode) {
           bodyNode.rotation.x = 0.15; // 前かがみ（頭を守る姿勢）
-          if (bodyNode.children && bodyNode.children.length >= 3) {
-            // 両腕を頭の上に（小さな揺れ付き）
-            bodyNode.children[1].rotation.x = -2.8 + Math.sin(npc.phase * 1.5) * 0.08;
-            bodyNode.children[1].rotation.z = 0.35;
-            bodyNode.children[2].rotation.x = -2.8 + Math.sin(npc.phase * 1.5 + 0.5) * 0.08;
-            bodyNode.children[2].rotation.z = -0.35;
-          }
+          var _la = mesh.userData.leftArm, _ra = mesh.userData.rightArm;
+          if (_la) { _la.rotation.x = -2.8 + Math.sin(npc.phase * 1.5) * 0.08; _la.rotation.z = 0.35; }
+          if (_ra) { _ra.rotation.x = -2.8 + Math.sin(npc.phase * 1.5 + 0.5) * 0.08; _ra.rotation.z = -0.35; }
           // 体の上下動（歩行のバウンス）
           mesh.position.y = Math.abs(Math.sin(npc.phase * 2)) * 0.03;
         }
@@ -12785,15 +12771,10 @@ function updateSingleNPC(npc, dtSec) {
             }
             // 両手で頭を守る避難姿勢（hallwayPhaseでも維持）
             var hpBody = mesh.userData.body;
-            if (hpBody) {
-              hpBody.rotation.x = 0.15;
-              if (hpBody.children && hpBody.children.length >= 3) {
-                hpBody.children[1].rotation.x = -2.8 + Math.sin(npc.phase * 1.5) * 0.08;
-                hpBody.children[1].rotation.z = 0.35;
-                hpBody.children[2].rotation.x = -2.8 + Math.sin(npc.phase * 1.5 + 0.5) * 0.08;
-                hpBody.children[2].rotation.z = -0.35;
-              }
-            }
+            if (hpBody) hpBody.rotation.x = 0.15;
+            var _hla = mesh.userData.leftArm, _hra = mesh.userData.rightArm;
+            if (_hla) { _hla.rotation.x = -2.8 + Math.sin(npc.phase * 1.5) * 0.08; _hla.rotation.z = 0.35; }
+            if (_hra) { _hra.rotation.x = -2.8 + Math.sin(npc.phase * 1.5 + 0.5) * 0.08; _hra.rotation.z = -0.35; }
             mesh.position.y = (npc.floorY || 0) + Math.abs(Math.sin(npc.phase * 2)) * 0.03;
           } else {
             // 次のウェイポイントへ
@@ -12856,13 +12837,9 @@ function tryHelpInjuredNPC() {
         npc.targetZ = npc._waypoints[0].z;
         var sMesh = npc.mesh;
         sMesh.scale.set(1, 1, 1);
-        if (sMesh.userData.body) {
-          sMesh.userData.body.rotation.x = 0;
-          if (sMesh.userData.body.children && sMesh.userData.body.children.length >= 3) {
-            sMesh.userData.body.children[1].rotation.x = 0; sMesh.userData.body.children[1].rotation.z = 0;
-            sMesh.userData.body.children[2].rotation.x = 0; sMesh.userData.body.children[2].rotation.z = 0;
-          }
-        }
+        if (sMesh.userData.body) sMesh.userData.body.rotation.x = 0;
+        if (sMesh.userData.leftArm) { sMesh.userData.leftArm.rotation.x = 0; sMesh.userData.leftArm.rotation.z = 0; }
+        if (sMesh.userData.rightArm) { sMesh.userData.rightArm.rotation.x = 0; sMesh.userData.rightArm.rotation.z = 0; }
         // 自発光を解除（救助後は通常の明るさに戻す）
         sMesh.traverse(function(child) {
           if (child.material && child.material.emissive) {
@@ -12890,13 +12867,9 @@ function tryHelpInjuredNPC() {
         if (GAME._grandmaSpotLight) { GAME._grandmaSpotLight.intensity = 0; }
         // ポーズリセット
         var gBody = npc.mesh.userData.body;
-        if (gBody) {
-          gBody.rotation.x = 0;
-          if (gBody.children && gBody.children.length >= 3) {
-            gBody.children[1].rotation.x = 0; gBody.children[1].rotation.z = 0;
-            gBody.children[2].rotation.x = 0; gBody.children[2].rotation.z = 0;
-          }
-        }
+        if (gBody) gBody.rotation.x = 0;
+        if (npc.mesh.userData.leftArm) { npc.mesh.userData.leftArm.rotation.x = 0; npc.mesh.userData.leftArm.rotation.z = 0; }
+        if (npc.mesh.userData.rightArm) { npc.mesh.userData.rightArm.rotation.x = 0; npc.mesh.userData.rightArm.rotation.z = 0; }
         if (npc.mesh.userData.leftLeg) npc.mesh.userData.leftLeg.rotation.x = 0;
         if (npc.mesh.userData.rightLeg) npc.mesh.userData.rightLeg.rotation.x = 0;
         // 自発光解除
