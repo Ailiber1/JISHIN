@@ -8943,7 +8943,7 @@ function buildBuildingPlaza() {
 // ============================================================
 // Stage 3: 木造2階建て一軒家 — EVAC_POINT / 定数
 // ============================================================
-var EVAC_POINT_S3 = { x: 0, z: -25, radius: 4 };
+var EVAC_POINT_S3 = { x: 12, z: -20, radius: 4 }; // 公園（道路を南下→右折→公園）
 var HOUSE_1F_Y = 0;
 var HOUSE_2F_Y = 3.0;
 var HOUSE_H = 2.8;
@@ -9116,12 +9116,12 @@ function buildStage3Exterior() {
     { x: 6, z: -32, h: 3, r: 1.5 },
     { x: -6, z: -42, h: 4, r: 2 },
     { x: 7, z: -48, h: 3.5, r: 1.8 },
-    // 公園の木
-    { x: -8, z: -58, h: 5, r: 2.5 },
-    { x: 8, z: -56, h: 4.5, r: 2.2 },
-    { x: -6, z: -64, h: 4, r: 2 },
-    { x: 6, z: -62, h: 3.5, r: 1.8 },
-    { x: 0, z: -66, h: 5.5, r: 2.8 },
+    // 公園の木（X=12, Z=-20付近）
+    { x: 5, z: -17, h: 5, r: 2.5 },
+    { x: 19, z: -15, h: 4.5, r: 2.2 },
+    { x: 6, z: -24, h: 4, r: 2 },
+    { x: 18, z: -23, h: 3.5, r: 1.8 },
+    { x: 12, z: -27, h: 5.5, r: 2.8 },
   ];
 
   for (var ti = 0; ti < treePositions.length; ti++) {
@@ -9160,9 +9160,9 @@ function buildStage3Exterior() {
   var gutterR = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.08, 40), gutterMat);
   gutterR.position.set(2.15, Y + 0.02, -30); scene.add(gutterR);
 
-  // --- 公園ベンチ ---
+  // --- 公園ベンチ（新公園位置 X=12, Z=-20） ---
   var benchMat = new THREE.MeshStandardMaterial({ color: 0x6d4c2e, roughness: 0.7, emissive: 0x0a0604, emissiveIntensity: 0.1 });
-  var benchPositions = [[-5, -58], [5, -58], [-3, -63], [3, -63]];
+  var benchPositions = [[8, -18], [16, -18], [9, -23], [15, -23]];
   for (var bi = 0; bi < benchPositions.length; bi++) {
     var bx = benchPositions[bi][0], bz = benchPositions[bi][1];
     var benchSeat = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.06, 0.4), benchMat);
@@ -9176,15 +9176,15 @@ function buildStage3Exterior() {
     }
   }
 
-  // --- 公園遊具（ブランコ）---
+  // --- 公園遊具（ブランコ）--- 新公園位置
   var swingFrame = new THREE.Mesh(new THREE.BoxGeometry(2, 2.5, 0.06), poleMat);
-  swingFrame.position.set(0, Y + 1.25, -55); scene.add(swingFrame);
+  swingFrame.position.set(12, Y + 1.25, -16); scene.add(swingFrame);
   var swingPoleL = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 2.5, 6), poleMat);
-  swingPoleL.position.set(-0.8, Y + 1.25, -55); scene.add(swingPoleL);
+  swingPoleL.position.set(11.2, Y + 1.25, -16); scene.add(swingPoleL);
   var swingPoleR = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 2.5, 6), poleMat);
-  swingPoleR.position.set(0.8, Y + 1.25, -55); scene.add(swingPoleR);
+  swingPoleR.position.set(12.8, Y + 1.25, -16); scene.add(swingPoleR);
   var swingBar = new THREE.Mesh(new THREE.BoxGeometry(2, 0.04, 0.04), poleMat);
-  swingBar.position.set(0, Y + 2.5, -55); scene.add(swingBar);
+  swingBar.position.set(12, Y + 2.5, -16); scene.add(swingBar);
 
   // --- 夕日の光源（遠方の暖色アンビエント）---
   var sunsetLight = new THREE.PointLight(0xff8844, 0.4, 200);
@@ -10034,10 +10034,14 @@ function buildHouseFloor() {
   var farGrass = new THREE.Mesh(new THREE.PlaneGeometry(30, 20), sideGrassMat);
   farGrass.rotation.x = -Math.PI / 2; farGrass.position.set(0, Y1 - 0.05, -35); scene.add(farGrass);
 
-  // 避難公園
-  var parkFloor = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), sideGrassMat);
-  parkFloor.rotation.x = -Math.PI / 2; parkFloor.position.set(0, Y1 - 0.05, -30);
+  // 避難公園（道路右側、東方向 X=12, Z=-20）
+  var parkFloor = new THREE.Mesh(new THREE.PlaneGeometry(16, 16), sideGrassMat);
+  parkFloor.rotation.x = -Math.PI / 2; parkFloor.position.set(12, Y1 - 0.04, -20);
   parkFloor.receiveShadow = false; scene.add(parkFloor);
+  // 道路から公園への小道（X=2〜12, Z=-20付近）
+  var pathToPark = new THREE.Mesh(new THREE.PlaneGeometry(10, 2.5), roadMatOffset);
+  pathToPark.rotation.x = -Math.PI / 2; pathToPark.position.set(7, Y1 - 0.04, -20);
+  scene.add(pathToPark);
 
   var evacMat3 = new THREE.MeshStandardMaterial({ color: 0xff6b00, emissive: 0xff6b00, emissiveIntensity: 0.6, transparent: true, opacity: 0.7 });
   var evacMarker = new THREE.Mesh(new THREE.CylinderGeometry(EVAC_POINT_S3.radius, EVAC_POINT_S3.radius, 0.05, 32), evacMat3);
@@ -11728,8 +11732,8 @@ function updateNPCTaskQueue(npc, dtSec) {
       if (mesh.userData.rightArm) { mesh.userData.rightArm.rotation.x = 0; mesh.userData.rightArm.rotation.z = 0; }
       if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = 0;
       if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = 0;
-      // 玄関方向にウェイポイント設定（テレポート済みなので直行ルート）
-      npc._waypoints = [{ x: -3, z: -2 }, { x: -5, z: -4.5 }, { x: -5, z: -7 }, { x: -3, z: -12 }];
+      // 玄関→庭→道路→公園方面のウェイポイント（テレポート済みなので直行ルート）
+      npc._waypoints = [{ x: -3, z: -2 }, { x: -5, z: -4.5 }, { x: -5, z: -7 }, { x: 0, z: -14 }, { x: 5, z: -20 }];
       npc._wpIndex = 0;
       npc.targetX = npc._waypoints[0].x;
       npc.targetZ = npc._waypoints[0].z;
@@ -12361,7 +12365,14 @@ function updateSingleNPC(npc, dtSec) {
 
     case 'evacuation':
       // 避難フェーズ — 列ごとに順番退出（ドア側の列から）
-      if (npc.exited) break;
+      if (npc.exited) {
+        // 公園待機NPCは微小な待機アニメーション
+        if (npc._waitingAtPark && mesh.visible) {
+          npc.phase += dtSec;
+          mesh.rotation.y = Math.atan2(-npc.x + EVAC_POINT_S3.x, -npc.z + EVAC_POINT_S3.z) + Math.sin(npc.phase * 0.5) * 0.15;
+        }
+        break;
+      }
 
       // 妹: 救助されるまでしゃがみ＋震えアニメーション継続
       if (npc._cowering && npc.needsHelp && !npc.helped) {
@@ -12749,10 +12760,11 @@ function updateSingleNPC(npc, dtSec) {
             if (GAME._exitedNPCs === 1) {
               showAdvisor({ja: '家族が外へ出始めた！全員で避難しよう！', en: 'Family is going outside! Let\'s evacuate together!'}, 'normal');
             }
-            // Stage 3 ウェイポイント: 玄関 → 庭 → 退出
+            // Stage 3 ウェイポイント: 玄関 → 庭 → 道路 → 公園方面 → 退出
             npc._waypoints = [
               { x: -5, z: -7 },    // 庭へ出る
-              { x: -3, z: -10 },   // 道路方面
+              { x: 0, z: -14 },    // 道路を南下
+              { x: 5, z: -20 },    // 道路から公園方面へ右折
             ];
           } else if (GAME.stageNum === 2) {
             if (GAME._exitedNPCs === 3) {
@@ -12814,7 +12826,29 @@ function updateSingleNPC(npc, dtSec) {
               // 全ウェイポイント通過 → 退出
               npc._hallwayPhase = 2;
               npc.exited = true;
-              mesh.visible = false;
+              // Stage 3: 家族NPCは公園の避難ポイントで待機（非表示にしない）
+              if (GAME.stageNum === 3 && (npc.role === 'father' || npc.role === 'mother' || npc.role === 'sister' || npc.role === 'grandma')) {
+                // 公園の避難ポイント周辺に配置（役割ごとに少しずらす）
+                var parkOffsets = { father: {x: -1.5, z: -1}, mother: {x: 1.5, z: -1}, sister: {x: -1, z: 1.5}, grandma: {x: 1, z: 1.5} };
+                var pOff = parkOffsets[npc.role] || {x: 0, z: 0};
+                npc.x = EVAC_POINT_S3.x + pOff.x;
+                npc.z = EVAC_POINT_S3.z + pOff.z;
+                mesh.position.x = npc.x;
+                mesh.position.z = npc.z;
+                mesh.position.y = 0;
+                npc.floorY = 0;
+                mesh.visible = true;
+                npc._waitingAtPark = true;
+                // 待機ポーズ（腕を下ろして立つ）
+                mesh.rotation.y = Math.atan2(EVAC_POINT_S3.x - npc.x, EVAC_POINT_S3.z - npc.z);
+                if (mesh.userData.leftArm) { mesh.userData.leftArm.rotation.x = 0; mesh.userData.leftArm.rotation.z = 0; }
+                if (mesh.userData.rightArm) { mesh.userData.rightArm.rotation.x = 0; mesh.userData.rightArm.rotation.z = 0; }
+                if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = 0;
+                if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = 0;
+                if (mesh.userData.body) { mesh.userData.body.rotation.x = 0; mesh.userData.body.rotation.z = 0; }
+              } else {
+                mesh.visible = false;
+              }
             }
           }
         }
@@ -13428,7 +13462,7 @@ function updateMinimap() {
     ctx.setLineDash([]);
   } else if (GAME.stageNum === 3) {
     // === Stage 3: 一軒家 + 避難公園 ===
-    var mapMinX = -10, mapMaxX = 10, mapMinZ = -35, mapMaxZ = 10;
+    var mapMinX = -10, mapMaxX = 22, mapMinZ = -30, mapMaxZ = 10;
     var scaleX = w / (mapMaxX - mapMinX);
     var scaleZ = h / (mapMaxZ - mapMinZ);
     function toMap(x, z) {
