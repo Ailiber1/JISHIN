@@ -1718,34 +1718,77 @@ html, body {
 }
 #objective-banner .obj-sub { color: #aaa; font-size: 0.8em; margin-top: 2px; }
 @keyframes objPulse { 0%,100%{border-color:rgba(255,180,0,0.7)} 50%{border-color:rgba(255,180,0,1)} }
-/* 家族行動ログ（左下・半透明） */
+/* 家族行動ログ（チャット風UI） */
 #family-log {
-  position: fixed; top: 90px; left: 12px; z-index: 55;
-  width: clamp(200px, 28vw, 280px); max-height: 200px; overflow-y: hidden;
+  position: fixed; top: 80px; left: 10px; z-index: 55;
+  width: clamp(260px, 32vw, 340px); max-height: clamp(200px, 35vh, 320px);
+  overflow-y: auto; overflow-x: hidden;
   pointer-events: none; display: none;
-  font-family: 'Share Tech Mono', monospace; font-size: clamp(10px, 1.8vw, 12px);
+  font-family: 'Noto Sans JP', 'Share Tech Mono', sans-serif;
+  padding: 8px; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.15) transparent;
 }
+#family-log::-webkit-scrollbar { width: 3px; }
+#family-log::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
 .family-log-entry {
-  background: rgba(0,0,0,0.6); color: #ccc; padding: 3px 8px; margin-bottom: 2px;
-  border-radius: 4px; border-left: 3px solid #666;
-  animation: logFadeIn 0.4s ease-out;
-  line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  display: flex; flex-direction: column; margin-bottom: 6px;
+  animation: logSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  max-width: 88%;
 }
-.family-log-entry.father { border-left-color: #64b5f6; }
-.family-log-entry.mother { border-left-color: #f06292; }
-.family-log-entry.sister { border-left-color: #4fc3f7; }
-.family-log-entry.grandma { border-left-color: #a1887f; }
-.family-log-entry.player { border-left-color: #ffcc00; }
-.family-log-entry.system { border-left-color: #ff8a65; }
-.family-log-entry .log-time { color: #888; font-size: 0.85em; margin-right: 6px; }
-.family-log-entry .log-name { font-weight: bold; margin-right: 4px; }
+.family-log-entry.player { align-self: flex-end; margin-left: auto; }
+.family-log-bubble {
+  background: rgba(30,30,40,0.85); color: #e0e0e0;
+  padding: 8px 12px; border-radius: 12px;
+  font-size: clamp(12px, 2.2vw, 14px); line-height: 1.5;
+  word-break: break-word; backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.family-log-entry.player .family-log-bubble {
+  background: rgba(255,204,0,0.2); border: 1px solid rgba(255,204,0,0.4);
+  border-radius: 12px 12px 4px 12px;
+}
+.family-log-entry.father .family-log-bubble {
+  border-left: 3px solid #64b5f6;
+}
+.family-log-entry.mother .family-log-bubble {
+  border-left: 3px solid #f06292;
+}
+.family-log-entry.sister .family-log-bubble {
+  border-left: 3px solid #4fc3f7;
+}
+.family-log-entry.grandma .family-log-bubble {
+  border-left: 3px solid #a1887f;
+}
+.family-log-entry.system .family-log-bubble {
+  background: rgba(255,100,50,0.15); border: 1px solid rgba(255,138,101,0.4);
+  text-align: center; max-width: 100%; font-size: clamp(11px, 1.8vw, 12px);
+  color: #ff8a65; padding: 5px 10px;
+}
+.family-log-meta {
+  display: flex; align-items: center; gap: 6px;
+  margin-bottom: 3px; padding-left: 2px;
+}
+.family-log-entry.player .family-log-meta { justify-content: flex-end; padding-right: 2px; }
+.log-name {
+  font-weight: 700; font-size: clamp(11px, 1.8vw, 12px);
+}
 .family-log-entry.father .log-name { color: #64b5f6; }
 .family-log-entry.mother .log-name { color: #f06292; }
 .family-log-entry.sister .log-name { color: #4fc3f7; }
 .family-log-entry.grandma .log-name { color: #a1887f; }
 .family-log-entry.player .log-name { color: #ffcc00; }
 .family-log-entry.system .log-name { color: #ff8a65; }
-@keyframes logFadeIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+.log-time { color: #666; font-size: clamp(9px, 1.4vw, 10px); font-family: 'Share Tech Mono', monospace; }
+@keyframes logSlideIn { from { opacity: 0; transform: translateY(12px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+/* スマホ向け最適化 */
+@media (max-width: 768px) {
+  #family-log {
+    top: auto; bottom: 140px; left: 6px; right: 6px;
+    width: auto; max-height: clamp(130px, 22vh, 180px);
+  }
+  .family-log-bubble { padding: 6px 10px; font-size: 13px; }
+  .family-log-entry { max-width: 92%; margin-bottom: 5px; }
+}
 #holdon-prompt {
   position: fixed; bottom: 25%; left: 50%; transform: translateX(-50%);
   background: rgba(0,0,0,0.85); border: 2px solid rgba(0,180,255,0.6);
@@ -11459,36 +11502,47 @@ function addFamilyLog(role, message) {
   if (!GAME.running && GAME.phase !== 'aftershake' && GAME.phase !== 'evacuation') return;
   var logEl = document.getElementById('family-log');
   if (!logEl) return;
-  logEl.style.display = 'block';
+  logEl.style.display = 'flex';
+  logEl.style.flexDirection = 'column';
   var nameMap = { father: '👨 父', mother: '👩 母', sister: '👧 妹', grandma: '👵 祖母', player: '🧑 自分', system: '⚠️' };
-  // 経過時間をタイムスタンプとして表示
   var elapsed = Math.floor(GAME.totalTimer || 0);
   var mm = Math.floor(elapsed / 60);
   var ss = elapsed % 60;
   var timeStr = mm + ':' + (ss < 10 ? '0' : '') + ss;
   var entry = document.createElement('div');
   entry.className = 'family-log-entry ' + role;
-  entry.innerHTML = '<span class="log-time">' + timeStr + '</span>'
-    + '<span class="log-name">' + (nameMap[role] || role) + '</span>'
-    + escapeHTML(message);
-  logEl.appendChild(entry);
-  // 最大6エントリ（少なめにしてリアルタイム感を出す）
-  while (logEl.children.length > 6) logEl.removeChild(logEl.firstChild);
-  // 古いエントリの透明度を段階的に下げる
-  var children = logEl.children;
-  for (var i = 0; i < children.length; i++) {
-    children[i].style.opacity = Math.max(0.2, 1 - (children.length - 1 - i) * 0.18);
+  if (role === 'system') {
+    // システムメッセージはシンプルな帯
+    entry.innerHTML = '<div class="family-log-bubble">' + escapeHTML(message) + '</div>';
+  } else {
+    // チャット風: 名前+時刻のメタ行 + 吹き出し
+    entry.innerHTML = '<div class="family-log-meta">'
+      + '<span class="log-name">' + (nameMap[role] || role) + '</span>'
+      + '<span class="log-time">' + timeStr + '</span>'
+      + '</div>'
+      + '<div class="family-log-bubble">' + escapeHTML(message) + '</div>';
   }
-  // 8秒後に最古エントリを自動フェードアウト
+  logEl.appendChild(entry);
+  // 最大8エントリ
+  while (logEl.children.length > 8) {
+    logEl.firstChild.style.transition = 'opacity 0.3s, max-height 0.3s';
+    logEl.firstChild.style.opacity = '0';
+    logEl.firstChild.style.maxHeight = '0';
+    var old = logEl.firstChild;
+    setTimeout(function() { if (logEl.contains(old)) logEl.removeChild(old); }, 300);
+  }
+  // スクロールを最下部に
+  logEl.scrollTop = logEl.scrollHeight;
+  // 15秒後に自動フェードアウト
   setTimeout(function() {
-    if (logEl.children.length > 0 && logEl.contains(entry)) {
-      entry.style.transition = 'opacity 1s';
+    if (logEl.contains(entry)) {
+      entry.style.transition = 'opacity 1s, max-height 0.5s 0.5s';
       entry.style.opacity = '0';
       setTimeout(function() {
         if (logEl.contains(entry)) logEl.removeChild(entry);
-      }, 1000);
+      }, 1500);
     }
-  }, 12000);
+  }, 15000);
 }
 
 // ============================================================
