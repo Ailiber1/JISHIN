@@ -12582,6 +12582,9 @@ function updateSingleNPC(npc, dtSec) {
         }
       }
 
+      // 未救助NPCは避難開始しない（プレイヤーの救助を待つ）
+      if (npc.needsHelp && !npc.helped && npc._cowering) break;
+
       // 避難開始
       if (npc.state !== 'evacuating') {
         npc.state = 'evacuating';
@@ -14258,10 +14261,10 @@ function _doTransitionPhase(newPhase) {
         GAME._grandmaSpotLight = grandmaSpot;
         GAME.scene.add(grandmaLight);
         GAME._grandmaHintLight = grandmaLight;
-        // 妹の_coweringフラグを確実にセット（aftershakeから引き継がれなかった場合の保険）
+        // 未救助NPCの_coweringフラグを確実にセット（aftershakeから引き継がれなかった場合の保険）
         for (var si = 0; si < GAME.npcs.length; si++) {
           var snpc = GAME.npcs[si];
-          if (snpc.role === 'sister' && snpc.needsHelp && !snpc.helped) {
+          if (snpc.needsHelp && !snpc.helped) {
             snpc._cowering = true;
             snpc.state = 'aftershake_idle';
             snpc.mesh.visible = true;
