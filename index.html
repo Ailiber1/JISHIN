@@ -15843,74 +15843,72 @@ function updateCamera() {
   var hits = GAME._cameraRaycaster.intersectObjects(GAME.cameraMeshes);
   var finalDist = maxDist;
   if (hits.length > 0) {
-    finalDist = Math.max(0.8, hits[0].distance - 0.3);
+    finalDist = Math.max(0.3, hits[0].distance - 0.2);
   }
 
-  // === 壁透明化: カメラとプレイヤーの間にある壁を半透明にする ===
-  if (!GAME._fadedMeshes) GAME._fadedMeshes = new Set();
-  var newFaded = new Set();
+  // === 壁貫通防止: 壁に近すぎる場合、カメラを上に持ち上げて見下ろし視点にする ===
+  var camX, camY, camZ;
+  var camLookY = lookY;
 
-  // カメラ〜プレイヤー間の全ヒットオブジェクトを収集
-  if (hits.length > 0) {
-    for (var hi = 0; hi < hits.length; hi++) {
-      var hitMesh = hits[hi].object;
-      if (!hitMesh || !hitMesh.material) continue;
-      newFaded.add(hitMesh);
-      // 初回: 元のopacityを保存して透明化
-      if (!GAME._fadedMeshes.has(hitMesh)) {
-        if (hitMesh._origOpacity === undefined) hitMesh._origOpacity = hitMesh.material.opacity;
-        if (!hitMesh._origTransparent) hitMesh._origTransparent = hitMesh.material.transparent;
-        hitMesh.material.transparent = true;
-        hitMesh.material.needsUpdate = true;
-      }
+  if (finalDist < 1.2) {
+    // 壁が近い → プレイヤー真上から見下ろし（スムーズ遷移）
+    // finalDistが小さいほど真上に近づく（0.3→ほぼ真上、1.2→通常TPS）
+    var liftRatio = 1.0 - ((finalDist - 0.3) / 0.9); // 0.0(通常)〜1.0(真上)
+    liftRatio = Math.max(0, Math.min(1, liftRatio));
+
+    // 通常カメラ位置（壁手前）
+    var normalX = p.x + direction.x * finalDist;
+    var normalY = lookY + direction.y * finalDist;
+    var normalZ = p.z + direction.z * finalDist;
+
+    // 真上カメラ位置（プレイヤーの真上、少し後方オフセット）
+    var overheadY = lookY + effectiveDist * 1.2;
+    var overheadX = p.x - Math.sin(p.yaw) * 0.5;
+    var overheadZ = p.z - Math.cos(p.yaw) * 0.5;
+
+    // 真上位置も壁にぶつからないかチェック
+    var upDir = new THREE.Vector3(overheadX - p.x, overheadY - lookY, overheadZ - p.z);
+    var upDist = upDir.length();
+    upDir.normalize();
+    GAME._cameraRaycaster.set(playerPos, upDir);
+    GAME._cameraRaycaster.far = upDist;
+    var upHits = GAME._cameraRaycaster.intersectObjects(GAME.cameraMeshes);
+    if (upHits.length > 0 && upHits[0].distance < upDist) {
+      overheadY = lookY + Math.max(0.5, upHits[0].distance - 0.2);
     }
+
+    // 通常位置と真上位置を補間
+    camX = normalX + (overheadX - normalX) * liftRatio;
+    camY = normalY + (overheadY - normalY) * liftRatio;
+    camZ = normalZ + (overheadZ - normalZ) * liftRatio;
+  } else {
+    // 壁に当たらない → 通常TPS
+    camX = p.x + direction.x * finalDist;
+    camY = lookY + direction.y * finalDist;
+    camZ = p.z + direction.z * finalDist;
   }
 
-  // フェード処理: 透明化対象はopacity→0.15へ、対象外は元に戻す
-  GAME._fadedMeshes.forEach(function(mesh) {
-    if (!newFaded.has(mesh) && mesh.material) {
-      // カメラ視線から外れた → 元に戻す（スムーズ復帰）
-      var targetOp = mesh._origOpacity !== undefined ? mesh._origOpacity : 1.0;
-      mesh.material.opacity += (targetOp - mesh.material.opacity) * 0.15;
-      if (Math.abs(mesh.material.opacity - targetOp) < 0.02) {
-        mesh.material.opacity = targetOp;
-        mesh.material.transparent = mesh._origTransparent || false;
-        mesh.material.needsUpdate = true;
-      }
-    }
-  });
-  newFaded.forEach(function(mesh) {
-    if (mesh.material) {
-      // カメラ視線上 → 半透明化（スムーズフェード）
-      mesh.material.opacity += (0.15 - mesh.material.opacity) * 0.2;
-    }
-  });
-
-  // 完全復帰したメッシュをセットから除去、新規を追加
-  var updatedFaded = new Set();
-  GAME._fadedMeshes.forEach(function(mesh) {
-    if (newFaded.has(mesh)) { updatedFaded.add(mesh); return; }
-    var targetOp = mesh._origOpacity !== undefined ? mesh._origOpacity : 1.0;
-    if (mesh.material && Math.abs(mesh.material.opacity - targetOp) > 0.02) {
-      updatedFaded.add(mesh); // まだ復帰途中
-    }
-  });
-  newFaded.forEach(function(mesh) { updatedFaded.add(mesh); });
-  GAME._fadedMeshes = updatedFaded;
-
-  var camX = p.x + direction.x * finalDist;
-  var camY = lookY + direction.y * finalDist;
-  var camZ = p.z + direction.z * finalDist;
+  // スムーズカメラ移動（急なジャンプを防止）
+  if (GAME._smoothCamX === undefined) {
+    GAME._smoothCamX = camX; GAME._smoothCamY = camY; GAME._smoothCamZ = camZ;
+  }
+  var smoothSpeed = 0.2;
+  GAME._smoothCamX += (camX - GAME._smoothCamX) * smoothSpeed;
+  GAME._smoothCamY += (camY - GAME._smoothCamY) * smoothSpeed;
+  GAME._smoothCamZ += (camZ - GAME._smoothCamZ) * smoothSpeed;
 
   // 地震揺れオフセット
+  var finalCamX = GAME._smoothCamX;
+  var finalCamY = GAME._smoothCamY;
+  var finalCamZ = GAME._smoothCamZ;
   if (GAME.quake.shaking && GAME._quakeOffsetX !== undefined) {
-    camX += GAME._quakeOffsetX;
-    camY += GAME._quakeOffsetY;
-    camZ += GAME._quakeOffsetZ;
+    finalCamX += GAME._quakeOffsetX;
+    finalCamY += GAME._quakeOffsetY;
+    finalCamZ += GAME._quakeOffsetZ;
   }
 
-  GAME.camera.position.set(camX, camY, camZ);
-  GAME.camera.lookAt(p.x, lookY, p.z);
+  GAME.camera.position.set(finalCamX, finalCamY, finalCamZ);
+  GAME.camera.lookAt(p.x, camLookY, p.z);
 }
 
 function cleanupGame() {
