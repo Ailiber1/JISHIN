@@ -12931,8 +12931,9 @@ function updateSingleNPC(npc, dtSec) {
   }
 }
 
-// 負傷NPC・要救助NPCとのインタラクト
+// 負傷NPC・要救助NPCとのインタラクト（地震中は不可）
 function tryHelpInjuredNPC() {
+  if (GAME.phase === 'earthquake') return false; // 揺れ中は救助不可
   var px = GAME.player.x, pz = GAME.player.z;
   for (var i = 0; i < GAME.npcs.length; i++) {
     var npc = GAME.npcs[i];
