@@ -10055,19 +10055,30 @@ function buildHouseFloor() {
   var glow = new THREE.Mesh(glowGeo, glowMat2);
   glow.rotation.x = -Math.PI / 2; glow.position.set(EVAC_POINT_S3.x, Y1 + 0.02, EVAC_POINT_S3.z); scene.add(glow);
   glow.frustumCulled = false;
-  // 公園をさらに目立たせる: 高いビーコンライト
-  var beaconMat = new THREE.MeshStandardMaterial({ color: 0x00ff44, emissive: 0x00ff44, emissiveIntensity: 0.9, transparent: true, opacity: 0.8 });
-  var beaconPole = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 8, 8), beaconMat);
-  beaconPole.position.set(EVAC_POINT_S3.x, Y1 + 4, EVAC_POINT_S3.z); scene.add(beaconPole);
+  // 公園をさらに目立たせる: 巨大な発光ビーコン柱
+  var beaconMat = new THREE.MeshBasicMaterial({ color: 0x44ff88, transparent: true, opacity: 0.85 });
+  var beaconPole = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 15, 12), beaconMat);
+  beaconPole.position.set(EVAC_POINT_S3.x, Y1 + 7.5, EVAC_POINT_S3.z); scene.add(beaconPole);
   beaconPole.frustumCulled = false;
-  var beaconLight = new THREE.PointLight(0x00ff44, 3.5, 50);
-  beaconLight.position.set(EVAC_POINT_S3.x, Y1 + 8, EVAC_POINT_S3.z); scene.add(beaconLight);
-  // 公園入口の矢印サイン（道路側）
-  var arrowSign = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.8, 0.05), new THREE.MeshStandardMaterial({ color: 0x00cc44, emissive: 0x00ff44, emissiveIntensity: 0.8 }));
-  arrowSign.position.set(3, Y1 + 2.0, -20); scene.add(arrowSign);
+  // 上部に明るいライト（遠くからも照らす）
+  var beaconLight = new THREE.PointLight(0x44ff88, 5.0, 80);
+  beaconLight.position.set(EVAC_POINT_S3.x, Y1 + 15, EVAC_POINT_S3.z); scene.add(beaconLight);
+  // 中間ライト（地面周辺も明るく）
+  var beaconMidLight = new THREE.PointLight(0x44ff88, 3.0, 40);
+  beaconMidLight.position.set(EVAC_POINT_S3.x, Y1 + 3, EVAC_POINT_S3.z); scene.add(beaconMidLight);
+  GAME._beaconPole = beaconPole;
+  // 公園入口の矢印サイン（道路側 — 大きく目立つ）
+  var arrowSignMat = new THREE.MeshBasicMaterial({ color: 0x44ff88 });
+  var arrowSign = new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.2, 0.08), arrowSignMat);
+  arrowSign.position.set(3, Y1 + 2.5, -20); scene.add(arrowSign);
   arrowSign.frustumCulled = false;
-  var arrowPole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 2, 6), metalMat);
-  arrowPole.position.set(3, Y1 + 1.0, -20); scene.add(arrowPole);
+  var arrowPole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 2.5, 6), metalMat);
+  arrowPole.position.set(3, Y1 + 1.25, -20); scene.add(arrowPole);
+  // 道路沿いの誘導ライト（南下中に右折地点がわかるように）
+  var guideLight1 = new THREE.PointLight(0x44ff88, 2.0, 20);
+  guideLight1.position.set(3, Y1 + 3, -20); scene.add(guideLight1);
+  var guideLight2 = new THREE.PointLight(0x44ff88, 1.5, 15);
+  guideLight2.position.set(0, Y1 + 2, -14); scene.add(guideLight2);
 
   // 照明
   GAME._houseLights = [];
@@ -13697,6 +13708,13 @@ function gameLoop(timestamp) {
   if (GAME._shoesHighlight && GAME._shoesHighlight.visible) {
     GAME._shoesHighlight.rotation.z = GAME.totalTimer * 1.5;
   }
+  // ビーコン柱の脈動アニメーション（明滅で遠くからも目を引く）
+  if (GAME._beaconPole) {
+    var bPulse = 0.6 + Math.sin(GAME.totalTimer * 3) * 0.25;
+    GAME._beaconPole.material.opacity = bPulse;
+    GAME._beaconPole.scale.x = 1.0 + Math.sin(GAME.totalTimer * 2) * 0.15;
+    GAME._beaconPole.scale.z = 1.0 + Math.sin(GAME.totalTimer * 2) * 0.15;
+  }
   // Stage 3: 懐中電灯スポットライト更新
   if (GAME._flashSpot && GAME._hasFlashlight) {
     var fp = GAME.player;
@@ -14192,30 +14210,22 @@ function _doTransitionPhase(newPhase) {
           var fnpc = GAME.npcs[fi];
           if (fnpc.role === 'father') {
             fnpc._taskQueue = [
-              { type: 'delay', duration: 1.5 },
+              { type: 'delay', duration: 0.5 },
               { type: 'log', role: 'father', message: 'ガスを止めに行く！' },
               { type: 'move', waypoints: [
-                { x: -1.0, z: 0 },
                 { x: -1.0, z: 2.5 },
-                { x: 1.0, z: 3.5 },
                 { x: 4.5, z: 3.8 }
-              ], speed: 0.025 },
-              { type: 'action', actionName: 'turnOffGas', duration: 1.5 },
-              { type: 'log', role: 'father', message: '懐中電灯を取りに行く' },
+              ], speed: 0.045 },
+              { type: 'action', actionName: 'turnOffGas', duration: 0.8 },
+              { type: 'log', role: 'father', message: 'ブレーカーと玄関！' },
               { type: 'move', waypoints: [
-                { x: 1.0, z: 3.5 },
                 { x: -1.0, z: 2.5 },
                 { x: -1.0, z: 0 },
-                { x: -1.5, z: -2 },
-                { x: -5.3, z: -4.0 }
-              ], speed: 0.025 },
-              { type: 'action', actionName: 'pickUpFlashlight', duration: 1.0 },
-              { type: 'log', role: 'father', message: 'ブレーカーを落とす！' },
-              { type: 'delay', duration: 1.0 },
-              { type: 'move', waypoints: [{ x: -4.5, z: -4.73 }], speed: 0.025 },
-              { type: 'action', actionName: 'turnOffBreaker', duration: 1.0 },
-              { type: 'move', waypoints: [{ x: -5, z: -4.9 }], speed: 0.025 },
-              { type: 'action', actionName: 'openGenkanDoor', duration: 1.0 },
+                { x: -4.5, z: -4.73 }
+              ], speed: 0.045 },
+              { type: 'action', actionName: 'turnOffBreaker', duration: 0.8 },
+              { type: 'move', waypoints: [{ x: -5, z: -4.9 }], speed: 0.045 },
+              { type: 'action', actionName: 'openGenkanDoor', duration: 0.5 },
               { type: 'log', role: 'father', message: '外に出よう！' },
               { type: 'evacuate', waypoints: [{ x: -5, z: -7 }, { x: -3, z: -12 }] }
             ];
@@ -14232,8 +14242,7 @@ function _doTransitionPhase(newPhase) {
                 { x: -3.0, z: 3.5 },   // 和室のおばあちゃん付近
               ], speed: 0.02 },
               { type: 'log', role: 'mother', message: 'おばあちゃん、大丈夫？一緒に避難しましょう' },
-              { type: 'delay', duration: 3.0 },
-              { type: 'log', role: 'mother', message: 'おばあちゃんを支えて待機中...' },
+              { type: 'delay', duration: 1.5 },
               { type: 'wait', condition: function() {
                 // 父が玄関ドアを開けるまで待つ
                 return GAME._genkanDoorOpen;
