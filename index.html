@@ -10042,6 +10042,7 @@ function buildHouseFloor() {
   var evacMat3 = new THREE.MeshStandardMaterial({ color: 0xff6b00, emissive: 0xff6b00, emissiveIntensity: 0.6, transparent: true, opacity: 0.7 });
   var evacMarker = new THREE.Mesh(new THREE.CylinderGeometry(EVAC_POINT_S3.radius, EVAC_POINT_S3.radius, 0.05, 32), evacMat3);
   evacMarker.position.set(EVAC_POINT_S3.x, Y1 + 0.03, EVAC_POINT_S3.z); scene.add(evacMarker);
+  evacMarker.frustumCulled = false;
   GAME._evacMarkerS3 = evacMarker;
 
   var evacPole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.5, 8), metalMat);
@@ -10053,14 +10054,18 @@ function buildHouseFloor() {
   var glowMat2 = new THREE.MeshBasicMaterial({ color: 0x00ff44, transparent: true, opacity: 0.25, side: THREE.DoubleSide, depthWrite: false });
   var glow = new THREE.Mesh(glowGeo, glowMat2);
   glow.rotation.x = -Math.PI / 2; glow.position.set(EVAC_POINT_S3.x, Y1 + 0.02, EVAC_POINT_S3.z); scene.add(glow);
+  glow.frustumCulled = false;
   // 公園をさらに目立たせる: 高いビーコンライト
-  var beaconPole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 6, 8), metalMat);
-  beaconPole.position.set(EVAC_POINT_S3.x, Y1 + 3, EVAC_POINT_S3.z); scene.add(beaconPole);
-  var beaconLight = new THREE.PointLight(0x00ff44, 2.5, 30);
-  beaconLight.position.set(EVAC_POINT_S3.x, Y1 + 6, EVAC_POINT_S3.z); scene.add(beaconLight);
+  var beaconMat = new THREE.MeshStandardMaterial({ color: 0x00ff44, emissive: 0x00ff44, emissiveIntensity: 0.9, transparent: true, opacity: 0.8 });
+  var beaconPole = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 8, 8), beaconMat);
+  beaconPole.position.set(EVAC_POINT_S3.x, Y1 + 4, EVAC_POINT_S3.z); scene.add(beaconPole);
+  beaconPole.frustumCulled = false;
+  var beaconLight = new THREE.PointLight(0x00ff44, 3.5, 50);
+  beaconLight.position.set(EVAC_POINT_S3.x, Y1 + 8, EVAC_POINT_S3.z); scene.add(beaconLight);
   // 公園入口の矢印サイン（道路側）
   var arrowSign = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.8, 0.05), new THREE.MeshStandardMaterial({ color: 0x00cc44, emissive: 0x00ff44, emissiveIntensity: 0.8 }));
   arrowSign.position.set(3, Y1 + 2.0, -20); scene.add(arrowSign);
+  arrowSign.frustumCulled = false;
   var arrowPole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 2, 6), metalMat);
   arrowPole.position.set(3, Y1 + 1.0, -20); scene.add(arrowPole);
 
@@ -14205,13 +14210,8 @@ function _doTransitionPhase(newPhase) {
                 { x: -5.3, z: -4.0 }
               ], speed: 0.025 },
               { type: 'action', actionName: 'pickUpFlashlight', duration: 1.0 },
-              { type: 'log', role: 'father', message: '家族が揃うのを待っている...' },
-              { type: 'wait', condition: function() {
-                // プレイヤーが1Fに降りてくるまで待つ
-                return !GAME._onHouse2F;
-              }, onComplete: function() {
-                addFamilyLog('father', 'みんな揃った！ブレーカーを落とす');
-              }},
+              { type: 'log', role: 'father', message: 'ブレーカーを落とす！' },
+              { type: 'delay', duration: 1.0 },
               { type: 'move', waypoints: [{ x: -4.5, z: -4.73 }], speed: 0.025 },
               { type: 'action', actionName: 'turnOffBreaker', duration: 1.0 },
               { type: 'move', waypoints: [{ x: -5, z: -4.9 }], speed: 0.025 },
@@ -14290,11 +14290,11 @@ function _doTransitionPhase(newPhase) {
         sisterSpot.position.set(-3.5, HOUSE_2F_Y + 0.5, 3.0);
         GAME.scene.add(sisterSpot);
         GAME._sisterSpotLight = sisterSpot;
-        // 祖母の位置に微かなライト（暗い中で見つけやすく）
-        var grandmaLight = new THREE.PointLight(0xffaa66, 1.2, 8);
+        // 祖母の位置に明るいライト（暗い中で確実に見つけられるように）
+        var grandmaLight = new THREE.PointLight(0xffaa66, 2.0, 10);
         grandmaLight.position.set(-3.5, HOUSE_1F_Y + 1.5, 3.5);
-        // 祖母の足元スポットライト（暗闘でも確実に見える）
-        var grandmaSpot = new THREE.PointLight(0xffffff, 0.5, 4);
+        // 祖母の足元スポットライト（直接照らす）
+        var grandmaSpot = new THREE.PointLight(0xffffff, 1.0, 5);
         grandmaSpot.position.set(-3.5, HOUSE_1F_Y + 0.5, 3.5);
         GAME.scene.add(grandmaSpot);
         GAME._grandmaSpotLight = grandmaSpot;
