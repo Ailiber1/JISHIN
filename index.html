@@ -12933,7 +12933,7 @@ function updateSingleNPC(npc, dtSec) {
 
 // 負傷NPC・要救助NPCとのインタラクト（地震中は不可）
 function tryHelpInjuredNPC() {
-  if (GAME.phase === 'earthquake') return false; // 揺れ中は救助不可
+  if (GAME.phase === 'earthquake' || GAME.phase === 'shaking') return false; // 揺れ中は救助不可
   var px = GAME.player.x, pz = GAME.player.z;
   for (var i = 0; i < GAME.npcs.length; i++) {
     var npc = GAME.npcs[i];
@@ -13111,6 +13111,23 @@ function getNearestInteractable() {
 }
 
 function performInteract() {
+  // 地震中はNPC救助を完全ブロック + 赤い警告表示
+  if (GAME.phase === 'earthquake' || GAME.phase === 'shaking') {
+    // 近くにneedsHelp NPCがいるか確認し、いたら警告
+    var px = GAME.player.x, pz = GAME.player.z;
+    for (var qi = 0; qi < GAME.npcs.length; qi++) {
+      var qnpc = GAME.npcs[qi];
+      if (!qnpc.needsHelp || qnpc.helped) continue;
+      var qdx = px - qnpc.x, qdz = pz - qnpc.z;
+      var qdy = Math.abs((GAME.player.y - 0.9) - (qnpc.floorY || 0));
+      if (qdy > 2) continue;
+      if (Math.sqrt(qdx * qdx + qdz * qdz) < 3.0) {
+        showAdvisor({ja: '⚠️ 今は地震中！まず自分の身を守ろう！揺れが収まってから助けに行こう！', en: '⚠️ Earthquake! Protect yourself first! Help others after shaking stops!'}, 'danger');
+        return;
+      }
+    }
+    return; // 地震中はインタラクト全般を無効化
+  }
   // まず負傷NPCを助けられるかチェック
   if (tryHelpInjuredNPC()) return;
   // 安否確認（声かけ）チェック
@@ -15077,7 +15094,7 @@ function showAdvisor(text, type) {
   if (!box || !textEl) return;
 
   textEl.textContent = resolveNovelText(text);
-  textEl.className = type === 'warning' ? 'warning' : type === 'praise' ? 'praise' : '';
+  textEl.className = (type === 'warning' || type === 'danger') ? 'warning' : type === 'praise' ? 'praise' : '';
   box.classList.add('visible');
 
   // 4秒後に非表示
@@ -16149,8 +16166,10 @@ document.addEventListener('keydown', function(e) {
     // 机の下でしゃがみ中のみホールドオン有効
     if (underDesk) {
       GAME.player.isHoldingDesk = true;
+    } else if (!isQuakePhase) {
+      performInteract(); // 地震中はインタラクト禁止
     } else {
-      performInteract();
+      performInteract(); // performInteract内部で地震ガードあり（赤警告表示）
     }
   }
   // インタラクト: F / Space
