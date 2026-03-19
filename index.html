@@ -1557,6 +1557,17 @@ html, body {
 }
 #daily-cinematic .cin-text.show { opacity: 1; }
 #daily-cinematic .cin-text.hide { opacity: 0; transition: opacity 0.5s ease; }
+#cin-skip-btn {
+  position: fixed; top: 16px; right: 16px; z-index: 210;
+  background: rgba(0,0,0,0.6); color: rgba(255,255,255,0.8);
+  border: 1px solid rgba(255,255,255,0.3); border-radius: 6px;
+  padding: 8px 18px; font-size: 14px; cursor: pointer;
+  pointer-events: auto; transition: background 0.2s, opacity 0.3s;
+  font-family: 'Noto Sans JP', sans-serif; letter-spacing: 1px;
+  display: none;
+}
+#cin-skip-btn:hover { background: rgba(255,255,255,0.2); }
+#daily-cinematic.active #cin-skip-btn { display: block; }
 #hud-timer {
   font-size: 24px; color: #fff; letter-spacing: 2px;
   background: rgba(0,0,0,0.5); padding: 4px 14px;
@@ -2833,6 +2844,7 @@ html, body {
   <div id="daily-cinematic">
     <div class="cin-bars"><div class="cin-bar-top"></div><div class="cin-bar-bottom"></div></div>
     <div class="cin-text" id="cin-text"></div>
+    <button id="cin-skip-btn">スキップ ▶▶</button>
   </div>
   <div id="interact-prompt"><span class="prompt-key">E</span><span class="prompt-label"></span></div>
   <div id="objective-banner" style="display:none;"></div>
@@ -15849,6 +15861,14 @@ function initDailyCinematic() {
   GAME._cinPhase = 0;
   GAME._cinTimer = 0;
   GAME._cinTextShown = -1;
+
+  // スキップボタン
+  var skipBtn = document.getElementById('cin-skip-btn');
+  if (skipBtn) {
+    skipBtn.onclick = function() {
+      GAME.phaseTimer = GAME.dailyDuration; // タイマーを終了時間に飛ばす
+    };
+  }
 
   // ステージ別カメラアングル＋テロップ
   var isS2 = GAME.stageNum === 2;
