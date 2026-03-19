@@ -7930,6 +7930,52 @@ function buildSchoolyard() {
   GAME.cameraMeshes.push(extWall);
   GAME.walls.push({ minX: -15, maxX: 15, minZ: 19.85, maxZ: 20.15, minY: 0, maxY: 12 });
 
+  // 校舎外壁に非常口ドア（校庭から見えるリアルな出入口）
+  var extDoorMat = new THREE.MeshStandardMaterial({ color: 0x336644, roughness: 0.5, metalness: 0.2, emissive: 0x112211, emissiveIntensity: 0.2 });
+  var extDoorFrameMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.4, metalness: 0.5 });
+  // 両開きドア本体（幅1.6m × 高さ2.4m）
+  var edX = -5; // 非常口の位置（避難通路出口のX座標付近）
+  var edW2 = 0.8, edH2 = 2.4;
+  var extDoor1 = new THREE.Mesh(new THREE.BoxGeometry(edW2, edH2, 0.08), extDoorMat);
+  extDoor1.position.set(edX - edW2/2, edH2/2, 20.18);
+  scene.add(extDoor1);
+  var extDoor2 = new THREE.Mesh(new THREE.BoxGeometry(edW2, edH2, 0.08), extDoorMat);
+  extDoor2.position.set(edX + edW2/2, edH2/2, 20.18);
+  scene.add(extDoor2);
+  // ドア枠
+  var extDFTop = new THREE.Mesh(new THREE.BoxGeometry(edW2 * 2 + 0.3, 0.15, 0.15), extDoorFrameMat);
+  extDFTop.position.set(edX, edH2 + 0.08, 20.18);
+  scene.add(extDFTop);
+  var extDFL = new THREE.Mesh(new THREE.BoxGeometry(0.12, edH2 + 0.15, 0.15), extDoorFrameMat);
+  extDFL.position.set(edX - edW2 - 0.06, edH2/2, 20.18);
+  scene.add(extDFL);
+  var extDFR = new THREE.Mesh(new THREE.BoxGeometry(0.12, edH2 + 0.15, 0.15), extDoorFrameMat);
+  extDFR.position.set(edX + edW2 + 0.06, edH2/2, 20.18);
+  scene.add(extDFR);
+  // プッシュバー（銀色の横バー）
+  var extBarMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.3, metalness: 0.8 });
+  var extBar1 = new THREE.Mesh(new THREE.BoxGeometry(edW2 * 0.7, 0.04, 0.04), extBarMat);
+  extBar1.position.set(edX - edW2/2, 1.0, 20.24);
+  scene.add(extBar1);
+  var extBar2 = new THREE.Mesh(new THREE.BoxGeometry(edW2 * 0.7, 0.04, 0.04), extBarMat);
+  extBar2.position.set(edX + edW2/2, 1.0, 20.24);
+  scene.add(extBar2);
+  // 「非常口 EXIT」サイン（ドアの上、緑の発光サイン）
+  var extExitCanvas = document.createElement('canvas');
+  extExitCanvas.width = 256; extExitCanvas.height = 96;
+  var eCtx = extExitCanvas.getContext('2d');
+  eCtx.fillStyle = '#003311'; eCtx.fillRect(0, 0, 256, 96);
+  eCtx.fillStyle = '#00ff44'; eCtx.font = 'bold 36px sans-serif'; eCtx.textAlign = 'center';
+  eCtx.fillText('EXIT 非常口', 128, 58);
+  var extExitTex = new THREE.CanvasTexture(extExitCanvas);
+  var extExitSign = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.45), new THREE.MeshBasicMaterial({ map: extExitTex }));
+  extExitSign.position.set(edX, edH2 + 0.4, 20.20);
+  scene.add(extExitSign);
+  // 非常口の緑ライト
+  var extExitLight = new THREE.PointLight(0x00ff44, 0.5, 8);
+  extExitLight.position.set(edX, edH2 + 0.3, 20.5);
+  scene.add(extExitLight);
+
   // 校舎の窓（外観）
   var extWinMat = new THREE.MeshStandardMaterial({ color: 0x6699bb, roughness: 0.1, metalness: 0.1, transparent: true, opacity: 0.4, emissive: 0x334466, emissiveIntensity: 0.2 });
   for (var ewi = 0; ewi < 8; ewi++) {
@@ -10341,7 +10387,7 @@ function teleportToSchoolyard() {
   GAME.player.x = SCHOOLYARD_SPAWN.x;
   GAME.player.y = GROUND_Y + 0.9;
   GAME.player.z = SCHOOLYARD_SPAWN.z;
-  GAME.player.yaw = Math.PI; // 校舎を背にして校庭を向く
+  GAME.player.yaw = 0; // 避難ポイント方向（z+）を向く
 
   // fog・照明を屋外設定に変更
   GAME.scene.fog = new THREE.FogExp2(0x87ceeb, 0.005);
