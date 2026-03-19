@@ -2668,7 +2668,7 @@ html, body {
   <div id="daily-cinematic">
     <div class="cin-bars"><div class="cin-bar-top"></div><div class="cin-bar-bottom"></div></div>
     <div class="cin-text" id="cin-text"></div>
-    <button id="cin-skip-btn">スキップ ▶▶</button>
+    <button id="cin-skip-btn" data-i18n="CIN_SKIP">スキップ ▶▶</button>
   </div>
   <div id="interact-prompt"><span class="prompt-key">E</span><span class="prompt-label"></span></div>
   <div id="objective-banner" style="display:none;"></div>
@@ -2698,8 +2698,8 @@ html, body {
   </div>
   <div id="mobile-joystick"><div id="joystick-knob"></div></div>
   <div id="mobile-buttons">
-    <button class="mob-btn" id="mob-dash">走る</button>
-    <button class="mob-btn" id="mob-crouch">しゃがむ</button>
+    <button class="mob-btn" id="mob-dash" data-i18n="MOB_DASH">走る</button>
+    <button class="mob-btn" id="mob-crouch" data-i18n="MOB_CROUCH">しゃがむ</button>
     <button class="mob-btn" id="mob-guard" data-i18n="MOB_GUARD">頭を守る</button>
   </div>
   <button id="mob-interact" data-i18n="MOB_INTERACT">操作</button>
@@ -2916,8 +2916,11 @@ const I18N = {
     HUD_GUARD_TITLE: '🛡️ 頭を保護中',
     HUD_GUARD_SUB: '頭を守りながら避難中…',
     HUD_HOLDON_SUB: '机の脚を掴んでいる…',
+    MOB_DASH: '走る',
+    MOB_CROUCH: 'しゃがむ',
     MOB_GUARD: '頭を守る',
     MOB_INTERACT: '操作',
+    CIN_SKIP: 'スキップ ▶▶',
     CONTROLS_TITLE: '操作説明',
     CONTROLS_PC: 'PC操作',
     CONTROLS_TH_ACTION: '操作',
@@ -3055,8 +3058,11 @@ const I18N = {
     HUD_GUARD_TITLE: '🛡️ Guarding Head',
     HUD_GUARD_SUB: 'Protecting head while evacuating...',
     HUD_HOLDON_SUB: 'Holding desk legs...',
+    MOB_DASH: 'Run',
+    MOB_CROUCH: 'Crouch',
     MOB_GUARD: 'Guard',
     MOB_INTERACT: 'Action',
+    CIN_SKIP: 'Skip ▶▶',
     CONTROLS_TITLE: 'CONTROLS',
     CONTROLS_PC: 'PC Controls',
     CONTROLS_TH_ACTION: 'Action',
@@ -12702,7 +12708,7 @@ function tryHelpInjuredNPC() {
         GAME.score += 5;
         SoundManager.playSE('click');
         showAdvisor({ja: '妹を落ち着かせた！妹は1階のお父さんのところへ向かう。君も1階へ行こう！', en: 'You calmed your sister! She\'ll go to dad on 1F. You go downstairs too!'}, 'praise');
-        showItemGet('👧 妹を救助！ — 家族を守る');
+        showItemGet({ja: '👧 妹を救助！ — 家族を守る', en: '👧 Sister rescued! — Protect your family'});
         addFamilyLog('player', {ja: '妹に声をかけて落ち着かせた', en: 'Called out to sister and calmed her down'});
         addFamilyLog('sister', {ja: '1階のお父さんのところへ向かう', en: 'Heading downstairs to dad'});
         npc.behavior = 'calm'; npc.state = 'goToParents';
@@ -12765,7 +12771,7 @@ function trySafetyCheck() {
       GAME.score += 5;
       SoundManager.playSE('click');
       showAdvisor({ja: '「大丈夫？」— 周囲への声かけ、大切な行動です！', en: '"Are you okay?" — Checking on others is an important action!'}, 'praise');
-      showItemGet('🗣️ 安否確認！ — 「大丈夫？」');
+      showItemGet({ja: '🗣️ 安否確認！ — 「大丈夫？」', en: '🗣️ Safety check! — "Are you okay?"'});
       return true;
     }
   }
@@ -12850,7 +12856,7 @@ function performInteract() {
       GAME.score += 5;
       SoundManager.playSE('door');
       showAdvisor({ja: 'ドアを開けた！廊下に出て、非常口（緑の看板）を目指そう！', en: 'Door opened! Head to the hallway and find the emergency exit (green sign)!'}, 'praise');
-      showItemGet('🚪 ドアを開けた！ — 避難経路確保');
+      showItemGet({ja: '🚪 ドアを開けた！ — 避難経路確保', en: '🚪 Door opened! — Evacuation route secured'});
       // ドアを開く演出（引き戸 — Z方向にスライド）
       if (target.mesh) {
         target.mesh.position.z += 1.2; // 後方にスライド
@@ -12869,7 +12875,7 @@ function performInteract() {
       GAME.score += 5;
       SoundManager.playSE('breaker');
       showAdvisor({ja: 'ブレーカーを落とした！停電が復旧した時の通電火災を防げるよ。', en: 'Breaker switched off! This prevents electrical fires when power returns.'}, 'praise');
-      showItemGet('⚡ ブレーカーOFF！ — 通電火災を防止');
+      showItemGet({ja: '⚡ ブレーカーOFF！ — 通電火災を防止', en: '⚡ Breaker OFF! — Electrical fire prevented'});
       // ブレーカーの色を変える（OFF状態）+ ランプ消灯
       if (target.mesh) {
         target.mesh.material = new THREE.MeshStandardMaterial({
@@ -12885,7 +12891,7 @@ function performInteract() {
       GAME.scoring.putOnShoes = true;
       GAME.score += 5;
       showAdvisor({ja: '靴を履いた！ガラスや瓦礫の上も安全に歩けるよ。', en: 'Shoes on! You can safely walk over glass and debris now.'}, 'praise');
-      showItemGet('👟 靴を装備！ — ガラス破片から足を保護');
+      showItemGet({ja: '👟 靴を装備！ — ガラス破片から足を保護', en: '👟 Shoes equipped! — Feet protected from glass'});
       addFamilyLog('player', {ja: '靴を履いた（ガラス片対策）', en: 'Put on shoes (glass protection)'});
       // 靴箱の上履きを非表示（取得済み）
       if (target.mesh) target.mesh.visible = false;
@@ -12897,7 +12903,7 @@ function performInteract() {
       GAME.scoring.turnedOffFire = true;
       GAME.score += 5;
       showAdvisor({ja: 'ストーブの火を消した！地震後の火災は非常に危険。必ず消火しよう！', en: 'Heater turned off! Post-earthquake fires are extremely dangerous.'}, 'praise');
-      showItemGet('🔥 消火完了！ — 二次災害（火災）を防止');
+      showItemGet({ja: '🔥 消火完了！ — 二次災害（火災）を防止', en: '🔥 Fire extinguished! — Secondary disaster prevented'});
       // ストーブの色を暗くする（消火状態）
       if (target.mesh) {
         target.mesh.material = new THREE.MeshStandardMaterial({
@@ -12914,7 +12920,7 @@ function performInteract() {
       GAME.scoring.usedEmergencyExit = true;
       GAME.score += 8;
       showAdvisor({ja: '非常口を開けた！避難通路を進め！', en: 'Emergency exit opened! Proceed through the evacuation route!'}, 'praise');
-      showItemGet('🚪 非常口を開放！ — 避難通路へ');
+      showItemGet({ja: '🚪 非常口を開放！ — 避難通路へ', en: '🚪 Emergency exit opened! — To evacuation route'});
       // ドアのコリジョンを除去
       if (GAME._emergencyExitDoorCollision) {
         var eidx = GAME.walls.indexOf(GAME._emergencyExitDoorCollision);
@@ -12960,7 +12966,7 @@ function performInteract() {
       GAME.scoring.usedStairs = true;
       GAME.score += 5;
       showAdvisor({ja: '非常階段のドアを開けた！10階から1階まで、階段で避難しよう！', en: 'Stair door opened! Evacuate from the 10th to the 1st floor via stairs!'}, 'praise');
-      showItemGet('🚪 非常階段のドアを開放！ — 正しい避難ルート');
+      showItemGet({ja: '🚪 非常階段のドアを開放！ — 正しい避難ルート', en: '🚪 Emergency stairway opened! — Correct evacuation route'});
       // ドアのコリジョン除去
       if (GAME._stairDoorCollision) {
         var sdIdx = GAME.walls.indexOf(GAME._stairDoorCollision);
@@ -12977,7 +12983,7 @@ function performInteract() {
       GAME.scoring.turnedOffGas = true;
       GAME.score += 5;
       showAdvisor({ja: 'ガスの元栓を閉めた！地震後のガス漏れ・火災を防げるよ。', en: 'Gas valve shut off! This prevents gas leaks and fires after the earthquake.'}, 'praise');
-      showItemGet('🔥 ガスOFF！ — ガス漏れ・火災を防止');
+      showItemGet({ja: '🔥 ガスOFF！ — ガス漏れ・火災を防止', en: '🔥 Gas OFF! — Gas leak & fire prevented'});
       if (GAME._gasFlameS3) GAME._gasFlameS3.visible = false;
       if (GAME._gasLightS3) GAME._gasLightS3.visible = false;
       if (target.mesh) {
@@ -12991,7 +12997,7 @@ function performInteract() {
       GAME.scoring.usedFlashlight = true;
       GAME.score += 5;
       showAdvisor({ja: '懐中電灯を手に入れた！足元を照らして安全に避難しよう。', en: 'Flashlight acquired! Light your way for a safe evacuation.'}, 'praise');
-      showItemGet('🔦 懐中電灯をゲット！ — 停電対策');
+      showItemGet({ja: '🔦 懐中電灯をゲット！ — 停電対策', en: '🔦 Flashlight acquired! — Blackout prep'});
       addFamilyLog('player', {ja: '懐中電灯を見つけた！', en: 'Found the flashlight!'});
       if (target.mesh) target.mesh.visible = false;
       // スポットライト（足元を照らす円錐光）
@@ -13018,7 +13024,7 @@ function performInteract() {
       GAME.score += 5;
       SoundManager.playSE('door');
       showAdvisor({ja: '玄関ドアを開けた！庭を通って道路に出よう！', en: 'Front door opened! Go through the garden to the road!'}, 'praise');
-      showItemGet('🚪 玄関ドアを開放！ — 避難経路確保');
+      showItemGet({ja: '🚪 玄関ドアを開放！ — 避難経路確保', en: '🚪 Front door opened! — Evacuation route secured'});
       // ドアコリジョン除去
       if (GAME._genkanDoorCollision) {
         var gdIdx = GAME.walls.indexOf(GAME._genkanDoorCollision);
@@ -13042,7 +13048,7 @@ function performInteract() {
       GAME.player.isCrouching = true;
       GAME.score += 10;
       showAdvisor({ja: '机の下に隠れた！頭を守って揺れがおさまるまで待とう！\n「E」で机の脚を掴んで体を固定しよう！', en: 'Hiding under the desk! Protect your head and wait for the shaking to stop!\nPress E to hold the desk legs!'}, 'praise');
-      showItemGet('🛡️ 身を守る行動！ — 机の下に避難');
+      showItemGet({ja: '🛡️ 身を守る行動！ — 机の下に避難', en: '🛡️ Protective action! — Shelter under desk'});
       break;
 
     case 'goDownstairs':
@@ -13126,6 +13132,7 @@ function updateInteractPrompt() {
 
 // アイテム取得演出（フラッシュ＋テキスト）
 function showItemGet(text) {
+  var displayText = (typeof text === 'object' && text !== null) ? (currentLang === 'en' ? text.en : text.ja) : text;
   var overlay = document.getElementById('item-get-overlay');
   var textEl = document.getElementById('item-get-text');
   if (overlay) {
@@ -13133,7 +13140,7 @@ function showItemGet(text) {
     setTimeout(function() { overlay.style.opacity = '0'; }, 300);
   }
   if (textEl) {
-    textEl.textContent = text;
+    textEl.textContent = displayText;
     textEl.classList.add('show');
     setTimeout(function() { textEl.classList.remove('show'); }, 2000);
   }
