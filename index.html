@@ -1588,6 +1588,11 @@ html, body {
   background: rgba(0,0,0,0.5); padding: 4px 10px;
   border-radius: 4px;
 }
+#hud-goal-dist {
+  font-size: 13px; color: #00ff66; font-weight: bold;
+  background: rgba(0,40,0,0.7); padding: 4px 12px;
+  border-radius: 4px; border: 1px solid #00ff66;
+}
 #hud-safety-indicator {
   font-size: 12px; padding: 4px 10px; letter-spacing: 1px;
   background: rgba(0,0,0,0.5); border-radius: 4px;
@@ -2862,6 +2867,7 @@ html, body {
     </div>
     <div id="hud-bottom-bar">
       <div id="hud-score">SCORE: 0</div>
+      <div id="hud-goal-dist" style="display:none;"></div>
       <div id="hud-safety-indicator" class="safe">SAFE</div>
     </div>
     <div id="advisor-box">
@@ -10088,23 +10094,7 @@ function buildHouseFloor() {
   // PointLight（Stage 1/2と同じ: intensity 1.5, range 15）
   var evacLightS3 = new THREE.PointLight(0x00ff66, 1.5, 15);
   evacLightS3.position.set(EVAC_POINT_S3.x, Y1 + 1.0, EVAC_POINT_S3.z); scene.add(evacLightS3);
-  // 道しるべ: 発光ポールのみ（看板なし — fog:falseで霧に消されない）
-  var guidePoleMat = new THREE.MeshBasicMaterial({ color: 0x00ff88, fog: false });
-  var guidePositions = [
-    [-3, -8],   // 玄関すぐ外
-    [-1, -12],  // 道路入口
-    [1, -16],   // 道路中間
-    [3, -19],   // 右折手前
-    [6, -20],   // 右折地点
-    [9, -20],   // 公園手前
-  ];
-  GAME._guidePoles = [];
-  for (var gpi = 0; gpi < guidePositions.length; gpi++) {
-    var gpole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 2.5, 8), guidePoleMat);
-    gpole.position.set(guidePositions[gpi][0], Y1 + 1.25, guidePositions[gpi][1]); scene.add(gpole);
-    gpole.frustumCulled = false;
-    GAME._guidePoles.push(gpole);
-  }
+  // 道しるべポール削除済み（ゴール距離ラベルで誘導）
 
   // 照明
   GAME._houseLights = [];
@@ -10190,7 +10180,38 @@ function teleportToHouseExterior() {
   GAME.scene.traverse(function(obj) {
     if (obj.isDirectionalLight) { obj.intensity = 0.4; obj.position.set(5, 15, -20); }
   });
-  showAdvisor({ja: 'ブロック塀には近づくな！道路を通って避難公園（オレンジ）を目指そう！', en: 'Stay away from block walls! Head to the evacuation park (orange) via the road!'}, 'normal');
+  showAdvisor({ja: 'ブロック塀には近づくな！緑の光柱が見える公園を目指そう！', en: 'Stay away from block walls! Head for the park with the green beacon!'}, 'normal');
+  // 家族NPCを公園に先行配置（プレイヤー到着時に待っている演出）
+  var parkOffsets3 = { father: {x: -0.8, z: -0.5}, mother: {x: 0.8, z: -0.5}, sister: {x: -0.5, z: 0.8} };
+  for (var fni = 0; fni < GAME.npcs.length; fni++) {
+    var fnpc = GAME.npcs[fni];
+    var pOff = parkOffsets3[fnpc.role];
+    if (pOff) {
+      fnpc.x = EVAC_POINT_S3.x + pOff.x;
+      fnpc.z = EVAC_POINT_S3.z + pOff.z;
+      fnpc.floorY = 0;
+      fnpc.exited = true;
+      fnpc._waitingAtPark = true;
+      fnpc.state = 'idle';
+      var fmesh = fnpc.mesh;
+      fmesh.position.set(fnpc.x, 0, fnpc.z);
+      fmesh.visible = true;
+      fmesh.rotation.y = Math.atan2(EVAC_POINT_S3.x - fnpc.x, EVAC_POINT_S3.z - fnpc.z);
+      // 暗い屋外でも見えるようにMeshBasicMaterialに切り替え
+      fmesh.traverse(function(child) {
+        if (child.isMesh && child.material) {
+          var oldColor = child.material.color ? child.material.color.getHex() : 0xffffff;
+          child.material = new THREE.MeshBasicMaterial({ color: oldColor, fog: false });
+        }
+      });
+      // 待機ポーズ
+      if (fmesh.userData.leftArm) { fmesh.userData.leftArm.rotation.x = 0; fmesh.userData.leftArm.rotation.z = 0; }
+      if (fmesh.userData.rightArm) { fmesh.userData.rightArm.rotation.x = 0; fmesh.userData.rightArm.rotation.z = 0; }
+      if (fmesh.userData.leftLeg) fmesh.userData.leftLeg.rotation.x = 0;
+      if (fmesh.userData.rightLeg) fmesh.userData.rightLeg.rotation.x = 0;
+      if (fmesh.userData.body) { fmesh.userData.body.rotation.x = 0; fmesh.userData.body.rotation.z = 0; }
+    }
+  }
 }
 
 // ============================================================
@@ -14381,6 +14402,21 @@ function updateHUD() {
   // 震度表示
   var seismicEl = document.getElementById('hud-seismic');
   if (seismicEl) seismicEl.textContent = (currentLang === 'en' ? 'Intensity ' : '震度') + GAME.quake.intensity;
+
+  // ゴールまでの距離ラベル（Stage 3屋外のみ表示）
+  var goalDistEl = document.getElementById('hud-goal-dist');
+  if (goalDistEl) {
+    if (GAME._inHouseGarden && GAME.phase === 'evacuation' && GAME.stageNum === 3) {
+      var ep = EVAC_POINT_S3;
+      var dx = ep.x - GAME.player.x, dz = ep.z - GAME.player.z;
+      var dist = Math.sqrt(dx * dx + dz * dz);
+      var en = (currentLang === 'en');
+      goalDistEl.textContent = (en ? '🏁 Goal: ' : '🏁 避難場所: ') + Math.round(dist) + 'm';
+      goalDistEl.style.display = 'block';
+    } else {
+      goalDistEl.style.display = 'none';
+    }
+  }
 }
 
 // ============================================================
