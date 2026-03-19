@@ -15048,11 +15048,8 @@ function calculateScore() {
     if (s.noElevator) score += 6; // エレベーターに乗らなかったボーナス
     score += (GAME._novelChoiceScore || 0);
   } else if (stg === 3) {
-    // Stage3（自宅）: 家庭での防災行動
-    if (s.turnedOffGas) score += 6;      // ガスの元栓を閉めた
-    if (s.turnedOffBreaker) score += 6;  // ブレーカーを落とした
+    // Stage3（自宅）: プレイヤー自身の行動のみ（父の自動行動は含めない）
     if (s.putOnShoes) score += 6;        // 靴を履いた
-    if (s.usedFlashlight) score += 3;    // 懐中電灯を使った
     if (s.rescuedChild) score += 5;      // 妹に声をかけた
     if (s.familyEvacuated) score += 5;   // 家族全員で避難した
     score += (GAME._novelChoiceScore || 0);
@@ -15163,11 +15160,8 @@ function showResult() {
         var novelPts2 = GAME._novelChoiceScore || 0;
         actions.push({ done: novelPts2 > 0, text: en ? 'Made correct choices in novel scenes' : 'ノベル選択肢で正しい判断をした', pts: novelPts2 > 0 ? '+' + novelPts2 : '0' });
       } else if (stg === 3) {
-        // Stage 3（自宅）: 家庭での防災行動
-        actions.push({ done: s.turnedOffGas, text: en ? 'Turned off gas valve (leak prevention)' : 'ガスの元栓を閉めた（ガス漏れ防止）', pts: '+6' });
-        actions.push({ done: s.turnedOffBreaker, text: en ? 'Turned off breaker (fire prevention)' : 'ブレーカーを落とした（通電火災防止）', pts: '+6' });
+        // Stage 3（自宅）: プレイヤー自身の行動のみ（父の自動行動は含めない）
         actions.push({ done: s.putOnShoes, text: en ? 'Put on shoes (glass protection)' : '靴を履いた（ガラス片対策）', pts: '+6' });
-        actions.push({ done: s.usedFlashlight, text: en ? 'Picked up flashlight (blackout prep)' : '懐中電灯を持った（停電対策）', pts: '+3' });
         actions.push({ done: s.rescuedChild, text: en ? 'Called out to sister upstairs' : '2階の妹に声をかけた', pts: '+5' });
         actions.push({ done: s.familyEvacuated, text: en ? 'Evacuated with entire family' : '家族全員で避難した', pts: '+5' });
         var novelPts3 = GAME._novelChoiceScore || 0;
