@@ -9406,8 +9406,11 @@ function buildHouseFloor() {
   breakerLever.position.set(-4.5, Y1 + 1.5, -4.73); scene.add(breakerLever);
   GAME._breakerLeverS3 = breakerLever;
 
-  var flashlight = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.2, 8), new THREE.MeshStandardMaterial({ color: 0xffdd00, roughness: 0.4, emissive: 0x443300, emissiveIntensity: 0.3 }));
-  flashlight.position.set(-5.3, Y1 + 0.84, -4.0); flashlight.rotation.z = Math.PI / 2; scene.add(flashlight);
+  // 懐中電灯 — 2Fプレイヤー机の引き出し（机の横に小さな棚）
+  var flashDrawer = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.12, 0.3), new THREE.MeshStandardMaterial({ color: 0x6a5a4a, roughness: 0.7, emissive: 0x050403, emissiveIntensity: 0.1 }));
+  flashDrawer.position.set(-3.35, Y2 + 0.50, -4.0); scene.add(flashDrawer);
+  var flashlight = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.2, 8), new THREE.MeshStandardMaterial({ color: 0xffdd00, roughness: 0.4, emissive: 0x665500, emissiveIntensity: 0.5 }));
+  flashlight.position.set(-3.35, Y2 + 0.60, -4.0); flashlight.rotation.z = Math.PI / 2; scene.add(flashlight);
   GAME._flashlightMeshS3 = flashlight;
 
   // 和室
@@ -10120,7 +10123,7 @@ function buildHouseFloor() {
   GAME.interactables.push({ x: -4, z: -4, radius: 1.5, action: 'hideUnderDesk', label: {ja: '机の下に潜る', en: 'Hide Under Desk'}, phases: ['earthquake', 'shaking'], used: false, floorY: Y2 });
   GAME.interactables.push({ x: 4.5, z: 4.5, radius: 1.5, action: 'turnOffGas', label: {ja: '\uD83D\uDD25 ガスを止める', en: '\uD83D\uDD25 Turn Off Gas'}, phases: ['aftershake', 'evacuation'], used: false, mesh: gasStove, autoHandled: true });
   GAME.interactables.push({ x: -4.5, z: -4.73, radius: 0.8, action: 'turnOffBreaker', label: {ja: '\u26A1 ブレーカーを落とす（通電火災防止）', en: '\u26A1 Turn Off Breaker (Prevent Fire)'}, phases: ['aftershake', 'evacuation'], used: false, mesh: breakerLever, autoHandled: true });
-  GAME.interactables.push({ x: -5.3, z: -4.0, radius: 0.8, action: 'pickUpFlashlight', label: {ja: '\uD83D\uDD26 懐中電灯を取る', en: '\uD83D\uDD26 Pick Up Flashlight'}, phases: ['aftershake', 'evacuation'], used: false, mesh: flashlight, autoHandled: true });
+  GAME.interactables.push({ x: -3.35, z: -4.0, radius: 1.5, action: 'pickUpFlashlight', label: {ja: '🔦 机の引き出しから懐中電灯を取る', en: '🔦 Get Flashlight from Desk Drawer'}, phases: ['aftershake', 'evacuation'], used: false, mesh: flashlight, floorY: Y2 });
   GAME.interactables.push({ x: -5.3, z: -4.5, radius: 0.8, action: 'putOnShoes', label: {ja: '\uD83D\uDC5F 靴を履く（ガラス対策）', en: '\uD83D\uDC5F Put On Shoes (Glass Protection)'}, phases: ['aftershake', 'evacuation'], used: false, mesh: shoesMesh });
   GAME.interactables.push({ x: -5, z: -4.9, radius: 1.0, action: 'openGenkanDoor', label: {ja: '\uD83D\uDEAA 玄関ドアを開ける', en: '\uD83D\uDEAA Open Front Door'}, phases: ['aftershake', 'evacuation'], used: false, mesh: genkanDoor, autoHandled: true });
   // 玄関の外に出るインタラクション（ドアが開いてから有効）
@@ -11623,18 +11626,7 @@ function autoPerformAction(actionName) {
           if (obj.mesh) obj.mesh.material = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.6, metalness: 0.3, emissive: 0x000000, emissiveIntensity: 0 });
           addFamilyLog('father', {ja: 'ガスの元栓を閉めた', en: 'Shut off the gas valve'});
           break;
-        case 'pickUpFlashlight':
-          if (obj.mesh) obj.mesh.visible = false;
-          addFamilyLog('father', {ja: '懐中電灯を取った', en: 'Picked up the flashlight'});
-          // 父に懐中電灯ライトを追加
-          if (!GAME._fatherFlashSpot) {
-            var fs = new THREE.SpotLight(0xffffcc, 1.2, 12, Math.PI / 5, 0.3, 1);
-            fs.castShadow = false; GAME.scene.add(fs);
-            var ft = new THREE.Object3D(); GAME.scene.add(ft);
-            fs.target = ft;
-            GAME._fatherFlashSpot = fs; GAME._fatherFlashTarget = ft;
-          }
-          break;
+        // pickUpFlashlight は父の自動行動から除外（プレイヤー専用）
         case 'turnOffBreaker':
           if (obj.mesh) obj.mesh.material = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.4, metalness: 0.5, emissive: 0x003300, emissiveIntensity: 0.3 });
           if (GAME._breakerLight) GAME._breakerLight.visible = false;
@@ -13214,16 +13206,17 @@ function performInteract() {
       break;
 
     case 'pickUpFlashlight':
-      // Stage 3: 懐中電灯を取る
+      // Stage 3: 懐中電灯を取る（プレイヤー専用 — 2Fの机の引き出し）
       GAME._hasFlashlight = true;
       GAME.scoring.usedFlashlight = true;
-      GAME.score += 3;
-      showAdvisor({ja: '懐中電灯を手に入れた！停電時に足元を照らせるよ。', en: 'Flashlight acquired! You can light your way during a blackout.'}, 'praise');
+      GAME.score += 5;
+      showAdvisor({ja: '懐中電灯を手に入れた！足元を照らして安全に避難しよう。', en: 'Flashlight acquired! Light your way for a safe evacuation.'}, 'praise');
       showItemGet('🔦 懐中電灯をゲット！ — 停電対策');
+      addFamilyLog('player', {ja: '懐中電灯を見つけた！', en: 'Found the flashlight!'});
       if (target.mesh) target.mesh.visible = false;
-      // スポットライト作成（プレイヤー前方を照らす）
+      // スポットライト（足元を照らす円錐光）
       if (!GAME._flashSpot) {
-        var fSpot = new THREE.SpotLight(0xffffcc, 1.5, 15, Math.PI / 6, 0.3, 1);
+        var fSpot = new THREE.SpotLight(0xffffcc, 2.0, 8, Math.PI / 5, 0.5, 1.5);
         fSpot.castShadow = false;
         GAME.scene.add(fSpot);
         var fTarget = new THREE.Object3D();
@@ -13231,6 +13224,10 @@ function performInteract() {
         fSpot.target = fTarget;
         GAME._flashSpot = fSpot;
         GAME._flashSpotTarget = fTarget;
+        // 足元付近の補助PointLight（周囲をほんのり照らす）
+        var fPoint = new THREE.PointLight(0xffffaa, 0.6, 6, 2);
+        GAME.scene.add(fPoint);
+        GAME._flashPoint = fPoint;
       }
       break;
 
@@ -13722,20 +13719,14 @@ function gameLoop(timestamp) {
   // Stage 3: 懐中電灯スポットライト更新
   if (GAME._flashSpot && GAME._hasFlashlight) {
     var fp = GAME.player;
-    GAME._flashSpot.position.set(fp.x, fp.y + 0.3, fp.z);
+    // 手の高さ（腰付近）から足元前方を照らす
+    GAME._flashSpot.position.set(fp.x, fp.y + 0.8, fp.z);
     var fa = GAME.player.yaw || 0;
-    GAME._flashSpotTarget.position.set(fp.x + Math.sin(fa) * 5, fp.y - 0.5, fp.z + Math.cos(fa) * 5);
-  }
-  // 父の懐中電灯更新
-  if (GAME._fatherFlashSpot) {
-    for (var ffi = 0; ffi < GAME.npcs.length; ffi++) {
-      if (GAME.npcs[ffi].role === 'father') {
-        var ff = GAME.npcs[ffi];
-        GAME._fatherFlashSpot.position.set(ff.x, (ff.floorY || 0) + 1.3, ff.z);
-        var ffy = ff.mesh.rotation.y || 0;
-        GAME._fatherFlashTarget.position.set(ff.x + Math.sin(ffy) * 5, (ff.floorY || 0) + 0.3, ff.z + Math.cos(ffy) * 5);
-        break;
-      }
+    // ターゲットは前方2m、足元（y=-0.2）に向ける
+    GAME._flashSpotTarget.position.set(fp.x + Math.sin(fa) * 2, fp.y - 0.2, fp.z + Math.cos(fa) * 2);
+    // 補助PointLightも追従
+    if (GAME._flashPoint) {
+      GAME._flashPoint.position.set(fp.x, fp.y + 0.3, fp.z);
     }
   }
 
@@ -15050,6 +15041,7 @@ function calculateScore() {
   } else if (stg === 3) {
     // Stage3（自宅）: プレイヤー自身の行動のみ（父の自動行動は含めない）
     if (s.putOnShoes) score += 6;        // 靴を履いた
+    if (s.usedFlashlight) score += 5;    // 懐中電灯を取った
     if (s.rescuedChild) score += 5;      // 妹に声をかけた
     if (s.familyEvacuated) score += 5;   // 家族全員で避難した
     score += (GAME._novelChoiceScore || 0);
@@ -15162,6 +15154,7 @@ function showResult() {
       } else if (stg === 3) {
         // Stage 3（自宅）: プレイヤー自身の行動のみ（父の自動行動は含めない）
         actions.push({ done: s.putOnShoes, text: en ? 'Put on shoes (glass protection)' : '靴を履いた（ガラス片対策）', pts: '+6' });
+        actions.push({ done: s.usedFlashlight, text: en ? 'Picked up flashlight from desk' : '机の引き出しから懐中電灯を取った', pts: '+5' });
         actions.push({ done: s.rescuedChild, text: en ? 'Called out to sister upstairs' : '2階の妹に声をかけた', pts: '+5' });
         actions.push({ done: s.familyEvacuated, text: en ? 'Evacuated with entire family' : '家族全員で避難した', pts: '+5' });
         var novelPts3 = GAME._novelChoiceScore || 0;
@@ -16001,7 +15994,8 @@ function cleanupGame() {
   // 家族行動ログ非表示・クリア
   var famLog = document.getElementById('family-log');
   if (famLog) { famLog.style.display = 'none'; famLog.innerHTML = ''; }
-  // 父の懐中電灯クリーンアップ
+  // 懐中電灯クリーンアップ
+  GAME._flashSpot = null; GAME._flashSpotTarget = null; GAME._flashPoint = null;
   GAME._fatherFlashSpot = null; GAME._fatherFlashTarget = null;
 
   document.getElementById('mobile-joystick').style.display = 'none';
