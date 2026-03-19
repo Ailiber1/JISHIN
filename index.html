@@ -10087,8 +10087,8 @@ function buildHouseFloor() {
   // PointLight（Stage 1/2と同じ: intensity 1.5, range 15）
   var evacLightS3 = new THREE.PointLight(0x00ff66, 1.5, 15);
   evacLightS3.position.set(EVAC_POINT_S3.x, Y1 + 1.0, EVAC_POINT_S3.z); scene.add(evacLightS3);
-  // 道しるべ: 発光ポール + 球体 + 地面矢印
-  var guidePoleMat = new THREE.MeshBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0.7 });
+  // 道しるべ: ポール + 方向看板ラベル（球体なし）
+  var guidePoleMat = new THREE.MeshBasicMaterial({ color: 0x00ff88 });
   var guidePositions = [
     [-3, -8],   // 玄関すぐ外
     [-1, -12],  // 道路入口
@@ -10099,13 +10099,34 @@ function buildHouseFloor() {
   ];
   GAME._guidePoles = [];
   for (var gpi = 0; gpi < guidePositions.length; gpi++) {
-    var gpole = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 2.5, 8), guidePoleMat);
-    gpole.position.set(guidePositions[gpi][0], Y1 + 1.25, guidePositions[gpi][1]); scene.add(gpole);
+    var gpole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 2.0, 8), guidePoleMat);
+    gpole.position.set(guidePositions[gpi][0], Y1 + 1.0, guidePositions[gpi][1]); scene.add(gpole);
     GAME._guidePoles.push(gpole);
-    // 発光球体（ポール上部の目印）
-    var gSphere = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 8), new THREE.MeshBasicMaterial({ color: 0x00ff88 }));
-    gSphere.position.set(guidePositions[gpi][0], Y1 + 2.7, guidePositions[gpi][1]);
-    scene.add(gSphere);
+    // 方向看板（次のポイントへの矢印テキスト）
+    var signCanvas = document.createElement('canvas');
+    signCanvas.width = 128; signCanvas.height = 48;
+    var sctx = signCanvas.getContext('2d');
+    sctx.fillStyle = '#005522';
+    sctx.fillRect(0, 0, 128, 48);
+    sctx.strokeStyle = '#00ff66';
+    sctx.lineWidth = 2;
+    sctx.strokeRect(1, 1, 126, 46);
+    sctx.fillStyle = '#00ff88';
+    sctx.font = 'bold 22px sans-serif';
+    sctx.textAlign = 'center';
+    sctx.fillText(gpi < guidePositions.length - 1 ? '→ 避難場所' : '▼ 避難場所', 64, 32);
+    var signTex = new THREE.CanvasTexture(signCanvas);
+    var signBoard = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.8, 0.3),
+      new THREE.MeshBasicMaterial({ map: signTex, side: THREE.DoubleSide })
+    );
+    signBoard.position.set(guidePositions[gpi][0], Y1 + 2.2, guidePositions[gpi][1]);
+    // 看板を次のポイント方向に向ける
+    if (gpi < guidePositions.length - 1) {
+      var nx = guidePositions[gpi + 1][0], nz = guidePositions[gpi + 1][1];
+      signBoard.rotation.y = Math.atan2(nx - guidePositions[gpi][0], nz - guidePositions[gpi][1]);
+    }
+    scene.add(signBoard);
   }
 
   // 照明
@@ -13830,13 +13851,7 @@ function gameLoop(timestamp) {
     var bPulse3b = Math.sin(GAME.totalTimer * 2) * 0.5 + 0.5;
     GAME._beaconPillarOuter.material.opacity = 0.2 + bPulse3b * 0.2;
   }
-  // 道しるべポールの明滅アニメーション（順番にウェーブ）
-  if (GAME._guidePoles) {
-    for (var gii = 0; gii < GAME._guidePoles.length; gii++) {
-      var gpWave = 0.4 + Math.sin(GAME.totalTimer * 3 - gii * 0.8) * 0.3;
-      GAME._guidePoles[gii].material.opacity = gpWave;
-    }
-  }
+  // 道しるべポール（不透明MeshBasicMaterial — アニメーション不要）
   // Stage 3: 祖母の浮遊矢印アニメーション（上下揺れ + 回転）
   if (GAME._grandmaArrow && GAME._grandmaArrow.visible) {
     GAME._grandmaArrow.position.y = (HOUSE_1F_Y || 0) + 2.0 + Math.sin(GAME.totalTimer * 3) * 0.3;
