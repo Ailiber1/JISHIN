@@ -10192,20 +10192,85 @@ function spawnHouseNPCs() {
     needsHelp: true, helpMessage: {ja: '妹が泣いている！声をかけて落ち着かせよう！', en: 'Your sister is crying! Talk to her to calm her down!'},
   });
 
-  var grandmaModel = createNPCModel(0x795548, 1.45, 0xf5c6a0, { isFemale: true, hairColor: 0xaaaaaa, skirtColor: 0x795548 });
+  // おばあちゃん: MeshBasicMaterial専用モデル（createNPCModelを使わず直接構築）
+  // createNPCModelの出力が描画されない問題を根本回避
+  var grandmaModel = new THREE.Group();
+  var gH = 1.45;
+  var gBasic = function(c) { return new THREE.MeshBasicMaterial({ color: c, fog: false }); };
+  // 胴体
+  var gTorso = new THREE.Mesh(new THREE.CylinderGeometry(gH*0.065, gH*0.06, gH*0.28, 8), gBasic(0x795548));
+  gTorso.position.y = gH * 0.68;
+  gTorso.frustumCulled = false;
+  grandmaModel.add(gTorso);
+  // 頭
+  var gHead = new THREE.Mesh(new THREE.SphereGeometry(gH*0.11, 10, 8), gBasic(0xf5c6a0));
+  gHead.position.y = gH*0.28/2 + gH*0.11*0.8;
+  gHead.frustumCulled = false;
+  gTorso.add(gHead);
+  // 白髪
+  var gHair = new THREE.Mesh(new THREE.SphereGeometry(gH*0.11*1.06, 8, 6, 0, Math.PI*2, 0, Math.PI*0.45), gBasic(0xaaaaaa));
+  gHair.position.y = 0.01;
+  gHair.frustumCulled = false;
+  gHead.add(gHair);
+  // ロングヘア（後頭部）
+  var gLongHair = new THREE.Mesh(new THREE.CylinderGeometry(gH*0.11*0.8, gH*0.11*0.5, gH*0.11*1.8, 8), gBasic(0xaaaaaa));
+  gLongHair.position.set(0, -gH*0.11*0.6, -gH*0.11*0.4);
+  gLongHair.frustumCulled = false;
+  gHead.add(gLongHair);
+  // 目
+  var gEyeL = new THREE.Mesh(new THREE.SphereGeometry(0.025, 6, 6), gBasic(0xffffff));
+  gEyeL.position.set(-gH*0.11*0.35, gH*0.11*0.15, gH*0.11*0.85);
+  gEyeL.frustumCulled = false;
+  gHead.add(gEyeL);
+  var gPupilL = new THREE.Mesh(new THREE.SphereGeometry(0.014, 4, 4), gBasic(0x111111));
+  gPupilL.position.z = 0.015;
+  gPupilL.frustumCulled = false;
+  gEyeL.add(gPupilL);
+  var gEyeR = new THREE.Mesh(new THREE.SphereGeometry(0.025, 6, 6), gBasic(0xffffff));
+  gEyeR.position.set(gH*0.11*0.35, gH*0.11*0.15, gH*0.11*0.85);
+  gEyeR.frustumCulled = false;
+  gHead.add(gEyeR);
+  var gPupilR = new THREE.Mesh(new THREE.SphereGeometry(0.014, 4, 4), gBasic(0x111111));
+  gPupilR.position.z = 0.015;
+  gPupilR.frustumCulled = false;
+  gEyeR.add(gPupilR);
+  // 左腕
+  var gArmL = new THREE.Mesh(new THREE.CylinderGeometry(gH*0.028, gH*0.025, gH*0.26, 6), gBasic(0x795548));
+  gArmL.position.set(-gH*0.065 - gH*0.028, gH*0.28*0.2, 0);
+  gArmL.frustumCulled = false;
+  gTorso.add(gArmL);
+  // 右腕
+  var gArmR = new THREE.Mesh(new THREE.CylinderGeometry(gH*0.028, gH*0.025, gH*0.26, 6), gBasic(0x795548));
+  gArmR.position.set(gH*0.065 + gH*0.028, gH*0.28*0.2, 0);
+  gArmR.frustumCulled = false;
+  gTorso.add(gArmR);
+  // 左脚
+  var gLegPivotL = new THREE.Object3D();
+  gLegPivotL.position.set(-gH*0.025, -gH*0.28/2, 0);
+  gTorso.add(gLegPivotL);
+  var gLegL = new THREE.Mesh(new THREE.CylinderGeometry(gH*0.035, gH*0.03, gH*0.40, 6), gBasic(0x3a3a5a));
+  gLegL.position.y = -gH*0.20;
+  gLegL.frustumCulled = false;
+  gLegPivotL.add(gLegL);
+  // 右脚
+  var gLegPivotR = new THREE.Object3D();
+  gLegPivotR.position.set(gH*0.025, -gH*0.28/2, 0);
+  gTorso.add(gLegPivotR);
+  var gLegR = new THREE.Mesh(new THREE.CylinderGeometry(gH*0.035, gH*0.03, gH*0.40, 6), gBasic(0x3a3a5a));
+  gLegR.position.y = -gH*0.20;
+  gLegR.frustumCulled = false;
+  gLegPivotR.add(gLegR);
+  // 杖
+  var gCane = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.9, 6), gBasic(0x6d4c2e));
+  gCane.position.set(0.2, -0.3, 0.1); gCane.rotation.z = 0.15;
+  gCane.frustumCulled = false;
+  gTorso.add(gCane);
+  // userData互換（アニメーション用）
+  grandmaModel.userData = { body: gTorso, head: gHead, leftArm: gArmL, rightArm: gArmR, leftLeg: gLegPivotL, rightLeg: gLegPivotR };
   grandmaModel.position.set(-3.5, HOUSE_1F_Y, 3.5);
-  // おばあちゃんモデルの全メッシュをMeshBasicMaterialに変換（暗い和室でも確実に表示）
-  grandmaModel.traverse(function(child) {
-    if (child.isMesh && child.material) {
-      var oldColor = child.material.color ? child.material.color.getHex() : 0x795548;
-      child.material = new THREE.MeshBasicMaterial({ color: oldColor, fog: false });
-      child.frustumCulled = false;
-    }
-  });
+  grandmaModel.traverse(function(c) { c.frustumCulled = false; });
   GAME.scene.add(grandmaModel);
-  var cane = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.9, 6), new THREE.MeshBasicMaterial({ color: 0x6d4c2e, fog: false }));
-  cane.position.set(0.2, -0.3, 0.1); cane.rotation.z = 0.15;
-  grandmaModel.userData.body.add(cane);
+  console.log('[GRANDMA] モデル作成完了: children=' + grandmaModel.children.length + ' pos=(' + grandmaModel.position.x + ',' + grandmaModel.position.y + ',' + grandmaModel.position.z + ')');
   GAME.npcs.push({
     mesh: grandmaModel, role: 'grandma', x: -3.5, z: 3.5, targetX: -3.5, targetZ: 3.5,
     behavior: 'injured', state: 'idle', speed: 0.005, phase: 0,
@@ -12539,6 +12604,13 @@ function updateSingleNPC(npc, dtSec) {
         mesh.position.x = npc.x;
         mesh.position.z = npc.z;
         mesh.scale.set(1, 1, 1);
+        // デバッグ: 1秒ごとにおばあちゃんの状態をログ出力
+        if (!npc._debugTimer) npc._debugTimer = 0;
+        npc._debugTimer += dtSec;
+        if (npc._debugTimer > 2) {
+          npc._debugTimer = 0;
+          console.log('[GRANDMA-EVAC] visible=' + mesh.visible + ' pos=(' + mesh.position.x.toFixed(1) + ',' + mesh.position.y.toFixed(1) + ',' + mesh.position.z.toFixed(1) + ') scale=(' + mesh.scale.x + ',' + mesh.scale.y + ',' + mesh.scale.z + ') children=' + mesh.children.length + ' parent=' + (mesh.parent ? mesh.parent.type : 'null'));
+        }
         npc.phase += dtSec;
         var eInjBody = mesh.userData.body;
         if (eInjBody) {
