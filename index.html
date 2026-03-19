@@ -15046,9 +15046,13 @@ function calculateScore() {
     if (s.noElevator) score += 6; // エレベーターに乗らなかったボーナス
     score += (GAME._novelChoiceScore || 0);
   } else if (stg === 3) {
-    // Stage3（自宅）: プレイヤー行動のみ — 父親の自動行動はスコアに含めない
+    // Stage3（自宅）: 家庭での防災行動
+    if (s.turnedOffGas) score += 6;      // ガスの元栓を閉めた
+    if (s.turnedOffBreaker) score += 6;  // ブレーカーを落とした
     if (s.putOnShoes) score += 6;        // 靴を履いた
+    if (s.usedFlashlight) score += 3;    // 懐中電灯を使った
     if (s.rescuedChild) score += 5;      // 妹に声をかけた
+    if (s.familyEvacuated) score += 5;   // 家族全員で避難した
     score += (GAME._novelChoiceScore || 0);
   } else {
     // その他: 全項目
@@ -15067,7 +15071,7 @@ function calculateScore() {
   } else {
     GAME._guardEvacBonus = 0;
   }
-  if (s.usedStairs) score += 5;
+  if (s.usedStairs && GAME.stageNum !== 3) score += 5; // Stage 3は階段が必然なので加点しない
   if (s.avoidedBlockWall) score += 5;
   if (s.reachedEvacPoint) score += 10;
   if (s.withinTimeLimit) score += 5;
@@ -15157,9 +15161,13 @@ function showResult() {
         var novelPts2 = GAME._novelChoiceScore || 0;
         actions.push({ done: novelPts2 > 0, text: en ? 'Made correct choices in novel scenes' : 'ノベル選択肢で正しい判断をした', pts: novelPts2 > 0 ? '+' + novelPts2 : '0' });
       } else if (stg === 3) {
-        // Stage 3: プレイヤー行動のみ（父親の自動行動は含めない）
+        // Stage 3（自宅）: 家庭での防災行動
+        actions.push({ done: s.turnedOffGas, text: en ? 'Turned off gas valve (leak prevention)' : 'ガスの元栓を閉めた（ガス漏れ防止）', pts: '+6' });
+        actions.push({ done: s.turnedOffBreaker, text: en ? 'Turned off breaker (fire prevention)' : 'ブレーカーを落とした（通電火災防止）', pts: '+6' });
         actions.push({ done: s.putOnShoes, text: en ? 'Put on shoes (glass protection)' : '靴を履いた（ガラス片対策）', pts: '+6' });
+        actions.push({ done: s.usedFlashlight, text: en ? 'Picked up flashlight (blackout prep)' : '懐中電灯を持った（停電対策）', pts: '+3' });
         actions.push({ done: s.rescuedChild, text: en ? 'Called out to sister upstairs' : '2階の妹に声をかけた', pts: '+5' });
+        actions.push({ done: s.familyEvacuated, text: en ? 'Evacuated with entire family' : '家族全員で避難した', pts: '+5' });
         var novelPts3 = GAME._novelChoiceScore || 0;
         actions.push({ done: novelPts3 > 0, text: en ? 'Made correct choices in novel scenes' : 'ノベル選択肢で正しい判断をした', pts: novelPts3 > 0 ? '+' + novelPts3 : '0' });
       } else {
@@ -15174,7 +15182,9 @@ function showResult() {
       if (stg === 1) {
         actions.push({ done: s.usedEmergencyExit, text: en ? 'Used emergency exit (avoided regular stairs)' : '非常口から避難した（普通の階段を避けた）', pts: '+5' });
       }
-      actions.push({ done: s.usedStairs, text: en ? 'Evacuated via stairs' : '階段で避難した', pts: '+5' });
+      if (stg !== 3) { // Stage 3は階段が必然なので表示しない
+        actions.push({ done: s.usedStairs, text: en ? 'Evacuated via stairs' : '階段で避難した', pts: '+5' });
+      }
       actions.push({ done: s.avoidedBlockWall, text: en ? 'Stayed away from block walls' : 'ブロック塀から離れて移動した', pts: '+5' });
       actions.push({ done: s.reachedEvacPoint, text: en ? 'Reached evacuation point' : '避難場所に到達した', pts: '+10' });
       actions.push({ done: s.withinTimeLimit, text: en ? 'Evacuated within time limit' : '制限時間内に避難完了', pts: '+5' });
@@ -15211,7 +15221,7 @@ function showResult() {
       if (!GAME.scoring.crouchedIn3s) tips.push(en ? 'When an earthquake strikes, remember: "Drop! Cover! Hold On!" (ShakeOut drill basics).' : '地震が来たらまず「低く！頭を守って！動かないで！」（シェイクアウト）が基本です。');
       if (!GAME.scoring.guardedHead) tips.push(en ? 'Protect your head even while evacuating. Cover your head with a bag or book while moving (hold G key).' : '避難中も頭を守ることが重要です。カバンや本で頭を覆いながら移動しましょう（Gキー長押し）。');
       if (!GAME.scoring.heldDeskLegs) tips.push(en ? 'Once under a desk, hold its legs firmly. Even if the desk moves during shaking, you\'ll move with it and stay protected (ShakeOut: Hold On).' : '机の下に入ったら脚をしっかり掴みましょう。揺れで机が動いても一緒に移動でき、頭を守り続けることができます（ShakeOut: Hold On）。');
-      if (stg !== 1 && !GAME.scoring.turnedOffFire) tips.push(en ? 'After shaking stops, check for fire hazards first! Turn off heaters and gas stoves.' : '揺れが収まったらまず火の元を確認！ストーブやガスコンロの火を消しましょう。');
+      if (stg !== 1 && stg !== 3 && !GAME.scoring.turnedOffFire) tips.push(en ? 'After shaking stops, check for fire hazards first! Turn off heaters and gas stoves.' : '揺れが収まったらまず火の元を確認！ストーブやガスコンロの火を消しましょう。');
       if (!GAME.scoring.openedDoor) tips.push(en ? 'Open doors after shaking to secure evacuation routes. Earthquakes can warp buildings, jamming doors shut.' : '揺れが収まったらドアを開けて避難経路を確保しましょう。地震で建物が歪むとドアが開かなくなることがあります。');
       if (stg !== 1 && !GAME.scoring.turnedOffBreaker) tips.push(en ? 'Turn off the breaker before evacuating. This prevents electrical fires when power is restored.' : '避難前にブレーカーを落としましょう。通電火災（停電復旧時に発生する火災）を防げます。');
       if (!GAME.scoring.putOnShoes) tips.push(en ? 'There may be scattered glass shards. Always put on shoes before evacuating.' : 'ガラスの破片が散乱している可能性があります。必ず靴を履いてから避難しましょう。');
@@ -15221,6 +15231,10 @@ function showResult() {
       if (!GAME.scoring.reachedEvacPoint) tips.push(en ? 'Move to an evacuation point (open area like a schoolyard). Staying near buildings risks falling debris.' : '避難場所（学校の校庭など広い場所）まで移動しましょう。建物の近くは落下物の危険があります。');
       if (stg === 1 && !GAME.scoring.checkedSafety) tips.push(en ? 'After shaking stops, ask friends around you "Are you okay?" (E key). A single call can save a life.' : '揺れが収まったら周囲の友達に「大丈夫？」と声をかけましょう（Eキーで声かけ）。一声が命を救うこともあります。');
       if (stg === 1 && (GAME._novelChoiceScore || 0) <= 0) tips.push(en ? 'During an earthquake, follow your teacher\'s instructions. Get under a desk and protect your head. Never rush to windows or hallways.' : '地震の時は先生の指示に従い、机の下に入って頭を守りましょう。窓や廊下に飛び出すのは危険です。');
+      if (stg === 3 && !GAME.scoring.turnedOffGas) tips.push(en ? 'After shaking stops, close the gas valve immediately. Gas leaks after earthquakes cause fires and explosions.' : '揺れが収まったらすぐにガスの元栓を閉めましょう。地震後のガス漏れは火災や爆発の原因になります。');
+      if (stg === 3 && !GAME.scoring.usedFlashlight) tips.push(en ? 'Keep a flashlight in an accessible place at home. During a blackout, it helps you evacuate safely.' : '懐中電灯は家の取り出しやすい場所に置きましょう。停電時に安全な避難をサポートします。');
+      if (stg === 3 && !GAME.scoring.rescuedChild) tips.push(en ? 'After shaking stops, check on all family members immediately. Call out to them by name.' : '揺れが収まったらすぐに家族全員の安否を確認しましょう。名前を呼んで声をかけることが大切です。');
+      if (stg === 3 && !GAME.scoring.familyEvacuated) tips.push(en ? 'Evacuate together as a family. Decide on a meeting point in advance so no one gets separated.' : '家族全員で一緒に避難しましょう。はぐれないよう、事前に集合場所を決めておくことが重要です。');
       if (tips.length === 0) tips.push(en ? 'Excellent evacuation! Share this knowledge with the people around you.' : '素晴らしい避難行動でした！この知識を周りの人にも伝えましょう。');
       // 全tipを箇条書きで表示
       var tipHtml = '';
