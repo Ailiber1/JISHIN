@@ -943,77 +943,6 @@ html, body {
 /* ============================================================
    SECTION: MULTIPLAYER SCREEN
    ============================================================ */
-#multi-screen { z-index: 258; background: var(--bg-overlay); }
-.multi-container {
-  width: min(480px, 92%); max-height: 90dvh; max-height: 90%;
-  background: var(--bg-panel); border: 1px solid var(--safety-orange);
-  box-shadow: 0 0 20px rgba(255,107,0,0.3); display: flex; flex-direction: column; overflow: hidden;
-}
-@supports (max-height: 90dvh) { .multi-container { max-height: 90dvh; } }
-.multi-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 20px; border-bottom: 1px solid rgba(255,107,0,0.3); flex-shrink: 0;
-}
-.multi-header h2 {
-  font-family: 'Share Tech Mono', monospace; font-size: clamp(16px, 4vw, 22px);
-  color: var(--safety-orange); letter-spacing: 2px;
-}
-.multi-scroll {
-  overflow-y: auto; padding: 16px 20px; flex: 1; -webkit-overflow-scrolling: touch;
-}
-.multi-section-label {
-  font-family: 'Share Tech Mono', monospace; font-size: 13px;
-  color: var(--safety-orange); letter-spacing: 1px; margin-bottom: 8px;
-}
-.multi-section-label::before { content: '● '; }
-.mode-cards { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
-.mode-card {
-  border: 1px solid rgba(255,107,0,0.25); padding: 12px 16px;
-  cursor: pointer; transition: all 0.3s;
-}
-.mode-card:hover { border-color: rgba(255,107,0,0.5); background: rgba(255,107,0,0.05); }
-.mode-card.selected {
-  border-color: var(--safety-orange); background: rgba(255,107,0,0.1);
-  box-shadow: 0 0 12px rgba(255,107,0,0.2);
-}
-.mode-card-title {
-  font-family: 'Share Tech Mono', monospace; font-size: 15px;
-  color: #fff; margin-bottom: 4px; letter-spacing: 1px;
-}
-.mode-card.selected .mode-card-title { color: var(--safety-orange); }
-.mode-card-desc {
-  font-family: 'Noto Sans JP', sans-serif; font-size: 12px;
-  color: var(--text-dim); line-height: 1.4;
-}
-.mode-card.selected .mode-card-desc { color: var(--text-secondary); }
-.multi-room-input-row { margin: 8px 0; }
-.multi-room-note {
-  font-family: 'Noto Sans JP', sans-serif; font-size: 11px;
-  color: var(--text-dim); margin-bottom: 16px; line-height: 1.5;
-}
-.multi-error-msg {
-  font-family: 'Noto Sans JP', sans-serif; font-size: 12px;
-  color: var(--alert-red); margin-bottom: 8px;
-}
-.multi-action { margin-top: 4px; margin-bottom: 8px; }
-.multi-action .btn { width: 100%; padding: 12px; font-size: 16px; }
-.multi-lobby { margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,107,0,0.2); }
-.multi-room-id-box {
-  text-align: center; padding: 12px;
-  border: 1px solid rgba(255,107,0,0.3); margin-bottom: 14px;
-  font-family: 'Share Tech Mono', monospace; font-size: 14px; color: var(--text-secondary);
-}
-.multi-room-id-val {
-  font-size: 24px; font-weight: 700; color: var(--safety-orange);
-  letter-spacing: 6px; margin-left: 8px;
-}
-.multi-players { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
-.multi-player-slot {
-  display: flex; justify-content: space-between; padding: 8px 12px;
-  border: 1px solid rgba(255,107,0,0.15); font-family: 'Noto Sans JP', sans-serif;
-  font-size: 14px; color: var(--text-secondary);
-}
-.multi-player-status { font-family: 'Share Tech Mono', monospace; font-size: 12px; }
 
 /* ============================================================
    SECTION: RULES / KNOWLEDGE SCREEN
@@ -1234,15 +1163,13 @@ html, body {
   .briefing-footer .btn { min-height: 44px; }
   /* 結果画面: スマホ共通 */
   .result-container { width: 96%; max-height: 92dvh; max-height: 92%; }
-  /* ランキング・訓練・マルチ: スマホ共通 */
-  .ranking-container, .training-container, .multi-container { width: 96%; max-height: 92dvh; max-height: 92%; }
-  .ranking-header, .training-header, .multi-header { padding: 12px 14px; }
+  /* ランキング・訓練: スマホ共通 */
+  .ranking-container, .training-container { width: 96%; max-height: 92dvh; max-height: 92%; }
+  .ranking-header, .training-header { padding: 12px 14px; }
   .ranking-filters { padding: 10px 14px; }
   .ranking-scroll { padding: 10px 14px 14px; }
-  .training-scroll, .multi-scroll { padding: 12px 14px; }
+  .training-scroll { padding: 12px 14px; }
   .training-footer { padding: 10px 14px; }
-  .mode-cards { gap: 8px; margin-bottom: 16px; }
-  .mode-card { padding: 10px 14px; }
   .mode-card-title { font-size: 14px; }
   .mode-card-desc { font-size: 12px; }
   .multi-action .btn { padding: 10px; font-size: 15px; min-height: 44px; }
@@ -1284,8 +1211,8 @@ html, body {
   .briefing-advisor { padding: 10px 12px; gap: 10px; }
   /* 結果画面 */
   .result-container { max-height: 88dvh; max-height: 88%; }
-  /* ランキング・訓練・マルチ */
-  .ranking-container, .training-container, .multi-container { max-height: 88dvh; max-height: 88%; }
+  /* ランキング・訓練 */
+  .ranking-container, .training-container { max-height: 88dvh; max-height: 88%; }
 }
 
 /* --- 横向きスマホ（高さ500px以下） --- */
@@ -1356,17 +1283,15 @@ html, body {
 
   /* 横向き: 結果画面 */
   .result-container { max-height: 96dvh; max-height: 96%; width: min(90%, 520px); }
-  /* 横向き: ランキング・訓練・マルチ */
-  .ranking-container, .training-container, .multi-container { max-height: 96dvh; max-height: 96%; width: min(88%, 480px); }
-  .ranking-header, .training-header, .multi-header { padding: 8px 12px; }
-  .ranking-header h2, .training-header h2, .multi-header h2 { font-size: clamp(13px, 3vw, 16px); }
-  .training-scroll, .multi-scroll { padding: 10px 12px; }
+  /* 横向き: ランキング・訓練 */
+  .ranking-container, .training-container { max-height: 96dvh; max-height: 96%; width: min(88%, 480px); }
+  .ranking-header, .training-header { padding: 8px 12px; }
+  .ranking-header h2, .training-header h2 { font-size: clamp(13px, 3vw, 16px); }
+  .training-scroll { padding: 10px 12px; }
   .training-desc { font-size: clamp(11px, 2.2vw, 13px); padding: 8px 10px; margin-bottom: 10px; }
   .training-field { margin-bottom: 10px; }
   .training-footer { padding: 8px 12px; }
-  .training-footer .btn, .multi-scroll .btn { padding: 7px 10px; font-size: 12px; min-height: 34px; }
-  .mode-cards { gap: 6px; margin-bottom: 12px; }
-  .mode-card { padding: 8px 12px; }
+  .training-footer .btn { padding: 7px 10px; font-size: 12px; min-height: 34px; }
   .mode-card-title { font-size: 13px; }
   .mode-card-desc { font-size: 11px; }
   .multi-section-label { font-size: 12px; margin-bottom: 6px; }
@@ -1416,8 +1341,8 @@ html, body {
   .stage-desc { font-size: 11px; }
   /* 小型: ブリーフィング */
   .briefing-container { width: 98%; max-height: 90dvh; max-height: 90%; }
-  /* 小型: 結果・ランキング・訓練・マルチ */
-  .result-container, .ranking-container, .training-container, .multi-container { width: 98%; max-height: 90dvh; max-height: 90%; }
+  /* 小型: 結果・ランキング・訓練 */
+  .result-container, .ranking-container, .training-container { width: 98%; max-height: 90dvh; max-height: 90%; }
   /* 小型: ルール */
   .rules-container { width: 98%; max-height: 90dvh; max-height: 90%; }
 }
@@ -1464,19 +1389,7 @@ html, body {
   .training-options .neon-select { font-size: 10px; padding: 3px 6px; }
   .toggle-btn { font-size: 10px; padding: 3px 8px; min-height: 28px; }
   .training-start-btn { padding: 5px 8px; font-size: 11px; min-height: 30px; }
-  /* 極小横: マルチプレイ */
-  .multi-container { max-height: 98dvh; max-height: 98%; padding: 8px; }
-  .multi-container h2 { font-size: 14px; margin-bottom: 4px; }
-  .mode-card { padding: 6px 10px; }
-  .mode-card-title { font-size: 12px; }
-  .mode-card-desc { font-size: 10px; }
-  .mode-cards { gap: 4px; margin-bottom: 10px; }
-  .multi-section-label { font-size: 11px; margin-bottom: 4px; }
   .neon-input { font-size: 12px; padding: 4px 8px; }
-  .multi-room-note { font-size: 9px; margin-bottom: 8px; }
-  .multi-action .btn { padding: 6px; font-size: 12px; }
-  .multi-lobby { padding-top: 8px; }
-  .multi-players { max-height: 30vh; font-size: 10px; }
 }
 
 /* ============================================================
@@ -2367,7 +2280,6 @@ html, body {
     <div class="corner-br"></div>
     <div class="btn-group">
       <button class="btn btn-neon" id="btn-story" data-i18n="BTN_STORY"></button>
-      <button class="btn btn-neon" id="btn-multi" data-i18n="BTN_MULTI"></button>
       <button class="btn btn-neon" id="btn-training" data-i18n="BTN_TRAINING"></button>
     </div>
     <div class="btn-group" style="margin-top:10px;">
@@ -2447,35 +2359,6 @@ html, body {
         </div>
       </div>
 
-      <div class="stage-card stage-locked" data-stage="4">
-        <div class="stage-card-top">
-          <div class="stage-num">STAGE 4</div>
-          <div class="stage-difficulty"><span class="star-on">★★★★</span><span class="star-off">☆</span></div>
-        </div>
-        <div class="stage-card-body">
-          <div class="stage-name stage-name-display">???</div>
-          <div class="stage-desc stage-desc-display"></div>
-        </div>
-        <div class="stage-card-foot">
-          <div class="stage-best"><span data-i18n="STAGE_BEST"></span> <span class="stage-best-score" id="best-score-4">---</span></div>
-          <div class="stage-status stage-lock-label">🔒 <span data-i18n="STAGE_LOCKED"></span></div>
-        </div>
-      </div>
-
-      <div class="stage-card stage-locked" data-stage="5">
-        <div class="stage-card-top">
-          <div class="stage-num">STAGE 5</div>
-          <div class="stage-difficulty"><span class="star-on">★★★★★</span><span class="star-off"></span></div>
-        </div>
-        <div class="stage-card-body">
-          <div class="stage-name stage-name-display">???</div>
-          <div class="stage-desc stage-desc-display"></div>
-        </div>
-        <div class="stage-card-foot">
-          <div class="stage-best"><span data-i18n="STAGE_BEST"></span> <span class="stage-best-score" id="best-score-5">---</span></div>
-          <div class="stage-status stage-lock-label">🔒 <span data-i18n="STAGE_LOCKED"></span></div>
-        </div>
-      </div>
 
     </div>
   </div>
@@ -2606,8 +2489,6 @@ html, body {
         <option value="1">Stage 1</option>
         <option value="2">Stage 2</option>
         <option value="3">Stage 3</option>
-        <option value="4">Stage 4</option>
-        <option value="5">Stage 5</option>
       </select>
     </div>
     <div class="ranking-scroll">
@@ -2637,8 +2518,6 @@ html, body {
           <option value="1" data-i18n="STAGE1_NAME"></option>
           <option value="2" data-i18n="STAGE2_NAME"></option>
           <option value="3" data-i18n="STAGE3_NAME"></option>
-          <option value="4" data-i18n="STAGE4_NAME"></option>
-          <option value="5" data-i18n="STAGE5_NAME"></option>
         </select>
       </div>
 
@@ -2666,66 +2545,6 @@ html, body {
   </div>
 </div>
 
-<!-- ============================================================
-     SECTION: MULTIPLAYER SCREEN
-     ============================================================ -->
-<div id="multi-screen" class="screen">
-  <div class="multi-container">
-    <div class="multi-header">
-      <h2 data-i18n="MULTI_TITLE"></h2>
-      <button class="rules-close-btn" id="multi-close-btn">✕</button>
-    </div>
-    <div class="multi-scroll">
-      <!-- モード選択カード -->
-      <div class="multi-section-label" data-i18n="MULTI_MODE_LABEL"></div>
-      <div class="mode-cards">
-        <div class="mode-card selected" data-mode="coop">
-          <div class="mode-card-title" data-i18n="MULTI_COOP_TITLE"></div>
-          <div class="mode-card-desc" data-i18n="MULTI_COOP_DESC"></div>
-        </div>
-        <div class="mode-card" data-mode="vs">
-          <div class="mode-card-title" data-i18n="MULTI_VS_TITLE"></div>
-          <div class="mode-card-desc" data-i18n="MULTI_VS_DESC"></div>
-        </div>
-      </div>
-
-      <!-- ルームID入力 -->
-      <div class="multi-section-label" data-i18n="MULTI_ROOM_LABEL"></div>
-      <div class="multi-room-input-row">
-        <input type="text" class="neon-input" id="multi-room-input" maxlength="6" placeholder="ROOM ID" autocomplete="off" spellcheck="false">
-      </div>
-      <div class="multi-room-note" data-i18n="MULTI_ROOM_NOTE"></div>
-      <div id="multi-error" class="multi-error-msg" style="display:none;"></div>
-
-      <!-- 参加ボタン -->
-      <div class="multi-action">
-        <button class="btn btn-neon" id="multi-join-btn" data-i18n="MULTI_JOIN"></button>
-      </div>
-
-      <!-- ルームロビー（参加後に表示） -->
-      <div class="multi-lobby" id="multi-lobby" style="display:none;">
-        <div class="multi-room-id-box">
-          <span data-i18n="MULTI_ROOM_ID"></span>
-          <span class="multi-room-id-val" id="multi-room-id-val">------</span>
-        </div>
-        <div class="multi-players" id="multi-players">
-          <div class="multi-player-slot"><span class="multi-player-name">---</span><span class="multi-player-status" data-i18n="MULTI_WAITING"></span></div>
-        </div>
-        <div class="training-field">
-          <label data-i18n="MULTI_STAGE_LABEL"></label>
-          <select class="neon-select" id="multi-stage-select">
-            <option value="1" data-i18n="STAGE1_NAME"></option>
-            <option value="2" data-i18n="STAGE2_NAME"></option>
-            <option value="3" data-i18n="STAGE3_NAME"></option>
-            <option value="4" data-i18n="STAGE4_NAME"></option>
-            <option value="5" data-i18n="STAGE5_NAME"></option>
-          </select>
-        </div>
-        <button class="btn btn-neon" id="multi-ready-btn" data-i18n="MULTI_READY"></button>
-      </div>
-    </div>
-  </div>
-</div>
 
 <!-- ============================================================
      SECTION: RULES / DISASTER KNOWLEDGE SCREEN
@@ -2984,7 +2803,6 @@ const I18N = {
   ja: {
     SUBTITLE: '揺れた。判断しろ。生き延びろ。',
     BTN_STORY: 'ストーリーモード',
-    BTN_MULTI: 'マルチプレイ',
     BTN_TRAINING: '訓練モード',
     BTN_RANKING: 'ランキング',
     BTN_RULES: 'ルール / 防災知識',
@@ -2995,10 +2813,6 @@ const I18N = {
     STAGE2_DESC: '10階のオフィス。非常階段で1階まで避難',
     STAGE3_NAME: '一軒家（木造2階建て）',
     STAGE3_DESC: '木造住宅。火の始末やブレーカーの対処が重要',
-    STAGE4_NAME: 'マンション（高層・10階）',
-    STAGE4_DESC: '10階のマンション。エレベーター不使用で避難',
-    STAGE5_NAME: '地下街・商業施設',
-    STAGE5_DESC: '地下街。停電・煙の中で地上への脱出を目指す',
     STAGE_BEST: 'BEST:',
     STAGE_PLAY: '▶ PLAY',
     STAGE_LOCKED: 'LOCKED',
@@ -3035,19 +2849,6 @@ const I18N = {
     TRAINING_PAUSE_LABEL: 'フェーズ間一時停止',
     TRAINING_NOTE: '※ 訓練モードではランキングに記録されません',
     TRAINING_START: '訓練開始',
-    MULTI_TITLE: 'マルチプレイ',
-    MULTI_MODE_LABEL: 'モード選択',
-    MULTI_COOP_TITLE: '協力避難（Co-op）',
-    MULTI_COOP_DESC: '全員で協力して避難完了を目指す。仲間を助けながら生存せよ。',
-    MULTI_VS_TITLE: '避難レース（VS）',
-    MULTI_VS_DESC: '誰が最も早く安全に避難できるか競い合う。スコアで順位決定。',
-    MULTI_ROOM_LABEL: 'ルームID',
-    MULTI_ROOM_NOTE: '同じIDを入力した人同士がマッチングします。存在しないIDは新規ルームが作成されます。',
-    MULTI_JOIN: 'ルームに参加',
-    MULTI_ROOM_ID: 'ROOM ID:',
-    MULTI_STAGE_LABEL: 'ステージ',
-    MULTI_WAITING: '待機中...',
-    MULTI_READY: 'READY',
     RULES_TITLE: 'ルール / 防災知識',
     TAB_RULES: 'ゲームルール',
     TAB_CONTROLS: '操作方法',
@@ -3141,7 +2942,6 @@ const I18N = {
   en: {
     SUBTITLE: 'Shake. Judge. Survive.',
     BTN_STORY: 'STORY MODE',
-    BTN_MULTI: 'MULTIPLAYER',
     BTN_TRAINING: 'TRAINING MODE',
     BTN_RANKING: 'RANKING',
     BTN_RULES: 'RULES / KNOWLEDGE',
@@ -3152,10 +2952,6 @@ const I18N = {
     STAGE2_DESC: '10th floor office. Evacuate via emergency stairs to ground level',
     STAGE3_NAME: 'Wooden House (2-Story)',
     STAGE3_DESC: 'Wooden house. Handling fire and breakers is critical',
-    STAGE4_NAME: 'Apartment (High-Rise, 10F)',
-    STAGE4_DESC: '10th floor apartment. Evacuate without using the elevator',
-    STAGE5_NAME: 'Underground Mall',
-    STAGE5_DESC: 'Underground area. Escape to the surface through darkness and smoke',
     STAGE_BEST: 'BEST:',
     STAGE_PLAY: '▶ PLAY',
     STAGE_LOCKED: 'LOCKED',
@@ -3192,19 +2988,6 @@ const I18N = {
     TRAINING_PAUSE_LABEL: 'Pause Between Phases',
     TRAINING_NOTE: '※ Training mode scores are not recorded in rankings',
     TRAINING_START: 'START TRAINING',
-    MULTI_TITLE: 'MULTIPLAYER',
-    MULTI_MODE_LABEL: 'Mode Select',
-    MULTI_COOP_TITLE: 'Co-op Evacuation',
-    MULTI_COOP_DESC: 'Work together to evacuate safely. Help each other survive.',
-    MULTI_VS_TITLE: 'Evacuation Race (VS)',
-    MULTI_VS_DESC: 'Compete for the fastest and safest evacuation. Scored by rank.',
-    MULTI_ROOM_LABEL: 'Room ID',
-    MULTI_ROOM_NOTE: 'Players with the same ID will be matched. A new room is created if the ID does not exist.',
-    MULTI_JOIN: 'JOIN ROOM',
-    MULTI_ROOM_ID: 'ROOM ID:',
-    MULTI_STAGE_LABEL: 'Stage',
-    MULTI_WAITING: 'Waiting...',
-    MULTI_READY: 'READY',
     RULES_TITLE: 'RULES / KNOWLEDGE',
     TAB_RULES: 'RULES',
     TAB_CONTROLS: 'CONTROLS',
@@ -3977,7 +3760,7 @@ function initUISounds() {
   document.querySelectorAll('.neon-select').forEach(el => {
     el.addEventListener('change', () => SoundManager.playSE('tab'));
   });
-  document.querySelectorAll('.briefing-start-btn, .briefing-back-btn, #result-retry-btn, #result-select-btn, #result-title-btn, #training-start-btn, #multi-join-btn, #multi-ready-btn, .toggle-btn').forEach(el => {
+  document.querySelectorAll('.briefing-start-btn, .briefing-back-btn, #result-retry-btn, #result-select-btn, #result-title-btn, #training-start-btn, .toggle-btn').forEach(el => {
     el.addEventListener('mouseenter', () => SoundManager.playSE('hover'));
     el.addEventListener('click', () => SoundManager.playSE('click'));
   });
@@ -5335,22 +5118,6 @@ const BRIEFING_DATA = {
     },
     advisor: { ja: '「木造住宅は倒壊の危険がある。まず身を守り、揺れが収まったら火の確認を最優先で。」', en: '"Wooden houses risk collapse. Protect yourself first, then check fire sources immediately after shaking stops."' }
   },
-  4: {
-    setting: { ja: '都市部の高層マンション10階。一人暮らしの自室で地震発生。エレベーターが停止。', en: 'A 10th floor apartment in a high-rise building. Earthquake while home alone. Elevators are stopped.' },
-    points: {
-      ja: ['家具の転倒から身を守る', 'エレベーターに乗らず階段で避難する', '玄関ドアを開けて避難経路を確保する'],
-      en: ['Protect yourself from falling furniture', 'Use stairs, never the elevator', 'Open the front door to secure escape route']
-    },
-    advisor: { ja: '「マンションの高層階は揺れが大きい。エレベーターは閉じ込めの危険があるから絶対にダメだ。」', en: '"Upper floors of apartments shake more. Elevators can trap you — never use them."' }
-  },
-  5: {
-    setting: { ja: '都市部の地下街（地下1〜2階の商業エリア）。買い物中に大地震が発生。停電で暗闇に。', en: 'An underground shopping area (B1-B2). A major earthquake hits while shopping. Power goes out.' },
-    points: {
-      ja: ['非常口の表示灯に従って地上を目指す', '停電時はスマホのライトを活用する', 'パニックの群衆に巻き込まれないように注意'],
-      en: ['Follow emergency exit signs toward the surface', 'Use your phone light during blackouts', 'Avoid being swept up in panicking crowds']
-    },
-    advisor: { ja: '「地下は意外と揺れが小さいことがある。パニックにならず、非常口の緑の光を目指そう。」', en: '"Underground areas may shake less. Stay calm and follow the green emergency exit lights."' }
-  }
 };
 
 // ============================================================
@@ -5866,7 +5633,7 @@ function initEventListeners() {
   });
   document.getElementById('result-next-stage-btn').addEventListener('click', () => {
     var nextStage = (GAME.stageNum || 1) + 1;
-    if (nextStage <= 5) {
+    if (nextStage <= 3) {
       showBriefing(nextStage);
     }
   });
@@ -5931,30 +5698,6 @@ function initEventListeners() {
       document.getElementById(prefix + '-on').classList.remove('active');
       SoundManager.playSE('tab');
     });
-  });
-
-  // マルチプレイ
-  document.getElementById('btn-multi').addEventListener('click', () => {
-    if (isGuest()) {
-      alert(currentLang === 'ja' ? '先に名前を登録してください。' : 'Please register your name first.');
-      document.getElementById('player-name-input').focus();
-      return;
-    }
-    showScreen('multi-screen');
-    applyI18N();
-  });
-  document.getElementById('multi-close-btn').addEventListener('click', () => { showTitle(); });
-  // モードカード選択
-  document.querySelectorAll('.mode-card').forEach(card => {
-    card.addEventListener('click', function() {
-      document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
-      this.classList.add('selected');
-      SoundManager.playSE('tab');
-    });
-  });
-  document.getElementById('multi-join-btn').addEventListener('click', () => {
-    // TODO: Firebase ルーム参加（実装後に接続）
-    SoundManager.playSE('click');
   });
 
   // ストーリーモード → ステージ選択（ゲスト時はモーダル表示）
@@ -6108,7 +5851,6 @@ function initEventListeners() {
     if (e.target.closest('.result-container')) return;
     if (e.target.closest('.ranking-container')) return;
     if (e.target.closest('.training-container')) return;
-    if (e.target.closest('.multi-container')) return;
     e.preventDefault();
   }, { passive: false });
   document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
@@ -15153,8 +14895,8 @@ function showResult() {
     if (timeEl) timeEl.textContent = min + ':' + (sec < 10 ? '0' : '') + sec;
     var en = (currentLang === 'en');
     var stageNames = en
-      ? { 1: 'School (Classroom)', 2: 'Office Building (10F)', 3: 'Detached House', 4: 'Apartment', 5: 'Underground Mall' }
-      : { 1: '学校（教室）', 2: 'オフィスビル（10階）', 3: '一軒家', 4: 'マンション', 5: '地下街' };
+      ? { 1: 'School (Classroom)', 2: 'Office Building (10F)', 3: 'Detached House' }
+      : { 1: '学校（教室）', 2: 'オフィスビル（10階）', 3: '一軒家' };
     if (stageLabel) stageLabel.textContent = 'Stage ' + GAME.stageNum + ': ' + (stageNames[GAME.stageNum] || '');
     if (titleEl) titleEl.textContent = GAME.hitCount >= 3 ? (en ? 'EVACUATION FAILED' : '避難失敗') : (en ? 'EVACUATION COMPLETE' : '避難完了');
 
@@ -15380,13 +15122,13 @@ function showResult() {
         ? 'Action Score ' + GAME.score + ' × 70% + Quiz ' + (GAME._quizScore || 0) + '/' + (GAME._quizTotal || 0) + ' × 30%'
         : '行動スコア ' + GAME.score + '点 × 70% + 知識テスト ' + (GAME._quizScore || 0) + '/' + (GAME._quizTotal || 0) + ' × 30%';
 
-      if (isUnlocked && stageNum < 5) {
+      if (isUnlocked && stageNum < 3) {
         unlockBox.className = 'result-unlock-box unlocked';
         unlockBox.innerHTML = '<span class="unlock-total-score">' + totalScore + ' / 100</span>'
           + '<div class="unlock-breakdown">' + escapeHTML(breakdownText) + '</div>'
           + '<div class="unlock-message">🎉 ' + (en ? 'Stage ' + (stageNum + 1) + ' Unlocked!' : 'Stage ' + (stageNum + 1) + ' 解放！') + '</div>';
         if (nextBtn) nextBtn.style.display = 'inline-block';
-      } else if (isUnlocked && stageNum >= 5) {
+      } else if (isUnlocked && stageNum >= 3) {
         unlockBox.className = 'result-unlock-box unlocked';
         unlockBox.innerHTML = '<span class="unlock-total-score">' + totalScore + ' / 100</span>'
           + '<div class="unlock-breakdown">' + escapeHTML(breakdownText) + '</div>'
@@ -15437,8 +15179,8 @@ function downloadResultData(totalScore, categories, actions) {
   var dateStr = now.getFullYear() + '/' + pad2(now.getMonth()+1) + '/' + pad2(now.getDate())
     + ' ' + pad2(now.getHours()) + ':' + pad2(now.getMinutes());
   var stageNames = en
-    ? { 1: 'School (Classroom)', 2: 'Office Building', 3: 'Wooden House', 4: 'High-rise Apartment', 5: 'Outdoor (Downtown)' }
-    : { 1: '学校（教室）', 2: 'オフィスビル', 3: '木造住宅', 4: '高層マンション', 5: '屋外（繁華街）' };
+    ? { 1: 'School (Classroom)', 2: 'Office Building', 3: 'Wooden House' }
+    : { 1: '学校（教室）', 2: 'オフィスビル', 3: '木造住宅' };
   var stageName = stageNames[GAME.stageNum] || 'Stage ' + GAME.stageNum;
   var r = getRank(GAME.score);
   var totalSec = Math.floor(GAME.totalTimer);
