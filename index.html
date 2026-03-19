@@ -6234,6 +6234,9 @@ function initGame(stageNum) {
   GAME._oshimoViolations = 0;
   GAME._oshimoLastWarn = 0;
   GAME._aftershockDone = false;
+  GAME._aftershockTimer = 0; GAME._aftershockCount = 0;
+  GAME._aftershockActive = false; GAME._aftershockCrouchBonus = 0; GAME._aftershockPenalty = 0;
+  GAME._aftershockCrouchBonusPts = 0; GAME._aftershockPenaltyPts = 0;
   GAME._glassWarned = false;
   GAME._windowWarned = false;
 
@@ -7902,11 +7905,18 @@ function updateAftershocks(dtSec) {
   }
 }
 
+GAME._aftershockActive = false;      // 余震中フラグ
+GAME._aftershockCrouchBonus = 0;     // 余震中にしゃがんだ回数（ボーナス用）
+GAME._aftershockPenalty = 0;         // 余震中の危険行動ペナルティ
+
 function triggerAftershock() {
-  showAdvisor({ja: '余震だ！頭を守りながら進め！', en: 'Aftershock! Protect your head and keep moving!'}, 'warning');
+  showAdvisor({ja: '⚠️ 余震だ！しゃがんで頭を守れ！（C＋G）', en: '⚠️ Aftershock! Crouch and protect your head! (C+G)'}, 'warning');
   SoundManager.playSE('hit');
 
-  // 画面揺れ（2秒間）
+  GAME._aftershockActive = true;
+  GAME._aftershockChecked = false; // この余震のスコア判定済みか
+
+  // 画面揺れ（3秒間）
   var cam = GAME.camera;
   if (!cam) return;
   var origX = cam.position.x;
@@ -7915,11 +7925,39 @@ function triggerAftershock() {
     cam.position.x = origX + (Math.random() - 0.5) * 0.15;
     cam.position.y = origY + (Math.random() - 0.5) * 0.08;
   }, 30);
+
+  // 1.5秒後に行動をチェック（プレイヤーに反応する猶予を与える）
+  setTimeout(function() {
+    if (!GAME._aftershockChecked) {
+      GAME._aftershockChecked = true;
+      var p = GAME.player;
+      var en = (currentLang === 'en');
+
+      // 階段カットシーン中（降りている最中）→ 階段中は判定しない
+      if (GAME._stairCutsceneActive) {
+        // カットシーン中は操作不能なのでペナルティなし
+      } else if (p.isCrouching && p.isGuarding) {
+        // ベスト: しゃがんで頭を守っている
+        GAME._aftershockCrouchBonus++;
+        showAdvisor({ja: '素晴らしい！余震中に正しい防護姿勢を取った！', en: 'Excellent! Proper protective posture during aftershock!'}, 'praise');
+        SoundManager.playSE('correct');
+      } else if (p.isCrouching || p.isGuarding) {
+        // 部分的: どちらか片方のみ
+        showAdvisor({ja: 'しゃがんで（C）頭も守ろう（G）！両方が大事！', en: 'Crouch (C) AND protect your head (G)! Both matter!'}, 'normal');
+      } else {
+        // 危険: 余震中に立ったまま移動
+        GAME._aftershockPenalty++;
+        showAdvisor({ja: '危険！余震中は動かずしゃがんで頭を守ろう！', en: 'Danger! Stop, crouch, and protect your head during aftershocks!'}, 'warning');
+      }
+    }
+  }, 1500);
+
   setTimeout(function() {
     clearInterval(shake);
     cam.position.x = origX;
     cam.position.y = origY;
-  }, 2000);
+    GAME._aftershockActive = false;
+  }, 3000);
 
   // 廊下の落下物を生成
   var px = GAME.player.x;
@@ -15067,6 +15105,14 @@ function calculateScore() {
   if (s.reachedEvacPoint) score += 10;
   if (s.withinTimeLimit) score += 5;
 
+  // 余震中の行動（全ステージ共通）
+  var asBonus = Math.min(5, GAME._aftershockCrouchBonus * 3); // 余震中しゃがみ: 最大+5
+  score += asBonus;
+  GAME._aftershockCrouchBonusPts = asBonus;
+  var asPenalty = GAME._aftershockPenalty * 3; // 余震中に危険行動: 1回につき-3
+  score -= asPenalty;
+  GAME._aftershockPenaltyPts = asPenalty;
+
   // 減点
   score -= GAME.hitCount * 5; // 落下物被弾
 
@@ -15177,6 +15223,13 @@ function showResult() {
       actions.push({ done: s.avoidedBlockWall, text: en ? 'Stayed away from block walls' : 'ブロック塀から離れて移動した', pts: '+5' });
       actions.push({ done: s.reachedEvacPoint, text: en ? 'Reached evacuation point' : '避難場所に到達した', pts: '+10' });
       actions.push({ done: s.withinTimeLimit, text: en ? 'Evacuated within time limit' : '制限時間内に避難完了', pts: '+5' });
+      // 余震中の行動
+      if (GAME._aftershockCrouchBonus > 0) {
+        actions.push({ done: true, text: en ? 'Crouched & protected head during aftershock' : '余震時にしゃがんで頭を守った', pts: '+' + (GAME._aftershockCrouchBonusPts || 0) });
+      }
+      if (GAME._aftershockPenalty > 0) {
+        actions.push({ done: false, text: en ? 'Did not take cover during aftershock (' + GAME._aftershockPenalty + 'x)' : '余震時に防護姿勢を取らなかった（' + GAME._aftershockPenalty + '回）', pts: '-' + (GAME._aftershockPenaltyPts || 0) });
+      }
 
       var html = '';
       for (var i = 0; i < actions.length; i++) {
