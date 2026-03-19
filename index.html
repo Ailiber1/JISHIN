@@ -10056,18 +10056,19 @@ function buildHouseFloor() {
   glow.rotation.x = -Math.PI / 2; glow.position.set(EVAC_POINT_S3.x, Y1 + 0.02, EVAC_POINT_S3.z); scene.add(glow);
   glow.frustumCulled = false;
   // ===== Stage 1/2と同じパターンでゴールマーカー構築 =====
-  // 光柱ビーム（Stage 1と同じ: 半透明の円筒、fog無効で遠距離から視認可能）
-  var beamGeo = new THREE.CylinderGeometry(0.3, 1.0, 20, 16, 1, true);
-  var beamMat = new THREE.MeshBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0.25, side: THREE.DoubleSide, depthWrite: false, fog: false });
+  // 光柱ビーム（大きく明るく: fog無効で遠距離から視認可能）
+  var beamGeo = new THREE.CylinderGeometry(0.5, 2.0, 30, 16, 1, true);
+  var beamMat = new THREE.MeshBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0.35, side: THREE.DoubleSide, depthWrite: false, fog: false });
   var beam = new THREE.Mesh(beamGeo, beamMat);
-  beam.position.set(EVAC_POINT_S3.x, Y1 + 10, EVAC_POINT_S3.z); scene.add(beam);
+  beam.position.set(EVAC_POINT_S3.x, Y1 + 15, EVAC_POINT_S3.z); scene.add(beam);
   beam.frustumCulled = false;
   GAME._beaconPole = beam;
-  // 下向き矢印コーン（Stage 1と同じ: 空中に浮かぶオレンジ矢印）
-  var evacArrowMat = new THREE.MeshBasicMaterial({ color: 0xff6600, transparent: true, opacity: 0.8, fog: false });
-  var evacArrow = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.2, 8), evacArrowMat);
-  evacArrow.position.set(EVAC_POINT_S3.x, Y1 + 4.0, EVAC_POINT_S3.z);
-  evacArrow.rotation.x = Math.PI; // 下向き
+  GAME._beaconPoleMat = beamMat;
+  // 上向き矢印コーン（ゴール位置を示す: 上を向いて回転）
+  var evacArrowMat = new THREE.MeshBasicMaterial({ color: 0xff6600, transparent: true, opacity: 0.9, fog: false });
+  var evacArrow = new THREE.Mesh(new THREE.ConeGeometry(0.6, 1.5, 8), evacArrowMat);
+  evacArrow.position.set(EVAC_POINT_S3.x, Y1 + 3.5, EVAC_POINT_S3.z);
+  // 上向き（デフォルト = 上向きなのでrotation不要）
   evacArrow.frustumCulled = false;
   scene.add(evacArrow);
   GAME._evacArrowS3 = evacArrow;
@@ -10106,12 +10107,11 @@ function buildHouseFloor() {
     gpole.position.set(guidePositions[gpi][0], Y1 + 1.25, guidePositions[gpi][1]); scene.add(gpole);
     gpole.frustumCulled = false;
     GAME._guidePoles.push(gpole);
-    // 小さな矢印コーン（上に浮かぶ方向指示）
-    var gCone = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.4, 6), new THREE.MeshBasicMaterial({ color: 0x00ff88, fog: false }));
-    gCone.position.set(guidePositions[gpi][0], Y1 + 2.8, guidePositions[gpi][1]);
-    gCone.rotation.x = Math.PI; // 下向き
-    gCone.frustumCulled = false;
-    scene.add(gCone);
+    // 発光球体（ポール上部の目印）
+    var gSphere = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 8), new THREE.MeshBasicMaterial({ color: 0x00ff88, fog: false }));
+    gSphere.position.set(guidePositions[gpi][0], Y1 + 2.7, guidePositions[gpi][1]);
+    gSphere.frustumCulled = false;
+    scene.add(gSphere);
   }
 
   // 照明
@@ -10182,8 +10182,16 @@ function spawnHouseNPCs() {
 
   var grandmaModel = createNPCModel(0x795548, 1.45, 0xf5c6a0, { isFemale: true, hairColor: 0xaaaaaa, skirtColor: 0x795548 });
   grandmaModel.position.set(-3.5, HOUSE_1F_Y, 3.5);
+  // おばあちゃんモデルの全メッシュをMeshBasicMaterialに変換（暗い和室でも確実に表示）
+  grandmaModel.traverse(function(child) {
+    if (child.isMesh && child.material) {
+      var oldColor = child.material.color ? child.material.color.getHex() : 0x795548;
+      child.material = new THREE.MeshBasicMaterial({ color: oldColor, fog: false });
+      child.frustumCulled = false;
+    }
+  });
   GAME.scene.add(grandmaModel);
-  var cane = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.9, 6), new THREE.MeshStandardMaterial({ color: 0x6d4c2e, roughness: 0.6 }));
+  var cane = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.9, 6), new THREE.MeshBasicMaterial({ color: 0x6d4c2e, fog: false }));
   cane.position.set(0.2, -0.3, 0.1); cane.rotation.z = 0.15;
   grandmaModel.userData.body.add(cane);
   GAME.npcs.push({
@@ -12999,11 +13007,12 @@ function tryHelpInjuredNPC() {
         npc.mesh.scale.set(1, 1, 1);
         npc.mesh.position.y = npc.floorY || 0;
         npc.speed = 0.012; // 少し遅め（高齢者）
-        // ヒントライト・矢印・リング消灯
+        // ヒントライト・矢印・リング・代替メッシュ消灯
         if (GAME._grandmaHintLight) { GAME._grandmaHintLight.intensity = 0; }
         if (GAME._grandmaSpotLight) { GAME._grandmaSpotLight.intensity = 0; }
         if (GAME._grandmaArrow) { GAME._grandmaArrow.visible = false; }
         if (GAME._grandmaRing) { GAME._grandmaRing.visible = false; }
+        if (npc._backupMesh) { npc._backupMesh.visible = false; }
         // ポーズリセット
         var gBody = npc.mesh.userData.body;
         if (gBody) gBody.rotation.x = 0;
@@ -13767,15 +13776,16 @@ function gameLoop(timestamp) {
   if (GAME._shoesHighlight && GAME._shoesHighlight.visible) {
     GAME._shoesHighlight.rotation.z = GAME.totalTimer * 1.5;
   }
-  // 光柱ビームの脈動アニメーション（Stage 1と同じパターン）
+  // 光柱ビームの回転＋脈動（Stage 1と同じパターン）
   if (GAME._beaconPole) {
-    var bPulse = 0.15 + Math.sin(GAME.totalTimer * 2) * 0.1;
-    GAME._beaconPole.material.opacity = bPulse;
+    GAME._beaconPole.rotation.y += dtSec * 0.5;
+    var bPulse3 = Math.sin(GAME.totalTimer * 3) * 0.5 + 0.5;
+    GAME._beaconPole.material.opacity = 0.2 + bPulse3 * 0.2;
   }
-  // 下向き矢印の上下揺れ
+  // 上向き矢印の上下揺れ＋回転
   if (GAME._evacArrowS3) {
-    GAME._evacArrowS3.position.y = (HOUSE_1F_Y || 0) + 3.5 + Math.sin(GAME.totalTimer * 3) * 0.5;
-    GAME._evacArrowS3.rotation.y = GAME.totalTimer * 2;
+    GAME._evacArrowS3.position.y = (HOUSE_1F_Y || 0) + 3.0 + Math.sin(GAME.totalTimer * 2) * 0.5;
+    GAME._evacArrowS3.rotation.y += dtSec * 2;
   }
   // テキストラベルのビルボード（常にカメラに向く）
   if (GAME._evacLabelS3 && GAME.camera) {
@@ -14417,13 +14427,16 @@ function _doTransitionPhase(newPhase) {
             snpc.mesh.position.x = snpc.x;
             snpc.mesh.position.z = snpc.z;
             snpc.mesh.position.y = snpc.floorY || 0;
-            // emissiveを強制的に高く設定（確実に見える）
-            snpc.mesh.traverse(function(child) {
-              if (child.material) {
-                child.material.emissive = new THREE.Color(0xffcc88);
-                child.material.emissiveIntensity = 0.5;
-              }
-            });
+            // おばあちゃんはMeshBasicMaterial変換済みのためemissive不要
+            // それ以外のNPCのみemissive設定
+            if (snpc.role !== 'grandma') {
+              snpc.mesh.traverse(function(child) {
+                if (child.material && child.material.emissive) {
+                  child.material.emissive = new THREE.Color(0xffcc88);
+                  child.material.emissiveIntensity = 0.5;
+                }
+              });
+            }
             snpc._emissiveSet = true;
           }
         }
