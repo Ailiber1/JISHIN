@@ -10063,32 +10063,33 @@ function buildHouseFloor() {
   evacBoard.position.set(EVAC_POINT_S3.x, Y1 + 2.3, EVAC_POINT_S3.z - EVAC_POINT_S3.radius - 0.5); scene.add(evacBoard);
 
   var glowGeo = new THREE.CircleGeometry(EVAC_POINT_S3.radius + 1, 32);
-  var glowMat2 = new THREE.MeshBasicMaterial({ color: 0x00ff44, transparent: true, opacity: 0.25, side: THREE.DoubleSide, depthWrite: false });
+  var glowMat2 = new THREE.MeshBasicMaterial({ color: 0x00ff44, transparent: true, opacity: 0.25, side: THREE.DoubleSide, depthWrite: false, fog: false });
   var glow = new THREE.Mesh(glowGeo, glowMat2);
   glow.rotation.x = -Math.PI / 2; glow.position.set(EVAC_POINT_S3.x, Y1 + 0.02, EVAC_POINT_S3.z); scene.add(glow);
   glow.frustumCulled = false;
-  // ===== ゴール光柱（ステージ2スタイル: 不透明MeshBasicMaterial） =====
-  // 中央の太い柱（MeshBasicMaterial不透明 — 暗闘の夜でも確実に見える）
-  var pillarMat = new THREE.MeshBasicMaterial({ color: 0x00ff66 });
-  var pillarGeo = new THREE.CylinderGeometry(0.8, 1.2, 12, 16);
-  var pillar = new THREE.Mesh(pillarGeo, pillarMat);
-  pillar.position.set(EVAC_POINT_S3.x, Y1 + 6, EVAC_POINT_S3.z);
-  pillar.frustumCulled = false;
-  scene.add(pillar);
-  GAME._beaconPillar = pillar;
-  GAME._beaconPillarMat = pillarMat;
-  // 外側の薄い柱（やや大きく、半透明で光の広がりを表現）
-  var pillarOuterMat = new THREE.MeshBasicMaterial({ color: 0x00ff44, transparent: true, opacity: 0.35, side: THREE.DoubleSide });
-  var pillarOuter = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 2.0, 14, 16), pillarOuterMat);
-  pillarOuter.position.set(EVAC_POINT_S3.x, Y1 + 7, EVAC_POINT_S3.z);
-  pillarOuter.frustumCulled = false;
-  scene.add(pillarOuter);
-  GAME._beaconPillarOuter = pillarOuter;
+  // ===== ゴール光柱（Stage 2完全複製 + fog:false で暗い霧を無視） =====
+  // 内側ビーム（Stage 2と同じパラメータ + fog:false）
+  var beamGeo = new THREE.CylinderGeometry(0.3, 1.0, 20, 16, 1, true);
+  var beamMat = new THREE.MeshBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0.25, side: THREE.DoubleSide, depthWrite: false, fog: false });
+  var beam = new THREE.Mesh(beamGeo, beamMat);
+  beam.position.set(EVAC_POINT_S3.x, Y1 + 10, EVAC_POINT_S3.z);
+  beam.frustumCulled = false;
+  scene.add(beam);
+  GAME._beaconPole = beam;
+  GAME._beaconPoleMat = beamMat;
+  // 外側ビーム（より太い、遠くからも視認可能 + fog:false）
+  var beamGeo2 = new THREE.CylinderGeometry(1.0, 2.5, 25, 16, 1, true);
+  var beamMat2 = new THREE.MeshBasicMaterial({ color: 0x00ff66, transparent: true, opacity: 0.15, side: THREE.DoubleSide, depthWrite: false, fog: false });
+  var beam2 = new THREE.Mesh(beamGeo2, beamMat2);
+  beam2.position.set(EVAC_POINT_S3.x, Y1 + 12.5, EVAC_POINT_S3.z);
+  beam2.frustumCulled = false;
+  scene.add(beam2);
+  GAME._beaconPoleOuter = beam2;
   // PointLight（Stage 1/2と同じ: intensity 1.5, range 15）
   var evacLightS3 = new THREE.PointLight(0x00ff66, 1.5, 15);
   evacLightS3.position.set(EVAC_POINT_S3.x, Y1 + 1.0, EVAC_POINT_S3.z); scene.add(evacLightS3);
-  // 道しるべ: ポール + 方向看板ラベル（球体なし）
-  var guidePoleMat = new THREE.MeshBasicMaterial({ color: 0x00ff88 });
+  // 道しるべ: 発光ポールのみ（看板なし — fog:falseで霧に消されない）
+  var guidePoleMat = new THREE.MeshBasicMaterial({ color: 0x00ff88, fog: false });
   var guidePositions = [
     [-3, -8],   // 玄関すぐ外
     [-1, -12],  // 道路入口
@@ -10099,34 +10100,10 @@ function buildHouseFloor() {
   ];
   GAME._guidePoles = [];
   for (var gpi = 0; gpi < guidePositions.length; gpi++) {
-    var gpole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 2.0, 8), guidePoleMat);
-    gpole.position.set(guidePositions[gpi][0], Y1 + 1.0, guidePositions[gpi][1]); scene.add(gpole);
+    var gpole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 2.5, 8), guidePoleMat);
+    gpole.position.set(guidePositions[gpi][0], Y1 + 1.25, guidePositions[gpi][1]); scene.add(gpole);
+    gpole.frustumCulled = false;
     GAME._guidePoles.push(gpole);
-    // 方向看板（次のポイントへの矢印テキスト）
-    var signCanvas = document.createElement('canvas');
-    signCanvas.width = 128; signCanvas.height = 48;
-    var sctx = signCanvas.getContext('2d');
-    sctx.fillStyle = '#005522';
-    sctx.fillRect(0, 0, 128, 48);
-    sctx.strokeStyle = '#00ff66';
-    sctx.lineWidth = 2;
-    sctx.strokeRect(1, 1, 126, 46);
-    sctx.fillStyle = '#00ff88';
-    sctx.font = 'bold 22px sans-serif';
-    sctx.textAlign = 'center';
-    sctx.fillText(gpi < guidePositions.length - 1 ? '→ 避難場所' : '▼ 避難場所', 64, 32);
-    var signTex = new THREE.CanvasTexture(signCanvas);
-    var signBoard = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.8, 0.3),
-      new THREE.MeshBasicMaterial({ map: signTex, side: THREE.DoubleSide })
-    );
-    signBoard.position.set(guidePositions[gpi][0], Y1 + 2.2, guidePositions[gpi][1]);
-    // 看板を次のポイント方向に向ける
-    if (gpi < guidePositions.length - 1) {
-      var nx = guidePositions[gpi + 1][0], nz = guidePositions[gpi + 1][1];
-      signBoard.rotation.y = Math.atan2(nx - guidePositions[gpi][0], nz - guidePositions[gpi][1]);
-    }
-    scene.add(signBoard);
   }
 
   // 照明
@@ -13705,18 +13682,16 @@ function gameLoop(timestamp) {
   if (GAME._shoesHighlight && GAME._shoesHighlight.visible) {
     GAME._shoesHighlight.rotation.z = GAME.totalTimer * 1.5;
   }
-  // 光柱ピラーの回転＋色脈動（ステージ2スタイル）
-  if (GAME._beaconPillar) {
-    GAME._beaconPillar.rotation.y += dtSec * 0.5;
-    // 色の明滅（緑の濃淡を切り替え）
+  // 光柱ビームの回転＋脈動（Stage 2と同じパターン + fog:false）
+  if (GAME._beaconPole) {
+    GAME._beaconPole.rotation.y += dtSec * 0.5;
     var bPulse3 = Math.sin(GAME.totalTimer * 3) * 0.5 + 0.5;
-    var g = Math.floor(200 + bPulse3 * 55);
-    GAME._beaconPillarMat.color.setRGB(0, g / 255, bPulse3 * 0.4);
+    GAME._beaconPoleMat.opacity = 0.12 + bPulse3 * 0.15;
   }
-  if (GAME._beaconPillarOuter) {
-    GAME._beaconPillarOuter.rotation.y -= dtSec * 0.3;
+  if (GAME._beaconPoleOuter) {
+    GAME._beaconPoleOuter.rotation.y -= dtSec * 0.3;
     var bPulse3b = Math.sin(GAME.totalTimer * 2) * 0.5 + 0.5;
-    GAME._beaconPillarOuter.material.opacity = 0.2 + bPulse3b * 0.2;
+    GAME._beaconPoleOuter.material.opacity = 0.08 + bPulse3b * 0.1;
   }
   // 道しるべポール（不透明MeshBasicMaterial — アニメーション不要）
   // 祖母関連アニメーション削除済み
