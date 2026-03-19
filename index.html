@@ -1522,6 +1522,83 @@ html, body {
 }
 
 /* AIアドバイザー吹き出し */
+
+/* 訓練モード: 教育ヒントオーバーレイ */
+#training-tip-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.85); z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px; box-sizing: border-box;
+}
+.training-tip-card {
+  background: linear-gradient(135deg, #1a2a1a 0%, #0d1a0d 100%);
+  border: 2px solid #00ff88; border-radius: 16px;
+  padding: 28px 24px; max-width: 480px; width: 100%;
+  text-align: center; box-shadow: 0 0 30px rgba(0,255,136,0.3);
+  animation: tipFadeIn 0.3s ease;
+}
+@keyframes tipFadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+.training-tip-icon { font-size: 40px; margin-bottom: 12px; }
+.training-tip-text {
+  color: #e0ffe0; font-size: 16px; line-height: 1.8;
+  text-align: left; margin-bottom: 20px; white-space: pre-line;
+}
+.training-tip-mobile-hint {
+  color: #88ccff; font-size: 13px; margin-bottom: 16px;
+  padding: 8px 12px; background: rgba(0,100,255,0.15);
+  border-radius: 8px; border: 1px solid rgba(0,100,255,0.3);
+}
+.training-tip-close {
+  font-size: 16px; padding: 12px 40px;
+  min-height: 48px; /* スマホタッチ対応 */
+}
+
+/* 訓練モード: 振り返りレポート */
+.training-report-item {
+  padding: 12px 14px; margin-bottom: 10px;
+  border-radius: 10px; border-left: 4px solid #555;
+  background: rgba(255,255,255,0.04);
+}
+.training-report-item.action-good {
+  border-left-color: #00ff88;
+  background: rgba(0,255,136,0.06);
+}
+.training-report-item.action-bad {
+  border-left-color: #ff4444;
+  background: rgba(255,68,68,0.06);
+}
+.training-report-header {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 15px; font-weight: bold; margin-bottom: 6px;
+}
+.training-report-header .action-icon { font-size: 18px; flex-shrink: 0; }
+.training-report-header .action-text { color: #eee; }
+.training-report-expl {
+  color: #aadaaa; font-size: 13px; line-height: 1.6;
+  padding: 8px 10px; margin-top: 4px;
+  background: rgba(0,255,136,0.05); border-radius: 6px;
+  border: 1px dashed rgba(0,255,136,0.2);
+}
+.training-report-item.action-bad .training-report-expl {
+  color: #ffaaaa;
+  background: rgba(255,68,68,0.05);
+  border-color: rgba(255,68,68,0.2);
+}
+
+/* スマホ最適化: 訓練ヒント */
+@media (max-width: 600px) {
+  .training-tip-card { padding: 20px 16px; }
+  .training-tip-text { font-size: 14px; line-height: 1.7; }
+  .training-tip-icon { font-size: 32px; }
+  .training-report-item { padding: 10px 12px; }
+  .training-report-header { font-size: 14px; }
+  .training-report-expl { font-size: 12px; }
+}
+@media (max-width: 375px) {
+  .training-tip-text { font-size: 13px; }
+  .training-report-expl { font-size: 11px; }
+}
+
 #advisor-box {
   position: absolute; bottom: 60px; left: 12px;
   display: flex; align-items: flex-end; gap: 8px;
@@ -2697,7 +2774,19 @@ html, body {
     <div id="danger-vignette"></div>
   </div>
   <div id="mobile-joystick"><div id="joystick-knob"></div></div>
-  <div id="mobile-buttons">
+  <!-- 訓練モード: 教育ヒントオーバーレイ -->
+<div id="training-tip-overlay" style="display:none">
+  <div class="training-tip-card">
+    <div class="training-tip-icon">📖</div>
+    <div class="training-tip-text" id="training-tip-text"></div>
+    <div class="training-tip-mobile-hint" id="training-tip-mobile-hint" style="display:none"></div>
+    <button class="btn btn-neon training-tip-close" onclick="closeTrainingTip()">
+      <span data-i18n="TRAINING_TIP_OK">わかった！</span>
+    </button>
+  </div>
+</div>
+
+<div id="mobile-buttons">
     <button class="mob-btn" id="mob-dash" data-i18n="MOB_DASH">走る</button>
     <button class="mob-btn" id="mob-crouch" data-i18n="MOB_CROUCH">しゃがむ</button>
     <button class="mob-btn" id="mob-guard" data-i18n="MOB_GUARD">頭を守る</button>
@@ -2849,6 +2938,8 @@ const I18N = {
     TRAINING_PAUSE_LABEL: 'フェーズ間一時停止',
     TRAINING_NOTE: '※ 訓練モードではランキングに記録されません',
     TRAINING_START: '訓練開始',
+    TRAINING_TIP_OK: 'わかった！',
+    TRAINING_REPORT_TITLE: '📋 避難行動レポート',
     RULES_TITLE: 'ルール / 防災知識',
     TAB_RULES: 'ゲームルール',
     TAB_CONTROLS: '操作方法',
@@ -2991,6 +3082,8 @@ const I18N = {
     TRAINING_PAUSE_LABEL: 'Pause Between Phases',
     TRAINING_NOTE: '※ Training mode scores are not recorded in rankings',
     TRAINING_START: 'START TRAINING',
+    TRAINING_TIP_OK: 'Got it!',
+    TRAINING_REPORT_TITLE: '📋 Evacuation Training Report',
     RULES_TITLE: 'RULES / KNOWLEDGE',
     TAB_RULES: 'RULES',
     TAB_CONTROLS: 'CONTROLS',
@@ -5649,6 +5742,7 @@ function initEventListeners() {
     updateStageUnlocks();
   });
   document.getElementById('result-title-btn').addEventListener('click', () => {
+    GAME.isTraining = false;
     showTitle();
   });
 
@@ -5689,8 +5783,20 @@ function initEventListeners() {
   });
   document.getElementById('training-close-btn').addEventListener('click', () => { showTitle(); });
   document.getElementById('training-start-btn').addEventListener('click', () => {
-    // TODO: 訓練モード開始（3Dゲーム実装後に接続）
     SoundManager.playSE('click');
+    var stageNum = parseInt(document.getElementById('training-stage-select').value) || 1;
+    // 訓練モードフラグ設定
+    GAME.isTraining = true;
+    GAME._trainingZone = document.getElementById('training-zone-on').classList.contains('active');
+    GAME._trainingPause = document.getElementById('training-pause-on').classList.contains('active');
+    // ノベルプロローグをスキップして直接3Dゲーム開始
+    NOVEL_SCRIPTS['stage' + stageNum] = generateNovelScripts(stageNum);
+    GAME.stageNum = stageNum;
+    // 環境音開始
+    if (stageNum === 2) { SoundManager.startOfficeAmbient(); }
+    else if (stageNum === 3) { SoundManager.startHomeAmbient(); }
+    else { SoundManager.startClassroomAmbient(); }
+    initGame(stageNum);
   });
   // 訓練モード トグル
   ['training-zone', 'training-pause'].forEach(prefix => {
@@ -5933,6 +6039,9 @@ const GAME = {
   cameraDistance: 3.5, cameraPitch: 0.45,
   mouseX: 0, mouseY: 0, mouseSensitivity: 0.003,
   pointerLocked: false,
+  isTraining: false,
+  _trainingZone: false,
+  _trainingPause: false,
 };
 
 function initGame(stageNum) {
@@ -5987,6 +6096,7 @@ function initGame(stageNum) {
   GAME._aftershockCrouchBonusPts = 0; GAME._aftershockPenaltyPts = 0;
   GAME._glassWarned = false;
   GAME._windowWarned = false;
+  GAME._trainingTipShown = {}; // 訓練モード: 表示済み教育ヒント管理
 
   // ステージ別プレイヤー初期位置
   if (stageNum === 2) {
@@ -6240,6 +6350,71 @@ function initGame(stageNum) {
   GAME.lastFrameTime = 0;
   if (GAME.animId) cancelAnimationFrame(GAME.animId);
   GAME.animId = requestAnimationFrame(gameLoop);
+
+  // 避難ポイント位置を記録（安全ゾーン表示用）
+  if (stageNum === 1) GAME._evacPointPos = { x: 0, z: 45 };
+  else if (stageNum === 2) GAME._evacPointPos = { x: 8, z: 25 };
+  else if (stageNum === 3) GAME._evacPointPos = { x: 12, z: -20 };
+
+  // 机の位置情報を記録（安全ゾーン表示用）
+  GAME._deskPositions = [];
+  if (stageNum === 1) {
+    // Stage 1: 教室の机
+    var cols1 = 6, rows1 = 4;
+    for (var r = 0; r < rows1; r++) {
+      for (var c = 0; c < cols1; c++) {
+        GAME._deskPositions.push({ x: -3.2 + c * 1.2, z: 0.4 + r * 1.4 });
+      }
+    }
+  } else if (stageNum === 2) {
+    // Stage 2: オフィスデスク
+    for (var col2 = 0; col2 < 5; col2++) {
+      for (var row2 = 0; row2 < 4; row2++) {
+        GAME._deskPositions.push({ x: -8 + col2 * 4, z: 2 + row2 * 2.5 });
+      }
+    }
+  }
+
+  // 訓練モード: 安全ゾーンハイライト表示
+  if (GAME.isTraining && GAME._trainingZone) {
+    var szMat = new THREE.MeshBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0.25, side: THREE.DoubleSide, fog: false });
+    GAME._safeZoneMeshes = [];
+    var Y1 = 0; // 1F
+    var Y2 = typeof HOUSE_2F_Y !== 'undefined' ? HOUSE_2F_Y : 3.0;
+    if (stageNum === 1) {
+      // 学校: 各机の下
+      if (GAME._deskPositions) {
+        GAME._deskPositions.forEach(function(dp) {
+          var sz = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.8), szMat);
+          sz.rotation.x = -Math.PI / 2; sz.position.set(dp.x, Y1 + 0.02, dp.z);
+          GAME.scene.add(sz); GAME._safeZoneMeshes.push(sz);
+        });
+      }
+    } else if (stageNum === 2) {
+      // オフィス: 各デスク下
+      if (GAME._deskPositions) {
+        GAME._deskPositions.forEach(function(dp) {
+          var sz = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 0.8), szMat);
+          sz.rotation.x = -Math.PI / 2; sz.position.set(dp.x, Y1 + 0.02, dp.z);
+          GAME.scene.add(sz); GAME._safeZoneMeshes.push(sz);
+        });
+      }
+    } else if (stageNum === 3) {
+      // 自宅: ちゃぶ台下(1F) + 机下(2F)
+      var sz1 = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 1.2), szMat);
+      sz1.rotation.x = -Math.PI / 2; sz1.position.set(0, Y1 + 0.02, -1);
+      GAME.scene.add(sz1); GAME._safeZoneMeshes.push(sz1);
+      var sz2 = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.8), szMat);
+      sz2.rotation.x = -Math.PI / 2; sz2.position.set(-4, Y2 + 0.02, -4);
+      GAME.scene.add(sz2); GAME._safeZoneMeshes.push(sz2);
+    }
+    // 避難ポイントも表示（緑ビーコンの位置）
+    if (GAME._evacPointPos) {
+      var evacSz = new THREE.Mesh(new THREE.PlaneGeometry(3, 3), new THREE.MeshBasicMaterial({ color: 0xff8800, transparent: true, opacity: 0.2, side: THREE.DoubleSide, fog: false }));
+      evacSz.rotation.x = -Math.PI / 2; evacSz.position.set(GAME._evacPointPos.x, 0.03, GAME._evacPointPos.z);
+      GAME.scene.add(evacSz); GAME._safeZoneMeshes.push(evacSz);
+    }
+  }
 
   if (!GAME.isMobile) {
     GAME.renderer.domElement.addEventListener('click', function() {
@@ -10502,7 +10677,7 @@ function checkEvacPointReached() {
     var dz3 = p3.z - EVAC_POINT_S3.z;
     if (Math.sqrt(dx3 * dx3 + dz3 * dz3) < EVAC_POINT_S3.radius) {
       GAME.scoring.reachedEvacPoint = true;
-      GAME.scoring.withinTimeLimit = GAME.totalTimer < GAME.timeLimit;
+      GAME.scoring.withinTimeLimit = GAME.isTraining ? true : (GAME.totalTimer < GAME.timeLimit);
       // 家族全員避難ボーナスチェック
       var familyAll = true;
       if (GAME.npcs) {
@@ -10549,7 +10724,7 @@ function checkEvacPointReached() {
     var dz2 = p2.z - EVAC_POINT_S2.z;
     if (Math.sqrt(dx2 * dx2 + dz2 * dz2) < EVAC_POINT_S2.radius) {
       GAME.scoring.reachedEvacPoint = true;
-      GAME.scoring.withinTimeLimit = GAME.totalTimer < GAME.timeLimit;
+      GAME.scoring.withinTimeLimit = GAME.isTraining ? true : (GAME.totalTimer < GAME.timeLimit);
       SoundManager.playSE('correct');
       transitionPhase('result');
     }
@@ -10568,7 +10743,7 @@ function checkEvacPointReached() {
   var dz = p.z - EVAC_POINT.z;
   if (Math.sqrt(dx * dx + dz * dz) < EVAC_POINT.radius) {
     GAME.scoring.reachedEvacPoint = true;
-    GAME.scoring.withinTimeLimit = GAME.totalTimer < GAME.timeLimit;
+    GAME.scoring.withinTimeLimit = GAME.isTraining ? true : (GAME.totalTimer < GAME.timeLimit);
     SoundManager.playSE('correct');
     transitionPhase('result');
   }
@@ -13629,8 +13804,8 @@ function updatePhase(dtSec) {
       break;
 
     case 'evacuation':
-      // 避難フェーズ — 制限時間チェック
-      if (GAME.totalTimer >= GAME.timeLimit) {
+      // 避難フェーズ — 制限時間チェック（訓練モードは時間制限なし）
+      if (!GAME.isTraining && GAME.totalTimer >= GAME.timeLimit) {
         GAME.scoring.withinTimeLimit = false;
         transitionPhase('result');
       }
@@ -13802,8 +13977,8 @@ function transitionPhase(newPhase) {
   var stageKey = 'stage' + GAME.stageNum;
   var novelScripts = NOVEL_SCRIPTS[stageKey] || {};
 
-  // ノベル挿入: earthquake前
-  if (newPhase === 'earthquake' && novelScripts.earthquake && !GAME._novelEarthquakeDone) {
+  // ノベル挿入: earthquake前（訓練モードはスキップ）
+  if (newPhase === 'earthquake' && novelScripts.earthquake && !GAME._novelEarthquakeDone && !GAME.isTraining) {
     GAME._novelEarthquakeDone = true;
     GAME.running = false; // 3Dを一時停止
     // ノベルシーンではカーソルが必要なのでPointer Lock強制解除
@@ -13828,8 +14003,8 @@ function transitionPhase(newPhase) {
     return;
   }
 
-  // ノベル挿入: aftershake前
-  if (newPhase === 'aftershake' && novelScripts.aftershake && !GAME._novelAftershakeDone) {
+  // ノベル挿入: aftershake前（訓練モードはスキップ）
+  if (newPhase === 'aftershake' && novelScripts.aftershake && !GAME._novelAftershakeDone && !GAME.isTraining) {
     GAME._novelAftershakeDone = true;
     GAME.running = false;
     if (document.pointerLockElement) document.exitPointerLock();
@@ -13849,8 +14024,8 @@ function transitionPhase(newPhase) {
     return;
   }
 
-  // ノベル挿入: result前（エピローグ）
-  if (newPhase === 'result' && !GAME._novelEpilogueDone) {
+  // ノベル挿入: result前（エピローグ・訓練モードはスキップ）
+  if (newPhase === 'result' && !GAME._novelEpilogueDone && !GAME.isTraining) {
     GAME._novelEpilogueDone = true;
     GAME.running = false;
     if (document.pointerLockElement) document.exitPointerLock();
@@ -13883,8 +14058,13 @@ function _doTransitionPhase(newPhase) {
   GAME.phase = newPhase;
   GAME.phaseTimer = 0;
 
+  // 訓練モード: フェーズ遷移時のヒント
+  if (newPhase === 'aftershake') showTrainingTip('aftershake_start');
+  if (newPhase === 'evacuation') showTrainingTip('evacuation_start');
+
   switch (newPhase) {
     case 'earthquake':
+      showTrainingTip('earthquake_start');
       // 日常シネマティック終了
       endDailyCinematic();
       // キー状態をリセット（シネマティック中の入力残りを防止）
@@ -14156,12 +14336,25 @@ function updatePhaseDisplay() {
   }
 }
 
+// 訓練モード: 安全ゾーン脈動アニメーション
+function updateSafeZones() {
+  if (!GAME.isTraining || !GAME._safeZoneMeshes) return;
+  var t = performance.now() * 0.002;
+  var opacity = 0.15 + 0.12 * Math.sin(t);
+  GAME._safeZoneMeshes.forEach(function(m) {
+    if (m.material) m.material.opacity = opacity;
+  });
+}
+
 function updateHUD() {
   // タイマー表示（残り時間 — 地震発生後から表示）
   var timerEl = document.getElementById('hud-timer');
   if (timerEl) {
     if (GAME.phase === 'daily') {
       timerEl.textContent = '';
+    } else if (GAME.isTraining) {
+      timerEl.textContent = '∞';
+      timerEl.classList.remove('warning');
     } else {
       var remaining = Math.max(0, GAME.timeLimit - GAME.totalTimer);
       var min = Math.floor(remaining / 60);
@@ -14767,6 +14960,77 @@ function nextQuizQuestion() {
 // ============================================================
 // SECTION: AIアドバイザー表示
 // ============================================================
+
+// ============================================================
+// SECTION: 訓練モード — 教育ヒント表示システム
+// ============================================================
+var TRAINING_TIPS = {
+  earthquake_start: {
+    ja: '💡 地震発生！\nまず「しゃがむ」（C）→ 机の下に移動 → 「頭を守る」（G）\n机の脚を掴む（E長押し）とさらに安全です',
+    en: '💡 Earthquake!\nFirst "Crouch" (C) → Move under a desk → "Guard head" (G)\nHold desk legs (hold E) for extra safety'
+  },
+  aftershake_start: {
+    ja: '💡 揺れが収まりました\n① 周囲の安全確認\n② 火の元の確認（ガス・ストーブ）\n③ 避難経路の確保（ドアを開ける）\n④ 靴を履く（ガラス片対策）',
+    en: '💡 Shaking has stopped\n① Check surroundings for safety\n② Check fire sources (gas, heater)\n③ Secure evacuation route (open doors)\n④ Put on shoes (glass shard protection)'
+  },
+  evacuation_start: {
+    ja: '💡 避難開始！\n① 頭を守りながら移動（G）\n② 階段を使う（エレベーター禁止）\n③ ブロック塀に近づかない\n④ 避難場所（オレンジの光）を目指す',
+    en: '💡 Start evacuating!\n① Move while protecting head (G)\n② Use stairs (never elevators)\n③ Stay away from block walls\n④ Head to evacuation point (orange light)'
+  },
+  aftershock_warn: {
+    ja: '💡 余震が来た！\n動かずに「しゃがむ」（C）＋「頭を守る」（G）\n揺れが収まるまで待ちましょう',
+    en: '💡 Aftershock!\nStay still — "Crouch" (C) + "Guard head" (G)\nWait until the shaking stops'
+  },
+  stage3_flashlight: {
+    ja: '💡 停電時のポイント\n懐中電灯の保管場所を普段から確認しておきましょう\n暗闇での移動は転倒リスクが高くなります',
+    en: '💡 Power outage tip\nAlways know where your flashlight is stored\nMoving in darkness increases the risk of falling'
+  },
+  stage3_family: {
+    ja: '💡 家族の安全確認\n家族全員の安否を確認してから避難しましょう\n特に子供やお年寄りの安全を優先',
+    en: '💡 Family safety check\nConfirm everyone\'s safety before evacuating\nPrioritize children and elderly'
+  }
+};
+
+function showTrainingTip(tipKey) {
+  if (!GAME.isTraining || !GAME._trainingPause) return;
+  if (GAME._trainingTipShown[tipKey]) return;
+  GAME._trainingTipShown[tipKey] = true;
+
+  GAME.running = false; // ゲーム一時停止
+  if (document.pointerLockElement) document.exitPointerLock();
+
+  var overlay = document.getElementById('training-tip-overlay');
+  var textEl = document.getElementById('training-tip-text');
+  var en = (currentLang === 'en');
+  var tip = TRAINING_TIPS[tipKey];
+  if (!tip) { GAME.running = true; return; }
+
+  textEl.innerHTML = escapeHTML(en ? tip.en : tip.ja).replace(/\\n/g, '<br>');
+  overlay.style.display = 'flex';
+
+  // スマホ: 操作ヒントも表示
+  var mobileHint = document.getElementById('training-tip-mobile-hint');
+  if (mobileHint) {
+    mobileHint.style.display = GAME.isMobile ? 'block' : 'none';
+    if (GAME.isMobile) {
+      var mobileText = en
+        ? 'Mobile: Use on-screen buttons for Crouch/Guard/Interact'
+        : 'スマホ: 画面下のボタンで「しゃがむ」「頭を守る」「操作」';
+      mobileHint.textContent = mobileText;
+    }
+  }
+}
+
+function closeTrainingTip() {
+  var overlay = document.getElementById('training-tip-overlay');
+  overlay.style.display = 'none';
+  GAME.running = true;
+  if (!GAME.isMobile && GAME.renderer && GAME.renderer.domElement) {
+    GAME.renderer.domElement.requestPointerLock();
+  }
+  requestAnimationFrame(gameLoop);
+}
+
 function showAdvisor(text, type) {
   var box = document.getElementById('advisor-box');
   var textEl = document.getElementById('advisor-text');
@@ -14877,6 +15141,82 @@ function getRank(score) {
   return { rank: 'D', title: en ? 'Too Many Risky Actions' : '危険な行動が多い' };
 }
 
+
+// 訓練モード: 行動解説データ
+var TRAINING_EXPLANATIONS = {
+  crouchedIn3s: {
+    ja: '地震発生後3秒以内にしゃがむことで、転倒や落下物による怪我を防げます。「DROP（まず低く）」は世界共通の地震対応です。',
+    en: 'Crouching within 3 seconds of an earthquake prevents injuries from falls and falling objects. "DROP" is a universal earthquake response.'
+  },
+  movedToSafe: {
+    ja: '「落ちてこない・倒れてこない・移動してこない」場所への移動が重要。机の下は頭部を守る最適な場所です。',
+    en: 'Moving to a place where nothing can fall, topple, or slide into you is crucial. Under a desk is the best spot to protect your head.'
+  },
+  heldDeskLegs: {
+    ja: '机の脚を掴むことで、激しい揺れでも机から飛び出されるのを防げます。「HOLD ON（しっかりつかまる）」は3つの安全行動の1つ。',
+    en: 'Holding desk legs prevents being thrown out from under the desk during intense shaking. "HOLD ON" is one of the three safety actions.'
+  },
+  guardedHead: {
+    ja: '頭部は最も守るべき部位。避難中もカバンや腕で頭を守りながら移動しましょう。',
+    en: 'The head is the most critical body part to protect. Cover your head with a bag or arms while evacuating.'
+  },
+  openedDoor: {
+    ja: '地震後は建物のゆがみでドアが開かなくなることがあります。揺れが収まったらすぐにドアを開けて避難経路を確保。',
+    en: 'Doors can jam after an earthquake due to building deformation. Open doors immediately after shaking stops to secure escape routes.'
+  },
+  putOnShoes: {
+    ja: '地震でガラスや食器が割れ、床に破片が散乱します。素足で歩くと大怪我の原因に。必ず靴を履きましょう。',
+    en: 'Earthquakes scatter broken glass and ceramics on floors. Walking barefoot causes serious injuries. Always put on shoes.'
+  },
+  checkedSafety: {
+    ja: '周囲の人の安否確認は大切な行動です。特に高齢者や子供、怪我人がいないか声をかけましょう。',
+    en: 'Checking on people around you is important. Call out to the elderly, children, and anyone who may be injured.'
+  },
+  turnedOffBreaker: {
+    ja: '停電復旧時に電気が通ると、倒れた電気ストーブ等から発火する「通電火災」が起きます。避難前にブレーカーを落としましょう。',
+    en: 'When power is restored, knocked-over heaters can cause "restoration fires." Turn off the breaker before evacuating.'
+  },
+  noElevator: {
+    ja: 'エレベーターは地震後に停止・閉じ込めの危険があります。余震で再停止する可能性も。必ず階段で避難しましょう。',
+    en: 'Elevators may stop or trap people after earthquakes. Aftershocks can cause further stops. Always use stairs.'
+  },
+  usedFlashlight: {
+    ja: '停電時は暗闇での移動が大きなリスクに。懐中電灯の保管場所を家族全員で共有しておくことが重要です。',
+    en: 'Power outages make moving in darkness risky. Share flashlight locations with all family members beforehand.'
+  },
+  rescuedChild: {
+    ja: '家族全員の安否確認が最優先。特に子供は恐怖でパニックになりやすいので、声をかけて安心させましょう。',
+    en: 'Confirming family safety is top priority. Children are prone to panic — call out to reassure them.'
+  },
+  familyEvacuated: {
+    ja: '家族がバラバラに避難すると安否確認が困難に。可能な限り全員で一緒に避難しましょう。事前に集合場所を決めておくことも大切。',
+    en: 'Evacuating separately makes it hard to confirm safety. Evacuate together when possible. Decide on a meeting point in advance.'
+  },
+  usedStairs: {
+    ja: '地震後の建物内移動は階段が原則。エレベーターの使用は厳禁です。',
+    en: 'Always use stairs when moving inside a building after an earthquake. Never use elevators.'
+  },
+  avoidedBlockWall: {
+    ja: 'ブロック塀は地震で倒壊しやすい危険物。1978年の宮城県沖地震では、ブロック塀倒壊で18人が犠牲になりました。',
+    en: 'Block walls easily collapse in earthquakes. In the 1978 Miyagi earthquake, 18 people died from collapsing block walls.'
+  },
+  reachedEvacPoint: {
+    ja: '地域の避難場所を普段から確認しておきましょう。自宅から最も近い広域避難場所とそこまでの経路を家族で共有。',
+    en: 'Know your local evacuation points in advance. Share the nearest evacuation area and route with your family.'
+  },
+  withinTimeLimit: {
+    ja: '避難は迅速に。地震後は二次災害（火災・津波・余震）のリスクがあるため、素早い行動が命を守ります。',
+    en: 'Evacuate quickly. Secondary disasters (fires, tsunamis, aftershocks) pose risks, so swift action saves lives.'
+  },
+  aftershockBonus: {
+    ja: '余震時は「動かない・しゃがむ・頭を守る」が鉄則。移動中でも揺れを感じたらすぐに安全姿勢を取りましょう。',
+    en: 'During aftershocks: stay still, crouch, protect your head. Even while moving, take a safety posture immediately.'
+  },
+  aftershockPenalty: {
+    ja: '余震中に移動を続けると転倒や落下物の危険が高まります。揺れを感じたら必ず立ち止まって身を守りましょう。',
+    en: 'Continuing to move during aftershocks increases fall and falling object risks. Always stop and take cover.'
+  }
+};
 function showResult() {
   var r = getRank(GAME.score);
   var totalSec = Math.floor(GAME.totalTimer);
@@ -14905,12 +15245,29 @@ function showResult() {
       ? { 1: 'School (Classroom)', 2: 'Office Building (10F)', 3: 'Detached House' }
       : { 1: '学校（教室）', 2: 'オフィスビル（10階）', 3: '一軒家' };
     if (stageLabel) stageLabel.textContent = 'Stage ' + GAME.stageNum + ': ' + (stageNames[GAME.stageNum] || '');
-    if (titleEl) titleEl.textContent = GAME.hitCount >= 3 ? (en ? 'EVACUATION FAILED' : '避難失敗') : (en ? 'EVACUATION COMPLETE' : '避難完了');
+    if (GAME.isTraining) {
+      if (titleEl) titleEl.textContent = en ? 'EVACUATION TRAINING REPORT' : '📋 避難訓練レポート';
+    } else {
+      if (titleEl) titleEl.textContent = GAME.hitCount >= 3 ? (en ? 'EVACUATION FAILED' : '避難失敗') : (en ? 'EVACUATION COMPLETE' : '避難完了');
+    }
 
     // ランク色
     if (rankEl) {
       var rankColors = { S: '#ffdd00', A: '#00ff41', B: '#5599ff', C: '#ff8844', D: '#ff3333' };
       rankEl.style.color = rankColors[r.rank] || '#fff';
+    }
+
+    // 訓練モード: ランク・スコアを非表示、代わりにレポート形式
+    var rankDisplay = document.querySelector('.result-summary');
+    if (GAME.isTraining && rankDisplay) {
+      rankDisplay.style.display = 'none';
+      // レビューヘッダーを「避難行動レポート」に変更
+      var reviewH3 = document.querySelector('[data-i18n="RESULT_REVIEW"]');
+      if (reviewH3) reviewH3.textContent = en ? 'Evacuation Training Report' : '📋 避難行動レポート';
+    } else if (rankDisplay) {
+      rankDisplay.style.display = '';
+      var reviewH3b = document.querySelector('[data-i18n="RESULT_REVIEW"]');
+      if (reviewH3b) reviewH3b.textContent = en ? 'Action Review' : '行動の振り返り';
     }
 
     // 行動の振り返り
@@ -14921,19 +15278,19 @@ function showResult() {
     var actionsEl = document.getElementById('result-actions');
     if (actionsEl) {
       actions = [
-        { done: s.crouchedIn3s, text: en ? 'Crouched immediately after earthquake' : '地震発生後すぐにしゃがんだ', pts: '+10' },
-        { done: s.movedToSafe, text: en ? 'Moved to a safe spot' : '安全な場所に移動した', pts: '+10' },
-        { done: s.heldDeskLegs, text: en ? 'Held desk legs during shaking (HOLD ON)' : '机の脚を掴んで揺れに耐えた（HOLD ON）', pts: s.heldDeskLegs ? '+' + (GAME._holdOnBonus || 0) : '0' },
-        { done: s.awayFromHazard, text: en ? 'Stayed away from hazards' : '危険物から離れた', pts: '+5' },
-        { done: s.didNotRunOutside, text: en ? 'Did not rush outside during shaking' : '揺れ中に外に飛び出さなかった', pts: '+5' },
-        { done: s.noHitByFalling, text: en ? 'Avoided falling objects' : '落下物に当たらなかった', pts: '+5' },
+        { done: s.crouchedIn3s, text: en ? 'Crouched immediately after earthquake' : '地震発生後すぐにしゃがんだ', pts: '+10', explKey: 'crouchedIn3s' },
+        { done: s.movedToSafe, text: en ? 'Moved to a safe spot' : '安全な場所に移動した', pts: '+10', explKey: 'movedToSafe' },
+        { done: s.heldDeskLegs, text: en ? 'Held desk legs during shaking (HOLD ON)' : '机の脚を掴んで揺れに耐えた（HOLD ON）', pts: s.heldDeskLegs ? '+' + (GAME._holdOnBonus || 0) : '0', explKey: 'heldDeskLegs' },
+        { done: s.awayFromHazard, text: en ? 'Stayed away from hazards' : '危険物から離れた', pts: '+5', explKey: 'movedToSafe' },
+        { done: s.didNotRunOutside, text: en ? 'Did not rush outside during shaking' : '揺れ中に外に飛び出さなかった', pts: '+5', explKey: 'crouchedIn3s' },
+        { done: s.noHitByFalling, text: en ? 'Avoided falling objects' : '落下物に当たらなかった', pts: '+5', explKey: 'movedToSafe' },
       ];
       // ステージ別の揺れ後行動
       if (stg === 1) {
         // Stage1（学校）: 生徒としての行動チェック
-        actions.push({ done: s.openedDoor, text: en ? 'Opened door to secure evacuation route' : 'ドアを開けて避難経路を確保した', pts: '+8' });
-        actions.push({ done: s.putOnShoes, text: en ? 'Put on shoes (glass shard protection)' : '上履きを履いた（ガラス破片対策）', pts: '+7' });
-        actions.push({ done: s.checkedSafety, text: en ? 'Asked friends "Are you okay?"' : '友達に「大丈夫？」と声をかけた', pts: '+5' });
+        actions.push({ done: s.openedDoor, text: en ? 'Opened door to secure evacuation route' : 'ドアを開けて避難経路を確保した', pts: '+8', explKey: 'openedDoor' });
+        actions.push({ done: s.putOnShoes, text: en ? 'Put on shoes (glass shard protection)' : '上履きを履いた（ガラス破片対策）', pts: '+7', explKey: 'putOnShoes' });
+        actions.push({ done: s.checkedSafety, text: en ? 'Asked friends "Are you okay?"' : '友達に「大丈夫？」と声をかけた', pts: '+5', explKey: 'checkedSafety' });
         var novelPts = GAME._novelChoiceScore || 0;
         actions.push({ done: novelPts > 0, text: en ? 'Made correct choices in novel scenes' : 'ノベル選択肢で正しい判断をした', pts: novelPts > 0 ? '+' + novelPts : '0' });
         if (GAME._oshimoViolations > 0) {
@@ -14941,17 +15298,17 @@ function showResult() {
         }
       } else if (stg === 2) {
         // Stage2（オフィス）: 社員としての行動チェック
-        actions.push({ done: s.turnedOffBreaker, text: en ? 'Turned off breaker (fire prevention)' : 'ブレーカーを落とした（通電火災防止）', pts: '+6' });
-        actions.push({ done: s.checkedSafety, text: en ? 'Asked colleagues "Are you okay?"' : '同僚に「大丈夫？」と声をかけた', pts: '+5' });
-        actions.push({ done: s.noElevator, text: en ? 'Did not use the elevator' : 'エレベーターに乗らなかった', pts: s.noElevator ? '+6' : '0' });
+        actions.push({ done: s.turnedOffBreaker, text: en ? 'Turned off breaker (fire prevention)' : 'ブレーカーを落とした（通電火災防止）', pts: '+6', explKey: 'turnedOffBreaker' });
+        actions.push({ done: s.checkedSafety, text: en ? 'Asked colleagues "Are you okay?"' : '同僚に「大丈夫？」と声をかけた', pts: '+5', explKey: 'checkedSafety' });
+        actions.push({ done: s.noElevator, text: en ? 'Did not use the elevator' : 'エレベーターに乗らなかった', pts: s.noElevator ? '+6' : '0', explKey: 'noElevator' });
         var novelPts2 = GAME._novelChoiceScore || 0;
         actions.push({ done: novelPts2 > 0, text: en ? 'Made correct choices in novel scenes' : 'ノベル選択肢で正しい判断をした', pts: novelPts2 > 0 ? '+' + novelPts2 : '0' });
       } else if (stg === 3) {
         // Stage 3（自宅）: プレイヤー自身の行動のみ（父の自動行動は含めない）
-        actions.push({ done: s.putOnShoes, text: en ? 'Put on shoes (glass protection)' : '靴を履いた（ガラス片対策）', pts: '+6' });
-        actions.push({ done: s.usedFlashlight, text: en ? 'Picked up flashlight from desk' : '机の引き出しから懐中電灯を取った', pts: '+5' });
-        actions.push({ done: s.rescuedChild, text: en ? 'Called out to sister upstairs' : '2階の妹に声をかけた', pts: '+5' });
-        actions.push({ done: s.familyEvacuated, text: en ? 'Evacuated with entire family' : '家族全員で避難した', pts: '+5' });
+        actions.push({ done: s.putOnShoes, text: en ? 'Put on shoes (glass protection)' : '靴を履いた（ガラス片対策）', pts: '+6', explKey: 'putOnShoes' });
+        actions.push({ done: s.usedFlashlight, text: en ? 'Picked up flashlight from desk' : '机の引き出しから懐中電灯を取った', pts: '+5', explKey: 'usedFlashlight' });
+        actions.push({ done: s.rescuedChild, text: en ? 'Called out to sister upstairs' : '2階の妹に声をかけた', pts: '+5', explKey: 'rescuedChild' });
+        actions.push({ done: s.familyEvacuated, text: en ? 'Evacuated with entire family' : '家族全員で避難した', pts: '+5', explKey: 'familyEvacuated' });
         var novelPts3 = GAME._novelChoiceScore || 0;
         actions.push({ done: novelPts3 > 0, text: en ? 'Made correct choices in novel scenes' : 'ノベル選択肢で正しい判断をした', pts: novelPts3 > 0 ? '+' + novelPts3 : '0' });
       } else {
@@ -14962,22 +15319,22 @@ function showResult() {
         actions.push({ done: s.checkedSafety, text: en ? 'Asked people around "Are you okay?"' : '周囲に「大丈夫？」と声をかけた', pts: '+6' });
       }
       // 避難行動（全ステージ共通）
-      actions.push({ done: s.guardedHead, text: en ? 'Evacuated while protecting head' : '頭を守りながら避難した', pts: s.guardedHead ? '+' + (GAME._guardEvacBonus || 0) : '0' });
+      actions.push({ done: s.guardedHead, text: en ? 'Evacuated while protecting head' : '頭を守りながら避難した', pts: s.guardedHead ? '+' + (GAME._guardEvacBonus || 0) : '0', explKey: 'guardedHead' });
       if (stg === 1) {
         actions.push({ done: s.usedEmergencyExit, text: en ? 'Used emergency exit (avoided regular stairs)' : '非常口から避難した（普通の階段を避けた）', pts: '+5' });
       }
       if (stg !== 3) { // Stage 3は階段が必然なので表示しない
-        actions.push({ done: s.usedStairs, text: en ? 'Evacuated via stairs' : '階段で避難した', pts: '+5' });
+        actions.push({ done: s.usedStairs, text: en ? 'Evacuated via stairs' : '階段で避難した', pts: '+5', explKey: 'usedStairs' });
       }
-      actions.push({ done: s.avoidedBlockWall, text: en ? 'Stayed away from block walls' : 'ブロック塀から離れて移動した', pts: '+5' });
-      actions.push({ done: s.reachedEvacPoint, text: en ? 'Reached evacuation point' : '避難場所に到達した', pts: '+10' });
-      actions.push({ done: s.withinTimeLimit, text: en ? 'Evacuated within time limit' : '制限時間内に避難完了', pts: '+5' });
+      actions.push({ done: s.avoidedBlockWall, text: en ? 'Stayed away from block walls' : 'ブロック塀から離れて移動した', pts: '+5', explKey: 'avoidedBlockWall' });
+      actions.push({ done: s.reachedEvacPoint, text: en ? 'Reached evacuation point' : '避難場所に到達した', pts: '+10', explKey: 'reachedEvacPoint' });
+      actions.push({ done: s.withinTimeLimit, text: en ? 'Evacuated within time limit' : '制限時間内に避難完了', pts: '+5', explKey: 'withinTimeLimit' });
       // 余震中の行動
       if (GAME._aftershockCrouchBonus > 0) {
-        actions.push({ done: true, text: en ? 'Crouched & protected head during aftershock' : '余震時にしゃがんで頭を守った', pts: '+' + (GAME._aftershockCrouchBonusPts || 0) });
+        actions.push({ done: true, text: en ? 'Crouched & protected head during aftershock' : '余震時にしゃがんで頭を守った', pts: '+' + (GAME._aftershockCrouchBonusPts || 0), explKey: 'aftershockBonus' });
       }
       if (GAME._aftershockPenalty > 0) {
-        actions.push({ done: false, text: en ? 'Did not take cover during aftershock (' + GAME._aftershockPenalty + 'x)' : '余震時に防護姿勢を取らなかった（' + GAME._aftershockPenalty + '回）', pts: '-' + (GAME._aftershockPenaltyPts || 0) });
+        actions.push({ done: false, text: en ? 'Did not take cover during aftershock (' + GAME._aftershockPenalty + 'x)' : '余震時に防護姿勢を取らなかった（' + GAME._aftershockPenalty + '回）', pts: '-' + (GAME._aftershockPenaltyPts || 0), explKey: 'aftershockPenalty' });
       }
 
       var html = '';
@@ -14986,11 +15343,25 @@ function showResult() {
         var icon = a.done ? '○' : '×';
         var cls = a.done ? 'action-good' : 'action-bad';
         var ptsText = a.done ? a.pts : '—';
-        html += '<div class="result-action-row ' + cls + '">'
-          + '<span class="action-icon">' + icon + '</span>'
-          + '<span class="action-text">' + escapeHTML(a.text) + '</span>'
-          + '<span class="action-pts">' + ptsText + '</span>'
-          + '</div>';
+        if (GAME.isTraining) {
+          // 訓練モード: 点数の代わりに解説を表示
+          var explKey = a.explKey || '';
+          var expl = TRAINING_EXPLANATIONS[explKey];
+          var explText = expl ? (en ? expl.en : expl.ja) : '';
+          html += '<div class="training-report-item ' + cls + '">'
+            + '<div class="training-report-header">'
+            + '<span class="action-icon">' + icon + '</span>'
+            + '<span class="action-text">' + escapeHTML(a.text) + '</span>'
+            + '</div>'
+            + (explText ? '<div class="training-report-expl">' + escapeHTML(explText) + '</div>' : '')
+            + '</div>';
+        } else {
+          html += '<div class="result-action-row ' + cls + '">'
+            + '<span class="action-icon">' + icon + '</span>'
+            + '<span class="action-text">' + escapeHTML(a.text) + '</span>'
+            + '<span class="action-pts">' + ptsText + '</span>'
+            + '</div>';
+        }
       }
       if (GAME.hitCount > 0) {
         var hitReasons = [];
@@ -15087,11 +15458,17 @@ function showResult() {
       catEl.innerHTML = catHtml;
     }
 
-    // 知識テスト結果
+    // 知識テスト結果（訓練モードでは非表示）
     var quizSummary = document.getElementById('result-quiz-summary');
     var quizDetail = document.getElementById('result-quiz-detail');
-    if (quizSummary && quizDetail && GAME._quizScore !== undefined) {
+    if (GAME.isTraining) {
+      if (quizSummary) quizSummary.style.display = 'none';
+      var reportSec = document.getElementById('result-report');
+      if (reportSec) reportSec.style.display = 'none';
+    } else if (quizSummary && quizDetail && GAME._quizScore !== undefined) {
       quizSummary.style.display = 'block';
+      var reportSec2 = document.getElementById('result-report');
+      if (reportSec2) reportSec2.style.display = '';
       var qPct = Math.round(GAME._quizScore / GAME._quizTotal * 100);
       var qColor = qPct >= 80 ? '#00ff41' : qPct >= 60 ? '#ffaa00' : '#ff4444';
       quizDetail.innerHTML = '<div style="text-align:center;margin-bottom:10px">'
@@ -15108,15 +15485,44 @@ function showResult() {
     var totalScore = Math.round(GAME.score * 0.7 + quizPct * 30);
     var UNLOCK_THRESHOLD = 60;
 
-    // ベストスコア保存（totalScoreで上書き判定）
-    var prevBest = parseInt(localStorage.getItem('jishin_best_' + GAME.stageNum));
-    if (isNaN(prevBest) || totalScore > prevBest) {
-      localStorage.setItem('jishin_best_' + GAME.stageNum, String(totalScore));
+    // ベストスコア保存（totalScoreで上書き判定・訓練モードは非記録）
+    if (!GAME.isTraining) {
+      var prevBest = parseInt(localStorage.getItem('jishin_best_' + GAME.stageNum));
+      if (isNaN(prevBest) || totalScore > prevBest) {
+        localStorage.setItem('jishin_best_' + GAME.stageNum, String(totalScore));
+      }
     }
 
     // 解放判定ボックス
     var unlockBox = document.getElementById('result-unlock-box');
     var nextBtn = document.getElementById('result-next-stage-btn');
+    // 訓練モード: 解放判定・ランキング非表示、もう一度練習ボタン表示
+    if (GAME.isTraining) {
+      if (unlockBox) unlockBox.style.display = 'none';
+      if (nextBtn) nextBtn.style.display = 'none';
+      var dlBtn2 = document.getElementById('result-download-btn');
+      if (dlBtn2) dlBtn2.style.display = 'none';
+      var retryBtn = document.getElementById('result-retry-btn');
+      if (retryBtn) {
+        retryBtn.textContent = en ? '🔄 Practice Again' : '🔄 もう一度練習する';
+        retryBtn.onclick = function() {
+          var stg = GAME.stageNum;
+          GAME.isTraining = true;
+          NOVEL_SCRIPTS["stage" + stg] = generateNovelScripts(stg);
+          initGame(stg);
+        };
+      }
+      var selectBtn = document.getElementById('result-select-btn');
+      if (selectBtn) {
+        selectBtn.textContent = en ? 'Change Stage' : 'ステージを変更';
+        selectBtn.onclick = function() {
+          GAME.isTraining = false;
+          showScreen('training-screen');
+          applyI18N();
+        };
+      }
+      return;
+    }
     // 理解度テスト90%以上が必須条件
     var QUIZ_PASS_RATE = 0.9;
     var quizPassed = (GAME._quizTotal > 0 && (GAME._quizScore / GAME._quizTotal) >= QUIZ_PASS_RATE);
@@ -15169,8 +15575,8 @@ function showResult() {
       dlBtn.onclick = function() { downloadResultData(totalScore, categories, actions); };
     }
 
-    // ランキング保存（ゲスト除外、ゲームオーバーでなく完了した場合のみ）
-    if (GAME.hitCount < 3) {
+    // ランキング保存（ゲスト除外、ゲームオーバーでなく完了した場合のみ。訓練モードは非記録）
+    if (GAME.hitCount < 3 && !GAME.isTraining) {
       saveRanking(GAME.stageNum, totalScore);
     }
   }, 500);
