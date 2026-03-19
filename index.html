@@ -10067,7 +10067,17 @@ function buildHouseFloor() {
   var glow = new THREE.Mesh(glowGeo, glowMat2);
   glow.rotation.x = -Math.PI / 2; glow.position.set(EVAC_POINT_S3.x, Y1 + 0.02, EVAC_POINT_S3.z); scene.add(glow);
   glow.frustumCulled = false;
-  // ===== Stage 2と完全同一パターンでゴールマーカー構築 =====
+  // ===== ゴール光柱 =====
+  // デバッグ: ゴール位置に巨大な不透明キューブ（緑、5m高）
+  var goalDebugCube = new THREE.Mesh(
+    new THREE.BoxGeometry(2, 5, 2),
+    new THREE.MeshBasicMaterial({ color: 0x00ff00 })
+  );
+  goalDebugCube.position.set(EVAC_POINT_S3.x, Y1 + 2.5, EVAC_POINT_S3.z);
+  goalDebugCube.frustumCulled = false;
+  scene.add(goalDebugCube);
+  GAME._goalDebugCube = goalDebugCube;
+  console.log('[GOAL-DEBUG] 緑キューブ追加: (' + EVAC_POINT_S3.x + ', 2.5, ' + EVAC_POINT_S3.z + ')');
   // 光柱ビーム（Stage 2と同じパラメータ: fog有効のまま）
   var beamGeo = new THREE.CylinderGeometry(0.3, 1.0, 20, 16, 1, true);
   var beamMat = new THREE.MeshBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0.25, side: THREE.DoubleSide, depthWrite: false });
@@ -10224,85 +10234,20 @@ function spawnHouseNPCs() {
     needsHelp: true, helpMessage: {ja: '妹が泣いている！声をかけて落ち着かせよう！', en: 'Your sister is crying! Talk to her to calm her down!'},
   });
 
-  // おばあちゃん: MeshBasicMaterial専用モデル（createNPCModelを使わず直接構築）
-  // createNPCModelの出力が描画されない問題を根本回避
-  var grandmaModel = new THREE.Group();
-  var gH = 1.45;
-  var gBasic = function(c) { return new THREE.MeshBasicMaterial({ color: c, fog: false }); };
-  // 胴体
-  var gTorso = new THREE.Mesh(new THREE.CylinderGeometry(gH*0.065, gH*0.06, gH*0.28, 8), gBasic(0x795548));
-  gTorso.position.y = gH * 0.68;
-  gTorso.frustumCulled = false;
-  grandmaModel.add(gTorso);
-  // 頭
-  var gHead = new THREE.Mesh(new THREE.SphereGeometry(gH*0.11, 10, 8), gBasic(0xf5c6a0));
-  gHead.position.y = gH*0.28/2 + gH*0.11*0.8;
-  gHead.frustumCulled = false;
-  gTorso.add(gHead);
-  // 白髪
-  var gHair = new THREE.Mesh(new THREE.SphereGeometry(gH*0.11*1.06, 8, 6, 0, Math.PI*2, 0, Math.PI*0.45), gBasic(0xaaaaaa));
-  gHair.position.y = 0.01;
-  gHair.frustumCulled = false;
-  gHead.add(gHair);
-  // ロングヘア（後頭部）
-  var gLongHair = new THREE.Mesh(new THREE.CylinderGeometry(gH*0.11*0.8, gH*0.11*0.5, gH*0.11*1.8, 8), gBasic(0xaaaaaa));
-  gLongHair.position.set(0, -gH*0.11*0.6, -gH*0.11*0.4);
-  gLongHair.frustumCulled = false;
-  gHead.add(gLongHair);
-  // 目
-  var gEyeL = new THREE.Mesh(new THREE.SphereGeometry(0.025, 6, 6), gBasic(0xffffff));
-  gEyeL.position.set(-gH*0.11*0.35, gH*0.11*0.15, gH*0.11*0.85);
-  gEyeL.frustumCulled = false;
-  gHead.add(gEyeL);
-  var gPupilL = new THREE.Mesh(new THREE.SphereGeometry(0.014, 4, 4), gBasic(0x111111));
-  gPupilL.position.z = 0.015;
-  gPupilL.frustumCulled = false;
-  gEyeL.add(gPupilL);
-  var gEyeR = new THREE.Mesh(new THREE.SphereGeometry(0.025, 6, 6), gBasic(0xffffff));
-  gEyeR.position.set(gH*0.11*0.35, gH*0.11*0.15, gH*0.11*0.85);
-  gEyeR.frustumCulled = false;
-  gHead.add(gEyeR);
-  var gPupilR = new THREE.Mesh(new THREE.SphereGeometry(0.014, 4, 4), gBasic(0x111111));
-  gPupilR.position.z = 0.015;
-  gPupilR.frustumCulled = false;
-  gEyeR.add(gPupilR);
-  // 左腕
-  var gArmL = new THREE.Mesh(new THREE.CylinderGeometry(gH*0.028, gH*0.025, gH*0.26, 6), gBasic(0x795548));
-  gArmL.position.set(-gH*0.065 - gH*0.028, gH*0.28*0.2, 0);
-  gArmL.frustumCulled = false;
-  gTorso.add(gArmL);
-  // 右腕
-  var gArmR = new THREE.Mesh(new THREE.CylinderGeometry(gH*0.028, gH*0.025, gH*0.26, 6), gBasic(0x795548));
-  gArmR.position.set(gH*0.065 + gH*0.028, gH*0.28*0.2, 0);
-  gArmR.frustumCulled = false;
-  gTorso.add(gArmR);
-  // 左脚
-  var gLegPivotL = new THREE.Object3D();
-  gLegPivotL.position.set(-gH*0.025, -gH*0.28/2, 0);
-  gTorso.add(gLegPivotL);
-  var gLegL = new THREE.Mesh(new THREE.CylinderGeometry(gH*0.035, gH*0.03, gH*0.40, 6), gBasic(0x3a3a5a));
-  gLegL.position.y = -gH*0.20;
-  gLegL.frustumCulled = false;
-  gLegPivotL.add(gLegL);
-  // 右脚
-  var gLegPivotR = new THREE.Object3D();
-  gLegPivotR.position.set(gH*0.025, -gH*0.28/2, 0);
-  gTorso.add(gLegPivotR);
-  var gLegR = new THREE.Mesh(new THREE.CylinderGeometry(gH*0.035, gH*0.03, gH*0.40, 6), gBasic(0x3a3a5a));
-  gLegR.position.y = -gH*0.20;
-  gLegR.frustumCulled = false;
-  gLegPivotR.add(gLegR);
-  // 杖
-  var gCane = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.9, 6), gBasic(0x6d4c2e));
-  gCane.position.set(0.2, -0.3, 0.1); gCane.rotation.z = 0.15;
-  gCane.frustumCulled = false;
-  gTorso.add(gCane);
-  // userData互換（アニメーション用）
-  grandmaModel.userData = { body: gTorso, head: gHead, leftArm: gArmL, rightArm: gArmR, leftLeg: gLegPivotL, rightLeg: gLegPivotR };
+  // おばあちゃん: createNPCModelで作成（他の家族NPCと同じ方式）
+  var grandmaModel = createNPCModel(0x795548, 1.45, 0xf5c6a0, { isFemale: true, hairColor: 0xaaaaaa, skirtColor: 0x795548 });
   grandmaModel.position.set(-3.5, HOUSE_1F_Y, 3.5);
-  grandmaModel.traverse(function(c) { c.frustumCulled = false; });
   GAME.scene.add(grandmaModel);
-  console.log('[GRANDMA] モデル作成完了: children=' + grandmaModel.children.length + ' pos=(' + grandmaModel.position.x + ',' + grandmaModel.position.y + ',' + grandmaModel.position.z + ')');
+  // 巨大デバッグキューブ（赤い1m立方体）— おばあちゃんと同じ位置
+  var debugCube = new THREE.Mesh(
+    new THREE.BoxGeometry(1, 1, 1),
+    new THREE.MeshBasicMaterial({ color: 0xff0000 })
+  );
+  debugCube.position.set(-3.5, HOUSE_1F_Y + 0.5, 3.5);
+  debugCube.frustumCulled = false;
+  GAME.scene.add(debugCube);
+  GAME._grandmaDebugCube = debugCube;
+  console.log('[GRANDMA-DEBUG] 赤キューブ追加: (-3.5, 0.5, 3.5)');
   GAME.npcs.push({
     mesh: grandmaModel, role: 'grandma', x: -3.5, z: 3.5, targetX: -3.5, targetZ: 3.5,
     behavior: 'injured', state: 'idle', speed: 0.005, phase: 0,
@@ -13837,6 +13782,12 @@ function shiftFurnitureAfterQuake() {
     GAME._tansuMeshS3.rotation.z = -0.25;
     GAME._tansuMeshS3.position.x -= 0.1;
   }
+  // TVを倒す演出（地震で前に倒れる）
+  if (GAME._tvMeshS3) {
+    GAME._tvMeshS3.rotation.x = Math.PI / 2 * 0.85; // 前方に倒れる
+    GAME._tvMeshS3.position.y = HOUSE_1F_Y + 0.55; // 少し下がる
+    GAME._tvMeshS3.position.z += 0.2; // 前方にずれる
+  }
 }
 
 function gameLoop(timestamp) {
@@ -14200,9 +14151,9 @@ function updateObjectiveBanner() {
           sub = en ? 'Find stairs and press E' : '階段に近づいてEキー';
         }
       } else if (GAME._inHouseGarden) {
-        // 外に出た後: ゴールへ誘導
-        text = en ? '🏃 Head to the evacuation park!' : '🏃 避難公園を目指せ！光る矢印が目印！';
-        sub = en ? 'Follow the guide poles south, then turn right' : '道しるべを辿って南へ進み、右折！';
+        // 外に出た後: ゴールへ誘導（地面の矢印で誘導するので簡潔に）
+        text = en ? '🏃 Follow the ground arrows!' : '🏃 地面の矢印を辿れ！';
+        sub = en ? 'Head south, then turn right to the park' : '南へ進み、右折して公園へ！';
       } else {
         // 1F: プレイヤーのタスク（靴・祖母支援・避難）
         // ガス・ブレーカー・懐中電灯・ドアは父が自動で処理
