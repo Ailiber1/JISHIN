@@ -4024,7 +4024,7 @@ var NovelEngine = {
     father: { name: {ja: '佐藤たけし', en: 'Takeshi Sato'}, color: '#757575', pos: 'left', freq: 400 },
     mother: { name: {ja: '佐藤めぐみ', en: 'Megumi Sato'}, color: '#e91e63', pos: 'left', freq: 500 },
     sister: { name: {ja: '佐藤ひなた', en: 'Hinata Sato'}, color: '#03a9f4', pos: 'right', freq: 800 },
-    grandma: { name: {ja: '佐藤はるよ', en: 'Haruyo Sato'}, color: '#795548', pos: 'right', freq: 300 },
+    // grandma削除済み
     // Shared
     bousai: { name: {ja: 'ボウサイ', en: 'Bousai'}, pos: 'left', freq: 1000 },
     narrator: { name: '', pos: null, freq: 0 },
@@ -5067,7 +5067,7 @@ var NOVEL_VARIANTS = {
         { speaker: 'sister', expr: 'smile', text: {ja: 'は〜い！お母さん、\n今日のごはん何〜？', en: 'Okay! Mom,\nwhat\'s for dinner?'} },
         { speaker: 'father', expr: 'normal', text: {ja: 'おい、ニュースでまた地震の話やってるぞ。\n南海トラフの特集だ。', en: 'Hey, they\'re talking about earthquakes on the news again.\nIt\'s a special on the Nankai Trough.'} },
         { speaker: 'mother', expr: 'serious', text: {ja: 'うちは木造だから心配よね…\n非常持ち出し袋、確認しておこうかしら。', en: 'Our house is wooden, so it\'s worrying...\nMaybe I should check the emergency bag.'} },
-        { speaker: 'father', expr: 'normal', text: {ja: 'おばあちゃんは和室で休んでるから\n静かにしてやってくれ。', en: 'Grandma is resting in the Japanese room,\nso keep it down.'} },
+        { speaker: 'father', expr: 'normal', text: {ja: 'お母さんが台所で準備してるから\n手伝ってやってくれ。', en: 'Mom is preparing in the kitchen,\nso go help her out.'} },
         { speaker: 'narrator', text: {ja: 'あなたは2階の自分の部屋で\n勉強をしている。', en: 'You are studying\nin your room upstairs.'} },
         { speaker: 'bousai', expr: 'normal', text: {ja: '今日のポイント！\n① 揺れたらまずテーブルの下に入る\n② 揺れが収まったら火の始末\n③ 家族の安全を確認して避難する', en: 'Today\'s key points!\n① Get under a table when shaking starts\n② Turn off fire sources after shaking stops\n③ Check family safety and evacuate'} },
         { speaker: 'narrator', text: {ja: '── その時 ──', en: '── Then ──'} },
@@ -5079,7 +5079,7 @@ var NOVEL_VARIANTS = {
         { speaker: 'father', expr: 'smile', text: {ja: 'ひなた、宿題は終わったのか？\nテレビはその後だぞ。', en: 'Hinata, did you finish your homework?\nTV comes after that.'} },
         { speaker: 'sister', expr: 'surprise', text: {ja: 'えー！もうちょっとだけ〜！', en: 'Aww! Just a little more!'} },
         { speaker: 'mother', expr: 'normal', text: {ja: 'あら、台所のコンロつけっぱなしだわ。\nお味噌汁温め直さないと。', en: 'Oh, I left the stove on.\nI need to reheat the miso soup.'} },
-        { speaker: 'father', expr: 'normal', text: {ja: 'おばあちゃんに夕飯の声かけてくれ。\n和室にいるはずだ。', en: 'Call Grandma for dinner.\nShe should be in the Japanese room.'} },
+        { speaker: 'father', expr: 'normal', text: {ja: 'ひなたに夕飯の声かけてくれ。\n2階にいるはずだ。', en: 'Call Hinata for dinner.\nShe should be upstairs.'} },
         { speaker: 'narrator', text: {ja: 'あなたは2階で試験勉強中。\n家族の会話が階下から聞こえてくる。', en: 'You are studying for exams upstairs.\nYou can hear your family chatting below.'} },
         { speaker: 'bousai', expr: 'normal', text: {ja: '今日のポイント！\n① 家では家具の転倒に注意\n② 火の始末は揺れが収まってから\n③ 家族で集合場所を決めておこう', en: 'Today\'s key points!\n① Watch out for falling furniture at home\n② Turn off fire after shaking stops\n③ Decide on a meeting point with family'} },
         { speaker: 'narrator', text: {ja: '── 突然 ──', en: '── Suddenly ──'} },
@@ -5184,7 +5184,7 @@ var NOVEL_VARIANTS = {
       // パターンB: 余震への備え
       [
         { speaker: 'narrator', text: {ja: '── 揺れが収まった…が、電気が消えた ──', en: '── The shaking stopped... but the power is out ──'} },
-        { speaker: 'father', expr: 'serious', text: {ja: '余震が来るかもしれない。\nガスの元栓を閉めてくれ！\nおばあちゃんの様子も見てきてくれ。', en: 'Aftershocks might come.\nShut off the gas valve!\nAnd check on Grandma too.'} },
+        { speaker: 'father', expr: 'serious', text: {ja: '余震が来るかもしれない。\nガスの元栓を閉めてくれ！\nひなたの様子も見てきてくれ。', en: 'Aftershocks might come.\nShut off the gas valve!\nAnd check on Hinata too.'} },
         { speaker: 'sister', expr: 'panic', text: {ja: 'こわいよ〜…また揺れるの…？', en: 'I\'m scared... will it shake again...?'} },
         { speaker: 'mother', expr: 'worry', text: {ja: 'ひなた、大丈夫よ。\nお母さんがついてるからね。', en: 'Hinata, it\'s okay.\nMommy is right here.'} },
         {
@@ -5203,7 +5203,7 @@ var NOVEL_VARIANTS = {
       // パターンC: ブレーカー対応
       [
         { speaker: 'narrator', text: {ja: '── 揺れが止まった…家中が散乱している ──', en: '── The shaking stopped... the house is in disarray ──'} },
-        { speaker: 'mother', expr: 'relief', text: {ja: 'みんな無事！？\nひなた！おばあちゃん！', en: 'Is everyone okay!?\nHinata! Grandma!'} },
+        { speaker: 'mother', expr: 'relief', text: {ja: 'みんな無事！？\nひなた！あなた！', en: 'Is everyone okay!?\nHinata! Dear!'} },
         { speaker: 'father', expr: 'serious', text: {ja: 'ブレーカーを落とせ！\n通電火災が危険だ！\nそれから靴を履け、ガラスだらけだ！', en: 'Turn off the breaker!\nElectrical fires are a risk!\nAnd put on shoes, there\'s glass everywhere!'} },
         {
           type: 'choice', text: {ja: 'どうする？', en: 'What do you do?'},
@@ -5225,8 +5225,8 @@ var NOVEL_VARIANTS = {
       // パターンA
       [
         { speaker: 'narrator', text: {ja: '── 近くの公園（一時避難場所）──', en: '── Nearby park (temporary evacuation site) ──'} },
-        { speaker: 'father', expr: 'relief', text: {ja: '全員無事だな…よかった。\nおばあちゃんも大丈夫か？', en: 'Everyone\'s safe... thank goodness.\nIs Grandma okay too?'} },
-        { speaker: 'mother', expr: 'relief', text: {ja: 'ええ、おばあちゃんも一緒に\n避難できたわ。\n非常持ち出し袋も持ってきたの。', en: 'Yes, we evacuated with Grandma.\nI brought the emergency bag too.'} },
+        { speaker: 'father', expr: 'relief', text: {ja: '全員無事だな…よかった。\nケガはないか？', en: 'Everyone\'s safe... thank goodness.\nAnyone hurt?'} },
+        { speaker: 'mother', expr: 'relief', text: {ja: 'ええ、みんな一緒に\n避難できたわ。\n非常持ち出し袋も持ってきたの。', en: 'Yes, we all evacuated together.\nI brought the emergency bag too.'} },
         { speaker: 'sister', expr: 'smile', text: {ja: 'お兄ちゃん、\nすごかったね！かっこよかった！', en: 'You were amazing!\nSo cool!'} },
         { speaker: 'father', expr: 'smile', text: {ja: 'お前のおかげで\n落ち着いて避難できた。\nよくやったぞ。', en: 'Thanks to you,\nwe evacuated calmly.\nWell done.'} },
         { speaker: 'bousai', expr: 'smile', text: {ja: '素晴らしい判断の連続だった！\n家族の安全を守りながら\n正しい行動ができたね。\nこの経験を忘れないでほしい。', en: 'A series of great decisions!\nYou protected your family\nwhile taking the right actions.\nNever forget this experience.'} },
@@ -5234,7 +5234,7 @@ var NOVEL_VARIANTS = {
       // パターンB
       [
         { speaker: 'narrator', text: {ja: '── 避難所に到着 ──', en: '── Arrived at the evacuation shelter ──'} },
-        { speaker: 'mother', expr: 'relief', text: {ja: 'みんな無事で本当によかった…\nおばあちゃんも足は大丈夫？', en: 'I\'m so glad everyone is safe...\nGrandma, are your legs okay?'} },
+        { speaker: 'mother', expr: 'relief', text: {ja: 'みんな無事で本当によかった…\nひなた、足は大丈夫？', en: 'I\'m so glad everyone is safe...\nHinata, are your legs okay?'} },
         { speaker: 'father', expr: 'normal', text: {ja: 'ガスの元栓も閉めたし、\nブレーカーも落とした。\n二次災害の心配はないだろう。', en: 'We shut the gas valve\nand turned off the breaker.\nNo worry about secondary disasters.'} },
         { speaker: 'sister', expr: 'smile', text: {ja: 'お兄ちゃんが\n靴持ってきてくれたから\n足、痛くなかったよ！', en: 'You brought shoes for me,\nso my feet didn\'t hurt!'} },
         { speaker: 'bousai', expr: 'smile', text: {ja: '家族全員の安全を確保し、\n火の始末もブレーカーも完璧だった。\n木造住宅での地震対応、\n見事にクリアだ！', en: 'You secured everyone\'s safety,\nhandled the fire and breaker perfectly.\nYou aced earthquake response\nin a wooden house!'} },
@@ -5243,7 +5243,7 @@ var NOVEL_VARIANTS = {
       [
         { speaker: 'narrator', text: {ja: '── 公園の集合場所 ──', en: '── Meeting point at the park ──'} },
         { speaker: 'father', expr: 'relief', text: {ja: '家族全員揃ったな。\n日頃の備えが役に立った。', en: 'The whole family is here.\nOur daily preparations paid off.'} },
-        { speaker: 'mother', expr: 'smile', text: {ja: 'あなたが冷静に行動してくれて\n本当に助かったわ。\nおばあちゃんの手を引いてくれてありがとう。', en: 'You staying calm really helped.\nThank you for guiding Grandma.'} },
+        { speaker: 'mother', expr: 'smile', text: {ja: 'あなたが冷静に行動してくれて\n本当に助かったわ。\nひなたの手を引いてくれてありがとう。', en: 'You staying calm really helped.\nThank you for guiding Hinata.'} },
         { speaker: 'sister', expr: 'smile', text: {ja: 'もうこわくないよ！\nだってみんな一緒だもん！', en: 'I\'m not scared anymore!\nBecause we\'re all together!'} },
         { speaker: 'bousai', expr: 'smile', text: {ja: '完璧な避難だった！\n家族を守りながら正しい判断を\n積み重ねることができた。\n君は立派な防災リーダーだ！', en: 'A perfect evacuation!\nYou made the right decisions\nwhile protecting your family.\nYou\'re a true disaster preparedness leader!'} },
       ],
@@ -5263,7 +5263,7 @@ var NOVEL_VARIANTS = {
       // パターンB
       [
         { speaker: 'narrator', text: {ja: '── なんとか避難できたが… ──', en: '── You managed to evacuate, but... ──'} },
-        { speaker: 'mother', expr: 'worry', text: {ja: 'おばあちゃんの避難が遅れちゃったの。\nもう少し早く声をかけていれば…', en: 'Grandma\'s evacuation was delayed.\nIf only we had called out sooner...'} },
+        { speaker: 'mother', expr: 'worry', text: {ja: '避難がもう少し早ければ…\n次はもっと素早く動かないと。', en: 'If only we had evacuated sooner...\nWe need to move faster next time.'} },
         { speaker: 'father', expr: 'serious', text: {ja: '焦って行動すると\nかえって危険なんだ。\n正しい順序を覚えておけ。', en: 'Acting in a rush\nactually makes things more dangerous.\nRemember the correct order.'} },
         { speaker: 'bousai', expr: 'serious', text: {ja: '家族がいる場面では、\n自分の安全を確保してから\n周りを助けることが大切だ。\n焦りは判断ミスの原因になる。', en: 'When family is around,\nsecure your own safety first,\nthen help others.\nPanic leads to poor decisions.'} },
         { speaker: 'bousai', expr: 'smile', text: {ja: '知識テストで復習して、\n次こそ家族全員を\n安全に避難させよう！', en: 'Review with the knowledge test,\nand next time evacuate\nyour whole family safely!'} },
@@ -6146,7 +6146,7 @@ const GAME = {
     turnedOffGas: false,       // ガス元栓を閉めた（Stage 3）
     usedFlashlight: false,     // 懐中電灯を使用した（Stage 3）
     rescuedChild: false,       // 子どもに声をかけた（Stage 3）
-    helpedGrandma: false,      // 祖母を手助けした（Stage 3）
+    // helpedGrandma削除済み（Stage 3に祖母なし）
     familyEvacuated: false,    // 家族全員で避難した（Stage 3）
     reachedEvacPoint: false,   // 避難場所到達
     withinTimeLimit: false,    // 制限時間内
@@ -10195,53 +10195,7 @@ function spawnHouseNPCs() {
     needsHelp: true, helpMessage: {ja: '妹が泣いている！声をかけて落ち着かせよう！', en: 'Your sister is crying! Talk to her to calm her down!'},
   });
 
-  // おばあちゃん: MeshBasicMaterialのみで構築（和室が暗くMeshStandardMaterialは見えない）
-  var grandmaModel = new THREE.Group();
-  var _gm = function(c) { return new THREE.MeshBasicMaterial({ color: c }); };
-  // 胴体（茶色の箱）
-  var gBody = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.45, 0.2), _gm(0x795548));
-  gBody.position.y = 0.85;
-  grandmaModel.add(gBody);
-  // 頭（肌色の球）
-  var gHead = new THREE.Mesh(new THREE.SphereGeometry(0.13, 8, 8), _gm(0xf5c6a0));
-  gHead.position.y = 0.32;
-  gBody.add(gHead);
-  // 白髪
-  var gHair = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 6, 0, Math.PI * 2, 0, Math.PI * 0.5), _gm(0xcccccc));
-  gHair.position.y = 0.02;
-  gHead.add(gHair);
-  // 左腕
-  var gArmL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.35, 0.1), _gm(0x795548));
-  gArmL.position.set(-0.2, 0.0, 0);
-  gBody.add(gArmL);
-  // 右腕
-  var gArmR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.35, 0.1), _gm(0x795548));
-  gArmR.position.set(0.2, 0.0, 0);
-  gBody.add(gArmR);
-  // 左脚
-  var gLegPivotL = new THREE.Object3D();
-  gLegPivotL.position.set(-0.07, -0.22, 0);
-  gBody.add(gLegPivotL);
-  var gLegL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.4, 0.1), _gm(0x3a3a5a));
-  gLegL.position.y = -0.2;
-  gLegPivotL.add(gLegL);
-  // 右脚
-  var gLegPivotR = new THREE.Object3D();
-  gLegPivotR.position.set(0.07, -0.22, 0);
-  gBody.add(gLegPivotR);
-  var gLegR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.4, 0.1), _gm(0x3a3a5a));
-  gLegR.position.y = -0.2;
-  gLegPivotR.add(gLegR);
-  // userData（アニメーション互換）
-  grandmaModel.userData = { body: gBody, head: gHead, leftArm: gArmL, rightArm: gArmR, leftLeg: gLegPivotL, rightLeg: gLegPivotR };
-  grandmaModel.position.set(-3.5, HOUSE_1F_Y, 3.5);
-  GAME.scene.add(grandmaModel);
-  GAME.npcs.push({
-    mesh: grandmaModel, role: 'grandma', x: -3.5, z: 3.5, targetX: -3.5, targetZ: 3.5,
-    behavior: 'injured', state: 'idle', speed: 0.005, phase: 0,
-    npcH: 1.45, evacuationDelay: 8, exited: false, deskX: -3.5, deskZ: 3.5, floorY: HOUSE_1F_Y,
-    needsHelp: true, helpMessage: {ja: 'おばあちゃんは一人では歩けない！手を貸して一緒に避難しよう！', en: 'Grandma can\'t walk alone! Help her evacuate!'},
-  });
+  // 祖母NPCは削除済み（Stage 3に祖母なし）
 }
 
 // ============================================================
@@ -11625,7 +11579,7 @@ function addFamilyLog(role, message) {
   if (!logEl) return;
   logEl.style.display = 'flex';
   logEl.style.flexDirection = 'column';
-  var nameMap = { father: '👨 父', mother: '👩 母', sister: '👧 妹', grandma: '👵 祖母', player: '🧑 自分', system: '⚠️' };
+  var nameMap = { father: '👨 父', mother: '👩 母', sister: '👧 妹', player: '🧑 自分', system: '⚠️' };
   var elapsed = Math.floor(GAME.totalTimer || 0);
   var mm = Math.floor(elapsed / 60);
   var ss = elapsed % 60;
@@ -12025,7 +11979,7 @@ function updateSingleNPC(npc, dtSec) {
         if (bodyN) {
           bodyN.rotation.z = Math.sin(npc.phase * 1.2 + seed * 1.3) * 0.02;
         }
-      } else if (npc.role === 'mother' || npc.role === 'father' || npc.role === 'sister' || npc.role === 'grandma') {
+      } else if (npc.role === 'mother' || npc.role === 'father' || npc.role === 'sister') {
         // ====== Stage 3: 家族の日常アニメーション ======
         mesh.position.y = (npc.floorY || 0) + Math.sin(npc.phase * 1.5) * 0.003;
         if (npc.role === 'mother') {
@@ -12072,23 +12026,6 @@ function updateSingleNPC(npc, dtSec) {
           if (sBody && sBody.children && sBody.children.length >= 3) {
             sBody.children[1].rotation.x = Math.sin(npc.phase * 2) * 0.3;
             sBody.children[2].rotation.x = -Math.sin(npc.phase * 2) * 0.3;
-          }
-        } else if (npc.role === 'grandma') {
-          // 祖母: 和室で座っている（正座・お茶を飲む仕草）
-          var gSeatY = (npc.floorY || 0) - (npc.npcH || 1.45) * 0.35;
-          mesh.position.y = gSeatY;
-          if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = -1.5;
-          if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = -1.5;
-          var gBody = mesh.userData.body;
-          if (gBody) {
-            gBody.rotation.x = 0.1;
-            if (gBody.children && gBody.children.length >= 3) {
-              gBody.children[1].rotation.x = -0.5 + Math.sin(npc.phase * 0.8) * 0.05;
-              gBody.children[2].rotation.x = -0.5 + Math.sin(npc.phase * 0.8 + 1) * 0.05;
-            }
-          }
-          if (mesh.userData.head) {
-            mesh.userData.head.rotation.y = Math.sin(npc.phase * 0.3) * 0.1;
           }
         }
       } else {
@@ -12334,7 +12271,7 @@ function updateSingleNPC(npc, dtSec) {
     case 'aftershake':
       // 揺れ収束 — NPCが段階的に机の下から出る演出
       if (npc.behavior === 'injured' && !npc.helped) {
-        // 祖母: 地面にしゃがんで怯えている演出（横倒しではなく座りポーズ）
+        // 負傷NPC: 地面にしゃがんで怯えている演出
         mesh.rotation.z = 0;
         mesh.position.y = npc.floorY || 0;
         mesh.position.x = npc.x;
@@ -12353,7 +12290,7 @@ function updateSingleNPC(npc, dtSec) {
         }
         if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = -1.5;
         if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = -1.5;
-        // 自発光で暗闇でも視認できるように（祖母など）
+        // 自発光で暗闇でも視認できるように（負傷NPC）
         if (!npc._emissiveSet) {
           npc._emissiveSet = true;
           mesh.traverse(function(child) {
@@ -12569,13 +12506,7 @@ function updateSingleNPC(npc, dtSec) {
         mesh.position.x = npc.x;
         mesh.position.z = npc.z;
         mesh.scale.set(1, 1, 1);
-        // デバッグ: 1秒ごとにおばあちゃんの状態をログ出力
-        if (!npc._debugTimer) npc._debugTimer = 0;
-        npc._debugTimer += dtSec;
-        if (npc._debugTimer > 2) {
-          npc._debugTimer = 0;
-          console.log('[GRANDMA-EVAC] visible=' + mesh.visible + ' pos=(' + mesh.position.x.toFixed(1) + ',' + mesh.position.y.toFixed(1) + ',' + mesh.position.z.toFixed(1) + ') scale=(' + mesh.scale.x + ',' + mesh.scale.y + ',' + mesh.scale.z + ') children=' + mesh.children.length + ' parent=' + (mesh.parent ? mesh.parent.type : 'null'));
-        }
+        // デバッグログ削除済み
         npc.phase += dtSec;
         var eInjBody = mesh.userData.body;
         if (eInjBody) {
@@ -12598,11 +12529,7 @@ function updateSingleNPC(npc, dtSec) {
         }
         break;
       }
-      // 祖母（救助済み）の独立歩行処理
-      if (npc.role === 'grandma' && npc.helped && npc.state === 'evacuating') {
-        // 通常の避難処理に委譲（state='evacuating'のまま通過させる）
-      }
-
+      // 負傷NPC（救助済み）の独立歩行処理
       // 避難開始までの遅延チェック（列ごとにずらす）
       var myDelay = npc.evacuationDelay || 0;
       if (GAME.phaseTimer < myDelay) {
@@ -12771,19 +12698,6 @@ function updateSingleNPC(npc, dtSec) {
               npc._waypoints = [
                 { x: 0, z: 0 },      // リビング中央
                 { x: -5, z: -4.5 },  // 玄関
-              ];
-            } else if (npc.role === 'grandma') {
-              // おばあちゃん: X位置が開口部(X=-3.5〜1.5)外の場合のみテレポート
-              if (npc.z > 2 && (npc.x < -3.2 || npc.x > 1.2)) {
-                npc.x = -1.0; npc.z = 0;
-                npc.mesh.position.x = -1.0; npc.mesh.position.z = 0;
-              }
-              // 和室仕切り壁(X=-2,Z=2-5)の西側を南下→玄関
-              npc._waypoints = [
-                { x: -3.0, z: 1.5 },  // 和室仕切り壁の南端(Z=2)より下へ
-                { x: -2.5, z: -0.5 }, // 本棚を避けて南西へ
-                { x: -3, z: -2 },     // リビング経由
-                { x: -5, z: -4.5 },   // 玄関
               ];
             } else if (npc.role === 'father') {
               // 父: タスク完了後の避難ルート
@@ -12958,9 +12872,9 @@ function updateSingleNPC(npc, dtSec) {
               npc._hallwayPhase = 2;
               npc.exited = true;
               // Stage 3: 家族NPCは公園の避難ポイントで待機（非表示にしない）
-              if (GAME.stageNum === 3 && (npc.role === 'father' || npc.role === 'mother' || npc.role === 'sister' || npc.role === 'grandma')) {
+              if (GAME.stageNum === 3 && (npc.role === 'father' || npc.role === 'mother' || npc.role === 'sister')) {
                 // 公園の避難ポイント周辺に配置（役割ごとに少しずらす）
-                var parkOffsets = { father: {x: -0.8, z: -0.5}, mother: {x: 0.8, z: -0.5}, sister: {x: -0.5, z: 0.8}, grandma: {x: 0.5, z: 0.8} };
+                var parkOffsets = { father: {x: -0.8, z: -0.5}, mother: {x: 0.8, z: -0.5}, sister: {x: -0.5, z: 0.8} };
                 var pOff = parkOffsets[npc.role] || {x: 0, z: 0};
                 npc.x = EVAC_POINT_S3.x + pOff.x;
                 npc.z = EVAC_POINT_S3.z + pOff.z;
@@ -13047,53 +12961,6 @@ function tryHelpInjuredNPC() {
             child.material.emissiveIntensity = 0;
           }
         });
-      } else if (npc.role === 'grandma') {
-        GAME.scoring.helpedGrandma = true;
-        GAME.score += 5;
-        SoundManager.playSE('click');
-        showAdvisor({ja: 'おばあちゃんを手助けした！おばあちゃんは玄関へ向かう！', en: 'You helped grandma! She\'s heading to the entrance!'}, 'praise');
-        showItemGet('👵 おばあちゃんを支援！ — 家族を守る');
-        addFamilyLog('player', 'おばあちゃんの避難を手伝った');
-        addFamilyLog('grandma', 'ありがとう...玄関へ向かう');
-        // 独立歩行で玄関へ（プレイヤーについてくるのではなく自力避難）
-        npc.behavior = 'calm';
-        npc.state = 'evacuating';
-        npc.followingPlayer = false;
-        npc.mesh.rotation.z = 0;
-        npc.mesh.scale.set(1, 1, 1);
-        npc.mesh.position.y = npc.floorY || 0;
-        npc.speed = 0.012; // 少し遅め（高齢者）
-        // ヒントライト・矢印・リング・代替メッシュ消灯
-        if (GAME._grandmaHintLight) { GAME._grandmaHintLight.intensity = 0; }
-        if (GAME._grandmaSpotLight) { GAME._grandmaSpotLight.intensity = 0; }
-        if (GAME._grandmaArrow) { GAME._grandmaArrow.visible = false; }
-        if (GAME._grandmaRing) { GAME._grandmaRing.visible = false; }
-        if (npc._backupMesh) { npc._backupMesh.visible = false; }
-        // ポーズリセット
-        var gBody = npc.mesh.userData.body;
-        if (gBody) gBody.rotation.x = 0;
-        if (npc.mesh.userData.leftArm) { npc.mesh.userData.leftArm.rotation.x = 0; npc.mesh.userData.leftArm.rotation.z = 0; }
-        if (npc.mesh.userData.rightArm) { npc.mesh.userData.rightArm.rotation.x = 0; npc.mesh.userData.rightArm.rotation.z = 0; }
-        if (npc.mesh.userData.leftLeg) npc.mesh.userData.leftLeg.rotation.x = 0;
-        if (npc.mesh.userData.rightLeg) npc.mesh.userData.rightLeg.rotation.x = 0;
-        // 自発光解除
-        npc.mesh.traverse(function(child) {
-          if (child.material && child.material.emissive) {
-            child.material.emissiveIntensity = 0;
-          }
-        });
-        npc._emissiveSet = false;
-        // 和室→開口部を通過→玄関（テレポートせず歩かせる）
-        // 和室仕切り壁(X=-2,Z=2-5)の西側(X=-3.0)を南下してZ<2へ出る
-        npc._waypoints = [
-          { x: -3.0, z: 1.5 },   // 開口部内を南下（和室仕切り壁の南端Z=2より下）
-          { x: -2.5, z: -0.5 },  // 本棚(X=-2,Z=0-1)を避けて南西へ
-          { x: -3, z: -2 },      // リビング経由
-          { x: -5, z: -4.5 },    // 玄関
-        ];
-        npc._wpIndex = 0;
-        npc.targetX = npc._waypoints[0].x;
-        npc.targetZ = npc._waypoints[0].z;
       } else {
         GAME.score += 6;
         SoundManager.playSE('rescue');
@@ -13852,16 +13719,7 @@ function gameLoop(timestamp) {
     GAME._beaconPillarOuter.material.opacity = 0.2 + bPulse3b * 0.2;
   }
   // 道しるべポール（不透明MeshBasicMaterial — アニメーション不要）
-  // Stage 3: 祖母の浮遊矢印アニメーション（上下揺れ + 回転）
-  if (GAME._grandmaArrow && GAME._grandmaArrow.visible) {
-    GAME._grandmaArrow.position.y = (HOUSE_1F_Y || 0) + 2.0 + Math.sin(GAME.totalTimer * 3) * 0.3;
-    GAME._grandmaArrow.rotation.y = GAME.totalTimer * 2;
-  }
-  if (GAME._grandmaRing && GAME._grandmaRing.visible) {
-    var rScale = 1.0 + Math.sin(GAME.totalTimer * 2.5) * 0.2;
-    GAME._grandmaRing.scale.set(rScale, rScale, 1);
-    GAME._grandmaRing.material.opacity = 0.4 + Math.sin(GAME.totalTimer * 3) * 0.2;
-  }
+  // 祖母関連アニメーション削除済み
   // Stage 3: 懐中電灯スポットライト更新
   if (GAME._flashSpot && GAME._hasFlashlight) {
     var fp = GAME.player;
@@ -14130,14 +13988,11 @@ function updateObjectiveBanner() {
         text = en ? '🏃 Head for the green beacon!' : '🏃 緑の光柱を目指せ！';
         sub = en ? 'Head south, then turn right to the park' : '南へ進み、右折して公園へ！';
       } else {
-        // 1F: プレイヤーのタスク（靴・祖母支援・避難）
+        // 1F: プレイヤーのタスク（靴・避難）
         // ガス・ブレーカー・懐中電灯・ドアは父が自動で処理
         if (!GAME.scoring.putOnShoes) {
           text = en ? '👟 Put on shoes! (glass protection)' : '👟 靴を履こう！（ガラス片対策）';
           sub = en ? 'Go to entrance area and press E' : '玄関の靴箱に近づいてEキー';
-        } else if (!GAME.scoring.helpedGrandma) {
-          text = en ? '👵 Help grandma evacuate!' : '👵 おばあちゃんの避難を手伝おう！';
-          sub = en ? 'Grandma is in the tatami room entrance. Press E to help.' : 'おばあちゃんは和室の入口付近にいる。Eキーで助ける';
         } else if (!GAME._genkanDoorOpen) {
           text = en ? '🚪 Wait for dad to open the door...' : '🚪 お父さんがドアを開けるのを待とう...';
           sub = en ? 'Dad is handling the breaker and door' : 'お父さんがブレーカーとドアを対応中';
@@ -14384,21 +14239,15 @@ function _doTransitionPhase(newPhase) {
           if (fnpc.role === 'mother') {
             fnpc._taskQueue = [
               { type: 'delay', duration: 2.0 },
-              { type: 'log', role: 'mother', message: 'おばあちゃんの様子を見に行く' },
-              { type: 'teleport', x: -1.0, z: 0 },
+              { type: 'log', role: 'mother', message: '荷物をまとめるわ！' },
               { type: 'move', waypoints: [
-                { x: -1.0, z: -0.5 },  // 本棚(X=-2,Z=0.05-0.95)を避けて南へ
-                { x: -2.5, z: -0.5 },  // 本棚の南を回り込んで西へ
-                { x: -2.5, z: 1.5 },   // 和室仕切り壁(X=-2,Z=2-5)の南を通過
-                { x: -3.0, z: 3.5 },   // 和室のおばあちゃん付近
+                { x: 0, z: 0 },       // リビング中央
+                { x: -3, z: -2 },     // 玄関方面
               ], speed: 0.02 },
-              { type: 'log', role: 'mother', message: 'おばあちゃん、大丈夫？一緒に避難しましょう' },
+              { type: 'log', role: 'mother', message: '非常持ち出し袋を持っていくわ！' },
               { type: 'delay', duration: 1.0 },
-              { type: 'log', role: 'mother', message: 'おばあちゃんと外へ出よう！' },
+              { type: 'log', role: 'mother', message: 'みんな、外に出ましょう！' },
               { type: 'evacuate', waypoints: [
-                { x: -2.5, z: 1.5 },   // 和室仕切り壁(Z=2)の南を通過
-                { x: -2.5, z: -0.5 },  // 本棚を避けて南下
-                { x: -3, z: -2 },      // リビング経由
                 { x: -5, z: -4.5 },    // 玄関
                 { x: -5, z: -7 },      // 庭へ出る
                 { x: 0, z: -14 },      // 道路を南下
@@ -14445,33 +14294,8 @@ function _doTransitionPhase(newPhase) {
         sisterSpot.position.set(-3.5, HOUSE_2F_Y + 0.5, 3.0);
         GAME.scene.add(sisterSpot);
         GAME._sisterSpotLight = sisterSpot;
-        // 祖母の位置に強いライト（暗い中で確実に見つけられるように）
-        var grandmaLight = new THREE.PointLight(0xffaa66, 3.0, 12);
-        grandmaLight.position.set(-3.5, HOUSE_1F_Y + 1.5, 3.5);
-        GAME.scene.add(grandmaLight);
-        GAME._grandmaHintLight = grandmaLight;
-        // 祖母の足元スポットライト（直接照らす）
-        var grandmaSpot = new THREE.PointLight(0xffffff, 2.0, 6);
-        grandmaSpot.position.set(-3.5, HOUSE_1F_Y + 0.3, 3.5);
-        GAME.scene.add(grandmaSpot);
-        GAME._grandmaSpotLight = grandmaSpot;
-        // 祖母の頭上に浮遊する矢印（Stage 1と同じパターン）
-        var gArrowMat = new THREE.MeshBasicMaterial({ color: 0xff6600, fog: false });
-        var gArrow = new THREE.Mesh(new THREE.ConeGeometry(0.35, 0.7, 8), gArrowMat);
-        gArrow.position.set(-3.5, HOUSE_1F_Y + 2.2, 3.5);
-        gArrow.rotation.x = Math.PI; // 下向き
-        gArrow.frustumCulled = false;
-        GAME.scene.add(gArrow);
-        GAME._grandmaArrow = gArrow;
-        // 祖母の足元に光るリング
-        var gRingMat = new THREE.MeshBasicMaterial({ color: 0xff8800, transparent: true, opacity: 0.6, side: THREE.DoubleSide, fog: false });
-        var gRing = new THREE.Mesh(new THREE.RingGeometry(0.3, 0.8, 24), gRingMat);
-        gRing.rotation.x = -Math.PI / 2;
-        gRing.position.set(-3.5, HOUSE_1F_Y + 0.05, 3.5);
-        gRing.frustumCulled = false;
-        GAME.scene.add(gRing);
-        GAME._grandmaRing = gRing;
-        // 未救助NPCの_coweringフラグを確実にセット（aftershakeから引き継がれなかった場合の保険）
+        // 祖母関連のライト・矢印・リング削除済み
+        // 未救助NPCの_coweringフラグを確実にセット
         for (var si = 0; si < GAME.npcs.length; si++) {
           var snpc = GAME.npcs[si];
           if (snpc.needsHelp && !snpc.helped) {
@@ -14481,16 +14305,12 @@ function _doTransitionPhase(newPhase) {
             snpc.mesh.position.x = snpc.x;
             snpc.mesh.position.z = snpc.z;
             snpc.mesh.position.y = snpc.floorY || 0;
-            // おばあちゃんはMeshBasicMaterial変換済みのためemissive不要
-            // それ以外のNPCのみemissive設定
-            if (snpc.role !== 'grandma') {
-              snpc.mesh.traverse(function(child) {
-                if (child.material && child.material.emissive) {
-                  child.material.emissive = new THREE.Color(0xffcc88);
-                  child.material.emissiveIntensity = 0.5;
-                }
-              });
-            }
+            snpc.mesh.traverse(function(child) {
+              if (child.material && child.material.emissive) {
+                child.material.emissive = new THREE.Color(0xffcc88);
+                child.material.emissiveIntensity = 0.5;
+              }
+            });
             snpc._emissiveSet = true;
           }
         }
@@ -15217,7 +15037,6 @@ function calculateScore() {
     // Stage3（自宅）: プレイヤー行動のみ — 父親の自動行動はスコアに含めない
     if (s.putOnShoes) score += 6;        // 靴を履いた
     if (s.rescuedChild) score += 5;      // 妹に声をかけた
-    if (s.helpedGrandma) score += 5;     // 祖母を手助けした
     score += (GAME._novelChoiceScore || 0);
   } else {
     // その他: 全項目
@@ -15329,7 +15148,6 @@ function showResult() {
         // Stage 3: プレイヤー行動のみ（父親の自動行動は含めない）
         actions.push({ done: s.putOnShoes, text: en ? 'Put on shoes (glass protection)' : '靴を履いた（ガラス片対策）', pts: '+6' });
         actions.push({ done: s.rescuedChild, text: en ? 'Called out to sister upstairs' : '2階の妹に声をかけた', pts: '+5' });
-        actions.push({ done: s.helpedGrandma, text: en ? 'Helped grandma evacuate' : '祖母の避難を手助けした', pts: '+5' });
         var novelPts3 = GAME._novelChoiceScore || 0;
         actions.push({ done: novelPts3 > 0, text: en ? 'Made correct choices in novel scenes' : 'ノベル選択肢で正しい判断をした', pts: novelPts3 > 0 ? '+' + novelPts3 : '0' });
       } else {
@@ -15426,7 +15244,7 @@ function showResult() {
           { label: en ? 'Initial Response' : '初動対応', score: (s.crouchedIn3s ? 10 : 0) + (s.movedToSafe ? 10 : 0), max: 20 },
           { label: en ? 'During Shaking' : '揺れ中の判断', score: (s.awayFromHazard ? 5 : 0) + (s.didNotRunOutside ? 5 : 0) + (s.noHitByFalling ? 5 : 0) + (GAME._holdOnBonus || 0), max: 18 },
           { label: en ? 'Home Safety' : '自宅の安全確保', score: (s.putOnShoes ? 6 : 0), max: 6 },
-          { label: en ? 'Family Rescue' : '家族の救助', score: (s.rescuedChild ? 5 : 0) + (s.helpedGrandma ? 5 : 0) + (s.reachedEvacPoint ? 10 : 0) + (s.withinTimeLimit ? 5 : 0), max: 25 },
+          { label: en ? 'Family Rescue' : '家族の救助', score: (s.rescuedChild ? 5 : 0) + (s.reachedEvacPoint ? 10 : 0) + (s.withinTimeLimit ? 5 : 0), max: 20 },
           { label: en ? 'Knowledge' : '知識・判断力', score: Math.max(0, GAME._novelChoiceScore || 0), max: 20 }
         ];
       } else {
@@ -15926,9 +15744,9 @@ function initDailyCinematic() {
       // Shot 2: 1Fリビング（父がくつろいでいる）
       { camX: 2, camY: 1.2, camZ: -0.5, lookX: 0, lookY: 0.8, lookZ: -2.25, dur: 3.5,
         text: en ? 'Dad relaxing in the living room.' : 'リビングでくつろぐ父。' },
-      // Shot 3: 1Fキッチン（母が料理中）＆和室の祖母 — カメラはキッチン横から母を映す
+      // Shot 3: 1Fキッチン（母が料理中）— カメラはキッチン横から母を映す
       { camX: 1.5, camY: 1.4, camZ: 4.5, lookX: 3.5, lookY: 0.8, lookZ: 4.2, dur: 3.5,
-        text: en ? 'Mom cooking dinner. Grandma in the tatami room.' : 'キッチンで夕食を作る母。和室には祖母。' },
+        text: en ? 'Mom preparing dinner in the kitchen.' : 'キッチンで夕食を作る母。' },
       // Shot 4: 2F（妹の部屋→プレイヤーの部屋）
       { camX: -2, camY: 4.5, camZ: 4, lookX: -3.5, lookY: 3.8, lookZ: 3.0, dur: 3,
         text: en ? 'Sister playing upstairs.' : '2階で遊ぶ妹。' },
