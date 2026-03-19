@@ -10234,20 +10234,47 @@ function spawnHouseNPCs() {
     needsHelp: true, helpMessage: {ja: '妹が泣いている！声をかけて落ち着かせよう！', en: 'Your sister is crying! Talk to her to calm her down!'},
   });
 
-  // おばあちゃん: createNPCModelで作成（他の家族NPCと同じ方式）
-  var grandmaModel = createNPCModel(0x795548, 1.45, 0xf5c6a0, { isFemale: true, hairColor: 0xaaaaaa, skirtColor: 0x795548 });
+  // おばあちゃん: MeshBasicMaterialのみで構築（和室が暗くMeshStandardMaterialは見えない）
+  var grandmaModel = new THREE.Group();
+  var _gm = function(c) { return new THREE.MeshBasicMaterial({ color: c }); };
+  // 胴体（茶色の箱）
+  var gBody = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.45, 0.2), _gm(0x795548));
+  gBody.position.y = 0.85;
+  grandmaModel.add(gBody);
+  // 頭（肌色の球）
+  var gHead = new THREE.Mesh(new THREE.SphereGeometry(0.13, 8, 8), _gm(0xf5c6a0));
+  gHead.position.y = 0.32;
+  gBody.add(gHead);
+  // 白髪
+  var gHair = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 6, 0, Math.PI * 2, 0, Math.PI * 0.5), _gm(0xcccccc));
+  gHair.position.y = 0.02;
+  gHead.add(gHair);
+  // 左腕
+  var gArmL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.35, 0.1), _gm(0x795548));
+  gArmL.position.set(-0.2, 0.0, 0);
+  gBody.add(gArmL);
+  // 右腕
+  var gArmR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.35, 0.1), _gm(0x795548));
+  gArmR.position.set(0.2, 0.0, 0);
+  gBody.add(gArmR);
+  // 左脚
+  var gLegPivotL = new THREE.Object3D();
+  gLegPivotL.position.set(-0.07, -0.22, 0);
+  gBody.add(gLegPivotL);
+  var gLegL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.4, 0.1), _gm(0x3a3a5a));
+  gLegL.position.y = -0.2;
+  gLegPivotL.add(gLegL);
+  // 右脚
+  var gLegPivotR = new THREE.Object3D();
+  gLegPivotR.position.set(0.07, -0.22, 0);
+  gBody.add(gLegPivotR);
+  var gLegR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.4, 0.1), _gm(0x3a3a5a));
+  gLegR.position.y = -0.2;
+  gLegPivotR.add(gLegR);
+  // userData（アニメーション互換）
+  grandmaModel.userData = { body: gBody, head: gHead, leftArm: gArmL, rightArm: gArmR, leftLeg: gLegPivotL, rightLeg: gLegPivotR };
   grandmaModel.position.set(-3.5, HOUSE_1F_Y, 3.5);
   GAME.scene.add(grandmaModel);
-  // 巨大デバッグキューブ（赤い1m立方体）— おばあちゃんと同じ位置
-  var debugCube = new THREE.Mesh(
-    new THREE.BoxGeometry(1, 1, 1),
-    new THREE.MeshBasicMaterial({ color: 0xff0000 })
-  );
-  debugCube.position.set(-3.5, HOUSE_1F_Y + 0.5, 3.5);
-  debugCube.frustumCulled = false;
-  GAME.scene.add(debugCube);
-  GAME._grandmaDebugCube = debugCube;
-  console.log('[GRANDMA-DEBUG] 赤キューブ追加: (-3.5, 0.5, 3.5)');
   GAME.npcs.push({
     mesh: grandmaModel, role: 'grandma', x: -3.5, z: 3.5, targetX: -3.5, targetZ: 3.5,
     behavior: 'injured', state: 'idle', speed: 0.005, phase: 0,
