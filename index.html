@@ -6830,12 +6830,36 @@ function buildClassroom() {
   GAME._backWallMat = wallMat;
   GAME.walls.push({ minX: -W/2, maxX: W/2, minZ: D-1-wallThick/2, maxZ: D-1+wallThick/2, minY: 0, maxY: H });
 
-  // 左壁（窓側 — 完全な壁）
-  const leftWall = new THREE.Mesh(new THREE.BoxGeometry(wallThick, H, D), wallMat);
-  leftWall.position.set(-W / 2, H / 2, D / 2 - 1);
-  leftWall.receiveShadow = true;
-  scene.add(leftWall);
-  GAME.cameraMeshes.push(leftWall);
+  // 左壁（窓側 — 窓開口部あり）
+  // 窓: Z=-0.5,2.0,4.5,7.0 中心, 1.5×1.5, Y中心=1.6 → Y=0.85〜2.35, Z=center±0.75
+  var lWx = -W / 2;
+  var lWzS = -1, lWzE = D - 1; // Z=-1〜9
+  var wYb = 0.85, wYt = 2.35;  // 窓 下端/上端
+  var wCs = [-0.5, 2.0, 4.5, 7.0]; // 窓Z中心
+  var wHW = 0.75; // 窓の半幅
+  // 下帯（Y=0〜wYb）
+  var lwB = new THREE.Mesh(new THREE.BoxGeometry(wallThick, wYb, D), wallMat);
+  lwB.position.set(lWx, wYb / 2, D / 2 - 1);
+  lwB.receiveShadow = true; scene.add(lwB); GAME.cameraMeshes.push(lwB);
+  // 上帯（Y=wYt〜H）
+  var lwTH = H - wYt;
+  var lwT = new THREE.Mesh(new THREE.BoxGeometry(wallThick, lwTH, D), wallMat);
+  lwT.position.set(lWx, wYt + lwTH / 2, D / 2 - 1);
+  lwT.receiveShadow = true; scene.add(lwT); GAME.cameraMeshes.push(lwT);
+  // 窓間の柱（Y=wYb〜wYt）
+  var pH = wYt - wYb;
+  var pSegs = [[lWzS, wCs[0] - wHW]];
+  for (var wi = 0; wi < wCs.length - 1; wi++) pSegs.push([wCs[wi] + wHW, wCs[wi + 1] - wHW]);
+  pSegs.push([wCs[wCs.length - 1] + wHW, lWzE]);
+  for (var pi = 0; pi < pSegs.length; pi++) {
+    var pL = pSegs[pi][1] - pSegs[pi][0];
+    if (pL > 0.01) {
+      var pM = new THREE.Mesh(new THREE.BoxGeometry(wallThick, pH, pL), wallMat);
+      pM.position.set(lWx, wYb + pH / 2, (pSegs[pi][0] + pSegs[pi][1]) / 2);
+      pM.receiveShadow = true; scene.add(pM); GAME.cameraMeshes.push(pM);
+    }
+  }
+  // コリジョンは全面維持
   GAME.walls.push({ minX: -W/2-wallThick/2, maxX: -W/2+wallThick/2, minZ: -1, maxZ: D-1, minY: 0, maxY: H });
 
   // 右壁（廊下側）— ドア開口部あり（Z=6〜7.2の位置）
@@ -16054,8 +16078,8 @@ function initDailyCinematic() {
       // Shot 2: 黒板方向
       { camX: 0, camY: 1.8, camZ: 6, lookX: 0, lookY: 1.5, lookZ: -1, dur: 3.5,
         text: en ? 'The teacher\'s lesson continues.' : '先生の授業が続いている。' },
-      // Shot 3: 窓の外
-      { camX: -3, camY: 2, camZ: 1, lookX: -5, lookY: 2, lookZ: -1, dur: 3.5,
+      // Shot 3: 窓の外（窓のすぐ内側から外を望む）
+      { camX: -4.0, camY: 1.8, camZ: 2.0, lookX: -8, lookY: 1.5, lookZ: 2.0, dur: 3.5,
         text: en ? 'A peaceful schoolyard outside.' : '窓の外には穏やかな校庭。' },
       // Shot 4: プレイヤーに戻る
       { camX: px + 1.5, camY: 1.6, camZ: pz + 2, lookX: px, lookY: 1.0, lookZ: pz, dur: 4,
