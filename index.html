@@ -15004,48 +15004,57 @@ function playGlassShatterSFX() {
   try {
     var ctx = new (window.AudioContext || window.webkitAudioContext)();
     var master = ctx.createGain();
-    master.gain.value = 0.5;
+    master.gain.value = 0.45;
     master.connect(ctx.destination);
     var now = ctx.currentTime;
     var sr = ctx.sampleRate;
 
-    // 全体を1つのバッファで合成（0.8秒間）
-    var totalLen = Math.floor(sr * 0.8);
+    // 1つのバッファに全て合成（1.0秒）
+    var totalLen = Math.floor(sr * 1.0);
     var buf = ctx.createBuffer(1, totalLen, sr);
     var data = buf.getChannelData(0);
+
+    // 共鳴周波数（ガラス板の固有振動に相当 — 高めの固定周波数、スイープなし）
+    var resonances = [
+      { freq: 2800, amp: 0.4, decay: 0.025 },
+      { freq: 3900, amp: 0.3, decay: 0.020 },
+      { freq: 5200, amp: 0.25, decay: 0.015 },
+      { freq: 6800, amp: 0.15, decay: 0.012 },
+    ];
+
+    // 破片クリックのタイミング（事前計算 — ランダムだと再生毎に変わるのでseed的に固定）
+    var clickTimes = [0.08, 0.12, 0.17, 0.21, 0.28, 0.35, 0.42, 0.50, 0.58, 0.67, 0.75, 0.85];
+    var clickFreqs = [3200, 5100, 4300, 6000, 3800, 5500, 4700, 3500, 6200, 4000, 5800, 3600];
 
     for (var i = 0; i < totalLen; i++) {
       var t = i / sr;
       var sample = 0;
 
-      // Phase 1: 衝撃（0〜0.05秒）— 大きなノイズバースト「ガシャッ」
-      if (t < 0.05) {
-        var impactEnv = Math.exp(-t / 0.008);
-        sample += (Math.random() * 2 - 1) * impactEnv * 1.0;
+      // Phase 1: 衝撃の共鳴音（0〜0.06秒）— 「パリン」の「パ」
+      // 極短いノイズ（3msだけ）で衝撃感を出す
+      if (t < 0.003) {
+        sample += (Math.random() * 2 - 1) * 0.8;
       }
 
-      // Phase 2: 砕ける音（0.02〜0.2秒）— 中域のノイズ「バリバリ」
-      if (t > 0.02 && t < 0.2) {
-        var shatterEnv = Math.exp(-(t - 0.02) / 0.05);
-        sample += (Math.random() * 2 - 1) * shatterEnv * 0.7;
-      }
-
-      // Phase 3: 破片散乱（0.05〜0.6秒）— ランダムな高音クリック「チリチリチリ」
-      if (t > 0.05 && t < 0.6) {
-        var scatterEnv = Math.exp(-(t - 0.05) / 0.2);
-        // 不規則なクリック音（破片が床に当たる）
-        if (Math.random() < 0.08) {
-          sample += (Math.random() > 0.5 ? 1 : -1) * scatterEnv * 0.6;
+      // Phase 2: ガラスの共鳴（0〜0.05秒）— 「パリン」の「リン」
+      // 高周波の減衰サイン波（固定周波数、スイープなし）
+      if (t < 0.08) {
+        for (var ri = 0; ri < resonances.length; ri++) {
+          var r = resonances[ri];
+          var rEnv = Math.exp(-t / r.decay);
+          sample += Math.sin(2 * Math.PI * r.freq * t) * rEnv * r.amp;
         }
-        // 細かいノイズの下地
-        sample += (Math.random() * 2 - 1) * scatterEnv * 0.1;
       }
 
-      // Phase 4: 余韻（0.3〜0.8秒）— 細かい破片が転がる
-      if (t > 0.3) {
-        var tailEnv = Math.exp(-(t - 0.3) / 0.15);
-        if (Math.random() < 0.04) {
-          sample += (Math.random() > 0.5 ? 1 : -1) * tailEnv * 0.3;
+      // Phase 3: 破片が落ちるクリック音（0.08〜0.9秒）— 「チリン、チリン」
+      // 各クリックは極短い減衰サイン波（3-5ms）= 個別の破片が当たる音
+      for (var ci = 0; ci < clickTimes.length; ci++) {
+        var ct = clickTimes[ci];
+        var dt = t - ct;
+        if (dt >= 0 && dt < 0.005) {
+          var cEnv = Math.exp(-dt / 0.0015);
+          var cAmp = 0.3 * Math.exp(-ct / 0.4); // 後半ほど小さく
+          sample += Math.sin(2 * Math.PI * clickFreqs[ci] * dt) * cEnv * cAmp;
         }
       }
 
@@ -15054,22 +15063,7 @@ function playGlassShatterSFX() {
 
     var node = ctx.createBufferSource();
     node.buffer = buf;
-
-    // ハイパスフィルタ（低音を削ってガラスらしい高域を残す）
-    var hpf = ctx.createBiquadFilter();
-    hpf.type = 'highpass';
-    hpf.frequency.value = 1500;
-
-    // ピーク強調（ガラスっぽいキラキラ感）
-    var peak = ctx.createBiquadFilter();
-    peak.type = 'peaking';
-    peak.frequency.value = 4000;
-    peak.gain.value = 6;
-    peak.Q.value = 1.0;
-
-    node.connect(hpf);
-    hpf.connect(peak);
-    peak.connect(master);
+    node.connect(master);
     node.start(now);
 
     setTimeout(function() { ctx.close(); }, 2000);
