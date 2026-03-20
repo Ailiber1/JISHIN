@@ -6932,6 +6932,52 @@ function buildClassroom() {
     sM.position.set(winX + 0.01, 1.6, winZ); scene.add(sM);
   }
 
+  // 窓の外の風景（教室の外側に配置）
+  (function() {
+    var outX = -W/2 - 0.5; // 壁の外側
+    // 空パネル（明るい青空）
+    var skyCanvas = document.createElement('canvas');
+    skyCanvas.width = 512; skyCanvas.height = 256;
+    var skyCtx = skyCanvas.getContext('2d');
+    var skyGrad = skyCtx.createLinearGradient(0, 0, 0, 256);
+    skyGrad.addColorStop(0, '#4a90d9');
+    skyGrad.addColorStop(0.4, '#87ceeb');
+    skyGrad.addColorStop(0.7, '#b0e0f0');
+    skyGrad.addColorStop(1.0, '#d4f0d4');
+    skyCtx.fillStyle = skyGrad;
+    skyCtx.fillRect(0, 0, 512, 256);
+    // 雲を描画
+    skyCtx.fillStyle = 'rgba(255,255,255,0.8)';
+    [[80,50,60,25],[300,40,70,20],[200,80,50,18],[420,60,55,22]].forEach(function(c) {
+      skyCtx.beginPath(); skyCtx.ellipse(c[0],c[1],c[2],c[3],0,0,Math.PI*2); skyCtx.fill();
+    });
+    var skyTex = new THREE.CanvasTexture(skyCanvas);
+    var skyMat = new THREE.MeshBasicMaterial({ map: skyTex, side: THREE.DoubleSide });
+    var skyPlane = new THREE.Mesh(new THREE.PlaneGeometry(14, 6), skyMat);
+    skyPlane.position.set(outX - 3, 2.5, D/2 - 1);
+    skyPlane.rotation.y = Math.PI / 2;
+    scene.add(skyPlane);
+    // 地面パネル（緑の芝生）
+    var groundMat = new THREE.MeshBasicMaterial({ color: 0x4a8c3f, side: THREE.DoubleSide });
+    var groundPlane = new THREE.Mesh(new THREE.PlaneGeometry(14, 2), groundMat);
+    groundPlane.position.set(outX - 3, -0.2, D/2 - 1);
+    groundPlane.rotation.y = Math.PI / 2;
+    scene.add(groundPlane);
+    // 木のシルエット（3本）
+    var treeMat = new THREE.MeshBasicMaterial({ color: 0x2d6b1e });
+    var trunkMat = new THREE.MeshBasicMaterial({ color: 0x5c3a1e });
+    [1, 4, 7].forEach(function(tz) {
+      // 幹
+      var trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.12, 1.2, 6), trunkMat);
+      trunk.position.set(outX - 2, 1.0, tz);
+      scene.add(trunk);
+      // 葉（球体）
+      var leaves = new THREE.Mesh(new THREE.SphereGeometry(0.6, 8, 6), treeMat);
+      leaves.position.set(outX - 2, 2.0, tz);
+      scene.add(leaves);
+    });
+  })();
+
   // 巾木（床と壁の境目 — 全周）
   var baseboardMat = new THREE.MeshStandardMaterial({ color: 0x6b5b3a, roughness: 0.65, emissive: 0x030201, emissiveIntensity: 0.05 });
   var bbH = 0.08;
