@@ -11584,9 +11584,11 @@ function spawnOfficeNPCs() {
       var sx = deskStartX + col * gapX;
       var sz = deskStartZ + row * gapZ + 0.4;
 
-      // 行動パターン: 冷静60%, パニック25%, 負傷15%
+      // 行動パターン: 冷静60%, パニック25%, 負傷15%（最大1人）
       var rand = Math.random();
       var behavior = rand < 0.6 ? 'calm' : rand < 0.85 ? 'panic' : 'injured';
+      if (behavior === 'injured' && GAME._injuredCount >= 1) behavior = 'calm';
+      if (behavior === 'injured') GAME._injuredCount = (GAME._injuredCount || 0) + 1;
 
       var isMale = colleagueCount % 2 === 0; // 交互に男女を配置（バランス均等）
       var bodyColor = isMale ? maleColors[colleagueCount % maleColors.length] : femaleColors[colleagueCount % femaleColors.length];
@@ -12747,6 +12749,55 @@ function updateSingleNPC(npc, dtSec) {
           npc._sosLabel.visible = true;
           var pulse = 0.7 + Math.sin(npc.phase * 5) * 0.3;
           npc._sosLabel.material.opacity = pulse;
+        }
+        // 一定時間後、未救助NPCが自力で立ち上がって避難開始（10秒後）
+        if (GAME.phaseTimer >= 10) {
+          npc.helped = true;
+          npc.behavior = 'calm';
+          npc.state = 'evacuating';
+          npc._cowering = false;
+          // SOSラベル消去
+          if (npc._sosLabel) { npc._sosLabel.visible = false; npc._sosLabel = null; }
+          // ポーズリセット
+          mesh.scale.set(1, 1, 1);
+          mesh.rotation.z = 0;
+          mesh.position.y = npc.floorY || 0;
+          if (mesh.userData.body) {
+            mesh.userData.body.rotation.x = 0; mesh.userData.body.rotation.z = 0;
+            if (mesh.userData.body.children && mesh.userData.body.children.length >= 3) {
+              mesh.userData.body.children[1].rotation.x = 0; mesh.userData.body.children[1].rotation.z = 0;
+              mesh.userData.body.children[2].rotation.x = 0; mesh.userData.body.children[2].rotation.z = 0;
+            }
+          }
+          if (mesh.userData.leftLeg) {
+            mesh.userData.leftLeg.rotation.x = 0;
+            var slk = mesh.userData.leftLeg.children[0];
+            if (slk && slk.children[0]) slk.children[0].rotation.x = 0;
+          }
+          if (mesh.userData.rightLeg) {
+            mesh.userData.rightLeg.rotation.x = 0;
+            var srk = mesh.userData.rightLeg.children[0];
+            if (srk && srk.children[0]) srk.children[0].rotation.x = 0;
+          }
+          // emissiveリセット
+          mesh.traverse(function(child) {
+            if (child.material && child.material.emissive) {
+              child.material.emissive.setHex(0x222222);
+              child.material.emissiveIntensity = 0.3;
+            }
+          });
+          // 避難ウェイポイント設定
+          if (GAME.stageNum === 1) {
+            npc._waypoints = [{ x: 4.2, z: 6.6 }];
+          } else if (GAME.stageNum === 2) {
+            npc._waypoints = [{ x: -11.5, z: 14.5 }];
+          } else {
+            npc._waypoints = [{ x: 0, z: -2.5 }, { x: -3, z: -3 }, { x: -5, z: -4.5 }];
+          }
+          npc._wpIndex = 0;
+          npc.targetX = npc._waypoints[0].x;
+          npc.targetZ = npc._waypoints[0].z;
+          npc.evacuationDelay = 0; // 遅延なしで即避難開始
         }
         break;
       }
