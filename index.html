@@ -12657,12 +12657,14 @@ function updateSingleNPC(npc, dtSec) {
         // まだ順番が来ていない — 立ち上がって待機（ポーズ完全リセット）
         if (npc.state === 'crouching' || npc.state === 'idle' || npc.state === 'sitting' || npc.state === 'panicking' || npc.state === 'fallen' || npc.state === 'standing_up' || npc.state === 'aftershake_idle') {
           npc.state = 'waiting';
+          // 立ち上がり時の向きを保存（回転防止）
+          npc._origYaw = mesh.rotation.y;
           mesh.scale.set(1, 1, 1);
           mesh.position.y = npc.floorY || 0;
           mesh.rotation.z = 0;
-          // デスク・椅子貫通防止: 通路位置にオフセット
-          if (npc.deskX !== undefined && GAME.stageNum === 2) {
-            var evAisleOff = (npc.deskX <= 0) ? 1.5 : -1.5;
+          // デスク・椅子貫通防止: 通路位置にオフセット（全ステージ共通）
+          if (npc.deskX !== undefined) {
+            var evAisleOff = (GAME.stageNum === 1) ? ((npc.deskX <= 0) ? 1.0 : -1.0) : ((npc.deskX <= 0) ? 1.5 : -1.5);
             npc.x = npc.deskX + evAisleOff;
             npc.z = npc.deskZ || npc.z;
             mesh.position.x = npc.x;
