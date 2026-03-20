@@ -6418,8 +6418,9 @@ function initGame(stageNum) {
 
   if (!GAME.isMobile) {
     GAME.renderer.domElement.addEventListener('click', function() {
-      // ゲーム動作中かつdaily以外のみPointer Lock取得（ノベル中・日常中は不要）
-      if (!GAME.pointerLocked && GAME.running && GAME.phase !== 'daily') {
+      // ゲーム動作中かつdaily以外のみPointer Lock取得（ノベル中・日常中・訓練ヒント表示中は不要）
+      var tipShowing = document.getElementById('training-tip-overlay');
+      if (!GAME.pointerLocked && GAME.running && GAME.phase !== 'daily' && (!tipShowing || tipShowing.style.display === 'none')) {
         GAME.renderer.domElement.requestPointerLock();
       }
     });
@@ -15071,9 +15072,16 @@ function closeTrainingTip() {
   var overlay = document.getElementById('training-tip-overlay');
   overlay.style.display = 'none';
   GAME.running = true;
-  if (!GAME.isMobile && GAME.renderer && GAME.renderer.domElement) {
-    GAME.renderer.domElement.requestPointerLock();
-  }
+  // Pointer Lockはオーバーレイ消失後に少し遅延して取得（即座に取ると次のヒントのボタンが押せなくなる）
+  setTimeout(function() {
+    // 次のヒントが表示されていない場合のみPointer Lock取得
+    if (!GAME.isMobile && GAME.renderer && GAME.renderer.domElement && GAME.running) {
+      var tipOverlay = document.getElementById('training-tip-overlay');
+      if (!tipOverlay || tipOverlay.style.display === 'none') {
+        GAME.renderer.domElement.requestPointerLock();
+      }
+    }
+  }, 300);
   requestAnimationFrame(gameLoop);
 }
 
