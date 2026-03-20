@@ -10836,7 +10836,7 @@ function checkEvacPointReached() {
     var dz3 = p3.z - EVAC_POINT_S3.z;
     if (Math.sqrt(dx3 * dx3 + dz3 * dz3) < EVAC_POINT_S3.radius) {
       GAME.scoring.reachedEvacPoint = true;
-      GAME.scoring.withinTimeLimit = GAME.isTraining ? true : (GAME.totalTimer < GAME.timeLimit);
+      GAME.scoring.withinTimeLimit = (GAME.totalTimer < GAME.timeLimit);
       // 家族全員避難ボーナスチェック
       var familyAll = true;
       if (GAME.npcs) {
@@ -10883,7 +10883,7 @@ function checkEvacPointReached() {
     var dz2 = p2.z - EVAC_POINT_S2.z;
     if (Math.sqrt(dx2 * dx2 + dz2 * dz2) < EVAC_POINT_S2.radius) {
       GAME.scoring.reachedEvacPoint = true;
-      GAME.scoring.withinTimeLimit = GAME.isTraining ? true : (GAME.totalTimer < GAME.timeLimit);
+      GAME.scoring.withinTimeLimit = (GAME.totalTimer < GAME.timeLimit);
       SoundManager.playSE('correct');
       transitionPhase('result');
     }
@@ -10913,7 +10913,7 @@ function checkEvacPointReached() {
   var dz = p.z - EVAC_POINT.z;
   if (Math.sqrt(dx * dx + dz * dz) < EVAC_POINT.radius) {
     GAME.scoring.reachedEvacPoint = true;
-    GAME.scoring.withinTimeLimit = GAME.isTraining ? true : (GAME.totalTimer < GAME.timeLimit);
+    GAME.scoring.withinTimeLimit = (GAME.totalTimer < GAME.timeLimit);
     SoundManager.playSE('correct');
     transitionPhase('result');
   }
@@ -13393,11 +13393,13 @@ function tryHelpInjuredNPC() {
 }
 
 // 安否確認（声かけ）— aftershake/evacuation中にNPC近くでE/F/Space
+// プレイヤーがNPCの方を向いている場合のみ成立（誤判定防止）
 function trySafetyCheck() {
   if (GAME.scoring.checkedSafety) return false;
   if (GAME.phase !== 'aftershake' && GAME.phase !== 'evacuation') return false;
   var px = GAME.player.x, pz = GAME.player.z;
   var playerFloorY = (GAME.stageNum === 3 && GAME._onHouse2F) ? 3.0 : 0;
+  var playerYaw = GAME.player.yaw;
   for (var i = 0; i < GAME.npcs.length; i++) {
     var npc = GAME.npcs[i];
     // フロア判定: 別フロアのNPCはスキップ
@@ -13405,9 +13407,20 @@ function trySafetyCheck() {
     if (Math.abs(playerFloorY - npcFloorY) > 2) continue;
     // needsHelp NPCは安否確認ではなくtryHelpInjuredNPCで処理
     if (npc.needsHelp && !npc.helped) continue;
+    // 退出済みNPC・負傷未救助NPCはスキップ
+    if (npc.exited) continue;
+    if (npc.behavior === 'injured' && !npc.helped) continue;
     var dx = px - npc.x;
     var dz = pz - npc.z;
-    if (Math.sqrt(dx * dx + dz * dz) < 2.0) {
+    var dist = Math.sqrt(dx * dx + dz * dz);
+    if (dist < 2.0) {
+      // プレイヤーがNPCの方を向いているか判定（前方90°以内）
+      var angleToNPC = Math.atan2(-(npc.x - px), -(npc.z - pz));
+      var angleDiff = angleToNPC - playerYaw;
+      // -PI〜PIに正規化
+      while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+      while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+      if (Math.abs(angleDiff) > Math.PI / 2) continue; // NPCの方を向いていない
       GAME.scoring.checkedSafety = true;
       GAME.score += 5;
       SoundManager.playSE('click');
@@ -16011,7 +16024,10 @@ function showResult() {
       }
       actions.push({ done: s.avoidedBlockWall, text: en ? 'Stayed away from block walls' : 'ブロック塀から離れて移動した', pts: '+5', explKey: 'avoidedBlockWall' });
       actions.push({ done: s.reachedEvacPoint, text: en ? 'Reached evacuation point' : '避難場所に到達した', pts: '+10', explKey: 'reachedEvacPoint' });
-      actions.push({ done: s.withinTimeLimit, text: en ? 'Evacuated within time limit' : '制限時間内に避難完了', pts: '+5', explKey: 'withinTimeLimit' });
+      // 訓練モードでは制限時間の概念がないので非表示
+      if (!GAME.isTraining) {
+        actions.push({ done: s.withinTimeLimit, text: en ? 'Evacuated within time limit' : '制限時間内に避難完了', pts: '+5', explKey: 'withinTimeLimit' });
+      }
       // 余震中の行動
       if (GAME._aftershockCrouchBonus > 0) {
         actions.push({ done: true, text: en ? 'Crouched & protected head during aftershock' : '余震時にしゃがんで頭を守った', pts: '+' + (GAME._aftershockCrouchBonusPts || 0), explKey: 'aftershockBonus' });
@@ -16481,6 +16497,13 @@ function checkScoringTriggers() {
         showAdvisor(GAME.stageNum === 2 ? {ja: 'デスクの脚をしっかり掴んだ！揺れが収まるまで離すな！', en: 'You\'re gripping the desk leg! Don\'t let go until the shaking stops!'} : {ja: '机の脚をしっかり掴んだ！揺れが収まるまで離すな！', en: 'You\'re gripping the desk leg! Don\'t let go until the shaking stops!'}, 'praise');
       }
     } else {
+      // HOLD ONを途中で解除した場合（地震中に離した）
+      if (GAME._holdOnActive && s.heldDeskLegs) {
+        // 揺れ中に離した → 評価を取り消し + 警告
+        s.heldDeskLegs = false;
+        GAME._holdOnTime = 0;
+        showAdvisor({ja: '⚠️ 揺れている間は机の脚を離さないで！再び掴もう！', en: '⚠️ Don\'t let go during shaking! Grab the desk legs again!'}, 'warning');
+      }
       GAME._holdOnActive = false;
       if (holdOnIndicator) holdOnIndicator.style.display = 'none';
     }
