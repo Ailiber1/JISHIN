@@ -3827,7 +3827,7 @@ const SoundManager = {
         correct:  { f: 800,  d: 0.15, t: 'sine',     g: 0.35, sweep: 1600 },
         hit:      { f: 200,  d: 0.15, t: 'sawtooth', g: 0.40, sweep: 80 },
         alarm:    { f: 600,  d: 0.40, t: 'square',   g: 0.25, sweep: 1200 },
-        glass:    { f: 3000, d: 0.12, t: 'sawtooth', g: 0.20, sweep: 800 },
+        glass:    { f: 3000, d: 0.35, t: 'sawtooth', g: 0.30, sweep: 800 },
         footstep: { f: 120,  d: 0.05, t: 'sine',     g: 0.15, sweep: 60 },
         door:     { f: 300,  d: 0.20, t: 'sine',     g: 0.30, sweep: 150 },
         breaker:  { f: 100,  d: 0.25, t: 'square',   g: 0.30, sweep: 50 },
@@ -14934,8 +14934,10 @@ function breakWindow(idx) {
   // ガラスを非表示（割れた）
   winMesh.visible = false;
 
-  // ガラス破砕音
+  // ガラス破砕音（合成音を複合で鳴らしてリアルに）
   SoundManager.playSE('glass');
+  // 追加: 低音の衝撃音 + 高音の破片散乱音を時間差で重ねる
+  setTimeout(function() { playGlassShatterSFX(); }, 50);
 
   // 飛散するガラス破片パーティクル（窓から教室内側へ飛ぶ）
   var glassMat = new THREE.MeshStandardMaterial({
@@ -14997,6 +14999,79 @@ function breakWindow(idx) {
     requestAnimationFrame(animateShards);
   }
   animateShards();
+}
+
+// ガラス破砕音（Web Audio APIで複合合成 — 衝撃+破片散乱+残響）
+function playGlassShatterSFX() {
+  try {
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    var master = ctx.createGain();
+    master.gain.value = 0.25;
+    master.connect(ctx.destination);
+    var now = ctx.currentTime;
+
+    // 1) 衝撃ノイズ（ホワイトノイズバースト — 0.15秒）
+    var bufLen = ctx.sampleRate * 0.15;
+    var noiseBuf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
+    var noiseData = noiseBuf.getChannelData(0);
+    for (var i = 0; i < bufLen; i++) noiseData[i] = (Math.random() * 2 - 1) * 0.8;
+    var noiseNode = ctx.createBufferSource();
+    noiseNode.buffer = noiseBuf;
+    var noiseGain = ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.6, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+    // ハイパスフィルタ（ガラスらしい高周波を強調）
+    var hpf = ctx.createBiquadFilter();
+    hpf.type = 'highpass';
+    hpf.frequency.value = 2000;
+    noiseNode.connect(hpf);
+    hpf.connect(noiseGain);
+    noiseGain.connect(master);
+    noiseNode.start(now);
+    noiseNode.stop(now + 0.15);
+
+    // 2) 高音の破片散乱音（複数のサイン波を短く鳴らす）
+    var freqs = [4000, 5500, 7000, 3200, 6200];
+    for (var fi = 0; fi < freqs.length; fi++) {
+      var osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freqs[fi], now);
+      osc.frequency.exponentialRampToValueAtTime(freqs[fi] * 0.3, now + 0.3);
+      var oscGain = ctx.createGain();
+      var delay = fi * 0.04;
+      oscGain.gain.setValueAtTime(0, now);
+      oscGain.gain.linearRampToValueAtTime(0.12, now + delay + 0.01);
+      oscGain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.25);
+      osc.connect(oscGain);
+      oscGain.connect(master);
+      osc.start(now + delay);
+      osc.stop(now + delay + 0.3);
+    }
+
+    // 3) 残響ノイズ（細かい破片が床に落ちる音 — 0.5秒）
+    var tailLen = ctx.sampleRate * 0.5;
+    var tailBuf = ctx.createBuffer(1, tailLen, ctx.sampleRate);
+    var tailData = tailBuf.getChannelData(0);
+    for (var ti = 0; ti < tailLen; ti++) {
+      var env = Math.exp(-ti / (ctx.sampleRate * 0.12));
+      tailData[ti] = (Math.random() * 2 - 1) * env * 0.3;
+    }
+    var tailNode = ctx.createBufferSource();
+    tailNode.buffer = tailBuf;
+    var tailGain = ctx.createGain();
+    tailGain.gain.value = 0.4;
+    var tailHpf = ctx.createBiquadFilter();
+    tailHpf.type = 'highpass';
+    tailHpf.frequency.value = 3000;
+    tailNode.connect(tailHpf);
+    tailHpf.connect(tailGain);
+    tailGain.connect(master);
+    tailNode.start(now + 0.1);
+    tailNode.stop(now + 0.6);
+
+    // AudioContext自動クリーンアップ
+    setTimeout(function() { ctx.close(); }, 1500);
+  } catch(e) {}
 }
 
 // 窓際の怪我判定（地震中に左壁付近にいるとガラスでケガ）
