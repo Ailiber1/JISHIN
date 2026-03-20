@@ -12028,12 +12028,12 @@ function updateSingleNPC(npc, dtSec) {
         mesh.position.y = coSeatY + Math.sin(npc.phase * 1.5) * 0.002;
         mesh.rotation.y = Math.PI;
         var coSeed = (npc.deskX || 0) * 5 + (npc.deskZ || 0) * 3;
-        // 脚: 座りポーズ（太もも前方曲げのみ — NPCモデルは膝ピボットなし）
+        // 脚: 座りポーズ（太もも斜め前方 — 机の下に収まる角度）
         if (mesh.userData.leftLeg) {
-          mesh.userData.leftLeg.rotation.x = -1.5;
+          mesh.userData.leftLeg.rotation.x = -0.8;
         }
         if (mesh.userData.rightLeg) {
-          mesh.userData.rightLeg.rotation.x = -1.5;
+          mesh.userData.rightLeg.rotation.x = -0.8;
         }
         // 頭: モニターを見る（時々視線を変える）
         var coHead = mesh.userData.head;
@@ -12104,12 +12104,12 @@ function updateSingleNPC(npc, dtSec) {
         var stSeatY = 0.33 - (npc.npcH || 1.35) * 0.40;
         mesh.position.y = stSeatY + Math.sin(npc.phase * 2) * 0.003;
         mesh.rotation.y = Math.PI; // 黒板方向（-Z）を向く
-        // 座りポーズ: 太ももを前方に曲げる（NPCモデルは膝ピボットがないため膝曲げは使わない）
+        // 座りポーズ: 太ももを斜め前方に曲げる（机の前面板を貫通しない角度）
         if (mesh.userData.leftLeg) {
-          mesh.userData.leftLeg.rotation.x = -1.5; // 太もも前方（ほぼ水平）
+          mesh.userData.leftLeg.rotation.x = -0.8; // 約46°前方（机の下に収まる角度）
         }
         if (mesh.userData.rightLeg) {
-          mesh.userData.rightLeg.rotation.x = -1.5;
+          mesh.userData.rightLeg.rotation.x = -0.8;
         }
         // 腕: 机の上に置く（ノートを書く姿勢）
         var stBody = mesh.userData.body;
