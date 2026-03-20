@@ -12304,12 +12304,12 @@ function updateSingleNPC(npc, dtSec) {
             var upperR = mesh.userData.rightLeg.children[0];
             if (upperR && upperR.children[0]) upperR.children[0].rotation.x = 2.4;
           }
-          // 机の下に移動（自分のデスク位置へ）
+          // 机の下に移動（前面板を貫通しないよう椅子側にオフセット）
           if (npc.deskX !== undefined) {
             mesh.position.x = npc.deskX;
-            mesh.position.z = npc.deskZ;
+            mesh.position.z = npc.deskZ + 0.25; // 前面板(Z=deskZ)より後ろに配置
             npc.x = npc.deskX;
-            npc.z = npc.deskZ;
+            npc.z = npc.deskZ + 0.25;
           }
         }
         // 揺れに合わせて微振動
