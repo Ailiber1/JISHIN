@@ -16004,8 +16004,10 @@ function showResult() {
         actions.push({ done: s.openedDoor, text: en ? 'Opened door to secure evacuation route' : 'ドアを開けて避難経路を確保した', pts: '+8', explKey: 'openedDoor' });
         actions.push({ done: s.putOnShoes, text: en ? 'Put on shoes (glass shard protection)' : '上履きを履いた（ガラス破片対策）', pts: '+7', explKey: 'putOnShoes' });
         actions.push({ done: s.checkedSafety, text: en ? 'Asked friends "Are you okay?"' : '友達に「大丈夫？」と声をかけた', pts: '+5', explKey: 'checkedSafety' });
-        var novelPts = GAME._novelChoiceScore || 0;
-        actions.push({ done: novelPts > 0, text: en ? 'Made correct choices in novel scenes' : 'ノベル選択肢で正しい判断をした', pts: novelPts > 0 ? '+' + novelPts : '0' });
+        if (!GAME.isTraining) {
+          var novelPts = GAME._novelChoiceScore || 0;
+          actions.push({ done: novelPts > 0, text: en ? 'Made correct choices in novel scenes' : 'ノベル選択肢で正しい判断をした', pts: novelPts > 0 ? '+' + novelPts : '0' });
+        }
         if (GAME._oshimoViolations > 0) {
           actions.push({ done: false, text: (en ? 'Rule violations (running/pushing) x' : 'おはしも違反（走る・押す）') + GAME._oshimoViolations + (en ? '' : '回'), pts: '-' + (GAME._oshimoViolations * 3) });
         }
@@ -16014,16 +16016,20 @@ function showResult() {
         actions.push({ done: s.turnedOffBreaker, text: en ? 'Turned off breaker (fire prevention)' : 'ブレーカーを落とした（通電火災防止）', pts: '+6', explKey: 'turnedOffBreaker' });
         actions.push({ done: s.checkedSafety, text: en ? 'Asked colleagues "Are you okay?"' : '同僚に「大丈夫？」と声をかけた', pts: '+5', explKey: 'checkedSafety' });
         actions.push({ done: s.noElevator, text: en ? 'Did not use the elevator' : 'エレベーターに乗らなかった', pts: s.noElevator ? '+6' : '0', explKey: 'noElevator' });
-        var novelPts2 = GAME._novelChoiceScore || 0;
-        actions.push({ done: novelPts2 > 0, text: en ? 'Made correct choices in novel scenes' : 'ノベル選択肢で正しい判断をした', pts: novelPts2 > 0 ? '+' + novelPts2 : '0' });
+        if (!GAME.isTraining) {
+          var novelPts2 = GAME._novelChoiceScore || 0;
+          actions.push({ done: novelPts2 > 0, text: en ? 'Made correct choices in novel scenes' : 'ノベル選択肢で正しい判断をした', pts: novelPts2 > 0 ? '+' + novelPts2 : '0' });
+        }
       } else if (stg === 3) {
         // Stage 3（自宅）: プレイヤー自身の行動のみ（父の自動行動は含めない）
         actions.push({ done: s.putOnShoes, text: en ? 'Put on shoes (glass protection)' : '靴を履いた（ガラス片対策）', pts: '+6', explKey: 'putOnShoes' });
         actions.push({ done: s.usedFlashlight, text: en ? 'Picked up flashlight from desk' : '机の引き出しから懐中電灯を取った', pts: '+5', explKey: 'usedFlashlight' });
         actions.push({ done: s.rescuedChild, text: en ? 'Called out to sister upstairs' : '2階の妹に声をかけた', pts: '+5', explKey: 'rescuedChild' });
         actions.push({ done: s.familyEvacuated, text: en ? 'Evacuated with entire family' : '家族全員で避難した', pts: '+5', explKey: 'familyEvacuated' });
-        var novelPts3 = GAME._novelChoiceScore || 0;
-        actions.push({ done: novelPts3 > 0, text: en ? 'Made correct choices in novel scenes' : 'ノベル選択肢で正しい判断をした', pts: novelPts3 > 0 ? '+' + novelPts3 : '0' });
+        if (!GAME.isTraining) {
+          var novelPts3 = GAME._novelChoiceScore || 0;
+          actions.push({ done: novelPts3 > 0, text: en ? 'Made correct choices in novel scenes' : 'ノベル選択肢で正しい判断をした', pts: novelPts3 > 0 ? '+' + novelPts3 : '0' });
+        }
       } else {
         actions.push({ done: s.turnedOffFire, text: en ? 'Turned off the heater' : 'ストーブの火を消した', pts: '+6' });
         actions.push({ done: s.openedDoor, text: en ? 'Opened door to secure evacuation route' : 'ドアを開けて避難経路を確保した', pts: '+6' });
