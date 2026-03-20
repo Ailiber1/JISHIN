@@ -12740,8 +12740,13 @@ function updateSingleNPC(npc, dtSec) {
         // まだ順番が来ていない — 立ち上がって待機（ポーズ完全リセット）
         if (npc.state === 'crouching' || npc.state === 'idle' || npc.state === 'sitting' || npc.state === 'panicking' || npc.state === 'fallen' || npc.state === 'standing_up' || npc.state === 'aftershake_idle') {
           npc.state = 'waiting';
-          // 立ち上がり時の向きを保存（回転防止）
-          npc._origYaw = mesh.rotation.y;
+          // 先生は最初からドア方向を向く（360°回転防止）
+          if (npc.role === 'teacher') {
+            npc._origYaw = Math.atan2(3.5 - npc.x, 6.6 - npc.z);
+            mesh.rotation.y = npc._origYaw;
+          } else {
+            npc._origYaw = mesh.rotation.y;
+          }
           mesh.scale.set(1, 1, 1);
           mesh.position.y = npc.floorY || 0;
           mesh.rotation.z = 0;
@@ -12859,7 +12864,10 @@ function updateSingleNPC(npc, dtSec) {
                   if (injMesh.userData.rightLeg) injMesh.userData.rightLeg.rotation.x = 0;
                 }
                 rTarget._waypoints = [
-                  { x: 3.5, z: 6.8 }, { x: 3.5, z: 9.0 }, { x: 3.5, z: 18.0 }
+                  { x: 4.2, z: 6.6 },   // 教室ドア開口部へ
+                  { x: 5.5, z: 6.6 },   // ドアを通って廊下に出る
+                  { x: 6.0, z: 9.0 },   // 廊下を非常口方向へ
+                  { x: 6.0, z: 11.0 },  // 非常口
                 ];
                 rTarget._wpIndex = 0;
                 rTarget.targetX = rTarget._waypoints[0].x;
