@@ -11496,7 +11496,7 @@ function spawnNPCs() {
     x: 0.8, z: -0.5, targetX: 0.8, targetZ: -0.5,
     behavior: 'calm', state: 'idle',
     speed: 0.015, phase: 0,
-    npcH: 1.7, evacuationDelay: 30, exited: false,
+    npcH: 1.7, evacuationDelay: 3, exited: false,
     deskX: 0, deskZ: -0.3,  // 教卓の下に避難
   });
   GAME._exitedNPCs = 0;
@@ -11532,7 +11532,7 @@ function spawnNPCs() {
         phase: 0, deskX: sx, deskZ: deskStartZ + row * gapZ,
         helped: false,
         npcH: npcHeight,
-        evacuationDelay: (5 - col) * 2 + row * 0.5 + Math.random() * 0.5,
+        evacuationDelay: (5 - col) * 0.8 + row * 0.3 + Math.random() * 0.3,
         exited: false,
       });
       studentCount++;
@@ -12419,7 +12419,7 @@ function updateSingleNPC(npc, dtSec) {
           npc._emissiveSet = true;
           mesh.traverse(function(child) {
             if (child.material) {
-              child.material.emissive = new THREE.Color(0xffaa66);
+              child.material.emissive && child.material.emissive.setHex(0xffaa66);
               child.material.emissiveIntensity = 0.3;
             }
           });
@@ -12571,7 +12571,7 @@ function updateSingleNPC(npc, dtSec) {
           npc._emissiveSet = true;
           mesh.traverse(function(child) {
             if (child.material) {
-              child.material.emissive = new THREE.Color(0xffcc88);
+              child.material.emissive && child.material.emissive.setHex(0xffcc88);
               child.material.emissiveIntensity = 0.25;
             }
           });
@@ -12616,7 +12616,7 @@ function updateSingleNPC(npc, dtSec) {
           npc._emissiveSet = true;
           mesh.traverse(function(child) {
             if (child.material) {
-              child.material.emissive = new THREE.Color(0xffcc88);
+              child.material.emissive && child.material.emissive.setHex(0xffcc88);
               child.material.emissiveIntensity = 0.25;
             }
           });
@@ -12651,7 +12651,7 @@ function updateSingleNPC(npc, dtSec) {
         // emissive完全リセット
         mesh.traverse(function(child) {
           if (child.material && child.material.emissive) {
-            child.material.emissive = new THREE.Color(0x222222);
+            child.material.emissive && child.material.emissive.setHex(0x222222);
             child.material.emissiveIntensity = 0.3;
           }
         });
@@ -12682,7 +12682,7 @@ function updateSingleNPC(npc, dtSec) {
           npc._emissiveSet = true;
           mesh.traverse(function(child) {
             if (child.material) {
-              child.material.emissive = new THREE.Color(0xffaa66);
+              child.material.emissive && child.material.emissive.setHex(0xffaa66);
               child.material.emissiveIntensity = 0.3;
             }
           });
@@ -13175,7 +13175,7 @@ function tryHelpInjuredNPC() {
         // 自発光を完全解除（オレンジ色→元の色に、強度もリセット）
         rMesh.traverse(function(child) {
           if (child.material && child.material.emissive) {
-            child.material.emissive = new THREE.Color(0x222222);
+            child.material.emissive && child.material.emissive.setHex(0x222222);
             child.material.emissiveIntensity = 0.3;
           }
         });
@@ -14552,7 +14552,7 @@ function _doTransitionPhase(newPhase) {
             snpc.mesh.position.y = snpc.floorY || 0;
             snpc.mesh.traverse(function(child) {
               if (child.material && child.material.emissive) {
-                child.material.emissive = new THREE.Color(0xffcc88);
+                child.material.emissive && child.material.emissive.setHex(0xffcc88);
                 child.material.emissiveIntensity = 0.5;
               }
             });
