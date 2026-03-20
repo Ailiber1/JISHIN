@@ -11500,6 +11500,7 @@ function spawnNPCs() {
     deskX: 0, deskZ: -0.3,  // 教卓の下に避難
   });
   GAME._exitedNPCs = 0;
+  GAME._injuredCount = 0; // 負傷NPC数カウンター（最大1人）
 
   // 生徒NPC（26名 — 各机に1人ずつ配置）
   var deskStartX = -3.2, deskStartZ = 1.0, gapX = 1.2, gapZ = 1.5;
@@ -11514,9 +11515,12 @@ function spawnNPCs() {
       var sx = deskStartX + col * gapX;
       var sz = deskStartZ + row * gapZ + 0.4; // 椅子の位置に座る
 
-      // 行動パターン: 冷静70%, パニック20%, 負傷10%
+      // 行動パターン: 冷静70%, パニック20%, 負傷10%（負傷は最大1人）
       var rand = Math.random();
       var behavior = rand < 0.7 ? 'calm' : rand < 0.9 ? 'panic' : 'injured';
+      // Stage 1: 負傷NPCは1人だけ（先生が救助する演出のため）
+      if (behavior === 'injured' && GAME._injuredCount >= 1) behavior = 'calm';
+      if (behavior === 'injured') GAME._injuredCount = (GAME._injuredCount || 0) + 1;
 
       var bodyColor = studentColors[studentCount % studentColors.length];
       var npcHeight = 1.2 + Math.random() * 0.3; // 子どもサイズ
@@ -11536,6 +11540,14 @@ function spawnNPCs() {
         exited: false,
       });
       studentCount++;
+    }
+  }
+  // 負傷NPCが0人の場合、ランダムな生徒1人をinjuredに変更（先生の救助演出用）
+  if (GAME._injuredCount === 0) {
+    var students = GAME.npcs.filter(function(n) { return n.role === 'student'; });
+    if (students.length > 0) {
+      var pick = students[Math.floor(Math.random() * students.length)];
+      pick.behavior = 'injured';
     }
   }
 }
@@ -12775,6 +12787,105 @@ function updateSingleNPC(npc, dtSec) {
 
       // 先生は生徒の避難を見届けてから最後に退出
       if (npc.role === 'teacher') {
+        // Stage 1: 先生が負傷NPCを救助中
+        if (npc.state === 'rescuing' && GAME.stageNum === 1) {
+          var rTarget = npc._rescueTarget;
+          if (rTarget && rTarget.behavior === 'injured' && !rTarget.helped) {
+            npc.targetX = rTarget.x;
+            npc.targetZ = rTarget.z;
+            var rdx = npc.targetX - npc.x;
+            var rdz = npc.targetZ - npc.z;
+            var rdist = Math.sqrt(rdx * rdx + rdz * rdz);
+            if (rdist > 0.8) {
+              // 負傷NPCの元へ移動中
+              npcMoveWithCollision(npc, rdx, rdz, npc.speed * 2);
+              mesh.rotation.y = Math.atan2(rdx, rdz);
+              npc.phase += dtSec * 7;
+              var rls = Math.sin(npc.phase) * 0.55;
+              if (mesh.userData.leftLeg) {
+                mesh.userData.leftLeg.rotation.x = rls;
+                var rkl = mesh.userData.leftLeg.children[0];
+                if (rkl && rkl.children[0]) rkl.children[0].rotation.x = Math.max(0, -rls) * 0.8;
+              }
+              if (mesh.userData.rightLeg) {
+                mesh.userData.rightLeg.rotation.x = -rls;
+                var rkr = mesh.userData.rightLeg.children[0];
+                if (rkr && rkr.children[0]) rkr.children[0].rotation.x = Math.max(0, rls) * 0.8;
+              }
+              mesh.position.y = Math.abs(Math.sin(npc.phase * 2)) * 0.03;
+            } else {
+              // 負傷NPCに到着 → 救助演出（2秒間しゃがんで声かけ）
+              npc._rescueTimer = (npc._rescueTimer || 0) + dtSec;
+              var rescBody = mesh.userData.body;
+              if (rescBody) {
+                rescBody.rotation.x = 0.4;
+                if (rescBody.children && rescBody.children.length >= 3) {
+                  rescBody.children[1].rotation.x = -1.0;
+                  rescBody.children[2].rotation.x = -1.0;
+                }
+              }
+              mesh.rotation.y = Math.atan2(rTarget.x - npc.x, rTarget.z - npc.z);
+              if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = 0;
+              if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = 0;
+              mesh.position.y = npc.floorY || 0;
+              if (npc._rescueTimer > 2.0) {
+                // 救助完了
+                rTarget.helped = true;
+                rTarget.behavior = 'calm';
+                rTarget.state = 'evacuating';
+                rTarget._cowering = false;
+                if (rTarget._sosLabel) rTarget._sosLabel.visible = false;
+                rTarget._emissiveSet = false;
+                if (rTarget.mesh) {
+                  rTarget.mesh.traverse(function(child) {
+                    if (child.material && child.material.emissive) {
+                      child.material.emissive.setHex(0x222222);
+                      child.material.emissiveIntensity = 0.3;
+                    }
+                  });
+                  var injMesh = rTarget.mesh;
+                  injMesh.scale.set(1, 1, 1);
+                  injMesh.rotation.z = 0;
+                  injMesh.position.y = rTarget.floorY || 0;
+                  var injBody = injMesh.userData.body;
+                  if (injBody) {
+                    injBody.rotation.x = 0; injBody.rotation.z = 0;
+                    if (injBody.children && injBody.children.length >= 3) {
+                      injBody.children[1].rotation.x = 0; injBody.children[1].rotation.z = 0;
+                      injBody.children[2].rotation.x = 0; injBody.children[2].rotation.z = 0;
+                    }
+                  }
+                  if (injMesh.userData.leftLeg) injMesh.userData.leftLeg.rotation.x = 0;
+                  if (injMesh.userData.rightLeg) injMesh.userData.rightLeg.rotation.x = 0;
+                }
+                rTarget._waypoints = [
+                  { x: 3.5, z: 6.8 }, { x: 3.5, z: 9.0 }, { x: 3.5, z: 18.0 }
+                ];
+                rTarget._wpIndex = 0;
+                rTarget.targetX = rTarget._waypoints[0].x;
+                rTarget.targetZ = rTarget._waypoints[0].z;
+                showAdvisor({ja: '先生が負傷した生徒を助けた！', en: 'The teacher rescued the injured student!'}, 'praise');
+                // 先生のポーズリセット → 避難開始
+                if (rescBody) {
+                  rescBody.rotation.x = 0;
+                  if (rescBody.children && rescBody.children.length >= 3) {
+                    rescBody.children[1].rotation.x = 0; rescBody.children[1].rotation.z = 0;
+                    rescBody.children[2].rotation.x = 0; rescBody.children[2].rotation.z = 0;
+                  }
+                }
+                npc._rescueTarget = null;
+                npc._rescueTimer = 0;
+                npc.state = 'evacuating'; // 救助後は避難開始
+              }
+            }
+            break;
+          } else {
+            // 救助対象がいなくなった（既にhelped） → 避難開始
+            npc.state = 'evacuating';
+            npc._rescueTarget = null;
+            npc._rescueTimer = 0;
+          }
+        }
         var studentsRemaining = 0;
         for (var si = 0; si < GAME.npcs.length; si++) {
           var s = GAME.npcs[si];
@@ -12850,6 +12961,21 @@ function updateSingleNPC(npc, dtSec) {
             }
           }
           break;
+        }
+        // Stage 1: directing終了後、未救助の負傷NPCがいたら救助に向かう
+        if (GAME.stageNum === 1) {
+          var hasInjured = false;
+          for (var ij = 0; ij < GAME.npcs.length; ij++) {
+            var inj = GAME.npcs[ij];
+            if (inj.role === 'student' && inj.behavior === 'injured' && !inj.helped) {
+              hasInjured = true;
+              npc.state = 'rescuing';
+              npc._rescueTarget = inj;
+              npc._rescueTimer = 0;
+              break;
+            }
+          }
+          if (hasInjured) break; // rescuing状態に移行 → 次フレームで上のブロックが処理
         }
       }
 
@@ -13143,6 +13269,8 @@ function updateSingleNPC(npc, dtSec) {
 // 負傷NPC・要救助NPCとのインタラクト（地震中は不可）
 function tryHelpInjuredNPC() {
   if (GAME.phase === 'earthquake' || GAME.phase === 'shaking') return false; // 揺れ中は救助不可
+  // Stage 1: 先生が救助する — プレイヤーは救助しない（子どもが子どもを助ける演出を避ける）
+  if (GAME.stageNum === 1) return false;
   var px = GAME.player.x, pz = GAME.player.z;
   for (var i = 0; i < GAME.npcs.length; i++) {
     var npc = GAME.npcs[i];
