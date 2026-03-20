@@ -12917,9 +12917,16 @@ function updateSingleNPC(npc, dtSec) {
             npc.targetZ = npc._waypoints[0].z;
           }
         } else {
-          // Stage 1: 教室ドア方向
-          npc.targetX = 4.2;
-          npc.targetZ = 6.6;
+          // Stage 1: ウェイポイント経由で教室ドア→廊下→非常口へ
+          npc._waypoints = [
+            { x: 4.2, z: 6.6 },   // 教室ドア開口部へ
+            { x: 5.5, z: 6.6 },   // ドアを通って廊下に出る
+            { x: 6.0, z: 9.0 },   // 廊下を非常口方向へ
+            { x: 6.0, z: 11.0 },  // 非常口
+          ];
+          npc._wpIndex = 0;
+          npc.targetX = npc._waypoints[0].x;
+          npc.targetZ = npc._waypoints[0].z;
         }
       }
 
@@ -13164,7 +13171,12 @@ function tryHelpInjuredNPC() {
         GAME.score += 6;
         SoundManager.playSE('rescue');
         showAdvisor({ja: '動けない生徒を助けた！素晴らしい！', en: 'You helped a student who couldn\'t move! Great job!'}, 'praise');
-        // 救助済みNPCのポーズ・マテリアルを完全リセット
+        // 救助済みNPC: followingPlayerを無効にし、独立避難させる
+        npc.followingPlayer = false;
+        npc.behavior = 'calm';
+        npc.state = 'evacuating';
+        npc._cowering = false;
+        // ポーズ・マテリアルを完全リセット
         var rMesh = npc.mesh;
         rMesh.scale.set(1, 1, 1);
         rMesh.rotation.z = 0;
@@ -13186,12 +13198,33 @@ function tryHelpInjuredNPC() {
           var rrk = rMesh.userData.rightLeg.children[0];
           if (rrk && rrk.children[0]) rrk.children[0].rotation.x = 0;
         }
-        // 自発光を通常レベルに戻す（オレンジ色から元の色に）
+        // 自発光を完全解除（オレンジ色→元の色に、強度もリセット）
         rMesh.traverse(function(child) {
           if (child.material && child.material.emissive) {
-            child.material.emissiveIntensity = 0.3; // createNPCModelのデフォルト値
+            child.material.emissive = new THREE.Color(0x222222);
+            child.material.emissiveIntensity = 0.3;
           }
         });
+        // 独立避難ウェイポイント設定
+        if (GAME.stageNum === 1) {
+          npc._waypoints = [
+            { x: 4.2, z: 6.6 },
+            { x: 5.5, z: 6.6 },
+            { x: 6.0, z: 9.0 },
+            { x: 6.0, z: 11.0 },
+          ];
+        } else if (GAME.stageNum === 2) {
+          npc._waypoints = [{ x: -11.5, z: 14.5 }];
+        } else {
+          npc._waypoints = [
+            { x: 0, z: -2.5 },
+            { x: -3, z: -3 },
+            { x: -5, z: -4.5 },
+          ];
+        }
+        npc._wpIndex = 0;
+        npc.targetX = npc._waypoints[0].x;
+        npc.targetZ = npc._waypoints[0].z;
       }
       return true;
     }
@@ -14555,6 +14588,22 @@ function _doTransitionPhase(newPhase) {
         GAME.player.x = 3.5;
         GAME.player.z = 4;
         showAdvisor({ja: '避難開始！教室のドアから廊下へ出よう！', en: 'Start evacuating! Exit through the classroom door to the hallway!'}, 'normal');
+        // Stage1: 先生が教室のドアを開ける演出（NPCが通れるようにする）
+        if (GAME._rightWallDoorCollision && !GAME._rightWallDoorOpen) {
+          var dIdx = GAME.walls.indexOf(GAME._rightWallDoorCollision);
+          if (dIdx >= 0) GAME.walls.splice(dIdx, 1);
+          GAME._rightWallDoorOpen = true;
+          GAME._rightWallDoorCollision = null;
+          // ドアメッシュをスライド（視覚的に開く）
+          if (GAME.interactables) {
+            for (var di = 0; di < GAME.interactables.length; di++) {
+              if (GAME.interactables[di].type === 'openDoor' && GAME.interactables[di].mesh) {
+                GAME.interactables[di].mesh.position.z += 1.2;
+                break;
+              }
+            }
+          }
+        }
         // Stage1: 先生が自動で火・ブレーカーを処理する演出
         setTimeout(function() {
           showAdvisor({ja: '田中先生がストーブの火を消した！', en: 'Mr. Tanaka turned off the heater!'}, 'normal');
