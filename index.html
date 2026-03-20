@@ -12423,16 +12423,26 @@ function updateSingleNPC(npc, dtSec) {
         }
         break;
       }
-      // 2秒後から順番に立ち上がる（列ごとにずらす）
-      var standDelay = 2 + (npc.deskX !== undefined ? Math.abs(npc.deskX + 8) / 4 : 0) * 0.8 + Math.random() * 0.5;
+      // しゃがみ中のNPCを床レベルに引き上げ（Y<0で地面に埋まる問題を防止）
+      if (npc.state === 'crouching') {
+        mesh.position.y = npc.floorY || 0;
+        // しゃがみポーズは維持（body.rotation等はearthquake時のまま）
+        npc.phase += dtSec;
+        // 微振動（怯え演出）
+        mesh.position.x = npc.x + Math.sin(npc.phase * 5) * 0.005;
+        mesh.position.z = npc.z + Math.cos(npc.phase * 4) * 0.005;
+      }
+      // 1.5秒後から順番に立ち上がる（列ごとにずらす — ステージ別基準）
+      var deskBase = (GAME.stageNum === 2) ? -8 : (GAME.stageNum === 1) ? -3.2 : 0;
+      var standDelay = 1.5 + (npc.deskX !== undefined ? Math.abs(npc.deskX - deskBase) / 6 : 0) * 0.8 + Math.random() * 0.3;
       if (GAME.phaseTimer >= standDelay && npc.state === 'crouching') {
         npc.state = 'standing_up';
         npc._standTimer = 0;
         // 通路位置にオフセット（デスク・椅子貫通防止）— Stage 3は家の中なので不要
         if (GAME.stageNum !== 3) {
           var aisleOffset = (npc.deskX !== undefined && npc.deskX <= 0) ? 1.5 : -1.5;
-          npc.x = (npc.deskX || npc.x) + aisleOffset;
-          npc.z = npc.deskZ || npc.z;
+          npc.x = (npc.deskX !== undefined ? npc.deskX : npc.x) + aisleOffset;
+          npc.z = (npc.deskZ !== undefined ? npc.deskZ : npc.z);
           mesh.position.x = npc.x;
           mesh.position.z = npc.z;
         }
@@ -12450,16 +12460,24 @@ function updateSingleNPC(npc, dtSec) {
             body2.children[2].rotation.z = -0.4 * (1 - t);
           }
         }
-        // 脚を徐々に伸ばす
+        // 脚を徐々に伸ばす（膝関節も含めてリセット）
         if (mesh.userData.leftLeg) {
           mesh.userData.leftLeg.rotation.x = -1.8 * (1 - t);
+          var ulSt = mesh.userData.leftLeg.children[0];
+          if (ulSt && ulSt.children[0]) ulSt.children[0].rotation.x = 2.4 * (1 - t);
         }
         if (mesh.userData.rightLeg) {
           mesh.userData.rightLeg.rotation.x = -1.8 * (1 - t);
+          var urSt = mesh.userData.rightLeg.children[0];
+          if (urSt && urSt.children[0]) urSt.children[0].rotation.x = 2.4 * (1 - t);
         }
-        mesh.position.y = mesh.position.y * (1 - t); // Y位置を0に戻す
+        // Y位置を線形補間でフロアレベルに戻す
+        if (!npc._crouchY) npc._crouchY = mesh.position.y;
+        mesh.position.y = npc._crouchY * (1 - t);
         if (t >= 1) {
           npc.state = 'aftershake_idle';
+          npc._origYaw = mesh.rotation.y; // 回転蓄積防止
+          npc._crouchY = null;
           mesh.position.y = npc.floorY || 0;
         }
       }
@@ -12482,6 +12500,7 @@ function updateSingleNPC(npc, dtSec) {
       // パニックNPCは立って震える（妹はその場に留まる）
       if (npc.behavior === 'panic' && npc.state === 'panicking') {
         npc.state = 'aftershake_idle';
+        npc._origYaw = mesh.rotation.y; // 回転蓄積防止
         mesh.position.y = npc.floorY || 0;
         // 妹（needsHelp）は救助されるまでしゃがみポーズを維持
         if (npc.needsHelp && !npc.helped) {
@@ -12495,12 +12514,26 @@ function updateSingleNPC(npc, dtSec) {
         } else {
           mesh.scale.set(1, 1, 1);
           var pb = mesh.userData.body;
-          if (pb) { pb.rotation.x = 0; }
-          if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = 0;
-          if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = 0;
+          if (pb) {
+            pb.rotation.x = 0; pb.rotation.z = 0;
+            if (pb.children && pb.children.length >= 3) {
+              pb.children[1].rotation.x = 0; pb.children[1].rotation.z = 0;
+              pb.children[2].rotation.x = 0; pb.children[2].rotation.z = 0;
+            }
+          }
+          if (mesh.userData.leftLeg) {
+            mesh.userData.leftLeg.rotation.x = 0;
+            var pll = mesh.userData.leftLeg.children[0];
+            if (pll && pll.children[0]) pll.children[0].rotation.x = 0;
+          }
+          if (mesh.userData.rightLeg) {
+            mesh.userData.rightLeg.rotation.x = 0;
+            var prl = mesh.userData.rightLeg.children[0];
+            if (prl && prl.children[0]) prl.children[0].rotation.x = 0;
+          }
           // 通路にオフセット
           var pOff = (npc.deskX !== undefined && npc.deskX <= 0) ? 1.5 : -1.5;
-          npc.x = (npc.deskX || npc.x) + pOff;
+          npc.x = (npc.deskX !== undefined ? npc.deskX : npc.x) + pOff;
           mesh.position.x = npc.x;
         }
       }
