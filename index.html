@@ -6911,14 +6911,17 @@ function buildClassroom() {
   GAME._bbCharIndex = 0;
 
   // 窓（ガラス + サッシ枠）
+  GAME._windowGlasses = []; // 窓ガラスメッシュ参照（地震時の破壊用）
+  GAME._windowBroken = [false, false, false, false]; // 破壊済みフラグ
   var sashMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.4, metalness: 0.5 });
   for (let i = 0; i < 4; i++) {
     var winX = -W/2 + 0.01;
     var winZ = -0.5 + i * 2.5;
-    const win = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.5), windowMat);
+    const win = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.5), windowMat.clone());
     win.position.set(winX, 1.6, winZ);
     win.rotation.y = Math.PI / 2;
     scene.add(win);
+    GAME._windowGlasses.push({ mesh: win, z: winZ, x: winX });
     // サッシ枠（上下左右）
     var sT = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.04, 1.54), sashMat);
     sT.position.set(winX + 0.01, 2.35, winZ); scene.add(sT);
@@ -12632,55 +12635,26 @@ function updateSingleNPC(npc, dtSec) {
         if (updateNPCTaskQueue(npc, dtSec)) break;
       }
 
-      // followingPlayer: プレイヤーの後ろをついてくる
+      // followingPlayer: 完全無効化（独立避難に切り替え済み）
       if (npc.followingPlayer && npc.helped) {
-        // 初回: ポーズ完全リセット（負傷しゃがみ→直立歩行に復帰）
-        if (!npc._followResetDone) {
-          npc._followResetDone = true;
-          mesh.scale.set(1, 1, 1);
-          mesh.rotation.z = 0;
-          var fb = mesh.userData.body;
-          if (fb) {
-            fb.rotation.x = 0; fb.rotation.z = 0;
-            if (fb.children && fb.children.length >= 3) {
-              fb.children[1].rotation.x = 0; fb.children[1].rotation.z = 0;
-              fb.children[2].rotation.x = 0; fb.children[2].rotation.z = 0;
-            }
+        // 万が一followingPlayerが残っている場合: 非表示にして独立避難に切り替え
+        npc.followingPlayer = false;
+        npc.behavior = 'calm';
+        npc.state = 'evacuating';
+        mesh.visible = true;
+        mesh.scale.set(1, 1, 1);
+        mesh.rotation.z = 0;
+        mesh.position.y = npc.floorY || 0;
+        if (mesh.userData.body) { mesh.userData.body.rotation.x = 0; mesh.userData.body.rotation.z = 0; }
+        if (mesh.userData.leftLeg) { mesh.userData.leftLeg.rotation.x = 0; }
+        if (mesh.userData.rightLeg) { mesh.userData.rightLeg.rotation.x = 0; }
+        // emissive完全リセット
+        mesh.traverse(function(child) {
+          if (child.material && child.material.emissive) {
+            child.material.emissive = new THREE.Color(0x222222);
+            child.material.emissiveIntensity = 0.3;
           }
-          if (mesh.userData.leftLeg) {
-            mesh.userData.leftLeg.rotation.x = 0;
-            var flk = mesh.userData.leftLeg.children[0];
-            if (flk && flk.children[0]) flk.children[0].rotation.x = 0;
-          }
-          if (mesh.userData.rightLeg) {
-            mesh.userData.rightLeg.rotation.x = 0;
-            var frk = mesh.userData.rightLeg.children[0];
-            if (frk && frk.children[0]) frk.children[0].rotation.x = 0;
-          }
-        }
-        var fpx = GAME.player.x, fpz = GAME.player.z;
-        var fdx = fpx - npc.x, fdz = fpz - npc.z;
-        var fdist = Math.sqrt(fdx * fdx + fdz * fdz);
-        if (fdist > 1.5) {
-          var fspd = npc.speed * 1.2;
-          npc.x += (fdx / fdist) * fspd;
-          npc.z += (fdz / fdist) * fspd;
-          mesh.position.x = npc.x;
-          mesh.position.z = npc.z;
-          mesh.position.y = GAME.player.y - 0.9;
-          mesh.rotation.y = Math.atan2(fdx, fdz);
-          npc.phase += dtSec * 7;
-          if (mesh.userData.leftLeg) {
-            mesh.userData.leftLeg.rotation.x = Math.sin(npc.phase) * 0.4;
-            var flkw = mesh.userData.leftLeg.children[0];
-            if (flkw && flkw.children[0]) flkw.children[0].rotation.x = Math.max(0, -Math.sin(npc.phase) * 0.4) * 0.6;
-          }
-          if (mesh.userData.rightLeg) {
-            mesh.userData.rightLeg.rotation.x = -Math.sin(npc.phase) * 0.4;
-            var frkw = mesh.userData.rightLeg.children[0];
-            if (frkw && frkw.children[0]) frkw.children[0].rotation.x = Math.max(0, Math.sin(npc.phase) * 0.4) * 0.6;
-          }
-        }
+        });
         break;
       }
 
@@ -13128,7 +13102,7 @@ function tryHelpInjuredNPC() {
     if (dy > 2) continue;
     if (Math.sqrt(dx * dx + dz * dz) < 2.0) {
       npc.helped = true;
-      npc.followingPlayer = true;
+      npc.followingPlayer = false; // 追従は無効（全NPCで独立避難）
       GAME.scoring.checkedSafety = true;
       if (npc.role === 'sister') {
         GAME.scoring.rescuedChild = true;
@@ -13944,6 +13918,8 @@ function gameLoop(timestamp) {
   }
   // 落下物は余震でも発生するため常に更新
   updateFallingObjects(dtSec);
+  // 窓際のガラス破片によるケガ判定
+  checkGlassInjury();
 
   updatePlayer(dt);
   updatePlayerModel();
@@ -14409,6 +14385,11 @@ function _doTransitionPhase(newPhase) {
       SoundManager.playBuildingCollapse();
       scheduleFallingObjects();
       createDustParticles();
+      // 窓ガラス破壊スケジュール（Stage 1: 教室の窓）
+      if (GAME.stageNum === 1 && GAME._windowGlasses) {
+        scheduleWindowBreak();
+      }
+      GAME._glassInjuryWarned = false; // 窓際怪我警告フラグ
       var vig = document.getElementById('danger-vignette');
       if (vig) vig.style.boxShadow = 'inset 0 0 80px rgba(255,0,64,0.4)';
       break;
@@ -14924,6 +14905,148 @@ function onPlayerHit(type) {
   }
 
   SoundManager.playSE('error');
+}
+
+// ============================================================
+// SECTION: 窓ガラス破壊演出
+// ============================================================
+function scheduleWindowBreak() {
+  if (!GAME._windowGlasses || GAME._windowGlasses.length === 0) return;
+  // 4枚の窓を時間差で破壊（3秒〜8秒）
+  var breakTimes = [3, 5, 6.5, 8];
+  for (var wi = 0; wi < GAME._windowGlasses.length; wi++) {
+    (function(idx, t) {
+      setTimeout(function() {
+        if (GAME.phase !== 'shaking') return;
+        breakWindow(idx);
+      }, t * 1000);
+    })(wi, breakTimes[wi]);
+  }
+}
+
+function breakWindow(idx) {
+  if (!GAME._windowGlasses || !GAME._windowGlasses[idx]) return;
+  if (GAME._windowBroken[idx]) return;
+  GAME._windowBroken[idx] = true;
+  var winInfo = GAME._windowGlasses[idx];
+  var winMesh = winInfo.mesh;
+
+  // ガラスを非表示（割れた）
+  winMesh.visible = false;
+
+  // ガラス破砕音
+  SoundManager.playSE('glass');
+
+  // 飛散するガラス破片パーティクル（窓から教室内側へ飛ぶ）
+  var glassMat = new THREE.MeshStandardMaterial({
+    color: 0xaaddee, roughness: 0.1, metalness: 0.3,
+    transparent: true, opacity: 0.7,
+    emissive: 0x446688, emissiveIntensity: 0.2
+  });
+  var shards = [];
+  for (var si = 0; si < 12; si++) {
+    var size = 0.03 + Math.random() * 0.1;
+    var shard = new THREE.Mesh(
+      new THREE.BoxGeometry(size, size * 0.3, size * (0.5 + Math.random())),
+      glassMat
+    );
+    shard.position.set(
+      winInfo.x + 0.3 + Math.random() * 0.5,  // 壁から室内方向に飛ぶ
+      0.85 + Math.random() * 1.5,              // 窓の高さ範囲
+      winInfo.z + (Math.random() - 0.5) * 1.5  // 窓幅内でランダム
+    );
+    shard.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+    GAME.scene.add(shard);
+    shards.push({
+      mesh: shard,
+      vx: 1.5 + Math.random() * 2,           // 室内方向の速度
+      vy: 1.0 + Math.random() * 2 - 1,       // 上下ランダム
+      vz: (Math.random() - 0.5) * 3,         // Z方向ランダム
+      rotSpeed: 5 + Math.random() * 10
+    });
+  }
+
+  // 破片アニメーション（短時間で落下→床に散乱）
+  var startTime = performance.now();
+  function animateShards() {
+    var elapsed = (performance.now() - startTime) / 1000;
+    if (elapsed > 1.5) {
+      // アニメ終了: 床にガラス片として残す
+      for (var i = 0; i < shards.length; i++) {
+        shards[i].mesh.position.y = 0.003;
+        shards[i].mesh.rotation.x = Math.PI / 2; // 床に平置き
+      }
+      return;
+    }
+    var dt = 0.016;
+    for (var i = 0; i < shards.length; i++) {
+      var s = shards[i];
+      s.vy -= 9.8 * dt;
+      s.mesh.position.x += s.vx * dt;
+      s.mesh.position.y += s.vy * dt;
+      s.mesh.position.z += s.vz * dt;
+      s.mesh.rotation.x += s.rotSpeed * dt;
+      s.mesh.rotation.z += s.rotSpeed * 0.7 * dt;
+      s.vx *= 0.95; // 空気抵抗
+      s.vz *= 0.95;
+      if (s.mesh.position.y < 0.003) {
+        s.mesh.position.y = 0.003;
+        s.vy = 0; s.vx = 0; s.vz = 0;
+      }
+    }
+    requestAnimationFrame(animateShards);
+  }
+  animateShards();
+}
+
+// 窓際の怪我判定（地震中に左壁付近にいるとガラスでケガ）
+function checkGlassInjury() {
+  if (GAME.phase !== 'shaking') return;
+  if (GAME.stageNum !== 1) return;
+  if (!GAME._windowBroken) return;
+  // 少なくとも1枚の窓が割れている場合のみ判定
+  var anyBroken = false;
+  for (var i = 0; i < GAME._windowBroken.length; i++) {
+    if (GAME._windowBroken[i]) { anyBroken = true; break; }
+  }
+  if (!anyBroken) return;
+
+  // 左壁（窓側）から1.5m以内 = X < -3.0
+  var px = GAME.player.x;
+  if (px < -3.0) {
+    // 机の下にいれば安全
+    if (GAME.player.isCrouching && isUnderDesk(GAME.player.x, GAME.player.z)) return;
+    // クールダウン（3秒間隔でダメージ）
+    if (!GAME._glassInjuryCooldown) GAME._glassInjuryCooldown = 0;
+    var now = performance.now();
+    if (now - GAME._glassInjuryCooldown < 3000) return;
+    GAME._glassInjuryCooldown = now;
+
+    // ガラスでケガ: スコア減点
+    GAME.score = Math.max(0, GAME.score - 5);
+    GAME.scoring.noHitByFalling = false;
+    SoundManager.playSE('hit');
+
+    // ヒットフラッシュ
+    var flash = document.getElementById('hit-flash');
+    if (flash) {
+      flash.classList.add('active');
+      setTimeout(function() { flash.classList.remove('active'); }, 300);
+    }
+
+    // 移動速度一時低下
+    if (!GAME._speedDebuff) {
+      GAME._speedDebuff = true;
+      var origSpeed = GAME.player.speed;
+      GAME.player.speed = origSpeed * 0.5;
+      setTimeout(function() {
+        GAME.player.speed = origSpeed;
+        GAME._speedDebuff = false;
+      }, 3000);
+    }
+
+    showAdvisor({ja: '窓ガラスの破片でケガをした！窓から離れろ！', en: 'Cut by broken glass! Get away from the windows!'}, 'warning');
+  }
 }
 
 // ============================================================
