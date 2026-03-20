@@ -6830,12 +6830,58 @@ function buildClassroom() {
   GAME._backWallMat = wallMat;
   GAME.walls.push({ minX: -W/2, maxX: W/2, minZ: D-1-wallThick/2, maxZ: D-1+wallThick/2, minY: 0, maxY: H });
 
-  // 左壁（窓側 — 完全な壁）
-  const leftWall = new THREE.Mesh(new THREE.BoxGeometry(wallThick, H, D), wallMat);
-  leftWall.position.set(-W / 2, H / 2, D / 2 - 1);
-  leftWall.receiveShadow = true;
-  scene.add(leftWall);
-  GAME.cameraMeshes.push(leftWall);
+  // 左壁（窓側 — 窓開口部あり）
+  // 窓位置: Z = -0.5, 2.0, 4.5, 7.0 (中心), 幅1.5, 高さ1.5, Y中心=1.6
+  // → 窓範囲: Y=0.85〜2.35, Z=center±0.75
+  var lWallX = -W / 2;
+  var lWallZstart = -1;        // 壁のZ開始
+  var lWallZend = D - 1;       // 壁のZ終了 = 9
+  var winYbot = 0.85;           // 窓下端
+  var winYtop = 2.35;           // 窓上端
+  var winCenters = [-0.5, 2.0, 4.5, 7.0]; // 窓のZ中心
+  var winHalfW = 0.75;          // 窓の半幅
+
+  // 下帯（Y=0〜winYbot, 全幅）
+  var lwBot = new THREE.Mesh(new THREE.BoxGeometry(wallThick, winYbot, D), wallMat);
+  lwBot.position.set(lWallX, winYbot / 2, D / 2 - 1);
+  lwBot.receiveShadow = true;
+  scene.add(lwBot);
+  GAME.cameraMeshes.push(lwBot);
+
+  // 上帯（Y=winYtop〜H, 全幅）
+  var lwTopH = H - winYtop;
+  var lwTop = new THREE.Mesh(new THREE.BoxGeometry(wallThick, lwTopH, D), wallMat);
+  lwTop.position.set(lWallX, winYtop + lwTopH / 2, D / 2 - 1);
+  lwTop.receiveShadow = true;
+  scene.add(lwTop);
+  GAME.cameraMeshes.push(lwTop);
+
+  // 窓間の柱部分（Y=winYbot〜winYtop, 各隙間）
+  var pillarH = winYtop - winYbot; // 1.5
+  var pillarSegments = []; // [zStart, zEnd]
+  // 最初の壁: lWallZstart 〜 最初の窓左端
+  pillarSegments.push([lWallZstart, winCenters[0] - winHalfW]);
+  // 窓間の柱
+  for (var wi = 0; wi < winCenters.length - 1; wi++) {
+    pillarSegments.push([winCenters[wi] + winHalfW, winCenters[wi + 1] - winHalfW]);
+  }
+  // 最後の壁: 最後の窓右端 〜 lWallZend
+  pillarSegments.push([winCenters[winCenters.length - 1] + winHalfW, lWallZend]);
+
+  for (var pi = 0; pi < pillarSegments.length; pi++) {
+    var pzS = pillarSegments[pi][0];
+    var pzE = pillarSegments[pi][1];
+    var pLen = pzE - pzS;
+    if (pLen > 0.01) {
+      var pillar = new THREE.Mesh(new THREE.BoxGeometry(wallThick, pillarH, pLen), wallMat);
+      pillar.position.set(lWallX, winYbot + pillarH / 2, (pzS + pzE) / 2);
+      pillar.receiveShadow = true;
+      scene.add(pillar);
+      GAME.cameraMeshes.push(pillar);
+    }
+  }
+
+  // コリジョンは全面維持（プレイヤーが壁を通り抜けないように）
   GAME.walls.push({ minX: -W/2-wallThick/2, maxX: -W/2+wallThick/2, minZ: -1, maxZ: D-1, minY: 0, maxY: H });
 
   // 右壁（廊下側）— ドア開口部あり（Z=6〜7.2の位置）
@@ -16054,8 +16100,8 @@ function initDailyCinematic() {
       // Shot 2: 黒板方向
       { camX: 0, camY: 1.8, camZ: 6, lookX: 0, lookY: 1.5, lookZ: -1, dur: 3.5,
         text: en ? 'The teacher\'s lesson continues.' : '先生の授業が続いている。' },
-      // Shot 3: 窓の外
-      { camX: -3, camY: 2, camZ: 1, lookX: -5, lookY: 2, lookZ: -1, dur: 3.5,
+      // Shot 3: 窓の外（窓のすぐ内側から外を望む）
+      { camX: -4.0, camY: 1.8, camZ: 2.0, lookX: -8, lookY: 1.5, lookZ: 2.0, dur: 3.5,
         text: en ? 'A peaceful schoolyard outside.' : '窓の外には穏やかな校庭。' },
       // Shot 4: プレイヤーに戻る
       { camX: px + 1.5, camY: 1.6, camZ: pz + 2, lookX: px, lookY: 1.0, lookZ: pz, dur: 4,
