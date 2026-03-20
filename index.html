@@ -12422,13 +12422,13 @@ function updateSingleNPC(npc, dtSec) {
         }
         if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = -1.5;
         if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = -1.5;
-        // 自発光で暗闇でも視認できるように（負傷NPC）
+        // 自発光で暗闇でも視認できるように（負傷NPC — 赤系で救助マーカー）
         if (!npc._emissiveSet) {
           npc._emissiveSet = true;
           mesh.traverse(function(child) {
             if (child.material) {
-              child.material.emissive && child.material.emissive.setHex(0xffaa66);
-              child.material.emissiveIntensity = 0.3;
+              child.material.emissive && child.material.emissive.setHex(0xff4444);
+              child.material.emissiveIntensity = 0.4;
             }
           });
         }
@@ -12674,7 +12674,6 @@ function updateSingleNPC(npc, dtSec) {
         mesh.position.x = npc.x;
         mesh.position.z = npc.z;
         mesh.scale.set(1, 1, 1);
-        // デバッグログ削除済み
         npc.phase += dtSec;
         var eInjBody = mesh.userData.body;
         if (eInjBody) {
@@ -12686,14 +12685,39 @@ function updateSingleNPC(npc, dtSec) {
         }
         if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = -1.5;
         if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = -1.5;
+        // emissive発光（赤系に変更 — ゴーストに見えないように明確な救助マーカー色）
         if (!npc._emissiveSet) {
           npc._emissiveSet = true;
           mesh.traverse(function(child) {
             if (child.material) {
-              child.material.emissive && child.material.emissive.setHex(0xffaa66);
-              child.material.emissiveIntensity = 0.3;
+              child.material.emissive && child.material.emissive.setHex(0xff4444);
+              child.material.emissiveIntensity = 0.4;
             }
           });
+        }
+        // 「SOS」ラベルを頭上に表示（パルスアニメーション）
+        if (!npc._sosLabel) {
+          var sosCanvas = document.createElement('canvas');
+          sosCanvas.width = 128; sosCanvas.height = 64;
+          var sCtx = sosCanvas.getContext('2d');
+          sCtx.fillStyle = 'rgba(255,0,0,0.85)';
+          sCtx.beginPath(); sCtx.roundRect(4, 4, 120, 56, 10); sCtx.fill();
+          sCtx.strokeStyle = '#ffffff'; sCtx.lineWidth = 2;
+          sCtx.beginPath(); sCtx.roundRect(4, 4, 120, 56, 10); sCtx.stroke();
+          sCtx.fillStyle = '#ffffff'; sCtx.font = 'bold 36px sans-serif'; sCtx.textAlign = 'center';
+          sCtx.fillText('SOS', 64, 46);
+          var sosTex = new THREE.CanvasTexture(sosCanvas);
+          var sosSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: sosTex, transparent: true, depthTest: false }));
+          sosSprite.scale.set(0.6, 0.3, 1);
+          sosSprite.position.set(0, (npc.npcH || 1.35) + 0.3, 0);
+          mesh.add(sosSprite);
+          npc._sosLabel = sosSprite;
+        }
+        // SOSラベルのパルスアニメーション
+        if (npc._sosLabel) {
+          npc._sosLabel.visible = true;
+          var pulse = 0.7 + Math.sin(npc.phase * 5) * 0.3;
+          npc._sosLabel.material.opacity = pulse;
         }
         break;
       }
@@ -12762,6 +12786,10 @@ function updateSingleNPC(npc, dtSec) {
           // 先生はドア付近で指示
           if (npc.state !== 'directing') {
             npc.state = 'directing';
+            npc._origYaw = undefined; // 回転蓄積リセット（360°回転防止）
+            // ドア方向に向きを即座に設定（360°回転防止）
+            var dirToTarget = Math.atan2(3.5 - npc.x, 6.6 - npc.z);
+            mesh.rotation.y = dirToTarget;
             mesh.scale.set(1, 1, 1);
             mesh.position.y = npc.floorY || 0;
             mesh.rotation.z = 0;
@@ -12831,11 +12859,13 @@ function updateSingleNPC(npc, dtSec) {
       // 避難開始
       if (npc.state !== 'evacuating') {
         npc.state = 'evacuating';
+        npc._origYaw = undefined; // 回転蓄積をリセット
         mesh.scale.set(1, 1, 1);
         mesh.position.y = npc.floorY || 0;
         mesh.rotation.z = 0;
         // デスク・椅子貫通防止: 通路位置にオフセット（waitingをスキップした場合の保険）
-        if (npc.deskX !== undefined && GAME.stageNum !== 3) {
+        // 先生はdirecting状態からドア付近にいるため、デスクに戻さない
+        if (npc.deskX !== undefined && GAME.stageNum !== 3 && npc.role !== 'teacher' && npc.role !== 'boss') {
           var evOff2 = (GAME.stageNum === 1) ? ((npc.deskX <= 0) ? 1.0 : -1.0) : ((npc.deskX <= 0) ? 1.5 : -1.5);
           npc.x = (npc.deskX !== undefined ? npc.deskX : npc.x) + evOff2;
           npc.z = (npc.deskZ !== undefined ? npc.deskZ : npc.z);
@@ -13171,6 +13201,8 @@ function tryHelpInjuredNPC() {
         npc.behavior = 'calm';
         npc.state = 'evacuating';
         npc._cowering = false;
+        // SOSラベル消去
+        if (npc._sosLabel) { npc._sosLabel.visible = false; npc._sosLabel = null; }
         // ポーズ・マテリアルを完全リセット
         var rMesh = npc.mesh;
         rMesh.scale.set(1, 1, 1);
@@ -13954,13 +13986,8 @@ function gameLoop(timestamp) {
     var _toRemove = [];
     GAME.scene.children.forEach(function(child) {
       if (!_tracked.has(child) && child.isGroup) {
-        // NPC風Groupの判定: userData.body/joints/head/leftLeg がある、または子要素が5個以上
-        var hasNpcData = child.userData && (child.userData.body || child.userData.joints || child.userData.leftLeg || child.userData.rightLeg || child.userData.head);
-        var hasManyChldrn = false;
-        var meshCount = 0;
-        child.traverse(function(c) { if (c.isMesh) meshCount++; });
-        if (meshCount >= 5) hasManyChldrn = true;
-        if (hasNpcData || hasManyChldrn) {
+        // NPC風Groupの判定: userData.body/joints/head/leftLeg がある場合のみ
+        if (child.userData && (child.userData.body || child.userData.joints || child.userData.leftLeg || child.userData.rightLeg || child.userData.head)) {
           _toRemove.push(child);
         }
       }
