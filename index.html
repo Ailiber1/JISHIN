@@ -12390,6 +12390,14 @@ function updateSingleNPC(npc, dtSec) {
 
       // 先生も机（教卓）の下に避難する（正しい行動の手本）
       // calm behaviorで既にしゃがみ処理済み
+      // 安全網: behaviorが未定義のNPCを強制的にcalmとして処理
+      if (npc.behavior !== 'calm' && npc.behavior !== 'panic' && npc.behavior !== 'injured') {
+        npc.behavior = 'calm';
+        npc.state = 'crouching';
+        mesh.position.y = npc.floorY || 0;
+        var sfBody = mesh.userData.body;
+        if (sfBody) { sfBody.rotation.x = 0.9; }
+      }
       break;
 
     case 'aftershake':
@@ -12750,7 +12758,7 @@ function updateSingleNPC(npc, dtSec) {
             if (s.behavior !== 'injured' || s.helped) studentsRemaining++;
           }
         }
-        if (studentsRemaining > 0 && GAME.phaseTimer < 60) {
+        if (studentsRemaining > 0 && GAME.phaseTimer < 25) {
           // 先生はドア付近で指示
           if (npc.state !== 'directing') {
             npc.state = 'directing';
@@ -12799,6 +12807,19 @@ function updateSingleNPC(npc, dtSec) {
               if (tkr && tkr.children[0]) tkr.children[0].rotation.x = Math.max(0, tls) * 0.8;
             }
             mesh.position.y = Math.abs(Math.sin(npc.phase * 2)) * 0.03;
+          } else {
+            // ドア前で指示アイドル（腕を振って誘導する動き）
+            npc.phase += dtSec;
+            mesh.rotation.y = 0; // 教室内を向く（生徒方向）
+            mesh.position.y = (npc.floorY || 0) + Math.sin(npc.phase * 2) * 0.004;
+            var dirBody = mesh.userData.body;
+            if (dirBody && dirBody.children && dirBody.children.length >= 3) {
+              // 右腕を大きく振って「こっちだ！」のジェスチャー
+              dirBody.children[2].rotation.x = -1.2 + Math.sin(npc.phase * 4) * 0.5;
+              dirBody.children[2].rotation.z = -0.3;
+              dirBody.children[1].rotation.x = -0.2;
+              dirBody.children[1].rotation.z = 0.1;
+            }
           }
           break;
         }
@@ -12910,8 +12931,8 @@ function updateSingleNPC(npc, dtSec) {
       var edist = Math.sqrt(edx * edx + edz * edz);
       if (edist > 0.5) {
         var espeed = npc.speed;
-        if (npc.role === 'teacher') espeed = npc.speed * 1.5;
-        else if (npc.role === 'boss') espeed = npc.speed * 1.4;
+        if (npc.role === 'teacher') espeed = npc.speed * 2.5;
+        else if (npc.role === 'boss') espeed = npc.speed * 1.8;
         else if (npc.behavior === 'panic') espeed = npc.speed * 1.2;
         else if (npc.behavior === 'injured') espeed = npc.speed * 0.5;
         npcMoveWithCollision(npc, edx, edz, espeed);
@@ -13924,6 +13945,32 @@ function gameLoop(timestamp) {
   updatePlayer(dt);
   updatePlayerModel();
   updateNPCs(dtSec);
+  // ゴーストNPC一掃（初回のみ — 2秒後に全シーン子を走査して未追跡のNPC風Groupを除去）
+  if (!GAME._ghostCleaned && GAME.totalTimer > 2) {
+    GAME._ghostCleaned = true;
+    var _tracked = new Set();
+    for (var _gi = 0; _gi < GAME.npcs.length; _gi++) { if (GAME.npcs[_gi].mesh) _tracked.add(GAME.npcs[_gi].mesh); }
+    if (GAME.playerMesh) _tracked.add(GAME.playerMesh);
+    var _toRemove = [];
+    GAME.scene.children.forEach(function(child) {
+      if (!_tracked.has(child) && child.isGroup) {
+        // NPC風Groupの判定: userData.body/joints/head/leftLeg がある、または子要素が5個以上
+        var hasNpcData = child.userData && (child.userData.body || child.userData.joints || child.userData.leftLeg || child.userData.rightLeg || child.userData.head);
+        var hasManyChldrn = false;
+        var meshCount = 0;
+        child.traverse(function(c) { if (c.isMesh) meshCount++; });
+        if (meshCount >= 5) hasManyChldrn = true;
+        if (hasNpcData || hasManyChldrn) {
+          _toRemove.push(child);
+        }
+      }
+    });
+    for (var _ri = 0; _ri < _toRemove.length; _ri++) {
+      console.warn('ゴーストNPC除去:', _toRemove[_ri].position.x.toFixed(2), _toRemove[_ri].position.y.toFixed(2), _toRemove[_ri].position.z.toFixed(2), 'meshes:', (function(g) { var c=0; g.traverse(function(x){if(x.isMesh)c++;}); return c; })(_toRemove[_ri]));
+      _toRemove[_ri].visible = false;
+      GAME.scene.remove(_toRemove[_ri]);
+    }
+  }
   updateCamera();
 
   // ストーブ炎の揺らぎアニメーション
@@ -14350,6 +14397,25 @@ function _doTransitionPhase(newPhase) {
       showTrainingTip('earthquake_start');
       // 日常シネマティック終了
       endDailyCinematic();
+      // ゴーストNPC除去: シーン内の全NPC風Groupを走査し、未追跡のものを非表示にする
+      (function cleanGhostNPCs() {
+        var tracked = new Set();
+        for (var gi = 0; gi < GAME.npcs.length; gi++) {
+          if (GAME.npcs[gi].mesh) tracked.add(GAME.npcs[gi].mesh);
+        }
+        if (GAME.playerMesh) tracked.add(GAME.playerMesh);
+        GAME.scene.children.forEach(function(child) {
+          if (child.isGroup && !tracked.has(child)) {
+            // NPC風メッシュか判定: userData.body または userData.joints を持つGroup
+            if (child.userData && (child.userData.body || child.userData.joints ||
+                child.userData.leftLeg || child.userData.rightLeg || child.userData.head)) {
+              console.warn('ゴーストNPC検出・非表示化:', child.position.x.toFixed(2), child.position.y.toFixed(2), child.position.z.toFixed(2));
+              child.visible = false;
+              GAME.scene.remove(child);
+            }
+          }
+        });
+      })();
       // キー状態をリセット（シネマティック中の入力残りを防止）
       GAME.keys = {};
       GAME.joystickMag = 0;
