@@ -7998,51 +7998,57 @@ function buildSchoolyard() {
   GAME.cameraMeshes.push(extWall);
   GAME.walls.push({ minX: -15, maxX: 15, minZ: 19.85, maxZ: 20.15, minY: 0, maxY: 12 });
 
-  // 校舎外壁に非常口ドア（校庭から見えるリアルな出入口）
-  var extDoorMat = new THREE.MeshStandardMaterial({ color: 0x336644, roughness: 0.5, metalness: 0.2, emissive: 0x112211, emissiveIntensity: 0.2 });
-  var extDoorFrameMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.4, metalness: 0.5 });
-  // 両開きドア本体（幅1.6m × 高さ2.4m）
-  var edX = -5; // 非常口の位置（避難通路出口のX座標付近）
-  var edW2 = 0.8, edH2 = 2.4;
+  // 校舎外壁に非常口ドア（校庭から見えるリアルな出入口 — 大型・高コントラスト）
+  var extDoorMat = new THREE.MeshStandardMaterial({ color: 0x006633, roughness: 0.4, metalness: 0.3, emissive: 0x003311, emissiveIntensity: 0.4 });
+  var extDoorFrameMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.3, metalness: 0.6, emissive: 0x222222, emissiveIntensity: 0.2 });
+  // 両開きドア本体（幅2.0m × 高さ2.8m — 大型化）
+  var edX = -5;
+  var edW2 = 1.0, edH2 = 2.8;
+  // ドア開口部（壁に穴を開ける代わりに、壁の前面にドアを配置）
+  // 壁のドア部分を覆う暗い背景（開口を表現）
+  var doorOpeningMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+  var doorOpening = new THREE.Mesh(new THREE.PlaneGeometry(edW2 * 2 + 0.4, edH2 + 0.1), doorOpeningMat);
+  doorOpening.position.set(edX, edH2/2, 20.16);
+  scene.add(doorOpening);
+  // ドア本体（開いた状態 — 斜め配置で奥行き表現）
   var extDoor1 = new THREE.Mesh(new THREE.BoxGeometry(edW2, edH2, 0.08), extDoorMat);
-  extDoor1.position.set(edX - edW2/2, edH2/2, 20.18);
+  extDoor1.position.set(edX - edW2 - 0.1, edH2/2, 20.30);
+  extDoor1.rotation.y = Math.PI * 0.3;
   scene.add(extDoor1);
   var extDoor2 = new THREE.Mesh(new THREE.BoxGeometry(edW2, edH2, 0.08), extDoorMat);
-  extDoor2.position.set(edX + edW2/2, edH2/2, 20.18);
+  extDoor2.position.set(edX + edW2 + 0.1, edH2/2, 20.30);
+  extDoor2.rotation.y = -Math.PI * 0.3;
   scene.add(extDoor2);
-  // ドア枠
-  var extDFTop = new THREE.Mesh(new THREE.BoxGeometry(edW2 * 2 + 0.3, 0.15, 0.15), extDoorFrameMat);
-  extDFTop.position.set(edX, edH2 + 0.08, 20.18);
+  // ドア枠（太く白く目立つ）
+  var extDFTop = new THREE.Mesh(new THREE.BoxGeometry(edW2 * 2 + 0.5, 0.2, 0.2), extDoorFrameMat);
+  extDFTop.position.set(edX, edH2 + 0.1, 20.18);
   scene.add(extDFTop);
-  var extDFL = new THREE.Mesh(new THREE.BoxGeometry(0.12, edH2 + 0.15, 0.15), extDoorFrameMat);
-  extDFL.position.set(edX - edW2 - 0.06, edH2/2, 20.18);
+  var extDFL = new THREE.Mesh(new THREE.BoxGeometry(0.15, edH2 + 0.2, 0.2), extDoorFrameMat);
+  extDFL.position.set(edX - edW2 - 0.08, edH2/2, 20.18);
   scene.add(extDFL);
-  var extDFR = new THREE.Mesh(new THREE.BoxGeometry(0.12, edH2 + 0.15, 0.15), extDoorFrameMat);
-  extDFR.position.set(edX + edW2 + 0.06, edH2/2, 20.18);
+  var extDFR = new THREE.Mesh(new THREE.BoxGeometry(0.15, edH2 + 0.2, 0.2), extDoorFrameMat);
+  extDFR.position.set(edX + edW2 + 0.08, edH2/2, 20.18);
   scene.add(extDFR);
-  // プッシュバー（銀色の横バー）
-  var extBarMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.3, metalness: 0.8 });
-  var extBar1 = new THREE.Mesh(new THREE.BoxGeometry(edW2 * 0.7, 0.04, 0.04), extBarMat);
-  extBar1.position.set(edX - edW2/2, 1.0, 20.24);
-  scene.add(extBar1);
-  var extBar2 = new THREE.Mesh(new THREE.BoxGeometry(edW2 * 0.7, 0.04, 0.04), extBarMat);
-  extBar2.position.set(edX + edW2/2, 1.0, 20.24);
-  scene.add(extBar2);
-  // 「非常口 EXIT」サイン（ドアの上、緑の発光サイン）
+  // 「非常口 EXIT」サイン（大型・明るい緑発光）
   var extExitCanvas = document.createElement('canvas');
-  extExitCanvas.width = 256; extExitCanvas.height = 96;
+  extExitCanvas.width = 512; extExitCanvas.height = 128;
   var eCtx = extExitCanvas.getContext('2d');
-  eCtx.fillStyle = '#003311'; eCtx.fillRect(0, 0, 256, 96);
-  eCtx.fillStyle = '#00ff44'; eCtx.font = 'bold 36px sans-serif'; eCtx.textAlign = 'center';
-  eCtx.fillText('EXIT 非常口', 128, 58);
+  eCtx.fillStyle = '#004422'; eCtx.fillRect(0, 0, 512, 128);
+  eCtx.strokeStyle = '#00ff66'; eCtx.lineWidth = 4; eCtx.strokeRect(6, 6, 500, 116);
+  eCtx.fillStyle = '#00ff66'; eCtx.font = 'bold 56px sans-serif'; eCtx.textAlign = 'center';
+  eCtx.fillText('EXIT 非常口', 256, 80);
   var extExitTex = new THREE.CanvasTexture(extExitCanvas);
-  var extExitSign = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.45), new THREE.MeshBasicMaterial({ map: extExitTex }));
-  extExitSign.position.set(edX, edH2 + 0.4, 20.20);
+  var extExitSign = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 0.5), new THREE.MeshBasicMaterial({ map: extExitTex }));
+  extExitSign.position.set(edX, edH2 + 0.5, 20.20);
   scene.add(extExitSign);
-  // 非常口の緑ライト
-  var extExitLight = new THREE.PointLight(0x00ff44, 0.5, 8);
-  extExitLight.position.set(edX, edH2 + 0.3, 20.5);
+  // 非常口の緑ライト（強化）
+  var extExitLight = new THREE.PointLight(0x00ff44, 2.0, 15);
+  extExitLight.position.set(edX, edH2 + 0.5, 21.0);
   scene.add(extExitLight);
+  // 非常口の足元ライト（地面を照らす）
+  var extFloorLight = new THREE.PointLight(0x00ff44, 1.0, 8);
+  extFloorLight.position.set(edX, 0.5, 20.5);
+  scene.add(extFloorLight);
 
   // 校舎の窓（外観）
   var extWinMat = new THREE.MeshStandardMaterial({ color: 0x6699bb, roughness: 0.1, metalness: 0.1, transparent: true, opacity: 0.4, emissive: 0x334466, emissiveIntensity: 0.2 });
@@ -8077,22 +8083,31 @@ function buildSchoolyard() {
   evacBoard.position.set(EVAC_POINT.x, 2.3, EVAC_POINT.z - EVAC_POINT.radius - 0.5);
   scene.add(evacBoard);
 
-  // === 光柱ビーム（遠くからでも目立つ垂直の緑光） ===
-  var beamGeo = new THREE.CylinderGeometry(0.3, 1.0, 20, 16, 1, true);
+  // === 光柱ビーム（遠くからでも目立つ大型の緑光柱） ===
+  var beamGeo = new THREE.CylinderGeometry(0.5, 2.0, 30, 16, 1, true);
   var beamMat = new THREE.MeshBasicMaterial({
-    color: 0x00ff88, transparent: true, opacity: 0.25,
+    color: 0x00ff88, transparent: true, opacity: 0.45,
     side: THREE.DoubleSide, depthWrite: false
   });
   var beam = new THREE.Mesh(beamGeo, beamMat);
-  beam.position.set(EVAC_POINT.x, 10, EVAC_POINT.z);
+  beam.position.set(EVAC_POINT.x, 15, EVAC_POINT.z);
   scene.add(beam);
   GAME._evacBeam = beam;
   GAME._evacBeamMat = beamMat;
 
+  // === 外側の光柱（さらに薄い大きなビーム） ===
+  var beamOuter = new THREE.Mesh(
+    new THREE.CylinderGeometry(1.0, 3.5, 30, 16, 1, true),
+    new THREE.MeshBasicMaterial({ color: 0x00ff66, transparent: true, opacity: 0.15, side: THREE.DoubleSide, depthWrite: false })
+  );
+  beamOuter.position.set(EVAC_POINT.x, 15, EVAC_POINT.z);
+  scene.add(beamOuter);
+  GAME._evacBeamOuter = beamOuter;
+
   // === 地面の発光サークル ===
-  var glowGeo = new THREE.CircleGeometry(EVAC_POINT.radius + 0.5, 32);
+  var glowGeo = new THREE.CircleGeometry(EVAC_POINT.radius + 1.0, 32);
   var glowMat = new THREE.MeshBasicMaterial({
-    color: 0x00ff66, transparent: true, opacity: 0.3,
+    color: 0x00ff66, transparent: true, opacity: 0.45,
     side: THREE.DoubleSide, depthWrite: false
   });
   var glowCircle = new THREE.Mesh(glowGeo, glowMat);
@@ -8104,7 +8119,7 @@ function buildSchoolyard() {
   // === 内側の明るいリング ===
   var innerRingGeo = new THREE.RingGeometry(0.5, EVAC_POINT.radius, 32);
   var innerRingMat = new THREE.MeshBasicMaterial({
-    color: 0x00ffaa, transparent: true, opacity: 0.5,
+    color: 0x00ffaa, transparent: true, opacity: 0.7,
     side: THREE.DoubleSide, depthWrite: false
   });
   var innerRing = new THREE.Mesh(innerRingGeo, innerRingMat);
@@ -8113,17 +8128,20 @@ function buildSchoolyard() {
   scene.add(innerRing);
 
   // === 下向き矢印（コーン・緑発光） ===
-  var arrowMat = new THREE.MeshBasicMaterial({ color: 0x00ff66, transparent: true, opacity: 0.8 });
-  var arrow = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.2, 8), arrowMat);
-  arrow.position.set(EVAC_POINT.x, 4.0, EVAC_POINT.z);
+  var arrowMat = new THREE.MeshBasicMaterial({ color: 0x00ff66, transparent: true, opacity: 0.9 });
+  var arrow = new THREE.Mesh(new THREE.ConeGeometry(0.7, 1.5, 8), arrowMat);
+  arrow.position.set(EVAC_POINT.x, 5.0, EVAC_POINT.z);
   arrow.rotation.x = Math.PI; // 下向き
   scene.add(arrow);
   GAME._evacArrow = arrow;
 
-  // === ポイントライト（緑発光） ===
-  var evacLight = new THREE.PointLight(0x00ff66, 1.5, 15);
-  evacLight.position.set(EVAC_POINT.x, 1.0, EVAC_POINT.z);
+  // === ポイントライト（緑発光・強化） ===
+  var evacLight = new THREE.PointLight(0x00ff66, 2.5, 25);
+  evacLight.position.set(EVAC_POINT.x, 2.0, EVAC_POINT.z);
   scene.add(evacLight);
+  var evacLightHigh = new THREE.PointLight(0x00ff66, 1.5, 30);
+  evacLightHigh.position.set(EVAC_POINT.x, 8.0, EVAC_POINT.z);
+  scene.add(evacLightHigh);
 
   // === テキストラベル ===
   var evacLabelCanvas = document.createElement('canvas');
@@ -10486,14 +10504,27 @@ function teleportToSchoolyard() {
 
 function spawnSchoolyardNPCs() {
   GAME._schoolyardNPCs = [];
-  // 先生（避難ポイント手前で待機・誘導）
+  // 先生（避難ポイント手前で待機・誘導 — 白衣で目立つ）
   var teacherModel = createNPCModel(0xf0f0f0, 1.7, 0xf5c6a0);
   teacherModel.position.set(EVAC_POINT.x + 2, 0, EVAC_POINT.z - 2);
   teacherModel.rotation.y = Math.PI; // プレイヤー方向を向く
   GAME.scene.add(teacherModel);
   GAME._schoolyardNPCs.push({ mesh: teacherModel, role: 'teacher', phase: 0 });
 
-  // 生徒NPC（8〜12名が避難ポイント付近に集合済み）
+  // 先生の頭上に「先生」ラベル
+  var tLabelCanvas = document.createElement('canvas');
+  tLabelCanvas.width = 128; tLabelCanvas.height = 48;
+  var tCtx = tLabelCanvas.getContext('2d');
+  tCtx.fillStyle = 'rgba(0,100,200,0.85)';
+  tCtx.fillRect(0, 0, 128, 48);
+  tCtx.fillStyle = '#ffffff'; tCtx.font = 'bold 28px sans-serif'; tCtx.textAlign = 'center';
+  tCtx.fillText('先生', 64, 35);
+  var tLabelTex = new THREE.CanvasTexture(tLabelCanvas);
+  var tLabel = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.3), new THREE.MeshBasicMaterial({ map: tLabelTex, transparent: true, depthWrite: false }));
+  tLabel.position.set(0, 2.0, 0);
+  teacherModel.add(tLabel);
+
+  // 生徒NPC（10名が避難ポイント付近に集合済み）
   var colors = [0x4488cc, 0xcc4466, 0x44aa66, 0xcc8844, 0x8866cc, 0x44cccc];
   for (var i = 0; i < 10; i++) {
     var angle = (i / 10) * Math.PI * 2;
