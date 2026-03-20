@@ -12634,6 +12634,30 @@ function updateSingleNPC(npc, dtSec) {
 
       // followingPlayer: プレイヤーの後ろをついてくる
       if (npc.followingPlayer && npc.helped) {
+        // 初回: ポーズ完全リセット（負傷しゃがみ→直立歩行に復帰）
+        if (!npc._followResetDone) {
+          npc._followResetDone = true;
+          mesh.scale.set(1, 1, 1);
+          mesh.rotation.z = 0;
+          var fb = mesh.userData.body;
+          if (fb) {
+            fb.rotation.x = 0; fb.rotation.z = 0;
+            if (fb.children && fb.children.length >= 3) {
+              fb.children[1].rotation.x = 0; fb.children[1].rotation.z = 0;
+              fb.children[2].rotation.x = 0; fb.children[2].rotation.z = 0;
+            }
+          }
+          if (mesh.userData.leftLeg) {
+            mesh.userData.leftLeg.rotation.x = 0;
+            var flk = mesh.userData.leftLeg.children[0];
+            if (flk && flk.children[0]) flk.children[0].rotation.x = 0;
+          }
+          if (mesh.userData.rightLeg) {
+            mesh.userData.rightLeg.rotation.x = 0;
+            var frk = mesh.userData.rightLeg.children[0];
+            if (frk && frk.children[0]) frk.children[0].rotation.x = 0;
+          }
+        }
         var fpx = GAME.player.x, fpz = GAME.player.z;
         var fdx = fpx - npc.x, fdz = fpz - npc.z;
         var fdist = Math.sqrt(fdx * fdx + fdz * fdz);
@@ -12646,8 +12670,16 @@ function updateSingleNPC(npc, dtSec) {
           mesh.position.y = GAME.player.y - 0.9;
           mesh.rotation.y = Math.atan2(fdx, fdz);
           npc.phase += dtSec * 7;
-          if (mesh.userData.leftLeg) mesh.userData.leftLeg.rotation.x = Math.sin(npc.phase) * 0.4;
-          if (mesh.userData.rightLeg) mesh.userData.rightLeg.rotation.x = -Math.sin(npc.phase) * 0.4;
+          if (mesh.userData.leftLeg) {
+            mesh.userData.leftLeg.rotation.x = Math.sin(npc.phase) * 0.4;
+            var flkw = mesh.userData.leftLeg.children[0];
+            if (flkw && flkw.children[0]) flkw.children[0].rotation.x = Math.max(0, -Math.sin(npc.phase) * 0.4) * 0.6;
+          }
+          if (mesh.userData.rightLeg) {
+            mesh.userData.rightLeg.rotation.x = -Math.sin(npc.phase) * 0.4;
+            var frkw = mesh.userData.rightLeg.children[0];
+            if (frkw && frkw.children[0]) frkw.children[0].rotation.x = Math.max(0, Math.sin(npc.phase) * 0.4) * 0.6;
+          }
         }
         break;
       }
@@ -12807,12 +12839,23 @@ function updateSingleNPC(npc, dtSec) {
         mesh.scale.set(1, 1, 1);
         mesh.position.y = npc.floorY || 0;
         mesh.rotation.z = 0;
+        // デスク・椅子貫通防止: 通路位置にオフセット（waitingをスキップした場合の保険）
+        if (npc.deskX !== undefined && GAME.stageNum !== 3) {
+          var evOff2 = (GAME.stageNum === 1) ? ((npc.deskX <= 0) ? 1.0 : -1.0) : ((npc.deskX <= 0) ? 1.5 : -1.5);
+          npc.x = (npc.deskX !== undefined ? npc.deskX : npc.x) + evOff2;
+          npc.z = (npc.deskZ !== undefined ? npc.deskZ : npc.z);
+          mesh.position.x = npc.x;
+          mesh.position.z = npc.z;
+        }
         // しゃがみポーズを完全リセット（これがないと幽霊のように浮く）
         var resetBody = mesh.userData.body;
-        if (resetBody) { resetBody.rotation.x = 0; resetBody.rotation.z = 0; }
-        // 腕もリセット（ガッツポーズ防止）
-        if (mesh.userData.leftArm) { mesh.userData.leftArm.rotation.x = 0; mesh.userData.leftArm.rotation.z = 0; }
-        if (mesh.userData.rightArm) { mesh.userData.rightArm.rotation.x = 0; mesh.userData.rightArm.rotation.z = 0; }
+        if (resetBody) {
+          resetBody.rotation.x = 0; resetBody.rotation.z = 0;
+          if (resetBody.children && resetBody.children.length >= 3) {
+            resetBody.children[1].rotation.x = 0; resetBody.children[1].rotation.z = 0;
+            resetBody.children[2].rotation.x = 0; resetBody.children[2].rotation.z = 0;
+          }
+        }
         if (mesh.userData.leftLeg) {
           mesh.userData.leftLeg.rotation.x = 0;
           var rul = mesh.userData.leftLeg.children[0];
@@ -13121,6 +13164,34 @@ function tryHelpInjuredNPC() {
         GAME.score += 6;
         SoundManager.playSE('rescue');
         showAdvisor({ja: '動けない生徒を助けた！素晴らしい！', en: 'You helped a student who couldn\'t move! Great job!'}, 'praise');
+        // 救助済みNPCのポーズ・マテリアルを完全リセット
+        var rMesh = npc.mesh;
+        rMesh.scale.set(1, 1, 1);
+        rMesh.rotation.z = 0;
+        rMesh.position.y = npc.floorY || 0;
+        if (rMesh.userData.body) {
+          rMesh.userData.body.rotation.x = 0; rMesh.userData.body.rotation.z = 0;
+          if (rMesh.userData.body.children && rMesh.userData.body.children.length >= 3) {
+            rMesh.userData.body.children[1].rotation.x = 0; rMesh.userData.body.children[1].rotation.z = 0;
+            rMesh.userData.body.children[2].rotation.x = 0; rMesh.userData.body.children[2].rotation.z = 0;
+          }
+        }
+        if (rMesh.userData.leftLeg) {
+          rMesh.userData.leftLeg.rotation.x = 0;
+          var rlk = rMesh.userData.leftLeg.children[0];
+          if (rlk && rlk.children[0]) rlk.children[0].rotation.x = 0;
+        }
+        if (rMesh.userData.rightLeg) {
+          rMesh.userData.rightLeg.rotation.x = 0;
+          var rrk = rMesh.userData.rightLeg.children[0];
+          if (rrk && rrk.children[0]) rrk.children[0].rotation.x = 0;
+        }
+        // 自発光を通常レベルに戻す（オレンジ色から元の色に）
+        rMesh.traverse(function(child) {
+          if (child.material && child.material.emissive) {
+            child.material.emissiveIntensity = 0.3; // createNPCModelのデフォルト値
+          }
+        });
       }
       return true;
     }
