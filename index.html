@@ -12028,12 +12028,16 @@ function updateSingleNPC(npc, dtSec) {
         mesh.position.y = coSeatY + Math.sin(npc.phase * 1.5) * 0.002;
         mesh.rotation.y = Math.PI;
         var coSeed = (npc.deskX || 0) * 5 + (npc.deskZ || 0) * 3;
-        // 脚: 座りポーズ（太ももを軽く前傾のみ — 膝曲げなしでシンプルに）
+        // 脚: 座りポーズ（太もも90°曲げ + 膝90°折り返し）
         if (mesh.userData.leftLeg) {
-          mesh.userData.leftLeg.rotation.x = -0.5;
+          mesh.userData.leftLeg.rotation.x = -1.57;
+          var coUL = mesh.userData.leftLeg.children[0];
+          if (coUL && coUL.children[0]) coUL.children[0].rotation.x = 1.57;
         }
         if (mesh.userData.rightLeg) {
-          mesh.userData.rightLeg.rotation.x = -0.5;
+          mesh.userData.rightLeg.rotation.x = -1.57;
+          var coUR = mesh.userData.rightLeg.children[0];
+          if (coUR && coUR.children[0]) coUR.children[0].rotation.x = 1.57;
         }
         // 頭: モニターを見る（時々視線を変える）
         var coHead = mesh.userData.head;
@@ -12100,17 +12104,38 @@ function updateSingleNPC(npc, dtSec) {
           }
         }
       } else if (npc.role === 'student') {
-        // 椅子座面(Y=0.38)に腰が合う高さ: 0.33 - height * 0.40
-        var seatY = 0.33 - (npc.npcH || 1.35) * 0.40;
-        mesh.position.y = seatY + Math.sin(npc.phase * 2) * 0.003;
+        // 椅子座面(Y=0.33)に腰が合う高さ
+        var stSeatY = 0.33 - (npc.npcH || 1.35) * 0.40;
+        mesh.position.y = stSeatY + Math.sin(npc.phase * 2) * 0.003;
         mesh.rotation.y = Math.PI; // 黒板方向（-Z）を向く
+        // 座りポーズ: 脚を90度曲げる（椅子に座っている）
+        if (mesh.userData.leftLeg) {
+          mesh.userData.leftLeg.rotation.x = -1.57; // 太もも前方90°
+          var stUL = mesh.userData.leftLeg.children[0];
+          if (stUL && stUL.children[0]) stUL.children[0].rotation.x = 1.57; // 膝90°折り返し
+        }
+        if (mesh.userData.rightLeg) {
+          mesh.userData.rightLeg.rotation.x = -1.57;
+          var stUR = mesh.userData.rightLeg.children[0];
+          if (stUR && stUR.children[0]) stUR.children[0].rotation.x = 1.57;
+        }
+        // 腕: 机の上に置く（ノートを書く姿勢）
+        var stBody = mesh.userData.body;
+        if (stBody && stBody.children && stBody.children.length >= 3) {
+          var seed = (npc.deskX || 0) * 7 + (npc.deskZ || 0) * 3;
+          var typeSpd = 3 + (Math.abs(seed) % 3);
+          stBody.children[1].rotation.x = -0.7 + Math.sin(npc.phase * typeSpd + seed) * 0.06; // 左腕
+          stBody.children[1].rotation.z = 0.2;
+          stBody.children[2].rotation.x = -0.7 + Math.sin(npc.phase * typeSpd + seed + 1.5) * 0.06; // 右腕
+          stBody.children[2].rotation.z = -0.2;
+        }
         // 生徒の微動作：時々ノートを書く仕草（頭を少し下げる）
         var seed = (npc.deskX || 0) * 7 + (npc.deskZ || 0) * 3; // NPC固有のシード
         var headNode = mesh.userData.head;
         if (headNode) {
           headNode.rotation.x = 0.1 + Math.sin(npc.phase * 0.8 + seed) * 0.05;
         }
-        // 体の微揺れ（呼吸＋ペンを動かす仕草）
+        // 体の微揺れ（呼吸）
         var bodyN = mesh.userData.body;
         if (bodyN) {
           bodyN.rotation.z = Math.sin(npc.phase * 1.2 + seed * 1.3) * 0.02;
