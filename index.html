@@ -6182,6 +6182,7 @@ function initGame(stageNum) {
   GAME._stairCutsceneActive = false;
   GAME._inSchoolyard = false;
   GAME._inBuildingPlaza = false;
+  GAME._goBackWarned = false;
   GAME._evacMarker = null;
   GAME._blockWallZone = null;
   GAME.playerMesh = null;
@@ -7990,26 +7991,36 @@ function buildSchoolyard() {
   ground.receiveShadow = true;
   scene.add(ground);
 
-  // 校舎の外壁（コンクリートテクスチャ）
+  // 校舎の外壁（コンクリートテクスチャ — ドア開口部あり）
   var extWallMat = new THREE.MeshStandardMaterial({ map: T.concrete, color: 0xd0ccbc, roughness: 0.75, emissive: 0x050505, emissiveIntensity: 0.05 });
-  var extWall = new THREE.Mesh(new THREE.BoxGeometry(30, 12, 0.3), extWallMat);
-  extWall.position.set(0, 6, 20);
-  scene.add(extWall);
-  GAME.cameraMeshes.push(extWall);
+  // ドア開口: X=-7〜-3, Y=0〜3.0
+  var edX = -5, edFullW = 4.0, edFullH = 3.0;
+  var edLeft = edX - edFullW / 2;  // -7
+  var edRight = edX + edFullW / 2; // -3
+  // 左側壁 (X=-15〜-7)
+  var ewL = new THREE.Mesh(new THREE.BoxGeometry(edLeft + 15, 12, 0.3), extWallMat);
+  ewL.position.set((-15 + edLeft) / 2, 6, 20);
+  scene.add(ewL); GAME.cameraMeshes.push(ewL);
+  // 右側壁 (X=-3〜15)
+  var ewR = new THREE.Mesh(new THREE.BoxGeometry(15 - edRight, 12, 0.3), extWallMat);
+  ewR.position.set((edRight + 15) / 2, 6, 20);
+  scene.add(ewR); GAME.cameraMeshes.push(ewR);
+  // ドア上部壁 (X=-7〜-3, Y=3.0〜12)
+  var ewTop = new THREE.Mesh(new THREE.BoxGeometry(edFullW, 12 - edFullH, 0.3), extWallMat);
+  ewTop.position.set(edX, edFullH + (12 - edFullH) / 2, 20);
+  scene.add(ewTop); GAME.cameraMeshes.push(ewTop);
+  // コリジョンは全面維持
   GAME.walls.push({ minX: -15, maxX: 15, minZ: 19.85, maxZ: 20.15, minY: 0, maxY: 12 });
 
-  // 校舎外壁に非常口ドア（校庭から見えるリアルな出入口 — 大型・高コントラスト）
+  // 校舎外壁に非常口ドア（壁に実際の開口部あり）
   var extDoorMat = new THREE.MeshStandardMaterial({ color: 0x006633, roughness: 0.4, metalness: 0.3, emissive: 0x003311, emissiveIntensity: 0.4 });
   var extDoorFrameMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.3, metalness: 0.6, emissive: 0x222222, emissiveIntensity: 0.2 });
-  // 両開きドア本体（幅2.0m × 高さ2.8m — 大型化）
-  var edX = -5;
   var edW2 = 1.0, edH2 = 2.8;
-  // ドア開口部（壁に穴を開ける代わりに、壁の前面にドアを配置）
-  // 壁のドア部分を覆う暗い背景（開口を表現）
-  var doorOpeningMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
-  var doorOpening = new THREE.Mesh(new THREE.PlaneGeometry(edW2 * 2 + 0.4, edH2 + 0.1), doorOpeningMat);
-  doorOpening.position.set(edX, edH2/2, 20.16);
-  scene.add(doorOpening);
+  // 開口部の奥（暗い背景 — 室内の暗さを表現）
+  var doorInnerMat = new THREE.MeshBasicMaterial({ color: 0x1a1a2e });
+  var doorInner = new THREE.Mesh(new THREE.PlaneGeometry(edFullW - 0.3, edFullH - 0.1), doorInnerMat);
+  doorInner.position.set(edX, edFullH / 2, 19.85);
+  scene.add(doorInner);
   // ドア本体（開いた状態 — 斜め配置で奥行き表現）
   var extDoor1 = new THREE.Mesh(new THREE.BoxGeometry(edW2, edH2, 0.08), extDoorMat);
   extDoor1.position.set(edX - edW2 - 0.1, edH2/2, 20.30);
@@ -10882,6 +10893,17 @@ function checkEvacPointReached() {
   }
   if (!GAME._inSchoolyard) return;
   if (GAME.scoring.reachedEvacPoint) return;
+
+  // 校舎方向（z < 25）に戻ろうとした時の赤い警告
+  if (GAME.player.z < 25 && !GAME._goBackWarned) {
+    GAME._goBackWarned = true;
+    showAdvisor({ja: '⚠ 建物に戻るのは危険！\n避難場所へ向かおう！', en: '⚠ Going back is dangerous!\nHead to the evacuation point!'}, 'warning');
+    SoundManager.playSE('hit');
+    // 減点
+    GAME.score = Math.max(0, GAME.score - 5);
+  }
+  // 警告後に離れたらリセット（再度近づいたら再警告）
+  if (GAME.player.z >= 28) GAME._goBackWarned = false;
 
   var p = GAME.player;
   var dx = p.x - EVAC_POINT.x;
@@ -13852,8 +13874,9 @@ function gameLoop(timestamp) {
   // 光柱のアニメーション（回転＋脈動）
   if (GAME._evacBeam && GAME._inSchoolyard) {
     GAME._evacBeam.rotation.y += dtSec * 0.5;
+    if (GAME._evacBeamOuter) GAME._evacBeamOuter.rotation.y -= dtSec * 0.3;
     var bPulse = Math.sin(GAME.totalTimer * 3) * 0.5 + 0.5;
-    GAME._evacBeamMat.opacity = 0.12 + bPulse * 0.15;
+    GAME._evacBeamMat.opacity = 0.35 + bPulse * 0.15;
   }
   // 発光サークルの脈動
   if (GAME._evacGlow && GAME._inSchoolyard) {
