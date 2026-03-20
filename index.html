@@ -12864,10 +12864,7 @@ function updateSingleNPC(npc, dtSec) {
                   if (injMesh.userData.rightLeg) injMesh.userData.rightLeg.rotation.x = 0;
                 }
                 rTarget._waypoints = [
-                  { x: 4.2, z: 6.6 },   // 教室ドア開口部へ
-                  { x: 5.5, z: 6.6 },   // ドアを通って廊下に出る
-                  { x: 6.0, z: 9.0 },   // 廊下を非常口方向へ
-                  { x: 6.0, z: 11.0 },  // 非常口
+                  { x: 4.2, z: 6.6 },   // 教室ドア開口部へ（ここからhallwayPhaseに移行）
                 ];
                 rTarget._wpIndex = 0;
                 rTarget.targetX = rTarget._waypoints[0].x;
@@ -15547,6 +15544,9 @@ var quizState = { current: 0, score: 0, total: 0, questions: [] };
 function startKnowledgeQuiz(stageNum) {
   var questions = QUIZ_DATA[stageNum];
   if (!questions || questions.length === 0) { showResult(); return; }
+
+  // ポインターロック解除（マウスでボタンをクリックできるようにする）
+  if (document.pointerLockElement) document.exitPointerLock();
 
   quizState = { current: 0, score: 0, total: questions.length, questions: questions };
   var overlay = document.getElementById('knowledge-quiz-overlay');
