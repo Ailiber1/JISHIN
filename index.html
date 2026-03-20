@@ -3827,7 +3827,7 @@ const SoundManager = {
         correct:  { f: 800,  d: 0.15, t: 'sine',     g: 0.35, sweep: 1600 },
         hit:      { f: 200,  d: 0.15, t: 'sawtooth', g: 0.40, sweep: 80 },
         alarm:    { f: 600,  d: 0.40, t: 'square',   g: 0.25, sweep: 1200 },
-        glass:    { f: 3000, d: 0.35, t: 'sawtooth', g: 0.30, sweep: 800 },
+        glass:    { f: 5000, d: 0.08, t: 'sawtooth', g: 0.20, sweep: 0 },
         footstep: { f: 120,  d: 0.05, t: 'sine',     g: 0.15, sweep: 60 },
         door:     { f: 300,  d: 0.20, t: 'sine',     g: 0.30, sweep: 150 },
         breaker:  { f: 100,  d: 0.25, t: 'square',   g: 0.30, sweep: 50 },
@@ -15006,70 +15006,78 @@ function playGlassShatterSFX() {
   try {
     var ctx = new (window.AudioContext || window.webkitAudioContext)();
     var master = ctx.createGain();
-    master.gain.value = 0.25;
+    master.gain.value = 0.35;
     master.connect(ctx.destination);
     var now = ctx.currentTime;
+    var sr = ctx.sampleRate;
 
-    // 1) 衝撃ノイズ（ホワイトノイズバースト — 0.15秒）
-    var bufLen = ctx.sampleRate * 0.15;
-    var noiseBuf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
-    var noiseData = noiseBuf.getChannelData(0);
-    for (var i = 0; i < bufLen; i++) noiseData[i] = (Math.random() * 2 - 1) * 0.8;
-    var noiseNode = ctx.createBufferSource();
-    noiseNode.buffer = noiseBuf;
-    var noiseGain = ctx.createGain();
-    noiseGain.gain.setValueAtTime(0.6, now);
-    noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-    // ハイパスフィルタ（ガラスらしい高周波を強調）
-    var hpf = ctx.createBiquadFilter();
-    hpf.type = 'highpass';
-    hpf.frequency.value = 2000;
-    noiseNode.connect(hpf);
-    hpf.connect(noiseGain);
-    noiseGain.connect(master);
-    noiseNode.start(now);
-    noiseNode.stop(now + 0.15);
+    // 1) 衝撃クラック（短いノイズバースト — ガラスが割れる瞬間の「パリッ」）
+    var crackLen = Math.floor(sr * 0.08);
+    var crackBuf = ctx.createBuffer(1, crackLen, sr);
+    var crackData = crackBuf.getChannelData(0);
+    for (var i = 0; i < crackLen; i++) {
+      var env = Math.exp(-i / (sr * 0.015)); // 非常に速い減衰
+      crackData[i] = (Math.random() * 2 - 1) * env;
+    }
+    var crackNode = ctx.createBufferSource();
+    crackNode.buffer = crackBuf;
+    var crackGain = ctx.createGain();
+    crackGain.gain.value = 0.8;
+    // バンドパス（2000-8000Hz — ガラスらしい帯域）
+    var crackBpf = ctx.createBiquadFilter();
+    crackBpf.type = 'bandpass';
+    crackBpf.frequency.value = 5000;
+    crackBpf.Q.value = 0.5;
+    crackNode.connect(crackBpf);
+    crackBpf.connect(crackGain);
+    crackGain.connect(master);
+    crackNode.start(now);
 
-    // 2) 高音の破片散乱音（複数のサイン波を短く鳴らす）
-    var freqs = [4000, 5500, 7000, 3200, 6200];
-    for (var fi = 0; fi < freqs.length; fi++) {
-      var osc = ctx.createOscillator();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freqs[fi], now);
-      osc.frequency.exponentialRampToValueAtTime(freqs[fi] * 0.3, now + 0.3);
-      var oscGain = ctx.createGain();
-      var delay = fi * 0.04;
-      oscGain.gain.setValueAtTime(0, now);
-      oscGain.gain.linearRampToValueAtTime(0.12, now + delay + 0.01);
-      oscGain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.25);
-      osc.connect(oscGain);
-      oscGain.connect(master);
-      osc.start(now + delay);
-      osc.stop(now + delay + 0.3);
+    // 2) 破片が散らばる音（複数の短いノイズクリックを時間差で — 「チリチリ」）
+    for (var ci = 0; ci < 8; ci++) {
+      var clickDelay = 0.03 + Math.random() * 0.25;
+      var clickLen = Math.floor(sr * (0.01 + Math.random() * 0.02));
+      var clickBuf = ctx.createBuffer(1, clickLen, sr);
+      var clickData = clickBuf.getChannelData(0);
+      for (var j = 0; j < clickLen; j++) {
+        var cEnv = Math.exp(-j / (sr * 0.005));
+        clickData[j] = (Math.random() * 2 - 1) * cEnv;
+      }
+      var clickNode = ctx.createBufferSource();
+      clickNode.buffer = clickBuf;
+      var clickGain = ctx.createGain();
+      clickGain.gain.value = 0.15 + Math.random() * 0.2;
+      var clickHpf = ctx.createBiquadFilter();
+      clickHpf.type = 'highpass';
+      clickHpf.frequency.value = 4000 + Math.random() * 4000;
+      clickNode.connect(clickHpf);
+      clickHpf.connect(clickGain);
+      clickGain.connect(master);
+      clickNode.start(now + clickDelay);
     }
 
-    // 3) 残響ノイズ（細かい破片が床に落ちる音 — 0.5秒）
-    var tailLen = ctx.sampleRate * 0.5;
-    var tailBuf = ctx.createBuffer(1, tailLen, ctx.sampleRate);
+    // 3) 破片落下の余韻（フィルタードノイズ — 「シャラシャラ」と床に落ちる）
+    var tailLen = Math.floor(sr * 0.6);
+    var tailBuf = ctx.createBuffer(1, tailLen, sr);
     var tailData = tailBuf.getChannelData(0);
     for (var ti = 0; ti < tailLen; ti++) {
-      var env = Math.exp(-ti / (ctx.sampleRate * 0.12));
-      tailData[ti] = (Math.random() * 2 - 1) * env * 0.3;
+      var tEnv = Math.exp(-ti / (sr * 0.15));
+      // 不規則なパルス（破片が転がる感じ）
+      var pulse = (Math.random() < 0.03) ? (Math.random() * 2 - 1) * 3.0 : (Math.random() * 2 - 1) * 0.3;
+      tailData[ti] = pulse * tEnv;
     }
     var tailNode = ctx.createBufferSource();
     tailNode.buffer = tailBuf;
     var tailGain = ctx.createGain();
-    tailGain.gain.value = 0.4;
+    tailGain.gain.value = 0.3;
     var tailHpf = ctx.createBiquadFilter();
     tailHpf.type = 'highpass';
-    tailHpf.frequency.value = 3000;
+    tailHpf.frequency.value = 3500;
     tailNode.connect(tailHpf);
     tailHpf.connect(tailGain);
     tailGain.connect(master);
-    tailNode.start(now + 0.1);
-    tailNode.stop(now + 0.6);
+    tailNode.start(now + 0.05);
 
-    // AudioContext自動クリーンアップ
     setTimeout(function() { ctx.close(); }, 1500);
   } catch(e) {}
 }
