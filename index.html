@@ -3486,6 +3486,7 @@ const SoundManager = {
         pause: function() {
           _src.forEach(function(s) { try { s.stop(); } catch(e){} });
           _tmr.forEach(function(t) { clearTimeout(t); });
+          try { master.disconnect(); } catch(e) {}
         },
         volume: 0.35, _isWebAudio: true
       };
@@ -3691,6 +3692,7 @@ const SoundManager = {
         pause: function() {
           _src.forEach(function(s) { try { s.stop(); } catch(e){} });
           _tmr.forEach(function(t) { clearTimeout(t); });
+          try { master.disconnect(); } catch(e) {}
         },
         volume: 0.30, _isWebAudio: true
       };
@@ -3738,6 +3740,11 @@ const SoundManager = {
     if (!this._ambientAudio) return;
     var audio = this._ambientAudio;
     this._ambientAudio = null;
+    // Web Audio API生成の環境音は即時停止（フェードが実際のゲインに反映されないため）
+    if (audio._isWebAudio) {
+      try { audio.pause(); } catch(e) {}
+      return;
+    }
     if (fadeMs && fadeMs > 0) {
       var steps = 20;
       var interval = fadeMs / steps;
