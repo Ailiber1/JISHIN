@@ -14268,14 +14268,17 @@ function gameLoop(timestamp) {
   // Stage 3: 懐中電灯スポットライト更新
   if (GAME._flashSpot && GAME._hasFlashlight) {
     var fp = GAME.player;
-    // 手の高さ（腰付近）から足元前方を照らす
-    GAME._flashSpot.position.set(fp.x, fp.y + 0.8, fp.z);
     var fa = GAME.player.yaw || 0;
-    // ターゲットは前方2m、足元（y=-0.2）に向ける
-    GAME._flashSpotTarget.position.set(fp.x + Math.sin(fa) * 2, fp.y - 0.2, fp.z + Math.cos(fa) * 2);
-    // 補助PointLightも追従
+    var floorY = fp.y - 0.9; // 足元の床Y
+    // ライト位置: プレイヤーの前方1mの腰の高さ（頭が光らないように前方へオフセット）
+    var lightFwdX = fp.x + Math.sin(fa) * 1.0;
+    var lightFwdZ = fp.z + Math.cos(fa) * 1.0;
+    GAME._flashSpot.position.set(lightFwdX, floorY + 1.0, lightFwdZ);
+    // ターゲットは前方3m、地面に向ける
+    GAME._flashSpotTarget.position.set(fp.x + Math.sin(fa) * 3, floorY, fp.z + Math.cos(fa) * 3);
+    // 補助PointLightも前方の足元付近
     if (GAME._flashPoint) {
-      GAME._flashPoint.position.set(fp.x, fp.y + 0.3, fp.z);
+      GAME._flashPoint.position.set(fp.x + Math.sin(fa) * 1.5, floorY + 0.3, fp.z + Math.cos(fa) * 1.5);
     }
   }
 
