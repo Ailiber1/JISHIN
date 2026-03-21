@@ -11703,6 +11703,22 @@ function npcMoveWithCollision(npc, dx, dz, speed) {
   if (dist < 0.01) return;
   var mx = (dx / dist) * speed;
   var mz = (dz / dist) * speed;
+  // NPC同士の分離力（出入り口での渋滞防止）
+  var sepX = 0, sepZ = 0;
+  var sepR = 0.8; // 分離半径
+  for (var si = 0; si < GAME.npcs.length; si++) {
+    var other = GAME.npcs[si];
+    if (other === npc || other.exited) continue;
+    var sdx = npc.x - other.x, sdz = npc.z - other.z;
+    var sdist = Math.sqrt(sdx * sdx + sdz * sdz);
+    if (sdist < sepR && sdist > 0.01) {
+      var force = (sepR - sdist) / sepR * 0.02;
+      sepX += (sdx / sdist) * force;
+      sepZ += (sdz / sdist) * force;
+    }
+  }
+  mx += sepX;
+  mz += sepZ;
   var npcFootY = npc.floorY || 0;
   // まずX軸移動
   if (!npcCheckWall(npc.x + mx, npc.z, 0.3, npcFootY)) {
@@ -13247,10 +13263,11 @@ function updateSingleNPC(npc, dtSec) {
             } else if (GAME._exitedNPCs >= 12) {
               showAdvisor({ja: 'ほとんどの社員が避難完了！急いで！', en: 'Most employees have evacuated! Hurry!'}, 'warning');
             }
-            // Stage 2 ウェイポイント: 非常階段ドア(左端) → 退出
+            // Stage 2 ウェイポイント: 非常階段ドア(左端) → 退出（NPCごとにずらして渋滞防止）
+            var doorOffX = (Math.random() - 0.5) * 1.2;
             npc._waypoints = [
-              { x: -11.5, z: 15.5 },   // 非常階段ドア通過
-              { x: -11.5, z: 17.0 },   // 退出
+              { x: -11.5 + doorOffX, z: 15.5 },   // 非常階段ドア通過
+              { x: -11.5 + doorOffX, z: 17.0 },   // 退出
             ];
           } else {
             if (GAME._exitedNPCs === 3) {
@@ -14527,8 +14544,13 @@ function updateObjectiveBanner() {
     } else if (GAME.stageNum === 1) {
       text = en ? '🚪 Follow teacher to emergency exit!' : '🚪 先生の指示に従い非常口へ！';
     } else if (GAME.stageNum === 2) {
-      text = en ? '🚪 Find the emergency staircase!' : '🚪 非常階段を見つけよう！';
-      sub = en ? 'Do NOT use the elevator!' : 'エレベーターは使わない！';
+      if (GAME._inBuildingPlaza) {
+        text = en ? '🏃 Head to the assembly point!' : '🏃 避難場所へ向かおう！';
+        sub = en ? 'Follow the green beacon!' : '緑の光柱を目指せ！';
+      } else {
+        text = en ? '🚪 Find the emergency staircase!' : '🚪 非常階段を見つけよう！';
+        sub = en ? 'Do NOT use the elevator!' : 'エレベーターは使わない！';
+      }
     }
   } else {
     banner.style.display = 'none';
