@@ -11703,22 +11703,6 @@ function npcMoveWithCollision(npc, dx, dz, speed) {
   if (dist < 0.01) return;
   var mx = (dx / dist) * speed;
   var mz = (dz / dist) * speed;
-  // NPC同士の分離力（出入り口での渋滞防止）
-  var sepX = 0, sepZ = 0;
-  var sepR = 0.8; // 分離半径
-  for (var si = 0; si < GAME.npcs.length; si++) {
-    var other = GAME.npcs[si];
-    if (other === npc || other.exited) continue;
-    var sdx = npc.x - other.x, sdz = npc.z - other.z;
-    var sdist = Math.sqrt(sdx * sdx + sdz * sdz);
-    if (sdist < sepR && sdist > 0.01) {
-      var force = (sepR - sdist) / sepR * 0.02;
-      sepX += (sdx / sdist) * force;
-      sepZ += (sdz / sdist) * force;
-    }
-  }
-  mx += sepX;
-  mz += sepZ;
   var npcFootY = npc.floorY || 0;
   // まずX軸移動
   if (!npcCheckWall(npc.x + mx, npc.z, 0.3, npcFootY)) {
@@ -11727,6 +11711,27 @@ function npcMoveWithCollision(npc, dx, dz, speed) {
   // 次にZ軸移動
   if (!npcCheckWall(npc.x, npc.z + mz, 0.3, npcFootY)) {
     npc.z += mz;
+  }
+  // NPC同士の分離力（重なり防止 — 壁に押し込まないよう独立適用）
+  var sepX = 0, sepZ = 0;
+  var sepR = 0.6; // 分離半径
+  for (var si = 0; si < GAME.npcs.length; si++) {
+    var other = GAME.npcs[si];
+    if (other === npc || other.exited) continue;
+    var sdx = npc.x - other.x, sdz = npc.z - other.z;
+    var sdist = Math.sqrt(sdx * sdx + sdz * sdz);
+    if (sdist < sepR && sdist > 0.01) {
+      var force = (sepR - sdist) / sepR * 0.008;
+      sepX += (sdx / sdist) * force;
+      sepZ += (sdz / sdist) * force;
+    }
+  }
+  // 分離力は壁チェック付きで個別適用（壁に押し込まない）
+  if (sepX !== 0 && !npcCheckWall(npc.x + sepX, npc.z, 0.3, npcFootY)) {
+    npc.x += sepX;
+  }
+  if (sepZ !== 0 && !npcCheckWall(npc.x, npc.z + sepZ, 0.3, npcFootY)) {
+    npc.z += sepZ;
   }
   npc.mesh.position.x = npc.x;
   npc.mesh.position.z = npc.z;
@@ -13180,6 +13185,7 @@ function updateSingleNPC(npc, dtSec) {
         else if (npc.role === 'boss') espeed = npc.speed * 1.8;
         else if (npc.behavior === 'panic') espeed = npc.speed * 1.2;
         else if (npc.behavior === 'injured') espeed = npc.speed * 0.5;
+        var ePrevX = npc.x, ePrevZ = npc.z;
         npcMoveWithCollision(npc, edx, edz, espeed);
         mesh.rotation.y = Math.atan2(edx, edz);
         // 歩行アニメーション（脚振り + 腕振り + 体の上下動）
@@ -13210,6 +13216,28 @@ function updateSingleNPC(npc, dtSec) {
           if (_ra) { _ra.rotation.x = -2.8 + Math.sin(npc.phase * 1.5 + 0.5) * 0.08; _ra.rotation.z = -0.35; }
           // 体の上下動（歩行のバウンス）
           mesh.position.y = Math.abs(Math.sin(npc.phase * 2)) * 0.03;
+        }
+        // スタック検出: 壁に当たって動けない場合は次のウェイポイントへスキップ
+        var eMoved = Math.abs(npc.x - ePrevX) + Math.abs(npc.z - ePrevZ);
+        if (eMoved < 0.001) {
+          npc._evacStuck = (npc._evacStuck || 0) + dtSec;
+          if (npc._evacStuck > 2.0) {
+            npc._evacStuck = 0;
+            // ウェイポイントがあれば次へスキップ
+            if (npc._waypoints && npc._wpIndex !== undefined) {
+              npc._wpIndex++;
+              if (npc._wpIndex < npc._waypoints.length) {
+                npc.targetX = npc._waypoints[npc._wpIndex].x;
+                npc.targetZ = npc._waypoints[npc._wpIndex].z;
+              } else {
+                // 全ウェイポイント完了 → hallwayPhaseへ強制移行
+                npc._hallwayPhase = 1;
+                GAME._exitedNPCs = (GAME._exitedNPCs || 0) + 1;
+              }
+            }
+          }
+        } else {
+          npc._evacStuck = 0;
         }
       } else {
         // ターゲット到達
@@ -13292,6 +13320,7 @@ function updateSingleNPC(npc, dtSec) {
           var hdist = Math.sqrt(hdx * hdx + hdz * hdz);
           if (hdist > 0.5) {
             var hspd = npc.speed * 1.5;
+            var hPrevX = npc.x, hPrevZ = npc.z;
             npcMoveWithCollision(npc, hdx, hdz, hspd);
             mesh.rotation.y = Math.atan2(hdx, hdz);
             npc.phase += dtSec * 7;
@@ -13308,6 +13337,25 @@ function updateSingleNPC(npc, dtSec) {
             if (_hla) { _hla.rotation.x = -2.8 + Math.sin(npc.phase * 1.5) * 0.08; _hla.rotation.z = 0.35; }
             if (_hra) { _hra.rotation.x = -2.8 + Math.sin(npc.phase * 1.5 + 0.5) * 0.08; _hra.rotation.z = -0.35; }
             mesh.position.y = (npc.floorY || 0) + Math.abs(Math.sin(npc.phase * 2)) * 0.03;
+            // スタック検出: 壁に当たって動けない場合は次のウェイポイントへスキップ
+            var hMoved = Math.abs(npc.x - hPrevX) + Math.abs(npc.z - hPrevZ);
+            if (hMoved < 0.001) {
+              npc._hallStuck = (npc._hallStuck || 0) + dtSec;
+              if (npc._hallStuck > 2.0) {
+                npc._hallStuck = 0;
+                npc._wpIndex++;
+                if (npc._wpIndex < npc._waypoints.length) {
+                  npc.targetX = npc._waypoints[npc._wpIndex].x;
+                  npc.targetZ = npc._waypoints[npc._wpIndex].z;
+                } else {
+                  npc._hallwayPhase = 2;
+                  npc.exited = true;
+                  mesh.visible = false;
+                }
+              }
+            } else {
+              npc._hallStuck = 0;
+            }
           } else {
             // 次のウェイポイントへ
             npc._wpIndex++;
