@@ -8939,6 +8939,8 @@ function buildBuildingPlaza() {
     trunk.position.set(tp.x, 1.25, tp.z); scene.add(trunk);
     var canopy = new THREE.Mesh(new THREE.SphereGeometry(1.5, 8, 6), leafMat);
     canopy.position.set(tp.x, 3.5, tp.z); canopy.scale.y = 0.7; scene.add(canopy);
+    // 街路樹幹コリジョン
+    GAME.walls.push({ minX: tp.x - 0.3, maxX: tp.x + 0.3, minZ: tp.z - 0.3, maxZ: tp.z + 0.3, minY: 0, maxY: 2.5 });
   }
 
   // ===== ベンチ（広場の端） =====
@@ -8983,6 +8985,8 @@ function buildBuildingPlaza() {
     bMesh.position.set(bd.x, bd.h / 2, bd.z);
     bMesh.castShadow = true; bMesh.receiveShadow = true;
     scene.add(bMesh);
+    // ビルコリジョン
+    GAME.walls.push({ minX: bd.x - bd.w/2, maxX: bd.x + bd.w/2, minZ: bd.z - bd.d/2, maxZ: bd.z + bd.d/2, minY: 0, maxY: bd.h });
     // 窓グリッド（前面＋背面のみ — パフォーマンス）
     var floorH = 3.2;
     var floors = Math.floor(bd.h / floorH);
@@ -9222,6 +9226,8 @@ function buildStage3Exterior() {
       var nWin = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.8), houseWinMat);
       nWin.position.set(nwx, nwy, nh.z - nh.d / 2 - 0.01); scene.add(nWin);
     }
+    // 近隣の家コリジョン
+    GAME.walls.push({ minX: nh.x - nh.w/2, maxX: nh.x + nh.w/2, minZ: nh.z - nh.d/2, maxZ: nh.z + nh.d/2, minY: Y, maxY: Y + nh.h });
   }
 
   // --- 木（庭木 + 道沿い）---
@@ -9255,6 +9261,8 @@ function buildStage3Exterior() {
     var leaves = new THREE.Mesh(new THREE.SphereGeometry(tp.r, 8, 6), leafMat);
     leaves.position.set(tp.x, Y + tp.h + tp.r * 0.5, tp.z);
     leaves.castShadow = true; scene.add(leaves);
+    // 木の幹コリジョン（半径0.3の正方形近似）
+    GAME.walls.push({ minX: tp.x - 0.3, maxX: tp.x + 0.3, minZ: tp.z - 0.3, maxZ: tp.z + 0.3, minY: Y, maxY: Y + tp.h });
   }
 
   // --- 生垣（庭の周り）---
@@ -9262,9 +9270,11 @@ function buildStage3Exterior() {
   // 左側生垣
   var hedgeL = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.8, 6), hedgeMat);
   hedgeL.position.set(-5.5, Y + 0.4, -8); scene.add(hedgeL);
+  GAME.walls.push({ minX: -5.75, maxX: -5.25, minZ: -11, maxZ: -5, minY: Y, maxY: Y + 0.8 });
   // 右側生垣
   var hedgeR = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.8, 6), hedgeMat);
   hedgeR.position.set(3.5, Y + 0.4, -8); scene.add(hedgeR);
+  GAME.walls.push({ minX: 3.25, maxX: 3.75, minZ: -11, maxZ: -5, minY: Y, maxY: Y + 0.8 });
 
   // --- 道路ディテール ---
   // 白線（polygonOffset で道路面との Z-fighting 防止）
@@ -11947,7 +11957,7 @@ function updateNPCTaskQueue(npc, dtSec) {
           npc.x = -1.0; npc.z = 0;
           mesh.position.x = -1.0; mesh.position.z = 0;
         }
-        npc._waypoints = [{ x: -3, z: -2 }, { x: -5, z: -4.5 }, { x: -5, z: -7 }, { x: 0, z: -14 }, { x: 5, z: -20 }];
+        npc._waypoints = [{ x: -3, z: -2 }, { x: -4.5, z: -4.5 }, { x: -4.5, z: -7 }, { x: 0, z: -14 }, { x: 5, z: -20 }];
       }
       // ポーズ完全リセット（前のタスクの腕ポーズ残りを防止）
       mesh.scale.set(1, 1, 1);
@@ -13129,8 +13139,8 @@ function updateSingleNPC(npc, dtSec) {
           } else {
             // 1FのNPC: ロール別ウェイポイント
             // 父・母はタスクキューで自動行動中の場合スキップ
-            if ((npc.role === 'father' || npc.role === 'mother') && npc._taskQueue && npc._taskQueue.length > 0) {
-              break; // タスクキューに委譲
+            if ((npc.role === 'father' || npc.role === 'mother') && ((npc._taskQueue && npc._taskQueue.length > 0) || npc._tasksDone)) {
+              break; // タスクキューに委譲（evacuate完了後も上書きしない）
             }
             if (npc.role === 'mother') {
               // 母: キッチンエリア(X>1.5,Z>2)に居る場合は安全な位置にテレポート
@@ -14858,7 +14868,8 @@ function _doTransitionPhase(newPhase) {
               { type: 'move', waypoints: [{ x: -4.5, z: -4.7 }], speed: 0.045 },
               { type: 'action', actionName: 'openGenkanDoor', duration: 0.5 },
               { type: 'log', role: 'father', message: {ja: 'みんな先に外へ！最後に確認する！', en: "Everyone go first! I'll check last!"} },
-              // 妹が外に出るまで玄関で待機
+              // 妹が通れるよう玄関横で待機（X=-2で通路を塞がない）
+              { type: 'move', waypoints: [{ x: -2.0, z: -4.5 }], speed: 0.04 },
               { type: 'wait', condition: function() {
                 for (var wi = 0; wi < GAME.npcs.length; wi++) {
                   if (GAME.npcs[wi].role === 'sister' && !GAME.npcs[wi].exited) return false;
@@ -14866,7 +14877,7 @@ function _doTransitionPhase(newPhase) {
                 return true;
               }},
               { type: 'log', role: 'father', message: {ja: '全員出たな、俺も行く！', en: "Everyone's out, I'm going too!"} },
-              { type: 'evacuate', waypoints: [{ x: -4.5, z: -7 }, { x: -3, z: -12 }] }
+              { type: 'evacuate', waypoints: [{ x: -4.5, z: -4.5 }, { x: -4.5, z: -7 }, { x: -3, z: -12 }] }
             ];
           }
           if (fnpc.role === 'mother') {
