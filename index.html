@@ -14872,6 +14872,18 @@ function _doTransitionPhase(newPhase) {
         GAME.scene.add(sisterSpot);
         GAME._sisterSpotLight = sisterSpot;
         // 祖母関連のライト・矢印・リング削除済み
+        // 停電後も家族NPCが見えるようにemissive発光を追加（1F父・母）
+        for (var fli = 0; fli < GAME.npcs.length; fli++) {
+          var flnpc = GAME.npcs[fli];
+          if (flnpc.role === 'father' || flnpc.role === 'mother') {
+            flnpc.mesh.traverse(function(child) {
+              if (child.material && child.material.emissive) {
+                child.material.emissive.setHex(0xddccaa);
+                child.material.emissiveIntensity = 0.5;
+              }
+            });
+          }
+        }
         // 未救助NPCの_coweringフラグを確実にセット
         for (var si = 0; si < GAME.npcs.length; si++) {
           var snpc = GAME.npcs[si];
