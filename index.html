@@ -2833,12 +2833,12 @@ html, body {
       <ul class="controls-tips">
         <li>地震が来たら「まず低く、頭を守り、動かない」</li>
         <li class="tip-pc">机の下に入ったらE長押しで脚を掴もう</li>
-        <li class="tip-mobile">机の下に入ったら操作ボタン長押しで脚を掴もう</li>
+        <li class="tip-mobile">机の下に入ったらボタン長押しで脚を掴もう</li>
         <li class="tip-pc">揺れが収まったら友達に声かけ（Eキー）</li>
-        <li class="tip-mobile">揺れが収まったら友達に声かけ（操作ボタン）</li>
+        <li class="tip-mobile">揺れが収まったら友達に声かけ（ボタンタップ）</li>
         <li>非常口（緑の看板）を目指して避難</li>
         <li class="tip-pc">避難中はGを1回押して頭を守りながら移動</li>
-        <li class="tip-mobile">避難中は頭を守るボタンを押して移動</li>
+        <li class="tip-mobile">避難中は🛡ボタンを押して頭を守りながら移動</li>
         <li>廊下の落下物を避けて進む</li>
       </ul>
       <div class="pause-btn" id="btn-controls-back" data-i18n="PAUSE_BACK">戻る</div>
@@ -13854,7 +13854,7 @@ function performInteract() {
       GAME.player.isCrouching = true;
       GAME.score += 10;
       showAdvisor(GAME.isMobile
-        ? {ja: '机の下に隠れた！頭を守って揺れがおさまるまで待とう！\n操作ボタン長押しで机の脚を掴んで体を固定しよう！', en: 'Hiding under the desk! Protect your head and wait!\nHold action button to grab the desk legs!'}
+        ? {ja: '机の下に隠れた！頭を守って揺れがおさまるまで待とう！\nボタンを長押しして机の脚を掴もう！', en: 'Hiding under the desk! Protect your head and wait!\nHold the button to grab the desk legs!'}
         : {ja: '机の下に隠れた！頭を守って揺れがおさまるまで待とう！\n「E」で机の脚を掴んで体を固定しよう！', en: 'Hiding under the desk! Protect your head and wait for the shaking to stop!\nPress E to hold the desk legs!'}, 'praise');
       showItemGet({ja: '🛡️ 身を守る行動！ — 机の下に避難', en: '🛡️ Protective action! — Shelter under desk'});
       break;
@@ -14475,7 +14475,7 @@ function updatePhase(dtSec) {
         if (!GAME._evacGuide1 && GAME.phaseTimer >= 3 && GAME._onHouse2F) {
           GAME._evacGuide1 = true;
           showAdvisor(GAME.isMobile
-            ? {ja: '妹に声をかけて！近づいて操作ボタンで助けよう！', en: 'Call out to your sister! Get close and tap the action button!'}
+            ? {ja: '妹に声をかけて！近づいてボタンをタップして助けよう！', en: 'Call out to your sister! Get close and tap the button!'}
             : {ja: '妹に声をかけて！近づいてEキーで助けよう！', en: 'Call out to your sister! Get close and press E!'}, 'warning');
         }
         if (!GAME._evacGuide2 && GAME.phaseTimer >= 8 && GAME._onHouse2F) {
@@ -14569,7 +14569,7 @@ function updateObjectiveBanner() {
       text = en ? '🤲 Hold on! Stay under the desk!' : '🤲 机の脚を掴んで揺れに耐えよう！';
     } else if (GAME.player.isCrouching && typeof isUnderDesk === 'function' && isUnderDesk(GAME.player.x, GAME.player.z)) {
       text = GAME.isMobile
-        ? (en ? '🤲 Tap action button to grab desk legs!' : '🤲 操作ボタンで机の脚を掴もう！')
+        ? (en ? '🤲 Tap button to grab desk legs!' : '🤲 ボタンをタップして机の脚を掴もう！')
         : (en ? '🤲 Press E to grab desk legs!' : '🤲 Eキーで机の脚を掴もう！');
     } else if (GAME.player.isCrouching) {
       text = en ? '📍 Move under the desk!' : '📍 机の下に移動しよう！';
@@ -14578,7 +14578,7 @@ function updateObjectiveBanner() {
         ? (en ? '⚠️ EARTHQUAKE! Crouch and hide under desk!' : '⚠️ 地震だ！しゃがんで机の下に潜ろう！')
         : (en ? '⚠️ EARTHQUAKE! Crouch (C) and hide under desk!' : '⚠️ 地震だ！Cキーでしゃがんで机の下に潜ろう！');
       sub = GAME.isMobile
-        ? (en ? 'Crouch button → Move under desk → Action button' : 'しゃがむ → 机の下へ移動 → 操作ボタン')
+        ? (en ? 'Crouch → Move under desk → Tap button' : 'しゃがむ → 机の下へ移動 → ボタンタップ')
         : (en ? 'Press C to crouch → Move under desk → Press E' : 'C: しゃがむ → 机の下へ移動 → E: 机を掴む');
     }
   } else if (GAME.phase === 'aftershake') {
@@ -14589,7 +14589,7 @@ function updateObjectiveBanner() {
       } else {
         text = en ? '🔍 Check on your sister upstairs!' : '🔍 2階の妹に声をかけよう！';
         sub = GAME.isMobile
-          ? (en ? 'Get close to sister and tap action button' : '妹に近づいて操作ボタンで声かけ')
+          ? (en ? 'Get close to sister and tap button' : '妹に近づいてボタンで声かけ')
           : (en ? 'Get close to sister and press E' : '妹に近づいてEキーで声かけ');
       }
     } else {
@@ -14600,15 +14600,15 @@ function updateObjectiveBanner() {
       if (GAME._onHouse2F) {
         if (!GAME.scoring.rescuedChild) {
           text = GAME.isMobile
-            ? (en ? '👧 Find and help your sister!' : '👧 妹を見つけて操作ボタンで助けよう！')
+            ? (en ? '👧 Find and help your sister!' : '👧 妹を見つけてボタンで助けよう！')
             : (en ? '👧 Find and help your sister!' : '👧 妹を見つけてEキーで助けよう！');
           sub = GAME.isMobile
-            ? (en ? 'Get close and tap action button' : '近づいて操作ボタン')
+            ? (en ? 'Get close and tap button' : '近づいてボタンタップ')
             : (en ? 'Get close and press E' : '近づいてEキー');
         } else {
           text = en ? '🔽 Go downstairs! Find the stairs!' : '🔽 階段を見つけて1階に降りよう！';
           sub = GAME.isMobile
-            ? (en ? 'Find stairs and tap action button' : '階段に近づいて操作ボタン')
+            ? (en ? 'Find stairs and tap button' : '階段に近づいてボタンタップ')
             : (en ? 'Find stairs and press E' : '階段に近づいてEキー');
         }
       } else if (GAME._inHouseGarden) {
@@ -14621,7 +14621,7 @@ function updateObjectiveBanner() {
         if (!GAME.scoring.putOnShoes) {
           text = en ? '👟 Put on shoes! (glass protection)' : '👟 靴を履こう！（ガラス片対策）';
           sub = GAME.isMobile
-            ? (en ? 'Go to entrance area and tap action button' : '玄関の靴箱に近づいて操作ボタン')
+            ? (en ? 'Go to entrance area and tap button' : '玄関の靴箱に近づいてボタンタップ')
             : (en ? 'Go to entrance area and press E' : '玄関の靴箱に近づいてEキー');
         } else if (!GAME._genkanDoorOpen) {
           text = en ? '🚪 Wait for dad to open the door...' : '🚪 お父さんがドアを開けるのを待とう...';
@@ -15325,7 +15325,7 @@ function onPlayerHit(type) {
     showAdvisor({ja: '頭を守っていたから軽傷で済んだ！', en: 'Protecting your head saved you from serious injury!'}, 'praise');
   } else {
     showAdvisor(GAME.isMobile
-      ? {ja: '落下物に当たった！頭を守るボタンで頭を守ろう！', en: 'Hit by falling debris! Tap guard button to protect your head!'}
+      ? {ja: '落下物に当たった！🛡ボタンで頭を守ろう！', en: 'Hit by falling debris! Tap 🛡 button to protect your head!'}
       : {ja: '落下物に当たった！Gキーで頭を守ろう！', en: 'Hit by falling debris! Press G to protect your head!'}, 'warning');
   }
 
@@ -15861,10 +15861,10 @@ function nextQuizQuestion() {
 var TRAINING_TIPS = {
   earthquake_start: {
     ja: function() { return GAME.isMobile
-      ? '💡 地震発生！\nまず「しゃがむ」→ 机の下に移動 → 「頭を守る」\n机の脚を掴む（操作ボタン長押し）とさらに安全です'
+      ? '💡 地震発生！\nまず「しゃがむ」→ 机の下に移動 → 「頭を守る」\n机の脚を掴む（ボタン長押し）とさらに安全です'
       : '💡 地震発生！\nまず「しゃがむ」（C）→ 机の下に移動 → 「頭を守る」（G）\n机の脚を掴む（E長押し）とさらに安全です'; },
     en: function() { return GAME.isMobile
-      ? '💡 Earthquake!\nFirst "Crouch" → Move under a desk → "Guard head"\nHold desk legs (hold action button) for extra safety'
+      ? '💡 Earthquake!\nFirst "Crouch" → Move under a desk → "Guard head"\nHold desk legs (hold button) for extra safety'
       : '💡 Earthquake!\nFirst "Crouch" (C) → Move under a desk → "Guard head" (G)\nHold desk legs (hold E) for extra safety'; }
   },
   aftershake_start: {
@@ -15873,18 +15873,18 @@ var TRAINING_TIPS = {
   },
   evacuation_start: {
     ja: function() { return GAME.isMobile
-      ? '💡 避難開始！\n① 頭を守りながら移動（頭を守るボタン）\n② 階段を使う（エレベーター禁止）\n③ ブロック塀に近づかない\n④ 避難場所（オレンジの光）を目指す'
+      ? '💡 避難開始！\n① 🛡ボタンで頭を守りながら移動\n② 階段を使う（エレベーター禁止）\n③ ブロック塀に近づかない\n④ 避難場所（オレンジの光）を目指す'
       : '💡 避難開始！\n① 頭を守りながら移動（G）\n② 階段を使う（エレベーター禁止）\n③ ブロック塀に近づかない\n④ 避難場所（オレンジの光）を目指す'; },
     en: function() { return GAME.isMobile
-      ? '💡 Start evacuating!\n① Move while protecting head (guard button)\n② Use stairs (never elevators)\n③ Stay away from block walls\n④ Head to evacuation point (orange light)'
+      ? '💡 Start evacuating!\n① Tap 🛡 to protect head while moving\n② Use stairs (never elevators)\n③ Stay away from block walls\n④ Head to evacuation point (orange light)'
       : '💡 Start evacuating!\n① Move while protecting head (G)\n② Use stairs (never elevators)\n③ Stay away from block walls\n④ Head to evacuation point (orange light)'; }
   },
   aftershock_warn: {
     ja: function() { return GAME.isMobile
-      ? '💡 余震が来た！\n動かずに「しゃがむ」＋「頭を守る」ボタンを押そう\n揺れが収まるまで待ちましょう'
+      ? '💡 余震が来た！\n動かずに「しゃがむ」＋「🛡」ボタンを押そう\n揺れが収まるまで待ちましょう'
       : '💡 余震が来た！\n動かずに「しゃがむ」（C）＋「頭を守る」（G）\n揺れが収まるまで待ちましょう'; },
     en: function() { return GAME.isMobile
-      ? '💡 Aftershock!\nStay still — "Crouch" + "Guard head" buttons\nWait until the shaking stops'
+      ? '💡 Aftershock!\nStay still — tap Crouch + 🛡 buttons\nWait until the shaking stops'
       : '💡 Aftershock!\nStay still — "Crouch" (C) + "Guard head" (G)\nWait until the shaking stops'; }
   },
   stage3_flashlight: {
@@ -16314,7 +16314,7 @@ function showResult() {
       var tips = [];
       if (!GAME.scoring.crouchedIn3s) tips.push(en ? 'When an earthquake strikes, remember: "Drop! Cover! Hold On!" (ShakeOut drill basics).' : '地震が来たらまず「低く！頭を守って！動かないで！」（シェイクアウト）が基本です。');
       if (!GAME.scoring.guardedHead) tips.push(GAME.isMobile
-        ? (en ? 'Protect your head even while evacuating. Cover your head with a bag or book while moving (tap guard button).' : '避難中も頭を守ることが重要です。カバンや本で頭を覆いながら移動しましょう（頭を守るボタン）。')
+        ? (en ? 'Protect your head even while evacuating. Cover your head with a bag or book while moving (🛡 button).' : '避難中も頭を守ることが重要です。カバンや本で頭を覆いながら移動しましょう（🛡ボタン）。')
         : (en ? 'Protect your head even while evacuating. Cover your head with a bag or book while moving (hold G key).' : '避難中も頭を守ることが重要です。カバンや本で頭を覆いながら移動しましょう（Gキー長押し）。'));
       if (!GAME.scoring.heldDeskLegs) tips.push(en ? 'Once under a desk, hold its legs firmly. Even if the desk moves during shaking, you\'ll move with it and stay protected (ShakeOut: Hold On).' : '机の下に入ったら脚をしっかり掴みましょう。揺れで机が動いても一緒に移動でき、頭を守り続けることができます（ShakeOut: Hold On）。');
       if (stg !== 1 && stg !== 3 && !GAME.scoring.turnedOffFire) tips.push(en ? 'After shaking stops, check for fire hazards first! Turn off heaters and gas stoves.' : '揺れが収まったらまず火の元を確認！ストーブやガスコンロの火を消しましょう。');
@@ -16326,7 +16326,7 @@ function showResult() {
       if (!GAME.scoring.avoidedBlockWall) tips.push(en ? 'Block walls and vending machines may collapse. Keep your distance while evacuating.' : 'ブロック塀や自動販売機の近くは倒壊の危険があります。離れて避難しましょう。');
       if (!GAME.scoring.reachedEvacPoint) tips.push(en ? 'Move to an evacuation point (open area like a schoolyard). Staying near buildings risks falling debris.' : '避難場所（学校の校庭など広い場所）まで移動しましょう。建物の近くは落下物の危険があります。');
       if (stg === 1 && !GAME.scoring.checkedSafety) tips.push(GAME.isMobile
-        ? (en ? 'After shaking stops, ask friends around you "Are you okay?" (action button). A single call can save a life.' : '揺れが収まったら周囲の友達に「大丈夫？」と声をかけましょう（操作ボタンで声かけ）。一声が命を救うこともあります。')
+        ? (en ? 'After shaking stops, ask friends around you "Are you okay?" (tap button). A single call can save a life.' : '揺れが収まったら周囲の友達に「大丈夫？」と声をかけましょう（ボタンで声かけ）。一声が命を救うこともあります。')
         : (en ? 'After shaking stops, ask friends around you "Are you okay?" (E key). A single call can save a life.' : '揺れが収まったら周囲の友達に「大丈夫？」と声をかけましょう（Eキーで声かけ）。一声が命を救うこともあります。'));
       if (stg === 1 && (GAME._novelChoiceScore || 0) <= 0) tips.push(en ? 'During an earthquake, follow your teacher\'s instructions. Get under a desk and protect your head. Never rush to windows or hallways.' : '地震の時は先生の指示に従い、机の下に入って頭を守りましょう。窓や廊下に飛び出すのは危険です。');
       if (stg === 3 && !GAME.scoring.turnedOffGas) tips.push(en ? 'After shaking stops, close the gas valve immediately. Gas leaks after earthquakes cause fires and explosions.' : '揺れが収まったらすぐにガスの元栓を閉めましょう。地震後のガス漏れは火災や爆発の原因になります。');
@@ -16697,14 +16697,14 @@ function checkScoringTriggers() {
       GAME.score += 10;
       var deskMsg = GAME.stageNum === 2
         ? (GAME.isMobile
-          ? {ja: 'デスクの下に入れた！操作ボタン長押しで脚を掴もう！', en: 'You got under the desk! Hold action button to grab the leg!'}
+          ? {ja: 'デスクの下に入れた！ボタン長押しで脚を掴もう！', en: 'You got under the desk! Hold button to grab the leg!'}
           : {ja: 'デスクの下に入れた！Eキー長押しで脚を掴もう！', en: 'You got under the desk! Hold E to grab the leg!'})
         : GAME.stageNum === 3
         ? (GAME.isMobile
-          ? {ja: 'テーブルの下に入れた！操作ボタン長押しで脚を掴もう！', en: 'You got under the table! Hold action button to grab the leg!'}
+          ? {ja: 'テーブルの下に入れた！ボタン長押しで脚を掴もう！', en: 'You got under the table! Hold button to grab the leg!'}
           : {ja: 'テーブルの下に入れた！Eキー長押しで脚を掴もう！', en: 'You got under the table! Hold E to grab the leg!'})
         : (GAME.isMobile
-          ? {ja: '机の下に入れた！操作ボタン長押しで脚を掴もう！', en: 'You got under the desk! Hold action button to grab the leg!'}
+          ? {ja: '机の下に入れた！ボタン長押しで脚を掴もう！', en: 'You got under the desk! Hold button to grab the leg!'}
           : {ja: '机の下に入れた！Eキー長押しで脚を掴もう！', en: 'You got under the desk! Hold E to grab the leg!'});
       showAdvisor(deskMsg, 'praise');
     }
@@ -16720,9 +16720,9 @@ function checkScoringTriggers() {
     if (canHoldOn && !p.isHoldingDesk && holdOnPrompt) {
       // プロンプト表示（Eキー長押し案内）
       if (currentLang === 'en') {
-        holdOnPrompt.textContent = GAME.isMobile ? '🤲 Hold interact: Grab desk legs' : '🤲 Hold E: Grab desk legs';
+        holdOnPrompt.textContent = GAME.isMobile ? '🤲 Hold button: Grab desk legs' : '🤲 Hold E: Grab desk legs';
       } else {
-        holdOnPrompt.textContent = GAME.isMobile ? '🤲 インタラクトボタン長押し: 机の脚を掴む' : '🤲 E長押し: 机の脚を掴む';
+        holdOnPrompt.textContent = GAME.isMobile ? '🤲 ボタン長押し: 机の脚を掴む' : '🤲 E長押し: 机の脚を掴む';
       }
       holdOnPrompt.style.display = 'block';
     } else if (holdOnPrompt) {
@@ -16801,7 +16801,7 @@ function checkScoringTriggers() {
     }
     if (nearNPC && !GAME._safetyCheckPrompted) {
       GAME._safetyCheckPrompted = true;
-      showAdvisor(GAME.isMobile ? {ja: '操作ボタン: 「大丈夫？」と声をかけよう', en: 'Tap the button: Ask "Are you okay?"'} : {ja: 'Eキー: 「大丈夫？」と声をかけよう', en: 'Press E: Ask "Are you okay?"'}, 'info');
+      showAdvisor(GAME.isMobile ? {ja: 'ボタンタップ: 「大丈夫？」と声をかけよう', en: 'Tap button: Ask "Are you okay?"'} : {ja: 'Eキー: 「大丈夫？」と声をかけよう', en: 'Press E: Ask "Are you okay?"'}, 'info');
     }
   }
 }
