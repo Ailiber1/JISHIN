@@ -15987,8 +15987,16 @@ var TRAINING_EXPLANATIONS = {
     en: 'Block walls easily collapse in earthquakes. In the 1978 Miyagi earthquake, 18 people died from collapsing block walls.'
   },
   reachedEvacPoint: {
-    ja: '地域の避難場所を普段から確認しておきましょう。自宅から最も近い広域避難場所とそこまでの経路を家族で共有。',
-    en: 'Know your local evacuation points in advance. Share the nearest evacuation area and route with your family.'
+    ja: function() {
+      if (GAME.stageNum === 2) return '勤務先ビルの避難場所を普段から確認しておきましょう。オフィスから最も近い広域避難場所とそこまでの経路を同僚と共有。';
+      if (GAME.stageNum === 3) return '地域の避難場所を普段から確認しておきましょう。自宅から最も近い広域避難場所とそこまでの経路を家族で共有。';
+      return '地域の避難場所を普段から確認しておきましょう。学校から最も近い広域避難場所とそこまでの経路を確認。';
+    },
+    en: function() {
+      if (GAME.stageNum === 2) return 'Know your office building evacuation points. Share the nearest evacuation area and route with your colleagues.';
+      if (GAME.stageNum === 3) return 'Know your local evacuation points in advance. Share the nearest evacuation area and route with your family.';
+      return 'Know your local evacuation points in advance. Confirm the nearest evacuation area and route from your school.';
+    }
   },
   withinTimeLimit: {
     ja: '避難は迅速に。地震後は二次災害（火災・津波・余震）のリスクがあるため、素早い行動が命を守ります。',
@@ -16142,7 +16150,7 @@ function showResult() {
           // 訓練モード: 点数の代わりに解説を表示
           var explKey = a.explKey || '';
           var expl = TRAINING_EXPLANATIONS[explKey];
-          var explText = expl ? (en ? expl.en : expl.ja) : '';
+          var explText = expl ? (en ? (typeof expl.en === 'function' ? expl.en() : expl.en) : (typeof expl.ja === 'function' ? expl.ja() : expl.ja)) : '';
           html += '<div class="training-report-item ' + cls + '">'
             + '<div class="training-report-header">'
             + '<span class="action-icon">' + icon + '</span>'
