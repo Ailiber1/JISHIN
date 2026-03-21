@@ -2,6 +2,9 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>JISHIN_ — Shake. Judge. Survive.</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2796,6 +2799,7 @@ html, body {
     <div id="danger-vignette"></div>
   </div>
   <div id="mobile-joystick"><div id="joystick-knob"></div></div>
+  <div id="joystick-debug" style="position:fixed;top:5px;left:5px;color:#0f0;font-size:10px;font-family:monospace;z-index:99999;background:rgba(0,0,0,0.7);padding:2px 6px;display:none;pointer-events:none;">v4 loading...</div>
   <!-- 訓練モード: 教育ヒントオーバーレイ -->
 <div id="training-tip-overlay" style="display:none">
   <div class="training-tip-card">
@@ -6337,6 +6341,9 @@ function initGame(stageNum) {
     document.getElementById('mobile-joystick').style.display = 'block';
     document.getElementById('mobile-buttons').style.display = 'flex';
     document.getElementById('mob-interact').style.display = 'flex';
+    // デバッグ表示（一時的 — 確認後に削除）
+    var _dbg = document.getElementById('joystick-debug');
+    if (_dbg) { _dbg.style.display = 'block'; GAME._dbgEl = _dbg; }
     document.getElementById('mob-pause').style.display = 'flex';
   }
 
@@ -16842,8 +16849,12 @@ function updatePlayer(dt) {
   }
 
   if (GAME.isMobile && GAME.joystickMag > 0.1) {
-    mx = Math.sin(GAME.joystickAngle - p.yaw) * GAME.joystickMag;
-    mz = -Math.cos(GAME.joystickAngle - p.yaw) * GAME.joystickMag;
+    mx = Math.sin(p.yaw - GAME.joystickAngle) * GAME.joystickMag;
+    mz = Math.cos(p.yaw - GAME.joystickAngle) * GAME.joystickMag;
+    // デバッグ表示（一時的）
+    if (GAME._dbgEl) {
+      GAME._dbgEl.textContent = 'v4 yaw=' + p.yaw.toFixed(2) + ' angle=' + GAME.joystickAngle.toFixed(2) + ' mx=' + mx.toFixed(2) + ' mz=' + mz.toFixed(2);
+    }
   }
 
   if (!GAME.isMobile && (mx !== 0 || mz !== 0)) {
