@@ -13140,13 +13140,13 @@ function updateSingleNPC(npc, dtSec) {
               }
               // 母: 開口部南→玄関（テレポート済みなら直行）
               npc._waypoints = [
-                { x: 0, z: 0 },      // リビング中央
-                { x: -5, z: -4.5 },  // 玄関
+                { x: -1, z: -1 },       // リビング
+                { x: -4.5, z: -4.5 },   // 玄関（壁minX=-5を避ける）
               ];
             } else if (npc.role === 'father') {
               // 父: タスク完了後の避難ルート
               npc._waypoints = [
-                { x: -5, z: -7 },
+                { x: -4.5, z: -7 },
                 { x: -3, z: -12 },
               ];
             } else {
@@ -13154,7 +13154,7 @@ function updateSingleNPC(npc, dtSec) {
               npc._waypoints = [
                 { x: 0, z: -2.5 },
                 { x: -3, z: -3 },
-                { x: -5, z: -4.5 },
+                { x: -4.5, z: -4.5 },
               ];
             }
             npc._wpIndex = 0;
@@ -14845,20 +14845,28 @@ function _doTransitionPhase(newPhase) {
               { type: 'log', role: 'father', message: {ja: 'ガスを止めに行く！', en: "I'll go shut off the gas!"} },
               { type: 'move', waypoints: [
                 { x: -1.0, z: 2.5 },
-                { x: 4.5, z: 3.8 }
+                { x: 4.0, z: 3.8 }
               ], speed: 0.045 },
               { type: 'action', actionName: 'turnOffGas', duration: 0.8 },
               { type: 'log', role: 'father', message: {ja: 'ブレーカーと玄関！', en: 'Breaker and front door!'} },
               { type: 'move', waypoints: [
                 { x: -1.0, z: 2.5 },
                 { x: -1.0, z: 0 },
-                { x: -4.5, z: -4.73 }
+                { x: -4.3, z: -4.5 }
               ], speed: 0.045 },
               { type: 'action', actionName: 'turnOffBreaker', duration: 0.8 },
-              { type: 'move', waypoints: [{ x: -5, z: -4.9 }], speed: 0.045 },
+              { type: 'move', waypoints: [{ x: -4.5, z: -4.7 }], speed: 0.045 },
               { type: 'action', actionName: 'openGenkanDoor', duration: 0.5 },
-              { type: 'log', role: 'father', message: {ja: '外に出よう！', en: "Let's get outside!"} },
-              { type: 'evacuate', waypoints: [{ x: -5, z: -7 }, { x: -3, z: -12 }] }
+              { type: 'log', role: 'father', message: {ja: 'みんな先に外へ！最後に確認する！', en: "Everyone go first! I'll check last!"} },
+              // 妹が外に出るまで玄関で待機
+              { type: 'wait', condition: function() {
+                for (var wi = 0; wi < GAME.npcs.length; wi++) {
+                  if (GAME.npcs[wi].role === 'sister' && !GAME.npcs[wi].exited) return false;
+                }
+                return true;
+              }},
+              { type: 'log', role: 'father', message: {ja: '全員出たな、俺も行く！', en: "Everyone's out, I'm going too!"} },
+              { type: 'evacuate', waypoints: [{ x: -4.5, z: -7 }, { x: -3, z: -12 }] }
             ];
           }
           if (fnpc.role === 'mother') {
@@ -14866,15 +14874,15 @@ function _doTransitionPhase(newPhase) {
               { type: 'delay', duration: 2.0 },
               { type: 'log', role: 'mother', message: {ja: '荷物をまとめるわ！', en: "I'll pack our things!"} },
               { type: 'move', waypoints: [
-                { x: 0, z: 0 },       // リビング中央
-                { x: -3, z: -2 },     // 玄関方面
+                { x: -1, z: -1 },      // リビング
+                { x: -3, z: -3 },      // 玄関方面（壁を避ける）
               ], speed: 0.02 },
               { type: 'log', role: 'mother', message: {ja: '非常持ち出し袋を持っていくわ！', en: "I'm taking the emergency bag!"} },
               { type: 'delay', duration: 1.0 },
               { type: 'log', role: 'mother', message: {ja: 'みんな、外に出ましょう！', en: "Everyone, let's go outside!"} },
               { type: 'evacuate', waypoints: [
-                { x: -5, z: -4.5 },    // 玄関
-                { x: -5, z: -7 },      // 庭へ出る
+                { x: -4.5, z: -4.5 },  // 玄関手前（壁minX=-5を避ける）
+                { x: -4.5, z: -7 },    // 庭へ出る
                 { x: 0, z: -14 },      // 道路を南下
                 { x: 5, z: -20 }       // 公園方面
               ] }
@@ -14921,13 +14929,15 @@ function _doTransitionPhase(newPhase) {
         GAME._sisterSpotLight = sisterSpot;
         // 祖母関連のライト・矢印・リング削除済み
         // 停電後も家族NPCが見えるようにemissive発光を追加（1F父・母）
+        // 元の体色を保持しつつ控えめに発光（白くならないよう低強度）
         for (var fli = 0; fli < GAME.npcs.length; fli++) {
           var flnpc = GAME.npcs[fli];
           if (flnpc.role === 'father' || flnpc.role === 'mother') {
             flnpc.mesh.traverse(function(child) {
               if (child.material && child.material.emissive) {
-                child.material.emissive.setHex(0xddccaa);
-                child.material.emissiveIntensity = 0.5;
+                var origColor = child.material.color ? child.material.color.getHex() : 0x444444;
+                child.material.emissive.setHex(origColor);
+                child.material.emissiveIntensity = 0.25;
               }
             });
           }
