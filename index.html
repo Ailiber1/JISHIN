@@ -16842,8 +16842,8 @@ function updatePlayer(dt) {
   }
 
   if (GAME.isMobile && GAME.joystickMag > 0.1) {
-    mx = Math.sin(p.yaw - GAME.joystickAngle) * GAME.joystickMag;
-    mz = Math.cos(p.yaw - GAME.joystickAngle) * GAME.joystickMag;
+    mx = Math.sin(GAME.joystickAngle - p.yaw) * GAME.joystickMag;
+    mz = -Math.cos(GAME.joystickAngle - p.yaw) * GAME.joystickMag;
   }
 
   if (!GAME.isMobile && (mx !== 0 || mz !== 0)) {
