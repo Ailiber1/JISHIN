@@ -16389,8 +16389,8 @@ function showResult() {
       }
       return;
     }
-    // 理解度テスト90%以上が必須条件
-    var QUIZ_PASS_RATE = 0.9;
+    // 理解度テスト80%以上が必須条件（5問中4問正解でクリア可能）
+    var QUIZ_PASS_RATE = 0.8;
     var quizPassed = (GAME._quizTotal > 0 && (GAME._quizScore / GAME._quizTotal) >= QUIZ_PASS_RATE);
     var isUnlocked = totalScore >= UNLOCK_THRESHOLD && GAME.hitCount < 3 && quizPassed;
     var stageNum = GAME.stageNum;
@@ -16417,7 +16417,7 @@ function showResult() {
         unlockBox.className = 'result-unlock-box locked';
         var lockReasons = [];
         if (totalScore < UNLOCK_THRESHOLD) lockReasons.push(en ? 'Total score ' + UNLOCK_THRESHOLD + '+' : '総合スコア' + UNLOCK_THRESHOLD + '点以上');
-        if (!quizPassed) lockReasons.push(en ? 'Quiz 90%+ correct' : '理解度テスト90%以上正解');
+        if (!quizPassed) lockReasons.push(en ? 'Quiz 80%+ correct' : '理解度テスト80%以上正解');
         if (GAME.hitCount >= 3) lockReasons.push(en ? 'Less than 3 hits' : '被弾3回未満');
         unlockBox.innerHTML = '<span class="unlock-total-score">' + totalScore + ' / 100</span>'
           + '<div class="unlock-breakdown">' + escapeHTML(breakdownText) + '</div>'
