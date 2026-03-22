@@ -1665,6 +1665,7 @@ html, body {
   bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   right: calc(42px + env(safe-area-inset-right, 0px));
   width: 68px; height: 68px; border-radius: 50%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   background: radial-gradient(circle at 40% 35%, rgba(0,255,80,0.5), rgba(0,180,50,0.35) 70%);
   border: 3px solid rgba(0,255,65,0.85);
   color: #fff; font-weight: bold; font-size: 22px;
@@ -13991,16 +13992,18 @@ function updateInteractPrompt() {
       if (promptKey) promptKey.textContent = 'E';
       if (promptLabel) promptLabel.textContent = resolveNovelText(target.label) || (currentLang === 'en' ? 'Action' : '操作');
     }
-    // モバイル: インタラクトボタンをハイライト
+    // モバイル: インタラクトボタンをハイライト（テキストは👆のみ、溢れ防止）
     if (GAME.isMobile && mobInteract) {
-      mobInteract.style.boxShadow = '0 0 20px rgba(0,255,65,0.6)';
-      mobInteract.textContent = resolveNovelText(target.label) || (currentLang === 'en' ? 'Action' : '操作');
+      mobInteract.style.boxShadow = '0 0 24px rgba(0,255,65,0.7)';
+      mobInteract.style.borderColor = 'rgba(0,255,65,1)';
+      mobInteract.textContent = '👆';
     }
   } else {
     if (prompt) prompt.style.display = 'none';
     if (GAME.isMobile && mobInteract) {
       mobInteract.style.boxShadow = '0 0 12px rgba(0,255,65,0.3)';
-      mobInteract.textContent = currentLang === 'en' ? 'Action' : '操作';
+      mobInteract.style.borderColor = 'rgba(0,255,65,0.85)';
+      mobInteract.textContent = '👆';
     }
   }
 }
@@ -14408,15 +14411,14 @@ function gameLoop(timestamp) {
     var fp = GAME.player;
     var fa = GAME.player.yaw || 0;
     var floorY = fp.y - 0.9; // 足元の床Y
-    // ライト位置: プレイヤーの前方1mの腰の高さ（頭が光らないように前方へオフセット）
-    var lightFwdX = fp.x + Math.sin(fa) * 1.0;
-    var lightFwdZ = fp.z + Math.cos(fa) * 1.0;
-    GAME._flashSpot.position.set(lightFwdX, floorY + 1.0, lightFwdZ);
-    // ターゲットは前方3m、地面に向ける
-    GAME._flashSpotTarget.position.set(fp.x + Math.sin(fa) * 3, floorY, fp.z + Math.cos(fa) * 3);
-    // 補助PointLightも前方の足元付近
+    // ライト位置: プレイヤーの手元（前方0.3m、高さ0.6m）から前方を照射
+    var sinFa = Math.sin(fa), cosFa = Math.cos(fa);
+    GAME._flashSpot.position.set(fp.x + sinFa * 0.3, floorY + 0.6, fp.z + cosFa * 0.3);
+    // ターゲットは前方5m、地面に向ける（鋭い前方照射）
+    GAME._flashSpotTarget.position.set(fp.x + sinFa * 5, floorY, fp.z + cosFa * 5);
+    // 補助PointLightは前方2.5mの床付近（プレイヤー自身を照らさない距離）
     if (GAME._flashPoint) {
-      GAME._flashPoint.position.set(fp.x + Math.sin(fa) * 1.5, floorY + 0.3, fp.z + Math.cos(fa) * 1.5);
+      GAME._flashPoint.position.set(fp.x + sinFa * 2.5, floorY + 0.2, fp.z + cosFa * 2.5);
     }
   }
 
@@ -14985,12 +14987,13 @@ function _doTransitionPhase(newPhase) {
               { type: 'move', waypoints: [
                 { x: -1, z: -1 },      // リビング
                 { x: -3, z: -3 },      // 玄関方面（壁を避ける）
-              ], speed: 0.02 },
+              ], speed: 0.03 },
               { type: 'log', role: 'mother', message: {ja: '非常持ち出し袋を持っていくわ！', en: "I'm taking the emergency bag!"} },
-              { type: 'delay', duration: 1.0 },
+              // 玄関ドアが開くまで待機（父が先に開ける）
+              { type: 'wait', condition: function() { return GAME._genkanDoorOpen; } },
               { type: 'log', role: 'mother', message: {ja: 'みんな、外に出ましょう！', en: "Everyone, let's go outside!"} },
               { type: 'evacuate', waypoints: [
-                { x: -4.5, z: -4.5 },  // 玄関手前（壁minX=-5を避ける）
+                { x: -4.5, z: -4.5 },  // 玄関（ドア開放済み）
                 { x: -4.5, z: -7 },    // 庭へ出る
                 { x: 0, z: -14 },      // 道路を南下
                 { x: 5, z: -20 }       // 公園方面
@@ -16791,7 +16794,7 @@ function checkScoringTriggers() {
       if (GAME.isMobile) {
         holdOnPrompt.style.display = 'none';
         var mobI = document.getElementById('mob-interact');
-        if (mobI) mobI.textContent = currentLang === 'en' ? '🤲 HOLD' : '🤲長押し';
+        if (mobI) mobI.textContent = '🤲';
       } else {
         // PC: プロンプト表示
         holdOnPrompt.textContent = currentLang === 'en' ? '🤲 Hold E: Grab desk legs' : '🤲 E長押し: 机の脚を掴む';
