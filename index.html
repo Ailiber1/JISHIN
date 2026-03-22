@@ -1946,27 +1946,34 @@ body.is-mobile #hud-seismic { font-size: 10px; padding: 2px 6px; }
 body.is-mobile #hud-phase { font-size: 10px; padding: 2px 6px; }
 body.is-mobile #hud-timer { font-size: 18px; padding: 2px 8px; }
 
-/* モバイル: アドバイザーメッセージをコンパクトに */
-body.is-mobile #advisor-box { bottom: 100px; left: 8px; max-width: 200px; z-index: 40; }
-body.is-mobile #advisor-icon { width: 28px; height: 28px; font-size: 13px; }
-body.is-mobile #advisor-text { font-size: 10px; padding: 5px 8px; max-width: 170px; line-height: 1.4; }
+/* モバイル: 全ボタンをテキスト要素より常に上に表示 */
+body.is-mobile #mobile-joystick { z-index: 100; }
+body.is-mobile #mobile-buttons { z-index: 100; }
+body.is-mobile #mob-interact { z-index: 100; }
+body.is-mobile #mob-pause { z-index: 100; }
+
+/* モバイル: 全テキスト要素をpointer-events:noneでボタン操作を妨げない */
+body.is-mobile #advisor-box { top: 50px; bottom: auto; left: 4px; max-width: 45vw; z-index: 30; pointer-events: none; }
+body.is-mobile #advisor-icon { width: 24px; height: 24px; font-size: 12px; pointer-events: none; }
+body.is-mobile #advisor-text { font-size: 9px; padding: 4px 6px; max-width: 40vw; line-height: 1.3; pointer-events: none; }
 
 /* モバイル: 目標バナーを画面上部に小さく表示 */
-body.is-mobile #objective-banner { top: 8px; left: 50%; transform: translateX(-50%); font-size: 10px; padding: 4px 10px; max-width: 75vw; line-height: 1.3; border-width: 1px; background: rgba(0,0,0,0.75); }
+body.is-mobile #objective-banner { top: 4px; left: 50%; transform: translateX(-50%); font-size: 9px; padding: 3px 8px; max-width: 60vw; line-height: 1.2; border-width: 1px; background: rgba(0,0,0,0.7); pointer-events: none; }
 
-/* モバイル: 家族行動ログを最小化 */
-body.is-mobile #family-log { top: 36px; left: 4px; right: auto; width: clamp(160px, 40vw, 200px); max-height: 100px; font-size: 11px; padding: 4px; }
-body.is-mobile .family-log-bubble { padding: 4px 8px; font-size: 11px; line-height: 1.3; }
-body.is-mobile .family-log-entry { margin-bottom: 3px; max-width: 95%; }
-body.is-mobile .family-log-meta { gap: 3px; margin-bottom: 1px; }
-body.is-mobile .log-name { font-size: 9px; }
-body.is-mobile .log-time { font-size: 8px; }
+/* モバイル: 家族行動ログを左上に最小化（ボタンと絶対重ならない） */
+body.is-mobile #family-log { top: 28px; left: 4px; right: auto; width: clamp(120px, 35vw, 160px); max-height: 60px; font-size: 10px; padding: 2px; pointer-events: none; overflow: hidden; }
+body.is-mobile .family-log-bubble { padding: 2px 6px; font-size: 10px; line-height: 1.2; }
+body.is-mobile .family-log-entry { margin-bottom: 2px; max-width: 95%; }
+body.is-mobile .family-log-meta { gap: 2px; margin-bottom: 0; }
+body.is-mobile .log-name { font-size: 8px; }
+body.is-mobile .log-time { display: none; }
 
-/* モバイル: ホールドオンプロンプト — 操作ボタン付近に小さく */
-body.is-mobile #holdon-prompt { bottom: auto; top: 50%; font-size: 12px; padding: 6px 12px; }
-/* モバイル: インタラクトプロンプトを操作ボタン付近に小さく表示 */
-body.is-mobile #interact-prompt { bottom: 28%; font-size: 12px; padding: 6px 14px; border-width: 1.5px; }
-body.is-mobile #holdon-indicator { font-size: 14px; padding: 8px 16px; }
+/* モバイル: ホールドオンプロンプト — 画面中央上部 */
+body.is-mobile #holdon-prompt { bottom: auto; top: 30%; font-size: 11px; padding: 5px 10px; pointer-events: none; }
+/* モバイル: インタラクトプロンプトを画面上部に表示（ボタンエリアと重ならない） */
+body.is-mobile #interact-prompt { bottom: auto; top: 20%; font-size: 11px; padding: 5px 12px; border-width: 1px; max-width: 70vw; pointer-events: none; }
+body.is-mobile #holdon-indicator { font-size: 13px; padding: 6px 14px; pointer-events: none; }
+body.is-mobile #guard-evac-indicator { pointer-events: none; }
 
 /* スマホ横: KANKERI完全準拠 */
 @media (orientation: landscape) and (max-height: 500px) {
@@ -11833,9 +11840,23 @@ function addFamilyLog(role, message) {
       + '<div class="family-log-bubble">' + escapeHTML(msgText) + '</div>';
   }
   logEl.appendChild(entry);
-  // 最大6エントリ — 古いものは即削除（setTimeout不使用で軽量化）
-  while (logEl.children.length > 6) {
-    logEl.removeChild(logEl.firstChild);
+  // モバイル: 最大2件、3秒後に自動フェードアウト
+  if (GAME.isMobile) {
+    while (logEl.children.length > 2) {
+      logEl.removeChild(logEl.firstChild);
+    }
+    setTimeout(function() {
+      if (entry.parentNode) {
+        entry.style.transition = 'opacity 0.5s';
+        entry.style.opacity = '0';
+        setTimeout(function() { if (entry.parentNode) entry.parentNode.removeChild(entry); }, 500);
+      }
+    }, 3000);
+  } else {
+    // PC: 最大6エントリ
+    while (logEl.children.length > 6) {
+      logEl.removeChild(logEl.firstChild);
+    }
   }
   // スクロールを最下部に
   logEl.scrollTop = logEl.scrollHeight;
@@ -13964,10 +13985,10 @@ function updateInteractPrompt() {
   var promptKey = prompt ? prompt.querySelector('.prompt-key') : null;
 
   if (target) {
-    // PC: フローティングラベル表示
-    if (prompt) {
+    // PC: フローティングラベル表示（モバイルではボタン自体にテキスト表示するため非表示）
+    if (prompt && !GAME.isMobile) {
       prompt.style.display = 'block';
-      if (promptKey) promptKey.textContent = GAME.isMobile ? 'TAP' : 'E';
+      if (promptKey) promptKey.textContent = 'E';
       if (promptLabel) promptLabel.textContent = resolveNovelText(target.label) || (currentLang === 'en' ? 'Action' : '操作');
     }
     // モバイル: インタラクトボタンをハイライト
@@ -16003,11 +16024,11 @@ function showAdvisor(text, type) {
   textEl.className = (type === 'warning' || type === 'danger') ? 'warning' : type === 'praise' ? 'praise' : '';
   box.classList.add('visible');
 
-  // 4秒後に非表示
+  // モバイル2.5秒、PC4秒で自動非表示
   if (GAME._advisorTimeout) clearTimeout(GAME._advisorTimeout);
   GAME._advisorTimeout = setTimeout(function() {
     box.classList.remove('visible');
-  }, 4000);
+  }, GAME.isMobile ? 2500 : 4000);
 }
 
 // ============================================================
@@ -16766,13 +16787,16 @@ function checkScoringTriggers() {
       p.isHoldingDesk = false;
     }
     if (canHoldOn && !p.isHoldingDesk && holdOnPrompt) {
-      // プロンプト表示（Eキー長押し案内）
-      if (currentLang === 'en') {
-        holdOnPrompt.textContent = GAME.isMobile ? '🤲 Hold 👆: Grab desk legs' : '🤲 Hold E: Grab desk legs';
+      // モバイル: プロンプト非表示、ボタンテキストで案内
+      if (GAME.isMobile) {
+        holdOnPrompt.style.display = 'none';
+        var mobI = document.getElementById('mob-interact');
+        if (mobI) mobI.textContent = currentLang === 'en' ? '🤲 HOLD' : '🤲長押し';
       } else {
-        holdOnPrompt.textContent = GAME.isMobile ? '🤲 👆 長押し: 机の脚を掴む' : '🤲 E長押し: 机の脚を掴む';
+        // PC: プロンプト表示
+        holdOnPrompt.textContent = currentLang === 'en' ? '🤲 Hold E: Grab desk legs' : '🤲 E長押し: 机の脚を掴む';
+        holdOnPrompt.style.display = 'block';
       }
-      holdOnPrompt.style.display = 'block';
     } else if (holdOnPrompt) {
       holdOnPrompt.style.display = 'none';
     }
