@@ -1938,50 +1938,67 @@ html, body {
   #mobile-joystick, #mobile-buttons, #mob-interact, #mob-pause { display: none !important; }
 }
 
-/* スマホ横: HUD調整 — KANKERI統一 */
+/* ===== モバイル共通: KANKERI準拠のクリーンUI ===== */
+/* モバイル全般: UI要素をコンパクトに */
+body.is-mobile #hud-score { font-size: 11px; padding: 2px 6px; }
+body.is-mobile #hud-safety-indicator { font-size: 9px; padding: 2px 6px; }
+body.is-mobile #hud-seismic { font-size: 10px; padding: 2px 6px; }
+body.is-mobile #hud-phase { font-size: 10px; padding: 2px 6px; }
+body.is-mobile #hud-timer { font-size: 18px; padding: 2px 8px; }
+
+/* モバイル: アドバイザーメッセージをコンパクトに */
+body.is-mobile #advisor-box { bottom: 100px; left: 8px; max-width: 200px; z-index: 40; }
+body.is-mobile #advisor-icon { width: 28px; height: 28px; font-size: 13px; }
+body.is-mobile #advisor-text { font-size: 10px; padding: 5px 8px; max-width: 170px; line-height: 1.4; }
+
+/* モバイル: 目標バナーを画面上部に小さく表示 */
+body.is-mobile #objective-banner { top: 8px; left: 50%; transform: translateX(-50%); font-size: 10px; padding: 4px 10px; max-width: 75vw; line-height: 1.3; border-width: 1px; background: rgba(0,0,0,0.75); }
+
+/* モバイル: 家族行動ログを最小化 */
+body.is-mobile #family-log { top: 36px; left: 4px; right: auto; width: clamp(160px, 40vw, 200px); max-height: 100px; font-size: 11px; padding: 4px; }
+body.is-mobile .family-log-bubble { padding: 4px 8px; font-size: 11px; line-height: 1.3; }
+body.is-mobile .family-log-entry { margin-bottom: 3px; max-width: 95%; }
+body.is-mobile .family-log-meta { gap: 3px; margin-bottom: 1px; }
+body.is-mobile .log-name { font-size: 9px; }
+body.is-mobile .log-time { font-size: 8px; }
+
+/* モバイル: ホールドオンプロンプト — 操作ボタン付近に小さく */
+body.is-mobile #holdon-prompt { bottom: auto; top: 50%; font-size: 12px; padding: 6px 12px; }
+/* モバイル: インタラクトプロンプトを操作ボタン付近に小さく表示 */
+body.is-mobile #interact-prompt { bottom: 28%; font-size: 12px; padding: 6px 14px; border-width: 1.5px; }
+body.is-mobile #holdon-indicator { font-size: 14px; padding: 8px 16px; }
+
+/* スマホ横: KANKERI統一 */
 @media (orientation: landscape) and (max-height: 500px) {
-  #hud-top-bar { top: 6px; left: 6px; right: 6px; }
-  #hud-seismic { font-size: 11px; padding: 3px 8px; }
-  #hud-phase { font-size: 11px; padding: 3px 8px; }
-  #hud-timer { font-size: 20px; padding: 3px 10px; }
-  #hud-bottom-bar { bottom: 6px; left: 6px; right: 6px; }
-  #hud-score { font-size: 12px; padding: 3px 8px; }
-  #hud-safety-indicator { font-size: 10px; padding: 3px 8px; }
-  #mobile-joystick { width: 100px; height: 100px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); left: calc(16px + env(safe-area-inset-left, 0px)); }
+  #hud-top-bar { top: 4px; left: 4px; right: 4px; }
+  #hud-bottom-bar { bottom: 4px; left: 4px; right: 4px; }
+  #mobile-joystick { width: 100px; height: 100px; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); left: calc(14px + env(safe-area-inset-left, 0px)); }
   #joystick-knob { width: 38px; height: 38px; margin: -19px 0 0 -19px; }
-  .mob-btn { width: 48px; height: 48px; font-size: 10px; }
-  #mobile-buttons { gap: 8px; bottom: calc(70px + env(safe-area-inset-bottom, 0px)); right: calc(10px + env(safe-area-inset-right, 0px)); }
-  #mob-interact { width: 56px; height: 56px; font-size: 18px; right: calc(34px + env(safe-area-inset-right, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
+  .mob-btn { width: 50px; height: 50px; font-size: 10px; }
+  #mobile-buttons { gap: 8px; bottom: calc(68px + env(safe-area-inset-bottom, 0px)); right: calc(10px + env(safe-area-inset-right, 0px)); }
+  #mob-interact { width: 58px; height: 58px; font-size: 20px; right: calc(34px + env(safe-area-inset-right, 0px)); bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
   #mob-interact::after { font-size: 8px; }
-  #advisor-box { bottom: 40px; max-width: 240px; }
-  #advisor-text { font-size: 11px; padding: 6px 10px; }
-  #advisor-icon { width: 32px; height: 32px; font-size: 14px; }
-  #objective-banner { top: 30%; font-size: 11px; padding: 5px 12px; max-width: 80vw; }
   .pause-panel { padding: 16px; }
   .pause-panel h2 { font-size: 18px; margin-bottom: 12px; }
   .pause-btn { padding: 8px; font-size: 13px; }
 }
 
-/* スマホ縦: ジョイスティック位置 */
+/* スマホ縦 */
 @media (orientation: portrait) and (max-width: 500px) {
-  #mobile-joystick { bottom: calc(24px + env(safe-area-inset-bottom, 0px)); left: calc(20px + env(safe-area-inset-left, 0px)); }
-  #mobile-buttons { bottom: calc(80px + env(safe-area-inset-bottom, 0px)); right: calc(10px + env(safe-area-inset-right, 0px)); }
-  #mob-interact { right: calc(36px + env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
-  #advisor-box { bottom: 50px; left: 8px; max-width: 220px; }
-  #advisor-text { font-size: 12px; }
-  #objective-banner { top: 30%; font-size: 12px; max-width: 85vw; }
+  #mobile-joystick { width: 110px; height: 110px; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); left: calc(18px + env(safe-area-inset-left, 0px)); }
+  #mobile-buttons { bottom: calc(85px + env(safe-area-inset-bottom, 0px)); right: calc(10px + env(safe-area-inset-right, 0px)); }
+  .mob-btn { width: 52px; height: 52px; }
+  #mob-interact { width: 60px; height: 60px; right: calc(36px + env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
 }
 
 /* 極小横: さらにコンパクト */
 @media (orientation: landscape) and (max-height: 380px) {
   #mobile-joystick { width: 80px; height: 80px; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
   #joystick-knob { width: 32px; height: 32px; margin: -16px 0 0 -16px; }
-  .mob-btn { width: 40px; height: 40px; font-size: 9px; }
+  .mob-btn { width: 42px; height: 42px; font-size: 9px; }
   #mobile-buttons { gap: 6px; bottom: calc(54px + env(safe-area-inset-bottom, 0px)); }
-  #mob-interact { width: 48px; height: 48px; font-size: 16px; right: calc(28px + env(safe-area-inset-right, 0px)); bottom: calc(8px + env(safe-area-inset-bottom, 0px)); }
+  #mob-interact { width: 50px; height: 50px; font-size: 18px; right: calc(28px + env(safe-area-inset-right, 0px)); bottom: calc(8px + env(safe-area-inset-bottom, 0px)); }
   #mob-interact::after { font-size: 7px; }
-  #advisor-box { bottom: 30px; max-width: 200px; }
-  #advisor-text { font-size: 10px; padding: 5px 8px; }
   .pause-panel { padding: 12px; }
   .pause-panel h2 { font-size: 16px; margin-bottom: 8px; }
 }
@@ -11181,6 +11198,8 @@ function createPlayerModel(stageNum) {
   labelSprite.position.set(0, totalHeight + headRadius + 0.35, 0);
   figure.add(labelSprite);
   GAME._playerLabel = labelSprite;
+  // モバイルでは頭上ラベル非表示（画面が狭いため）
+  if (GAME.isMobile) labelSprite.visible = false;
 
   // 関節参照を保存（KANKERI方式）
   figure.userData = {
