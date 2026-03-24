@@ -3288,19 +3288,52 @@ const SoundManager = {
   },
 
   // === BGM再生システム（mp3ファイル） ===
+  _pendingBGM: null,
+  _bgmRetryBound: false,
+
   playBGM(filename, volume, loop) {
     if (!this.bgmEnabled) return;
     this.stopBGM();
+    this._pendingBGM = null;
     try {
       var audio = new Audio(filename);
       audio.loop = (loop !== false);
       audio.volume = volume || 0.3;
-      audio.play().catch(function(){});
+      var self = this;
+      var p = audio.play();
+      if (p && p.then) {
+        p.then(function() {
+          self._pendingBGM = null;
+        }).catch(function() {
+          // 自動再生がブロックされた → 次のユーザー操作でリトライ
+          self._pendingBGM = { filename: filename, volume: volume || 0.3, loop: (loop !== false) };
+          self._setupBGMRetry();
+        });
+      }
       this._currentBGM = audio;
     } catch(e) {}
   },
 
+  _setupBGMRetry() {
+    if (this._bgmRetryBound) return;
+    this._bgmRetryBound = true;
+    var self = this;
+    function retryHandler() {
+      document.removeEventListener('click', retryHandler, true);
+      document.removeEventListener('touchstart', retryHandler, true);
+      self._bgmRetryBound = false;
+      if (self._pendingBGM && self.bgmEnabled) {
+        var info = self._pendingBGM;
+        self._pendingBGM = null;
+        self.playBGM(info.filename, info.volume, info.loop);
+      }
+    }
+    document.addEventListener('click', retryHandler, true);
+    document.addEventListener('touchstart', retryHandler, true);
+  },
+
   stopBGM(fadeMs) {
+    this._pendingBGM = null;
     if (!this._currentBGM) return;
     var audio = this._currentBGM;
     if (fadeMs && fadeMs > 0) {
