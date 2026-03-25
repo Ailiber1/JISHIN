@@ -1975,7 +1975,7 @@ body.is-mobile #objective-banner {
 
 /* モバイル: 家族行動ログを左中段に配置（上部ラベルと重ならない） */
 body.is-mobile #family-log {
-  top: auto; bottom: 160px; left: 4px; right: auto;
+  top: auto; bottom: 230px; left: 4px; right: auto;
   width: clamp(120px, 35vw, 160px); max-height: 55px;
   font-size: 10px; padding: 2px; pointer-events: none; overflow: hidden;
 }
@@ -2016,7 +2016,7 @@ body.is-mobile .quiz-next-btn { margin-bottom: 30px; font-size: 18px; padding: 1
   /* 横画面: ラベル重なり防止 — テキストを適切に配置 */
   #advisor-box { bottom: 80px !important; max-width: 50vw !important; }
   #advisor-text { font-size: 10px !important; padding: 4px 8px !important; }
-  #family-log { bottom: 80px !important; max-height: 32px !important; width: 110px !important; font-size: 8px !important; }
+  #family-log { bottom: 130px !important; max-height: 32px !important; width: 110px !important; font-size: 8px !important; }
   .family-log-bubble { font-size: 8px !important; padding: 1px 4px !important; }
   #objective-banner { font-size: 9px !important; padding: 2px 8px !important; max-width: 45vw !important; top: 2px !important; }
   #guard-evac-indicator { top: 28% !important; font-size: 10px !important; padding: 3px 8px !important; max-width: 40vw !important; }
@@ -10505,6 +10505,39 @@ function startStairCutsceneS3Down() {
       }
     }
 
+    // 妹: 救助済みなら1Fにテレポートして避難開始
+    if (GAME._sisterRescued && !GAME._sisterTeleported) {
+      GAME._sisterTeleported = true;
+      for (var si = 0; si < GAME.npcs.length; si++) {
+        var snpc = GAME.npcs[si];
+        if (snpc.role === 'sister') {
+          snpc.x = -0.5; snpc.z = 0.5;
+          snpc.floorY = 0;
+          snpc.mesh.position.set(snpc.x, 0, snpc.z);
+          snpc.mesh.visible = true;
+          snpc.mesh.scale.set(1, 1, 1);
+          snpc.behavior = 'calm';
+          snpc.state = 'evacuating';
+          snpc._goToParents = false;
+          snpc._stairPhase = null;
+          snpc._cowering = false;
+          snpc.evacuationDelay = 0;
+          // 1Fウェイポイント: リビング→玄関→外へ
+          snpc._waypoints = [
+            { x: -1.0, z: -1.5 },
+            { x: -3, z: -2 },
+            { x: -5, z: -4.5 },
+          ];
+          snpc._wpIndex = 0;
+          snpc.targetX = snpc._waypoints[0].x;
+          snpc.targetZ = snpc._waypoints[0].z;
+          addFamilyLog('sister', {ja: '1階に降りてきた！', en: 'Came downstairs!'});
+          showAdvisor({ja: '妹も1階に降りてきた！', en: 'Your sister came downstairs too!'}, 'normal');
+          break;
+        }
+      }
+    }
+
     overlay.style.opacity = '0';
     text.style.opacity = '0';
     setTimeout(function() {
@@ -12871,6 +12904,12 @@ function updateSingleNPC(npc, dtSec) {
         break;
       }
 
+      // 妹: プレイヤーが1Fに降りるのを待機中（非表示）
+      if (npc.state === 'waitForPlayer1F') {
+        mesh.visible = false;
+        break;
+      }
+
       // 妹の独立移動（親のところへ向かう）
       if (npc._goToParents) {
         updateSisterGoToParents(npc, dtSec);
@@ -13616,30 +13655,22 @@ function tryHelpInjuredNPC() {
         showItemGet({ja: '👧 妹を救助！ — 家族を守る', en: '👧 Sister rescued! — Protect your family'});
         addFamilyLog('player', {ja: '妹に声をかけて落ち着かせた', en: 'Called out to sister and calmed her down'});
         addFamilyLog('sister', {ja: '1階のお父さんのところへ向かう', en: 'Heading downstairs to dad'});
-        npc.behavior = 'calm'; npc.state = 'goToParents';
-        npc._cowering = false; // しゃがみ解除
+        npc.behavior = 'calm'; npc.state = 'waitForPlayer1F';
+        npc._cowering = false;
         npc.followingPlayer = false;
-        npc._goToParents = true;
         // ヒントライト消灯
         if (GAME._sisterHintLight) { GAME._sisterHintLight.intensity = 0; }
         if (GAME._sisterSpotLight) { GAME._sisterSpotLight.intensity = 0; }
-        npc._stairPhase = 'goToStairs';
-        // 2Fウェイポイント: 妹の部屋(-3.5,3.0) → 机を避けて南へ → X=-1壁の隙間(Z=2-4) → 廊下 → 階段
-        npc._waypoints = [
-          { x: -3.5, z: 1.5 },  // まず南へ（机を避ける）
-          { x: -0.5, z: 2.5 },  // X=-1壁のドア隙間を通過
-          { x: 1.5, z: 3.5 },   // 廊下→右壁の隙間
-          { x: 5.3, z: 4.0 },   // 階段到着
-        ];
-        npc._wpIndex = 0;
-        npc.targetX = npc._waypoints[0].x;
-        npc.targetZ = npc._waypoints[0].z;
+        // 2Fで非表示にし、プレイヤーが1Fに降りた時にテレポートさせる
+        GAME._sisterRescued = true;
+        GAME._sisterTeleported = false;
         var sMesh = npc.mesh;
+        sMesh.visible = false;
         sMesh.scale.set(1, 1, 1);
         if (sMesh.userData.body) sMesh.userData.body.rotation.x = 0;
         if (sMesh.userData.leftArm) { sMesh.userData.leftArm.rotation.x = 0; sMesh.userData.leftArm.rotation.z = 0; }
         if (sMesh.userData.rightArm) { sMesh.userData.rightArm.rotation.x = 0; sMesh.userData.rightArm.rotation.z = 0; }
-        // 自発光を解除（救助後は通常の明るさに戻す）
+        // 自発光を解除
         sMesh.traverse(function(child) {
           if (child.material && child.material.emissive) {
             child.material.emissiveIntensity = 0;
