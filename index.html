@@ -3356,16 +3356,45 @@ const SoundManager = {
   // === 環境音システム（mp3ファイル再生） ===
   _ambientAudio: null,
 
-  // 環境音を再生（ループ対応）
+  // 環境音を再生（ループ対応 + モバイルautoplayリトライ）
+  _pendingAmbient: null,
+  _ambientRetryBound: false,
   _playAmbientFile(filename, volume, loop) {
     this.stopAmbient();
+    this._pendingAmbient = null;
     try {
       var audio = new Audio(filename);
       audio.loop = (loop !== false);
       audio.volume = volume || 0.3;
-      audio.play().catch(function(){});
+      var self = this;
+      var p = audio.play();
+      if (p && p.then) {
+        p.then(function() { self._pendingAmbient = null; })
+        .catch(function() {
+          // モバイルautoplay拒否 → 次のユーザー操作でリトライ
+          self._pendingAmbient = { filename: filename, volume: volume || 0.3, loop: (loop !== false) };
+          self._setupAmbientRetry();
+        });
+      }
       this._ambientAudio = audio;
     } catch(e) {}
+  },
+  _setupAmbientRetry() {
+    if (this._ambientRetryBound) return;
+    this._ambientRetryBound = true;
+    var self = this;
+    function retryHandler() {
+      document.removeEventListener('click', retryHandler, true);
+      document.removeEventListener('touchstart', retryHandler, true);
+      self._ambientRetryBound = false;
+      if (self._pendingAmbient) {
+        var info = self._pendingAmbient;
+        self._pendingAmbient = null;
+        self._playAmbientFile(info.filename, info.volume, info.loop);
+      }
+    }
+    document.addEventListener('click', retryHandler, true);
+    document.addEventListener('touchstart', retryHandler, true);
   },
 
   // 教室のざわめき（日常パート）
@@ -3824,13 +3853,15 @@ const SoundManager = {
   _fadingAudio: null,
 
   stopAmbient(fadeMs) {
+    // ペンディング中のアンビエントリトライをキャンセル
+    this._pendingAmbient = null;
     // 前回のフェード中の音声を即停止
     if (this._ambientFadeTimer) {
       clearInterval(this._ambientFadeTimer);
       this._ambientFadeTimer = null;
     }
     if (this._fadingAudio) {
-      try { this._fadingAudio.pause(); this._fadingAudio.currentTime = 0; } catch(e) {}
+      try { this._fadingAudio.pause(); this._fadingAudio.currentTime = 0; this._fadingAudio.src = ''; } catch(e) {}
       this._fadingAudio = null;
     }
     // 都市環境音の停止
@@ -3862,11 +3893,11 @@ const SoundManager = {
           clearInterval(self._ambientFadeTimer);
           self._ambientFadeTimer = null;
           self._fadingAudio = null;
-          audio.pause(); audio.currentTime = 0;
+          audio.pause(); audio.currentTime = 0; audio.src = '';
         }
       }, interval);
     } else {
-      audio.pause(); audio.currentTime = 0;
+      audio.pause(); audio.currentTime = 0; audio.src = '';
     }
   },
 
@@ -14941,8 +14972,8 @@ function transitionPhase(newPhase) {
     GAME.running = false; // 3Dを一時停止
     // ノベルシーンではカーソルが必要なのでPointer Lock強制解除
     document.exitPointerLock();
-    // 地震ノベル: 教室ざわめき停止→地震BGM開始
-    SoundManager.stopAmbient(300);
+    // 地震ノベル: 教室ざわめき即時停止→地震BGM開始
+    SoundManager.stopAmbient();
     SoundManager.playBGM('BGM/JISHIN_earthquake.mp3', 0.35, false);
     SoundManager.playEarthquakeAlarm(); // J-Alert風警報音（ピロンピロン）
     var eqBg = GAME.stageNum === 2 ? 'backgrounds/stage2/bg_office_shake.png' : GAME.stageNum === 3 ? 'backgrounds/stage3/bg_house_shake.jpg' : 'backgrounds/stage1/bg_classroom_shake.png';
@@ -15060,8 +15091,8 @@ function _doTransitionPhase(newPhase) {
       if (dclHide) dclHide.className = '';
       // 地震発生！P波（初期微動）開始
       GAME.earthquakeStartTime = GAME.totalTimer;
-      // 環境音: 教室ざわめき停止 → 地震BGM開始（ノベルで既に開始済みの場合もあるため安全に呼ぶ）
-      SoundManager.stopAmbient(500);
+      // 環境音: 教室ざわめき即時停止 → 地震BGM開始（ノベルで既に開始済みの場合もあるため安全に呼ぶ）
+      SoundManager.stopAmbient();
       if (!GAME._novelEarthquakeDone) {
         // ノベルなしの場合のみここでBGM/SE開始
         SoundManager.playBGM('BGM/JISHIN_earthquake.mp3', 0.35, false);
