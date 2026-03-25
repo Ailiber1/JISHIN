@@ -6069,7 +6069,7 @@ function initEventListeners() {
     GAME.stageNum = stageNum;
     // ノベルプロローグがあればノベル→3Dの順で開始
     if (NOVEL_SCRIPTS['stage' + stageNum] && NOVEL_SCRIPTS['stage' + stageNum].prologue) {
-      SoundManager.stopBGM(500);
+      SoundManager.stopBGM();
       // プロローグ中は環境音を流す
       if (stageNum === 2) {
         SoundManager.startOfficeAmbient();
