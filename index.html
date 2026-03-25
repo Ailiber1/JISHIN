@@ -15266,7 +15266,8 @@ function _doTransitionPhase(newPhase) {
       GAME.keys = {};
       GAME.joystickMag = 0;
       GAME.player.isSprinting = false;
-      // 環境音: きしみ停止 → 非常ベル開始
+      // 地震BGM停止 + 環境音: きしみ停止 → 非常ベル開始
+      SoundManager.stopBGM(1000);
       SoundManager.stopAmbient(500);
       setTimeout(function() { SoundManager.startEvacAlarm(); }, 600);
       GAME._exitedNPCs = 0;
