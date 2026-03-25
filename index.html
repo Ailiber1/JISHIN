@@ -2051,11 +2051,11 @@ body.is-mobile .quiz-next-btn { margin-bottom: 30px; font-size: 18px; padding: 1
    ============================================================ */
 #novel-overlay {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  z-index: -1; display: flex; flex-direction: column;
+  z-index: -1; display: none; flex-direction: column;
   justify-content: flex-end; pointer-events: none;
-  overflow: hidden; opacity: 0;
+  overflow: hidden;
 }
-#novel-overlay.active { z-index: 500; opacity: 1; pointer-events: auto; }
+#novel-overlay.active { z-index: 500; display: flex; pointer-events: auto; }
 
 #novel-bg {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -4314,11 +4314,18 @@ var NovelEngine = {
           img.crossOrigin = 'anonymous';
           img.src = src + CACHE_BUSTER;
           self._imageCache[src] = img;
-          // Stage 3キャラ画像は背景除去が必要な場合がある
+          // Stage 3キャラ画像は背景除去が必要な場合がある（アイドル時に遅延実行）
           if ((GAME.stageNum || 1) >= 3 && line.speaker !== 'bousai') {
             (function(imgRef, key) {
               imgRef.onload = function() {
-                if (!self._processedKeys[key]) self._removeCharaBg(imgRef, key);
+                if (!self._processedKeys[key]) {
+                  var doRemove = function() { self._removeCharaBg(imgRef, key); };
+                  if (window.requestIdleCallback) {
+                    requestIdleCallback(doRemove, { timeout: 2000 });
+                  } else {
+                    setTimeout(doRemove, 100);
+                  }
+                }
               };
             })(img, src);
           }
@@ -4380,10 +4387,9 @@ var NovelEngine = {
     this.choicesEl.classList.remove('active');
     this.choicesEl.innerHTML = '';
 
-    // 背景設定 — ブリーフィングで先行セット済みならsrc変更しない（レイアウト維持）
+    // 背景設定 — ブリーフィングで先行セット済みならsrc変更しない
     var bgImg = document.getElementById('novel-bg-img');
     if (bg) {
-      // 既にブリーフィング画面で同じ画像がセットされていればそのまま使う
       if (!bgImg.src || !bgImg.src.endsWith(bg)) {
         bgImg.src = bg;
       }
@@ -4392,8 +4398,16 @@ var NovelEngine = {
       bgImg.src = '';
       bgImg.style.display = 'none';
     }
+
+    // ブリーフィング画面が表示中なら非表示にする（ゲーム中のノベル挿入時は触らない）
+    var briefing = document.getElementById('briefing-screen');
+    if (briefing && briefing.classList.contains('active')) {
+      briefing.classList.remove('active');
+    }
     this.overlay.classList.add('active');
     this.controlsEl.classList.add('active');
+    // 強制レイアウト再計算で即座に描画を確定
+    this.overlay.offsetHeight;
     this.showLine();
   },
 
@@ -6115,7 +6129,7 @@ function initEventListeners() {
     SoundManager.playSE('click');
 
     // 未実装ステージチェック
-    var implementedStages = [1, 2, 3]; // 実装済みステージ番号
+    var implementedStages = [1, 2, 3];
     if (implementedStages.indexOf(stageNum) === -1) {
       alert('Stage ' + stageNum + ' は現在開発中です。\ncoming soon...');
       return;
@@ -6142,19 +6156,41 @@ function initEventListeners() {
       }
       var prologueBgMap = { 1: 'backgrounds/stage1/bg_classroom.png', 2: 'backgrounds/stage2/bg_office.png', 3: 'backgrounds/stage3/bg_living_room.jpg' };
       var _novelBgUrl = prologueBgMap[stageNum] || prologueBgMap[1];
-      // 即座にノベル開始（rAF不要 — ノベル開始処理は軽量）
-      NovelEngine.start(
-        NOVEL_SCRIPTS['stage' + stageNum].prologue,
-        _novelBgUrl,
-        function() { initGame(stageNum); }
-      );
+
+      // 背景画像のデコード完了を保証してからノベル開始（即表示）
+      var preImg = document.getElementById('novel-bg-img');
+      var startNovel = function() {
+        NovelEngine.start(
+          NOVEL_SCRIPTS['stage' + stageNum].prologue,
+          _novelBgUrl,
+          function() { initGame(stageNum); }
+        );
+        btnRef.disabled = false;
+      };
+      // ブリーフィング中に既にsrcセット済みの場合、decode()で描画準備完了を待つ
+      if (preImg && preImg.src && preImg.src.endsWith(_novelBgUrl) && preImg.decode) {
+        preImg.decode().then(startNovel).catch(startNovel);
+      } else {
+        // srcが未設定の場合は先にセットしてデコード
+        if (preImg) {
+          preImg.src = _novelBgUrl;
+          preImg.style.display = 'block';
+          if (preImg.decode) {
+            preImg.decode().then(startNovel).catch(startNovel);
+          } else {
+            startNovel();
+          }
+        } else {
+          startNovel();
+        }
+      }
     } else {
       // ノベルなし → LOADING画面を先に表示してからinitGame
       showScreen('game-screen');
       document.getElementById('game-loading').style.display = 'flex';
       setTimeout(function() { initGame(stageNum); }, 16);
+      btnRef.disabled = false;
     }
-    btnRef.disabled = false;
   });
 
   // ルール / 防災知識画面
@@ -17706,7 +17742,7 @@ function autoPause() {
   if (GAME.phase === 'result' || GAME.phase === 'daily') return;
   // ノベルシーン中はポーズしない
   var novelOv = document.getElementById('novel-overlay');
-  if (novelOv && novelOv.style.display !== 'none' && novelOv.style.display !== '') return;
+  if (novelOv && novelOv.classList.contains('active')) return;
   GAME.paused = true;
   document.getElementById('pause-overlay').classList.add('active');
   if (document.pointerLockElement) document.exitPointerLock();
