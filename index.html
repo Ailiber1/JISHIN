@@ -4380,35 +4380,19 @@ var NovelEngine = {
     this.choicesEl.classList.remove('active');
     this.choicesEl.innerHTML = '';
 
-    // 背景設定 — <img>要素で表示（デコード完了を待つ）
-    var self = this;
+    // 背景設定 — 即座に表示（プリロード済み画像を利用）
     var bgImg = document.getElementById('novel-bg-img');
-    var _started = false;
-    var startNovel = function() {
-      if (_started) return;
-      _started = true;
-      self.overlay.classList.add('active');
-      self.controlsEl.classList.add('active');
-      self.showLine();
-    };
-
     if (bg) {
       var cached = this._imageCache[bg];
       bgImg.src = (cached && cached.complete) ? cached.src : bg;
       bgImg.style.display = 'block';
-      // decode()でデコード完了を待ってから表示
-      if (bgImg.decode) {
-        bgImg.decode().then(startNovel).catch(startNovel);
-      } else {
-        startNovel();
-      }
-      // フォールバック: 500msで強制開始
-      setTimeout(startNovel, 500);
     } else {
       bgImg.src = '';
       bgImg.style.display = 'none';
-      startNovel();
     }
+    this.overlay.classList.add('active');
+    this.controlsEl.classList.add('active');
+    this.showLine();
   },
 
   // 現在の行を表示
