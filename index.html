@@ -3820,7 +3820,19 @@ const SoundManager = {
   },
 
   // 環境音停止
+  _ambientFadeTimer: null,
+  _fadingAudio: null,
+
   stopAmbient(fadeMs) {
+    // 前回のフェード中の音声を即停止
+    if (this._ambientFadeTimer) {
+      clearInterval(this._ambientFadeTimer);
+      this._ambientFadeTimer = null;
+    }
+    if (this._fadingAudio) {
+      try { this._fadingAudio.pause(); this._fadingAudio.currentTime = 0; } catch(e) {}
+      this._fadingAudio = null;
+    }
     // 都市環境音の停止
     if (this._cityAmbientSrc) {
       try { this._cityAmbientSrc.stop(); } catch(e) {}
@@ -3833,19 +3845,23 @@ const SoundManager = {
     if (!this._ambientAudio) return;
     var audio = this._ambientAudio;
     this._ambientAudio = null;
-    // Web Audio API生成の環境音は即時停止（フェードが実際のゲインに反映されないため）
+    // Web Audio API生成の環境音は即時停止
     if (audio._isWebAudio) {
       try { audio.pause(); } catch(e) {}
       return;
     }
     if (fadeMs && fadeMs > 0) {
+      var self = this;
+      self._fadingAudio = audio;
       var steps = 20;
       var interval = fadeMs / steps;
       var volStep = audio.volume / steps;
-      var fadeTimer = setInterval(function() {
+      self._ambientFadeTimer = setInterval(function() {
         audio.volume = Math.max(0, audio.volume - volStep);
         if (audio.volume <= 0.01) {
-          clearInterval(fadeTimer);
+          clearInterval(self._ambientFadeTimer);
+          self._ambientFadeTimer = null;
+          self._fadingAudio = null;
           audio.pause(); audio.currentTime = 0;
         }
       }, interval);
@@ -13402,12 +13418,14 @@ function updateSingleNPC(npc, dtSec) {
             npc.targetZ = npc._waypoints[0].z;
           }
         } else {
-          // Stage 1: ウェイポイント経由で教室ドア→廊下→非常口へ
+          // Stage 1: ウェイポイント経由で教室ドア→廊下→非常口へ（NPCごとにずらして渋滞防止）
+          var s1OffX = (Math.random() - 0.5) * 1.0;
+          var s1OffZ = (Math.random() - 0.5) * 0.8;
           npc._waypoints = [
-            { x: 4.2, z: 6.6 },   // 教室ドア開口部へ
-            { x: 5.5, z: 6.6 },   // ドアを通って廊下に出る
-            { x: 6.0, z: 9.0 },   // 廊下を非常口方向へ
-            { x: 6.0, z: 11.0 },  // 非常口
+            { x: 4.2 + (Math.random() - 0.5) * 0.6, z: 6.6 + (Math.random() - 0.5) * 0.4 },   // 教室ドア開口部へ
+            { x: 5.5 + s1OffX * 0.5, z: 6.6 + s1OffZ * 0.5 },   // ドアを通って廊下に出る
+            { x: 6.0 + s1OffX, z: 9.0 + s1OffZ },   // 廊下を非常口方向へ
+            { x: 6.0 + s1OffX, z: 11.0 + (Math.random() - 0.5) * 1.0 },  // 非常口
           ];
           npc._wpIndex = 0;
           npc.targetX = npc._waypoints[0].x;
@@ -13543,11 +13561,13 @@ function updateSingleNPC(npc, dtSec) {
             } else if (GAME._exitedNPCs >= 20) {
               showAdvisor({ja: 'ほとんどの生徒が避難完了！急いで！', en: 'Most students have evacuated! Hurry!'}, 'warning');
             }
-            // Stage 1 ウェイポイント: ドア出口(廊下内) → 廊下左端(非常口)
+            // Stage 1 ウェイポイント: ドア出口(廊下内) → 廊下左端(非常口)（NPCごとにずらして渋滞防止）
+            var s1OffX2 = (Math.random() - 0.5) * 1.0;
+            var s1OffZ2 = (Math.random() - 0.5) * 0.8;
             npc._waypoints = [
-              { x: 5.5, z: 6.6 },   // ドアを通って廊下に出る
-              { x: 6.0, z: 9.0 },   // 廊下を非常口方向へ
-              { x: 6.0, z: 11.0 },  // 非常口
+              { x: 5.5 + s1OffX2 * 0.5, z: 6.6 + s1OffZ2 * 0.5 },   // ドアを通って廊下に出る
+              { x: 6.0 + s1OffX2, z: 9.0 + s1OffZ2 },   // 廊下を非常口方向へ
+              { x: 6.0 + s1OffX2, z: 11.0 + (Math.random() - 0.5) * 1.0 },  // 非常口
             ];
           }
           npc._wpIndex = 0;
@@ -13742,13 +13762,15 @@ function tryHelpInjuredNPC() {
             child.material.emissiveIntensity = 0.3;
           }
         });
-        // 独立避難ウェイポイント設定
+        // 独立避難ウェイポイント設定（NPCごとにずらして渋滞防止）
         if (GAME.stageNum === 1) {
+          var s1OffX3 = (Math.random() - 0.5) * 1.0;
+          var s1OffZ3 = (Math.random() - 0.5) * 0.8;
           npc._waypoints = [
-            { x: 4.2, z: 6.6 },
-            { x: 5.5, z: 6.6 },
-            { x: 6.0, z: 9.0 },
-            { x: 6.0, z: 11.0 },
+            { x: 4.2 + (Math.random() - 0.5) * 0.6, z: 6.6 + (Math.random() - 0.5) * 0.4 },
+            { x: 5.5 + s1OffX3 * 0.5, z: 6.6 + s1OffZ3 * 0.5 },
+            { x: 6.0 + s1OffX3, z: 9.0 + s1OffZ3 },
+            { x: 6.0 + s1OffX3, z: 11.0 + (Math.random() - 0.5) * 1.0 },
           ];
         } else if (GAME.stageNum === 2) {
           npc._waypoints = [{ x: -11.5, z: 14.5 }];
@@ -16016,6 +16038,9 @@ var quizState = { current: 0, score: 0, total: 0, questions: [] };
 function startKnowledgeQuiz(stageNum) {
   var questions = QUIZ_DATA[stageNum];
   if (!questions || questions.length === 0) { showResult(); return; }
+
+  // 全音声停止（環境音・BGM・地震音がクイズ中に鳴らないように）
+  SoundManager.stopAll();
 
   // ポインターロック解除（マウスでボタンをクリックできるようにする）
   if (document.pointerLockElement) document.exitPointerLock();
