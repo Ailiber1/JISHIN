@@ -6006,24 +6006,23 @@ function initEventListeners() {
     this.disabled = true;
     var btnRef = this;
     var stageNum = parseInt(document.getElementById('training-stage-select').value) || 1;
-    // LOADING画面を先に表示
+    // 訓練モードフラグ設定
+    GAME.isTraining = true;
+    GAME._trainingZone = document.getElementById('training-zone-on').classList.contains('active');
+    GAME._trainingPause = document.getElementById('training-pause-on').classList.contains('active');
+    NOVEL_SCRIPTS['stage' + stageNum] = generateNovelScripts(stageNum);
+    GAME.stageNum = stageNum;
+    // LOADING画面を先に表示してからinitGame（画面更新を1フレーム挟む）
     showScreen('game-screen');
     document.getElementById('game-loading').style.display = 'flex';
-    requestAnimationFrame(function() {
-      // 訓練モードフラグ設定
-      GAME.isTraining = true;
-      GAME._trainingZone = document.getElementById('training-zone-on').classList.contains('active');
-      GAME._trainingPause = document.getElementById('training-pause-on').classList.contains('active');
-      // ノベルプロローグをスキップして直接3Dゲーム開始
-      NOVEL_SCRIPTS['stage' + stageNum] = generateNovelScripts(stageNum);
-      GAME.stageNum = stageNum;
-      // 環境音開始
-      if (stageNum === 2) { SoundManager.startOfficeAmbient(); }
-      else if (stageNum === 3) { SoundManager.startHomeAmbient(); }
-      else { SoundManager.startClassroomAmbient(); }
+    // 環境音開始
+    if (stageNum === 2) { SoundManager.startOfficeAmbient(); }
+    else if (stageNum === 3) { SoundManager.startHomeAmbient(); }
+    else { SoundManager.startClassroomAmbient(); }
+    setTimeout(function() {
       initGame(stageNum);
       btnRef.disabled = false;
-    });
+    }, 16);
   });
   // 訓練モード トグル
   ['training-zone', 'training-pause'].forEach(prefix => {
@@ -6110,35 +6109,36 @@ function initEventListeners() {
     this.disabled = true;
     var btnRef = this;
 
-    // 重い処理をrequestAnimationFrameで遅延（UIを先に更新させる）
-    requestAnimationFrame(function() {
-      // プレイのたびにセリフをランダム化
-      NOVEL_SCRIPTS['stage' + stageNum] = generateNovelScripts(stageNum);
-      // プロローグ中のキャラ画像パス解決用にstageNumを先行設定
-      GAME.stageNum = stageNum;
-      // ノベルプロローグがあればノベル→3Dの順で開始
-      if (NOVEL_SCRIPTS['stage' + stageNum] && NOVEL_SCRIPTS['stage' + stageNum].prologue) {
-        SoundManager.stopBGM();
-        // プロローグ中は環境音を流す
-        if (stageNum === 2) {
-          SoundManager.startOfficeAmbient();
-        } else if (stageNum === 3) {
-          SoundManager.startHomeAmbient();
-        } else {
-          SoundManager.startClassroomAmbient();
-        }
-        var prologueBgMap = { 1: 'backgrounds/stage1/bg_classroom.png', 2: 'backgrounds/stage2/bg_office.png', 3: 'backgrounds/stage3/bg_living_room.jpg' };
-        var _novelBgUrl = prologueBgMap[stageNum] || prologueBgMap[1];
-        NovelEngine.start(
-          NOVEL_SCRIPTS['stage' + stageNum].prologue,
-          _novelBgUrl,
-          function() { initGame(stageNum); }
-        );
+    // セリフをランダム化
+    NOVEL_SCRIPTS['stage' + stageNum] = generateNovelScripts(stageNum);
+    GAME.stageNum = stageNum;
+
+    // ノベルプロローグがあればノベル→3Dの順で開始
+    if (NOVEL_SCRIPTS['stage' + stageNum] && NOVEL_SCRIPTS['stage' + stageNum].prologue) {
+      SoundManager.stopBGM();
+      // プロローグ中は環境音を流す
+      if (stageNum === 2) {
+        SoundManager.startOfficeAmbient();
+      } else if (stageNum === 3) {
+        SoundManager.startHomeAmbient();
       } else {
-        initGame(stageNum);
+        SoundManager.startClassroomAmbient();
       }
-      btnRef.disabled = false;
-    });
+      var prologueBgMap = { 1: 'backgrounds/stage1/bg_classroom.png', 2: 'backgrounds/stage2/bg_office.png', 3: 'backgrounds/stage3/bg_living_room.jpg' };
+      var _novelBgUrl = prologueBgMap[stageNum] || prologueBgMap[1];
+      // 即座にノベル開始（rAF不要 — ノベル開始処理は軽量）
+      NovelEngine.start(
+        NOVEL_SCRIPTS['stage' + stageNum].prologue,
+        _novelBgUrl,
+        function() { initGame(stageNum); }
+      );
+    } else {
+      // ノベルなし → LOADING画面を先に表示してからinitGame
+      showScreen('game-screen');
+      document.getElementById('game-loading').style.display = 'flex';
+      setTimeout(function() { initGame(stageNum); }, 16);
+    }
+    btnRef.disabled = false;
   });
 
   // ルール / 防災知識画面
