@@ -4380,11 +4380,13 @@ var NovelEngine = {
     this.choicesEl.classList.remove('active');
     this.choicesEl.innerHTML = '';
 
-    // 背景設定 — 即座に表示（プリロード済み画像を利用）
+    // 背景設定 — ブリーフィングで先行セット済みならsrc変更しない（レイアウト維持）
     var bgImg = document.getElementById('novel-bg-img');
     if (bg) {
-      var cached = this._imageCache[bg];
-      bgImg.src = (cached && cached.complete) ? cached.src : bg;
+      // 既にブリーフィング画面で同じ画像がセットされていればそのまま使う
+      if (!bgImg.src || !bgImg.src.endsWith(bg)) {
+        bgImg.src = bg;
+      }
       bgImg.style.display = 'block';
     } else {
       bgImg.src = '';
@@ -5886,6 +5888,16 @@ function showBriefing(stageNum) {
   var novelScript = NOVEL_SCRIPTS['stage' + stageNum];
   if (novelScript && novelScript.prologue) {
     NovelEngine.preloadImages(novelScript.prologue, bgUrl);
+  }
+
+  // ★ 重要: ブリーフィング画面表示中に<img>のsrcを先行設定
+  // object-fit:coverのレイアウト計算を事前に完了させる
+  if (bgUrl) {
+    var preImg = document.getElementById('novel-bg-img');
+    if (preImg) {
+      preImg.src = bgUrl;
+      preImg.style.display = 'block';
+    }
   }
 }
 
