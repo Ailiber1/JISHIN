@@ -3332,25 +3332,40 @@ const SoundManager = {
     document.addEventListener('touchstart', retryHandler, true);
   },
 
+  _bgmFadeTimer: null,
+  _fadingBGM: null,
   stopBGM(fadeMs) {
     this._pendingBGM = null;
+    // 前回のフェード中のBGMを即停止
+    if (this._bgmFadeTimer) {
+      clearInterval(this._bgmFadeTimer);
+      this._bgmFadeTimer = null;
+    }
+    if (this._fadingBGM) {
+      try { this._fadingBGM.pause(); this._fadingBGM.currentTime = 0; this._fadingBGM.src = ''; } catch(e) {}
+      this._fadingBGM = null;
+    }
     if (!this._currentBGM) return;
     var audio = this._currentBGM;
+    this._currentBGM = null;
     if (fadeMs && fadeMs > 0) {
+      var self = this;
+      self._fadingBGM = audio;
       var steps = 20;
       var interval = fadeMs / steps;
       var volStep = audio.volume / steps;
-      var fadeTimer = setInterval(function() {
+      self._bgmFadeTimer = setInterval(function() {
         audio.volume = Math.max(0, audio.volume - volStep);
         if (audio.volume <= 0.01) {
-          clearInterval(fadeTimer);
-          audio.pause(); audio.currentTime = 0;
+          clearInterval(self._bgmFadeTimer);
+          self._bgmFadeTimer = null;
+          self._fadingBGM = null;
+          audio.pause(); audio.currentTime = 0; audio.src = '';
         }
       }, interval);
     } else {
-      audio.pause(); audio.currentTime = 0;
+      audio.pause(); audio.currentTime = 0; audio.src = '';
     }
-    this._currentBGM = null;
   },
 
   // === 環境音システム（mp3ファイル再生） ===
@@ -10465,6 +10480,7 @@ function spawnHouseNPCs() {
 // ============================================================
 function teleportToHouseExterior() {
   GAME._inHouseGarden = true;
+  SoundManager.stopBGM();
   GAME.player.x = -1; GAME.player.y = 0.9; GAME.player.z = -7;
   GAME.player.yaw = Math.PI;
   GAME.keys = {}; GAME.joystickMag = 0;
@@ -10699,7 +10715,8 @@ function startStairCutscene() {
 
 function teleportToSchoolyard() {
   GAME._inSchoolyard = true;
-  // 環境音: 非常ベル→校庭の環境音に切替
+  // BGM完全停止 + 環境音: 非常ベル→校庭の環境音に切替
+  SoundManager.stopBGM();
   SoundManager.stopAmbient(500);
   setTimeout(function() { SoundManager.startSchoolyardAmbient(); }, 600);
   GAME.player.x = SCHOOLYARD_SPAWN.x;
@@ -10905,6 +10922,7 @@ function buildGroundFloorStairwell() {
 
 function teleportToBuildingPlaza() {
   GAME._inBuildingPlaza = true;
+  SoundManager.stopBGM();
   SoundManager.stopAmbient(500);
   setTimeout(function() { SoundManager.startPlazaAmbient(); }, 600);
   GAME.player.x = 0;
