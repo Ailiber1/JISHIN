@@ -16934,11 +16934,47 @@ function checkScoringTriggers() {
       showAdvisor({ja: 'すごい！素早く姿勢を低くできたね！', en: 'Great! You got low quickly!'}, 'praise');
     }
 
-    // （頭を守る行動は避難フェーズに移動 — HOLD ONで代替済み）
+    // 地震中: 机の近くにいるとき緑色プロンプトを目立つように表示
+    var deskPrompt = document.getElementById('interact-prompt');
+    var deskPromptLabel = deskPrompt ? deskPrompt.querySelector('.prompt-label') : null;
+    var deskPromptKey = deskPrompt ? deskPrompt.querySelector('.prompt-key') : null;
+    if (!p.isHoldingDesk && !s.movedToSafe) {
+      // hideUnderDeskのインタラクタブルを探して近接判定
+      var nearDesk = false;
+      for (var di = 0; di < GAME.interactables.length; di++) {
+        var dObj = GAME.interactables[di];
+        if (dObj.action !== 'hideUnderDesk') continue;
+        if (GAME.stageNum === 3 && dObj.floorY !== undefined) {
+          var pFloorY = GAME._onHouse2F ? 3.0 : 0;
+          if (Math.abs(dObj.floorY - pFloorY) > 1) continue;
+        }
+        var ddx = p.x - dObj.x, ddz = p.z - dObj.z;
+        if (Math.sqrt(ddx * ddx + ddz * ddz) < dObj.radius * 1.3) {
+          nearDesk = true;
+          break;
+        }
+      }
+      if (nearDesk && deskPrompt) {
+        deskPrompt.style.display = 'block';
+        deskPrompt.style.borderColor = 'rgba(0,255,65,0.9)';
+        deskPrompt.style.boxShadow = '0 0 20px rgba(0,255,65,0.5)';
+        if (deskPromptKey) deskPromptKey.textContent = GAME.isMobile ? '👆' : 'C → E';
+        if (deskPromptLabel) deskPromptLabel.textContent = p.isCrouching
+          ? (currentLang === 'en' ? 'Hide under desk!' : '机の下に潜ろう！')
+          : (currentLang === 'en' ? 'Crouch first, then hide!' : 'まずしゃがんで机の下へ！');
+      } else if (deskPrompt && (GAME.phase === 'shaking' || GAME.phase === 'earthquake')) {
+        // 机から遠い場合は非表示
+        if (!document.querySelector('#interact-prompt[style*="block"]')) {
+          deskPrompt.style.display = 'none';
+        }
+      }
+    }
 
     // 安全な場所（机の下）に移動した
     if (!s.movedToSafe && p.isCrouching && isUnderDesk(p.x, p.z)) {
       s.movedToSafe = true;
+      // 机の下に入ったら近接プロンプトを消す
+      if (deskPrompt) { deskPrompt.style.display = 'none'; deskPrompt.style.borderColor = ''; deskPrompt.style.boxShadow = ''; }
       GAME.score += 10;
       var deskMsg = GAME.stageNum === 2
         ? (GAME.isMobile
