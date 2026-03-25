@@ -13825,8 +13825,17 @@ function getNearestInteractable() {
     if (GAME.stageNum === 1 && (obj.action === 'turnOffFire' || obj.action === 'turnOffBreaker')) continue;
     // Stage3: 父が自動で処理するインタラクタブルはプレイヤー操作不可
     if (obj.autoHandled) continue;
-    // 机の下に潜る: しゃがんでいないと選択不可（まずしゃがむ→机の下に入る手順）
-    if (obj.action === 'hideUnderDesk' && !GAME.player.isCrouching) continue;
+    // 机の下に潜る: しゃがんでいないとアクション不可だが、ラベルは表示する（地震中の案内）
+    if (obj.action === 'hideUnderDesk' && !GAME.player.isCrouching) {
+      // しゃがんでいなくても近接判定は返す（ラベル表示用）— _needsCrouchフラグ付き
+      var ddx2 = GAME.player.x - obj.x, ddz2 = GAME.player.z - obj.z;
+      if (Math.sqrt(ddx2 * ddx2 + ddz2 * ddz2) < obj.radius) {
+        obj._needsCrouch = true;
+        return obj;
+      }
+      continue;
+    }
+    if (obj.action === 'hideUnderDesk') obj._needsCrouch = false;
     // Stage 3: フロア高さフィルタ（2Fにいるのに1Fのインタラクタブルを表示しない）
     if (GAME.stageNum === 3 && obj.floorY !== undefined) {
       var playerFloorY = GAME._onHouse2F ? 3.0 : 0;
@@ -14146,8 +14155,24 @@ function updateInteractPrompt() {
     // フローティングラベル表示（PC・モバイル共通）
     if (prompt) {
       prompt.style.display = 'block';
-      if (promptKey) promptKey.textContent = GAME.isMobile ? '👆' : 'E';
-      if (promptLabel) promptLabel.textContent = resolveNovelText(target.label) || (currentLang === 'en' ? 'Action' : '操作');
+      if (target._needsCrouch) {
+        // 机の近くだがしゃがんでいない → 緑色で案内
+        prompt.style.borderColor = 'rgba(0,255,65,0.9)';
+        prompt.style.boxShadow = '0 0 20px rgba(0,255,65,0.5)';
+        if (promptKey) promptKey.textContent = GAME.isMobile ? '⬇️' : 'C';
+        if (promptLabel) promptLabel.textContent = currentLang === 'en' ? 'Crouch and hide under desk!' : 'しゃがんで机の下に隠れよう！';
+      } else if (target.action === 'hideUnderDesk') {
+        // しゃがみ済み → 机の下に潜る案内
+        prompt.style.borderColor = 'rgba(0,255,65,0.9)';
+        prompt.style.boxShadow = '0 0 20px rgba(0,255,65,0.5)';
+        if (promptKey) promptKey.textContent = GAME.isMobile ? '👆' : 'E';
+        if (promptLabel) promptLabel.textContent = currentLang === 'en' ? 'Hide under desk!' : '机の下に潜ろう！';
+      } else {
+        prompt.style.borderColor = '';
+        prompt.style.boxShadow = '';
+        if (promptKey) promptKey.textContent = GAME.isMobile ? '👆' : 'E';
+        if (promptLabel) promptLabel.textContent = resolveNovelText(target.label) || (currentLang === 'en' ? 'Action' : '操作');
+      }
     }
     // モバイル: インタラクトボタンをハイライト
     if (GAME.isMobile && mobInteract) {
@@ -14156,7 +14181,7 @@ function updateInteractPrompt() {
       mobInteract.textContent = '👆';
     }
   } else {
-    if (prompt) prompt.style.display = 'none';
+    if (prompt) { prompt.style.display = 'none'; prompt.style.borderColor = ''; prompt.style.boxShadow = ''; }
     if (GAME.isMobile && mobInteract) {
       mobInteract.style.boxShadow = '0 0 12px rgba(0,255,65,0.3)';
       mobInteract.style.borderColor = 'rgba(0,255,65,0.85)';
@@ -16934,47 +16959,9 @@ function checkScoringTriggers() {
       showAdvisor({ja: 'すごい！素早く姿勢を低くできたね！', en: 'Great! You got low quickly!'}, 'praise');
     }
 
-    // 地震中: 机の近くにいるとき緑色プロンプトを目立つように表示
-    var deskPrompt = document.getElementById('interact-prompt');
-    var deskPromptLabel = deskPrompt ? deskPrompt.querySelector('.prompt-label') : null;
-    var deskPromptKey = deskPrompt ? deskPrompt.querySelector('.prompt-key') : null;
-    if (!p.isHoldingDesk && !s.movedToSafe) {
-      // hideUnderDeskのインタラクタブルを探して近接判定
-      var nearDesk = false;
-      for (var di = 0; di < GAME.interactables.length; di++) {
-        var dObj = GAME.interactables[di];
-        if (dObj.action !== 'hideUnderDesk') continue;
-        if (GAME.stageNum === 3 && dObj.floorY !== undefined) {
-          var pFloorY = GAME._onHouse2F ? 3.0 : 0;
-          if (Math.abs(dObj.floorY - pFloorY) > 1) continue;
-        }
-        var ddx = p.x - dObj.x, ddz = p.z - dObj.z;
-        if (Math.sqrt(ddx * ddx + ddz * ddz) < dObj.radius * 1.3) {
-          nearDesk = true;
-          break;
-        }
-      }
-      if (nearDesk && deskPrompt) {
-        deskPrompt.style.display = 'block';
-        deskPrompt.style.borderColor = 'rgba(0,255,65,0.9)';
-        deskPrompt.style.boxShadow = '0 0 20px rgba(0,255,65,0.5)';
-        if (deskPromptKey) deskPromptKey.textContent = GAME.isMobile ? '👆' : 'C → E';
-        if (deskPromptLabel) deskPromptLabel.textContent = p.isCrouching
-          ? (currentLang === 'en' ? 'Hide under desk!' : '机の下に潜ろう！')
-          : (currentLang === 'en' ? 'Crouch first, then hide!' : 'まずしゃがんで机の下へ！');
-      } else if (deskPrompt && (GAME.phase === 'shaking' || GAME.phase === 'earthquake')) {
-        // 机から遠い場合は非表示
-        if (!document.querySelector('#interact-prompt[style*="block"]')) {
-          deskPrompt.style.display = 'none';
-        }
-      }
-    }
-
     // 安全な場所（机の下）に移動した
     if (!s.movedToSafe && p.isCrouching && isUnderDesk(p.x, p.z)) {
       s.movedToSafe = true;
-      // 机の下に入ったら近接プロンプトを消す
-      if (deskPrompt) { deskPrompt.style.display = 'none'; deskPrompt.style.borderColor = ''; deskPrompt.style.boxShadow = ''; }
       GAME.score += 10;
       var deskMsg = GAME.stageNum === 2
         ? (GAME.isMobile
