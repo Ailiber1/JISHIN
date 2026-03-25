@@ -7711,8 +7711,8 @@ function buildHallway() {
     scene.add(guideArrow);
   }
 
-  // 非常口ドアのコリジョン（ボタンを押すまで通れない）
-  GAME._emergencyExitDoorCollision = { minX: exitCenterX - edW - 0.1, maxX: exitCenterX + edW + 0.1, minZ: exitZ - 0.1, maxZ: exitZ + 0.15, minY: 0, maxY: edH };
+  // 非常口ドアのコリジョン（プレイヤーのみ — NPCは通過可能）
+  GAME._emergencyExitDoorCollision = { minX: exitCenterX - edW - 0.1, maxX: exitCenterX + edW + 0.1, minZ: exitZ - 0.1, maxZ: exitZ + 0.15, minY: 0, maxY: edH, _isExitDoor: true };
   GAME.walls.push(GAME._emergencyExitDoorCollision);
   GAME._emergencyExitDoorOpen = false;
   // ドアメッシュを保存（開閉アニメーション用）
@@ -11905,6 +11905,8 @@ function npcCheckWall(nx, nz, npcR, npcY) {
     // 開いたドアのコリジョンはスキップ
     if (w._isDoor && w._doorId === 'stairDoorS2' && GAME._stairDoorOpen) continue;
     if (w._isDoor && w._doorId === 'genkanDoor' && GAME._genkanDoorOpen) continue;
+    // 非常口ドアはNPCが通過可能（プレイヤーのみブロック）
+    if (w._isExitDoor) continue;
     // 2階建て: NPCの足元Y位置で壁をフロアフィルタリング
     if (npcY !== undefined && w.minY !== undefined) {
       // NPCの足元がこの壁のフロアと異なる場合はスキップ
@@ -13449,15 +13451,16 @@ function updateSingleNPC(npc, dtSec) {
             npc.targetZ = npc._waypoints[0].z;
           }
         } else {
-          // Stage 1: ウェイポイント経由で教室ドア→廊下→非常口へ（NPCごとにずらして渋滞防止）
+          // Stage 1: ウェイポイント経由で教室ドア→廊下→非常口→消える（NPCごとにずらして渋滞防止）
           var s1OffX = (Math.random() - 0.5) * 1.0;
           var s1OffZ = (Math.random() - 0.5) * 0.8;
           npc._waypoints = [
             { x: 4.2 + (Math.random() - 0.5) * 0.6, z: 6.6 + (Math.random() - 0.5) * 0.4 },   // 教室ドア開口部へ
             { x: 5.5 + s1OffX * 0.5, z: 6.6 + s1OffZ * 0.5 },   // ドアを通って廊下に出る
             { x: 6.0 + s1OffX, z: 9.0 + s1OffZ },   // 廊下を非常口方向へ
-            { x: 6.0 + s1OffX, z: 11.0 + (Math.random() - 0.5) * 1.0 },  // 非常口
+            { x: 6.0 + s1OffX, z: 12.5 + (Math.random() - 0.5) * 0.5 },  // 非常口を通過（消失ポイント）
           ];
+          npc._autoExitAtLastWP = true;  // 最終WP到達で自動的に消える
           npc._wpIndex = 0;
           npc.targetX = npc._waypoints[0].x;
           npc.targetZ = npc._waypoints[0].z;
@@ -13519,9 +13522,18 @@ function updateSingleNPC(npc, dtSec) {
                 npc.targetX = npc._waypoints[npc._wpIndex].x;
                 npc.targetZ = npc._waypoints[npc._wpIndex].z;
               } else {
-                // 全ウェイポイント完了 → hallwayPhaseへ強制移行
-                npc._hallwayPhase = 1;
-                GAME._exitedNPCs = (GAME._exitedNPCs || 0) + 1;
+                // 全ウェイポイント完了
+                if (npc._autoExitAtLastWP) {
+                  // 非常口通過 → 即消える
+                  npc._hallwayPhase = 2;
+                  npc.exited = true;
+                  mesh.visible = false;
+                  GAME._exitedNPCs = (GAME._exitedNPCs || 0) + 1;
+                } else {
+                  // hallwayPhaseへ強制移行
+                  npc._hallwayPhase = 1;
+                  GAME._exitedNPCs = (GAME._exitedNPCs || 0) + 1;
+                }
               }
             }
           }
@@ -13558,6 +13570,19 @@ function updateSingleNPC(npc, dtSec) {
             npc.targetZ = npc._waypoints[npc._wpIndex].z;
             break; // 次フレームで次のウェイポイントへ
           }
+          // 全ウェイポイント完了 → 自動退出フラグがあれば即消える（非常口通過演出）
+          if (npc._autoExitAtLastWP) {
+            npc._hallwayPhase = 2;
+            npc.exited = true;
+            mesh.visible = false;
+            GAME._exitedNPCs = (GAME._exitedNPCs || 0) + 1;
+            if (GAME._exitedNPCs === 3) {
+              showAdvisor({ja: '生徒たちが避難を始めた！君も非常口へ向かおう！', en: 'Students are starting to evacuate! Head for the emergency exit!'}, 'normal');
+            } else if (GAME._exitedNPCs >= 20) {
+              showAdvisor({ja: 'ほとんどの生徒が避難完了！急いで！', en: 'Most students have evacuated! Hurry!'}, 'warning');
+            }
+            break;
+          }
           // 全ウェイポイント完了 → 退出フェーズへ
         }
         // ドア/玄関到達 → ウェイポイントで退出へ
@@ -13587,19 +13612,15 @@ function updateSingleNPC(npc, dtSec) {
               { x: -11.5 + doorOffX, z: 17.0 },   // 退出
             ];
           } else {
-            if (GAME._exitedNPCs === 3) {
-              showAdvisor({ja: '生徒たちが避難を始めた！君も廊下へ向かおう！', en: 'Students are starting to evacuate! Head to the hallway!'}, 'normal');
-            } else if (GAME._exitedNPCs >= 20) {
-              showAdvisor({ja: 'ほとんどの生徒が避難完了！急いで！', en: 'Most students have evacuated! Hurry!'}, 'warning');
-            }
-            // Stage 1 ウェイポイント: ドア出口(廊下内) → 廊下左端(非常口)（NPCごとにずらして渋滞防止）
+            // Stage 1: NPCは非常口を通過して消える（_autoExitAtLastWP方式）
             var s1OffX2 = (Math.random() - 0.5) * 1.0;
             var s1OffZ2 = (Math.random() - 0.5) * 0.8;
             npc._waypoints = [
               { x: 5.5 + s1OffX2 * 0.5, z: 6.6 + s1OffZ2 * 0.5 },   // ドアを通って廊下に出る
               { x: 6.0 + s1OffX2, z: 9.0 + s1OffZ2 },   // 廊下を非常口方向へ
-              { x: 6.0 + s1OffX2, z: 11.0 + (Math.random() - 0.5) * 1.0 },  // 非常口
+              { x: 6.0 + s1OffX2, z: 12.5 + (Math.random() - 0.5) * 0.5 },  // 非常口を通過（消失ポイント）
             ];
+            npc._autoExitAtLastWP = true;
           }
           npc._wpIndex = 0;
           npc.targetX = npc._waypoints[0].x;
@@ -13801,8 +13822,9 @@ function tryHelpInjuredNPC() {
             { x: 4.2 + (Math.random() - 0.5) * 0.6, z: 6.6 + (Math.random() - 0.5) * 0.4 },
             { x: 5.5 + s1OffX3 * 0.5, z: 6.6 + s1OffZ3 * 0.5 },
             { x: 6.0 + s1OffX3, z: 9.0 + s1OffZ3 },
-            { x: 6.0 + s1OffX3, z: 11.0 + (Math.random() - 0.5) * 1.0 },
+            { x: 6.0 + s1OffX3, z: 12.5 + (Math.random() - 0.5) * 0.5 },
           ];
+          npc._autoExitAtLastWP = true;
         } else if (GAME.stageNum === 2) {
           npc._waypoints = [{ x: -11.5, z: 14.5 }];
         } else {
