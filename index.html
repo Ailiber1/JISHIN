@@ -4377,52 +4377,16 @@ var NovelEngine = {
     this.choicesEl.classList.remove('active');
     this.choicesEl.innerHTML = '';
 
-    // 背景設定 — 読み込み完了を待ってから表示開始
-    var self = this;
-    var _displayStarted = false;
-    var startDisplay = function() {
-      if (_displayStarted) return;
-      _displayStarted = true;
-      // 背景を確実に表示してからノベル開始
-      self.bgEl.style.opacity = '1';
-      self.controlsEl.classList.add('active');
-      // 背景フェードイン後にテキスト表示開始（300ms待つ）
-      setTimeout(function() { self.showLine(); }, 300);
-    };
-
+    // 背景設定 — 即座に表示（ブラウザキャッシュ活用）
     if (bg) {
-      // まず背景を透明にしてオーバーレイを表示
-      this.bgEl.style.opacity = '0';
-      this.overlay.classList.add('active');
-      var cachedBg = this._imageCache[bg];
-      if (cachedBg && cachedBg.complete) {
-        // キャッシュ済み → すぐにCSS背景設定して表示
-        this.bgEl.style.backgroundImage = 'url(' + bg + ')';
-        startDisplay();
-      } else {
-        // 未読み込み → Imageで確実にロード完了を待つ
-        var bgReady = new Image();
-        bgReady.onload = function() {
-          self.bgEl.style.backgroundImage = 'url(' + bg + ')';
-          startDisplay();
-        };
-        bgReady.onerror = function() {
-          self.bgEl.style.backgroundImage = 'url(' + bg + ')';
-          startDisplay();
-        };
-        bgReady.src = bg;
-        // フォールバック: 5秒でタイムアウト（低速回線対策）
-        setTimeout(function() {
-          self.bgEl.style.backgroundImage = 'url(' + bg + ')';
-          startDisplay();
-        }, 5000);
-      }
+      this.bgEl.style.backgroundImage = 'url(' + bg + ')';
     } else {
       this.bgEl.style.backgroundImage = 'none';
-      this.bgEl.style.opacity = '1';
-      this.overlay.classList.add('active');
-      startDisplay();
     }
+    this.bgEl.style.opacity = '1';
+    this.overlay.classList.add('active');
+    this.controlsEl.classList.add('active');
+    this.showLine();
   },
 
   // 現在の行を表示
@@ -5843,6 +5807,30 @@ function updateStageUnlocks() {
   applyI18N();
 }
 
+// 全ステージのノベル背景画像を一括プリロード
+var _novelBgsPreloaded = false;
+function _preloadAllNovelBgs() {
+  if (_novelBgsPreloaded) return;
+  _novelBgsPreloaded = true;
+  var urls = [
+    'backgrounds/stage1/bg_classroom.png',
+    'backgrounds/stage1/bg_classroom_shake.png',
+    'backgrounds/stage1/bg_hallway.png',
+    'backgrounds/stage1/bg_schoolyard.png',
+    'backgrounds/stage2/bg_office.png',
+    'backgrounds/stage2/bg_office_shake.png',
+    'backgrounds/stage3/bg_living_room.jpg',
+    'backgrounds/stage3/bg_house_shake.jpg'
+  ];
+  urls.forEach(function(url) {
+    if (!NovelEngine._imageCache[url]) {
+      var img = new Image();
+      img.src = url;
+      NovelEngine._imageCache[url] = img;
+    }
+  });
+}
+
 function showBriefing(stageNum) {
   const data = BRIEFING_DATA[stageNum];
   if (!data) return;
@@ -6003,21 +5991,29 @@ function initEventListeners() {
     applyI18N();
   });
   document.getElementById('training-close-btn').addEventListener('click', () => { showTitle(); });
-  document.getElementById('training-start-btn').addEventListener('click', () => {
+  document.getElementById('training-start-btn').addEventListener('click', function() {
     SoundManager.playSE('click');
+    this.disabled = true;
+    var btnRef = this;
     var stageNum = parseInt(document.getElementById('training-stage-select').value) || 1;
-    // 訓練モードフラグ設定
-    GAME.isTraining = true;
-    GAME._trainingZone = document.getElementById('training-zone-on').classList.contains('active');
-    GAME._trainingPause = document.getElementById('training-pause-on').classList.contains('active');
-    // ノベルプロローグをスキップして直接3Dゲーム開始
-    NOVEL_SCRIPTS['stage' + stageNum] = generateNovelScripts(stageNum);
-    GAME.stageNum = stageNum;
-    // 環境音開始
-    if (stageNum === 2) { SoundManager.startOfficeAmbient(); }
-    else if (stageNum === 3) { SoundManager.startHomeAmbient(); }
-    else { SoundManager.startClassroomAmbient(); }
-    initGame(stageNum);
+    // LOADING画面を先に表示
+    showScreen('game-screen');
+    document.getElementById('game-loading').style.display = 'flex';
+    requestAnimationFrame(function() {
+      // 訓練モードフラグ設定
+      GAME.isTraining = true;
+      GAME._trainingZone = document.getElementById('training-zone-on').classList.contains('active');
+      GAME._trainingPause = document.getElementById('training-pause-on').classList.contains('active');
+      // ノベルプロローグをスキップして直接3Dゲーム開始
+      NOVEL_SCRIPTS['stage' + stageNum] = generateNovelScripts(stageNum);
+      GAME.stageNum = stageNum;
+      // 環境音開始
+      if (stageNum === 2) { SoundManager.startOfficeAmbient(); }
+      else if (stageNum === 3) { SoundManager.startHomeAmbient(); }
+      else { SoundManager.startClassroomAmbient(); }
+      initGame(stageNum);
+      btnRef.disabled = false;
+    });
   });
   // 訓練モード トグル
   ['training-zone', 'training-pause'].forEach(prefix => {
@@ -6046,12 +6042,15 @@ function initEventListeners() {
       overlay.classList.add('active');
       return;
     }
+    // ステージ選択画面を開いた時点で全ステージの背景画像を先行プリロード
+    _preloadAllNovelBgs();
     showScreen('stage-select-screen');
     applyI18N();
     updateStageUnlocks();
   });
   document.getElementById('guest-notice-continue').addEventListener('click', () => {
     document.getElementById('guest-notice-overlay').classList.remove('active');
+    _preloadAllNovelBgs();
     showScreen('stage-select-screen');
     applyI18N();
     updateStageUnlocks();
@@ -6097,32 +6096,39 @@ function initEventListeners() {
       return;
     }
 
-    // プレイのたびにセリフをランダム化
-    NOVEL_SCRIPTS['stage' + stageNum] = generateNovelScripts(stageNum);
-    // プロローグ中のキャラ画像パス解決用にstageNumを先行設定
-    GAME.stageNum = stageNum;
-    // ノベルプロローグがあればノベル→3Dの順で開始
-    if (NOVEL_SCRIPTS['stage' + stageNum] && NOVEL_SCRIPTS['stage' + stageNum].prologue) {
-      SoundManager.stopBGM();
-      // プロローグ中は環境音を流す
-      if (stageNum === 2) {
-        SoundManager.startOfficeAmbient();
-      } else if (stageNum === 3) {
-        // Stage 3: 夕方の一軒家の環境音（虫の声・時計・TV・水滴）
-        SoundManager.startHomeAmbient();
+    // ボタン連打防止
+    this.disabled = true;
+    var btnRef = this;
+
+    // 重い処理をrequestAnimationFrameで遅延（UIを先に更新させる）
+    requestAnimationFrame(function() {
+      // プレイのたびにセリフをランダム化
+      NOVEL_SCRIPTS['stage' + stageNum] = generateNovelScripts(stageNum);
+      // プロローグ中のキャラ画像パス解決用にstageNumを先行設定
+      GAME.stageNum = stageNum;
+      // ノベルプロローグがあればノベル→3Dの順で開始
+      if (NOVEL_SCRIPTS['stage' + stageNum] && NOVEL_SCRIPTS['stage' + stageNum].prologue) {
+        SoundManager.stopBGM();
+        // プロローグ中は環境音を流す
+        if (stageNum === 2) {
+          SoundManager.startOfficeAmbient();
+        } else if (stageNum === 3) {
+          SoundManager.startHomeAmbient();
+        } else {
+          SoundManager.startClassroomAmbient();
+        }
+        var prologueBgMap = { 1: 'backgrounds/stage1/bg_classroom.png', 2: 'backgrounds/stage2/bg_office.png', 3: 'backgrounds/stage3/bg_living_room.jpg' };
+        var _novelBgUrl = prologueBgMap[stageNum] || prologueBgMap[1];
+        NovelEngine.start(
+          NOVEL_SCRIPTS['stage' + stageNum].prologue,
+          _novelBgUrl,
+          function() { initGame(stageNum); }
+        );
       } else {
-        SoundManager.startClassroomAmbient();
+        initGame(stageNum);
       }
-      var prologueBgMap = { 1: 'backgrounds/stage1/bg_classroom.png', 2: 'backgrounds/stage2/bg_office.png', 3: 'backgrounds/stage3/bg_living_room.jpg' };
-      var _novelBgUrl = prologueBgMap[stageNum] || prologueBgMap[1];
-      NovelEngine.start(
-        NOVEL_SCRIPTS['stage' + stageNum].prologue,
-        _novelBgUrl,
-        function() { initGame(stageNum); }
-      );
-    } else {
-      initGame(stageNum);
-    }
+      btnRef.disabled = false;
+    });
   });
 
   // ルール / 防災知識画面
