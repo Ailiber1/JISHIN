@@ -12186,8 +12186,11 @@ function updateSisterGoToParents(npc, dtSec) {
         npc._sisterStuck = 0;
         npc._wpIndex = (npc._wpIndex || 0) + 1;
         if (npc._wpIndex >= npc._waypoints.length) {
-          // 全WP通過失敗→階段なら強制テレポート
-          if (npc._stairPhase === 'goToStairs') {
+          // 全WP通過失敗→階段付近で非表示待機（プレイヤーが1Fに降りた時にテレポート）
+          if (npc.state === 'walkingToStairs') {
+            npc._goToParents = false;
+            mesh.visible = false;
+          } else if (npc._stairPhase === 'goToStairs') {
             npc._stairPhase = null;
             npc.floorY = 0;
             mesh.position.y = 0;
@@ -12216,25 +12219,31 @@ function updateSisterGoToParents(npc, dtSec) {
     if (npc._wpIndex < npc._waypoints.length) {
       // 次のウェイポイントへ進む
     } else if (npc._stairPhase === 'goToStairs') {
-      // 2F階段到達 → 1Fへテレポート（キッチン閉じ込め回避）
-      npc._stairPhase = null;
-      npc.floorY = 0;
-      mesh.position.y = 0;
-      npc.x = -1.0; npc.z = 0;
-      mesh.position.x = npc.x; mesh.position.z = npc.z;
-      mesh.visible = true; // 明示的に表示
-      npc._goToParents = false; // goToParents完了→通常の避難処理へ
-      npc._waypoints = [
-        { x: -1.0, z: -1.5 },  // 本棚(X=-2,Z=0.05-0.95)を避けて南へ
-        { x: -3, z: -2 },      // リビング経由
-        { x: -5, z: -4.5 },    // 玄関
-      ];
-      npc._wpIndex = 0;
-      npc.targetX = npc._waypoints[0].x;
-      npc.targetZ = npc._waypoints[0].z;
-      npc.state = 'evacuating';
-      npc.evacuationDelay = 0; // 遅延なしで即座に避難開始
-      showAdvisor({ja: '妹が1階に降りた！', en: 'Sister went downstairs!'}, 'normal');
+      if (npc.state === 'walkingToStairs') {
+        // 階段到着→非表示で待機（プレイヤーが1Fに降りた時にテレポート）
+        npc._goToParents = false;
+        mesh.visible = false;
+      } else {
+        // 2F階段到達 → 1Fへテレポート（キッチン閉じ込め回避）
+        npc._stairPhase = null;
+        npc.floorY = 0;
+        mesh.position.y = 0;
+        npc.x = -1.0; npc.z = 0;
+        mesh.position.x = npc.x; mesh.position.z = npc.z;
+        mesh.visible = true;
+        npc._goToParents = false;
+        npc._waypoints = [
+          { x: -1.0, z: -1.5 },
+          { x: -3, z: -2 },
+          { x: -5, z: -4.5 },
+        ];
+        npc._wpIndex = 0;
+        npc.targetX = npc._waypoints[0].x;
+        npc.targetZ = npc._waypoints[0].z;
+        npc.state = 'evacuating';
+        npc.evacuationDelay = 0;
+        showAdvisor({ja: '妹が1階に降りた！', en: 'Sister went downstairs!'}, 'normal');
+      }
     } else {
       // 親のところに到着
       npc._goToParents = false;
@@ -12904,9 +12913,14 @@ function updateSingleNPC(npc, dtSec) {
         break;
       }
 
-      // 妹: プレイヤーが1Fに降りるのを待機中（非表示）
-      if (npc.state === 'waitForPlayer1F') {
-        mesh.visible = false;
+      // 妹: 階段に向かって歩行中 or 階段到着後の待機
+      if (npc.state === 'walkingToStairs') {
+        if (npc._goToParents) {
+          updateSisterGoToParents(npc, dtSec);
+        } else {
+          // 階段到着後: 非表示で待機（プレイヤーが1Fに降りるのを待つ）
+          mesh.visible = false;
+        }
         break;
       }
 
@@ -13655,17 +13669,29 @@ function tryHelpInjuredNPC() {
         showItemGet({ja: '👧 妹を救助！ — 家族を守る', en: '👧 Sister rescued! — Protect your family'});
         addFamilyLog('player', {ja: '妹に声をかけて落ち着かせた', en: 'Called out to sister and calmed her down'});
         addFamilyLog('sister', {ja: '1階のお父さんのところへ向かう', en: 'Heading downstairs to dad'});
-        npc.behavior = 'calm'; npc.state = 'waitForPlayer1F';
+        npc.behavior = 'calm'; npc.state = 'walkingToStairs';
         npc._cowering = false;
         npc.followingPlayer = false;
+        npc._goToParents = true;
+        npc._stairPhase = 'goToStairs';
         // ヒントライト消灯
         if (GAME._sisterHintLight) { GAME._sisterHintLight.intensity = 0; }
         if (GAME._sisterSpotLight) { GAME._sisterSpotLight.intensity = 0; }
-        // 2Fで非表示にし、プレイヤーが1Fに降りた時にテレポートさせる
+        // フラグ設定（プレイヤーが1Fに降りた時にテレポートさせる）
         GAME._sisterRescued = true;
         GAME._sisterTeleported = false;
+        // 2Fウェイポイント: 妹の部屋→階段方向へ歩く演出
+        npc._waypoints = [
+          { x: -3.5, z: 1.5 },
+          { x: -0.5, z: 2.5 },
+          { x: 1.5, z: 3.5 },
+          { x: 5.3, z: 4.0 },
+        ];
+        npc._wpIndex = 0;
+        npc.targetX = npc._waypoints[0].x;
+        npc.targetZ = npc._waypoints[0].z;
         var sMesh = npc.mesh;
-        sMesh.visible = false;
+        sMesh.visible = true;
         sMesh.scale.set(1, 1, 1);
         if (sMesh.userData.body) sMesh.userData.body.rotation.x = 0;
         if (sMesh.userData.leftArm) { sMesh.userData.leftArm.rotation.x = 0; sMesh.userData.leftArm.rotation.z = 0; }
