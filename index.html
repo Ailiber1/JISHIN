@@ -4383,26 +4383,44 @@ var NovelEngine = {
     var startDisplay = function() {
       if (_displayStarted) return;
       _displayStarted = true;
-      self.overlay.classList.add('active');
+      // 背景を確実に表示してからノベル開始
+      self.bgEl.style.opacity = '1';
       self.controlsEl.classList.add('active');
-      self.showLine();
+      // 背景フェードイン後にテキスト表示開始（300ms待つ）
+      setTimeout(function() { self.showLine(); }, 300);
     };
 
     if (bg) {
-      this.bgEl.style.backgroundImage = 'url(' + bg + ')';
+      // まず背景を透明にしてオーバーレイを表示
+      this.bgEl.style.opacity = '0';
+      this.overlay.classList.add('active');
       var cachedBg = this._imageCache[bg];
       if (cachedBg && cachedBg.complete) {
+        // キャッシュ済み → すぐにCSS背景設定して表示
+        this.bgEl.style.backgroundImage = 'url(' + bg + ')';
         startDisplay();
       } else {
-        // 背景読み込み完了を待つ（最大2秒でタイムアウト）
+        // 未読み込み → Imageで確実にロード完了を待つ
         var bgReady = new Image();
-        bgReady.onload = function() { startDisplay(); };
-        bgReady.onerror = function() { startDisplay(); };
+        bgReady.onload = function() {
+          self.bgEl.style.backgroundImage = 'url(' + bg + ')';
+          startDisplay();
+        };
+        bgReady.onerror = function() {
+          self.bgEl.style.backgroundImage = 'url(' + bg + ')';
+          startDisplay();
+        };
         bgReady.src = bg;
-        setTimeout(function() { startDisplay(); }, 2000);
+        // フォールバック: 5秒でタイムアウト（低速回線対策）
+        setTimeout(function() {
+          self.bgEl.style.backgroundImage = 'url(' + bg + ')';
+          startDisplay();
+        }, 5000);
       }
     } else {
       this.bgEl.style.backgroundImage = 'none';
+      this.bgEl.style.opacity = '1';
+      this.overlay.classList.add('active');
       startDisplay();
     }
   },
@@ -5861,6 +5879,10 @@ function showBriefing(stageNum) {
     var bgImg = new Image();
     bgImg.src = bgUrl;
     NovelEngine._imageCache[bgUrl] = bgImg;
+    // decode()で確実にデコード完了させる（対応ブラウザのみ）
+    if (bgImg.decode) {
+      bgImg.decode().catch(function() {});
+    }
   }
   // キャラ画像もプリロード
   var novelScript = NOVEL_SCRIPTS['stage' + stageNum];
