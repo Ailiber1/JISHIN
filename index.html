@@ -2059,9 +2059,12 @@ body.is-mobile .quiz-next-btn { margin-bottom: 30px; font-size: 18px; padding: 1
 
 #novel-bg {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-  background-size: cover; background-position: center;
   background-color: #1a1a2e;
-  transition: opacity 0.5s ease;
+}
+#novel-bg img {
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: center;
+  display: block;
 }
 #novel-bg-dim {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -2945,7 +2948,7 @@ body.is-mobile .quiz-next-btn { margin-bottom: 30px; font-size: 18px; padding: 1
      SECTION: NOVEL OVERLAY
      ============================================================ -->
 <div id="novel-overlay">
-  <div id="novel-bg"><div id="novel-bg-dim"></div></div>
+  <div id="novel-bg"><img id="novel-bg-img" src="" alt=""><div id="novel-bg-dim"></div></div>
   <div id="novel-chara-left" class="novel-chara hidden"></div>
   <div id="novel-chara-right" class="novel-chara hidden"></div>
   <div id="novel-controls">
@@ -4377,13 +4380,21 @@ var NovelEngine = {
     this.choicesEl.classList.remove('active');
     this.choicesEl.innerHTML = '';
 
-    // 背景設定 — 即座に表示（ブラウザキャッシュ活用）
+    // 背景設定 — <img>要素で即座に表示
+    var bgImg = document.getElementById('novel-bg-img');
     if (bg) {
-      this.bgEl.style.backgroundImage = 'url(' + bg + ')';
+      // プリロード済みキャッシュからsrcを設定（ブラウザキャッシュヒット）
+      var cached = this._imageCache[bg];
+      if (cached && cached.complete) {
+        bgImg.src = cached.src;
+      } else {
+        bgImg.src = bg;
+      }
+      bgImg.style.display = 'block';
     } else {
-      this.bgEl.style.backgroundImage = 'none';
+      bgImg.src = '';
+      bgImg.style.display = 'none';
     }
-    this.bgEl.style.opacity = '1';
     this.overlay.classList.add('active');
     this.controlsEl.classList.add('active');
     this.showLine();
@@ -4680,6 +4691,9 @@ var NovelEngine = {
     this.controlsEl.classList.remove('active');
     this.charaLeft.classList.add('hidden');
     this.charaRight.classList.add('hidden');
+    // 背景画像をクリア
+    var bgImg = document.getElementById('novel-bg-img');
+    if (bgImg) bgImg.src = '';
     if (this.onComplete) this.onComplete();
   },
 };
