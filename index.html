@@ -1987,17 +1987,17 @@ body.is-mobile .log-time { display: none; }
 
 /* モバイル: ゲーム中テキスト — 画面中央上部に配置 */
 body.is-mobile #holdon-prompt { bottom: auto; top: 25%; font-size: 11px; padding: 4px 10px; pointer-events: none; max-width: 65vw; }
-body.is-mobile #interact-prompt { bottom: auto; top: 18%; font-size: 11px; padding: 4px 10px; border-width: 1px; max-width: 65vw; pointer-events: none; }
+body.is-mobile #interact-prompt { bottom: auto; top: 15%; left: 50%; transform: translateX(-50%); font-size: 13px; padding: 6px 14px; border-width: 1px; max-width: 80vw; pointer-events: none; z-index: 90; }
 body.is-mobile #holdon-indicator { font-size: 13px; padding: 5px 12px; pointer-events: none; max-width: 65vw; }
 body.is-mobile #guard-evac-indicator { top: 28px; font-size: 12px; padding: 5px 12px; pointer-events: none; max-width: 60vw; }
 body.is-mobile #guard-evac-indicator .holdon-title { font-size: 14px; }
 body.is-mobile #guard-evac-indicator .holdon-sub { font-size: 10px; }
 body.is-mobile #item-get-text { font-size: clamp(14px, 3.5vw, 20px); top: 35%; max-width: 85vw; white-space: normal; }
 
-/* モバイル: クイズオーバーレイをスクロール可能に（iOS Safari対応） */
-body.is-mobile #knowledge-quiz-overlay { padding: 12px 0; }
-body.is-mobile .quiz-container { margin: 12px auto; flex-shrink: 0; }
-body.is-mobile .quiz-next-btn { margin-bottom: 20px; }
+/* モバイル: クイズオーバーレイ（iOS Safari スクロール対応） */
+body.is-mobile #knowledge-quiz-overlay { padding: 8px 0 40px 0; }
+body.is-mobile .quiz-container { margin: 8px auto 30px auto; padding: 16px; }
+body.is-mobile .quiz-next-btn { margin-bottom: 30px; font-size: 18px; padding: 14px 28px; }
 
 /* スマホ横: KANKERI完全準拠 */
 @media (orientation: landscape) and (max-height: 500px) {
@@ -2215,13 +2215,13 @@ body.is-mobile .quiz-next-btn { margin-bottom: 20px; }
 #knowledge-quiz-overlay {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
   background: rgba(0,0,0,0.92); z-index: 600; display: none;
-  overflow-y: auto; -webkit-overflow-scrolling: touch;
+  overflow-y: scroll; -webkit-overflow-scrolling: touch;
 }
-#knowledge-quiz-overlay.active { display: flex; flex-direction: column; align-items: center; }
+#knowledge-quiz-overlay.active { display: block; }
 .quiz-container {
   max-width: 600px; width: 92%; padding: 30px; text-align: center;
   background: rgba(20,20,30,0.95); border: 1px solid rgba(255,107,0,0.3);
-  border-radius: 12px; margin: auto 0; flex-shrink: 0;
+  border-radius: 12px; margin: 20px auto; box-sizing: border-box;
 }
 .quiz-header {
   font-family: 'Share Tech Mono', monospace; font-size: clamp(16px, 3vw, 22px);
@@ -12132,6 +12132,7 @@ function updateSisterGoToParents(npc, dtSec) {
   var wdist = Math.sqrt(wdx * wdx + wdz * wdz);
   if (wdist > 0.3) {
     // ウェイポイントへ移動（壁判定あり）
+    var prevSX = npc.x, prevSZ = npc.z;
     npcMoveWithCollision(npc, wdx / wdist, wdz / wdist, npc.speed * 1.5);
     mesh.position.x = npc.x; mesh.position.z = npc.z;
     mesh.rotation.y = Math.atan2(wdx, wdz);
@@ -12144,6 +12145,38 @@ function updateSisterGoToParents(npc, dtSec) {
     var _sla = mesh.userData.leftArm, _sra = mesh.userData.rightArm;
     if (_sla) { _sla.rotation.x = -2.8 + Math.sin(npc.phase * 1.5) * 0.08; _sla.rotation.z = 0.35; }
     if (_sra) { _sra.rotation.x = -2.8 + Math.sin(npc.phase * 1.5 + 0.5) * 0.08; _sra.rotation.z = -0.35; }
+    // スタック検出: 壁に当たって動けない場合2秒で次WPへスキップ
+    var sMoved = Math.abs(npc.x - prevSX) + Math.abs(npc.z - prevSZ);
+    if (sMoved < 0.001) {
+      npc._sisterStuck = (npc._sisterStuck || 0) + dtSec;
+      if (npc._sisterStuck > 2.0) {
+        npc._sisterStuck = 0;
+        npc._wpIndex = (npc._wpIndex || 0) + 1;
+        if (npc._wpIndex >= npc._waypoints.length) {
+          // 全WP通過失敗→階段なら強制テレポート
+          if (npc._stairPhase === 'goToStairs') {
+            npc._stairPhase = null;
+            npc.floorY = 0;
+            mesh.position.y = 0;
+            npc.x = -1.0; npc.z = 0;
+            mesh.position.x = npc.x; mesh.position.z = npc.z;
+            mesh.visible = true;
+            npc._goToParents = false;
+            npc._waypoints = [
+              { x: -1.0, z: -1.5 }, { x: -3, z: -2 }, { x: -5, z: -4.5 },
+            ];
+            npc._wpIndex = 0;
+            npc.targetX = npc._waypoints[0].x;
+            npc.targetZ = npc._waypoints[0].z;
+            npc.state = 'evacuating';
+            npc.evacuationDelay = 0;
+            showAdvisor({ja: '妹が1階に降りた！', en: 'Sister went downstairs!'}, 'normal');
+          }
+        }
+      }
+    } else {
+      npc._sisterStuck = 0;
+    }
   } else {
     // ウェイポイント到達 → 次へ
     npc._wpIndex = (npc._wpIndex || 0) + 1;
@@ -14053,13 +14086,13 @@ function updateInteractPrompt() {
   var promptKey = prompt ? prompt.querySelector('.prompt-key') : null;
 
   if (target) {
-    // PC: フローティングラベル表示（モバイルではボタン自体にテキスト表示するため非表示）
-    if (prompt && !GAME.isMobile) {
+    // フローティングラベル表示（PC・モバイル共通）
+    if (prompt) {
       prompt.style.display = 'block';
-      if (promptKey) promptKey.textContent = 'E';
+      if (promptKey) promptKey.textContent = GAME.isMobile ? '👆' : 'E';
       if (promptLabel) promptLabel.textContent = resolveNovelText(target.label) || (currentLang === 'en' ? 'Action' : '操作');
     }
-    // モバイル: インタラクトボタンをハイライト（テキストは👆のみ、溢れ防止）
+    // モバイル: インタラクトボタンをハイライト
     if (GAME.isMobile && mobInteract) {
       mobInteract.style.boxShadow = '0 0 24px rgba(0,255,65,0.7)';
       mobInteract.style.borderColor = 'rgba(0,255,65,1)';
@@ -15975,9 +16008,23 @@ function selectQuizAnswer(index) {
     nextBtn.textContent = (currentLang === 'en' ? 'View Results' : '結果を見る');
   }
   nextBtn.style.display = 'inline-block';
-  // モバイル: 次へボタンが見えるようスクロール
-  setTimeout(function() { nextBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 100);
+  // 次へボタンが確実に見えるようオーバーレイ自体をスクロール
+  setTimeout(function() {
+    var overlay = document.getElementById('knowledge-quiz-overlay');
+    if (overlay) overlay.scrollTop = overlay.scrollHeight;
+  }, 150);
 }
+
+// 画面回転・リサイズ時にクイズの次へボタンを再スクロール
+window.addEventListener('resize', function() {
+  var overlay = document.getElementById('knowledge-quiz-overlay');
+  if (overlay && overlay.classList.contains('active')) {
+    var nextBtn = document.getElementById('quiz-next-btn');
+    if (nextBtn && nextBtn.style.display !== 'none') {
+      setTimeout(function() { overlay.scrollTop = overlay.scrollHeight; }, 300);
+    }
+  }
+});
 
 function nextQuizQuestion() {
   quizState.current++;
