@@ -5891,12 +5891,16 @@ function showBriefing(stageNum) {
   }
 
   // ★ 重要: ブリーフィング画面表示中に<img>のsrcを先行設定
-  // object-fit:coverのレイアウト計算を事前に完了させる
+  // object-fit:coverのレイアウト計算＋画像デコードを事前に完了させる
   if (bgUrl) {
     var preImg = document.getElementById('novel-bg-img');
     if (preImg) {
       preImg.src = bgUrl;
       preImg.style.display = 'block';
+      // DOM内のimg要素でdecode()を実行 → ブラウザが描画準備を完了する
+      if (preImg.decode) {
+        preImg.decode().catch(function() {});
+      }
     }
   }
 }
