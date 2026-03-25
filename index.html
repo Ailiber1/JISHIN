@@ -2332,6 +2332,18 @@ body.is-mobile .quiz-next-btn { margin-bottom: 30px; font-size: 18px; padding: 1
   #novel-window { padding: 8px 12px 6px; margin-bottom: 0; }
   #novel-text { font-size: 13px; min-height: 2.4em; }
 }
+/* スマホ横向き: キャラを大きく表示 */
+@media (orientation: landscape) and (max-height: 500px) {
+  .novel-chara { height: 80%; width: 30%; }
+  .novel-chara.chara-bousai { height: 60%; bottom: 3%; }
+  #novel-chara-left { left: 0; }
+  #novel-chara-right { right: 0; }
+  #novel-window { width: 60%; margin-bottom: 1%; padding: 8px 14px 6px; }
+  #novel-text { font-size: 14px; min-height: 2.4em; line-height: 1.6; }
+  #novel-speaker { font-size: 11px; top: -11px; }
+  #novel-controls button { padding: 4px 8px; min-height: 32px; font-size: 11px; }
+  .novel-choice-btn { font-size: 13px; padding: 8px 12px; min-height: 40px; }
+}
 
 /* 知識テスト・結果体験・解放判定 — スマホ縦向き */
 @media (max-width: 600px) and (orientation: portrait) {
@@ -17813,11 +17825,18 @@ function initGameControls() {
   }
 
   // --- ウィンドウリサイズ（ゲーム用） ---
-  window.addEventListener('resize', function() {
+  function updateRendererSize() {
     if (!GAME.renderer || !GAME.camera) return;
     GAME.camera.aspect = window.innerWidth / window.innerHeight;
     GAME.camera.updateProjectionMatrix();
     GAME.renderer.setSize(window.innerWidth, window.innerHeight);
+  }
+  window.addEventListener('resize', updateRendererSize);
+  window.addEventListener('orientationchange', function() {
+    // モバイル画面回転: 遅延リサイズ（ブラウザがサイズ確定するまで待つ）
+    setTimeout(updateRendererSize, 100);
+    setTimeout(updateRendererSize, 300);
+    setTimeout(updateRendererSize, 600);
   });
 
   // --- ポーズボタン（click + touchstart 両対応 — KANKERI教訓）---
