@@ -2059,16 +2059,9 @@ body.is-mobile .quiz-next-btn { margin-bottom: 30px; font-size: 18px; padding: 1
 
 #novel-bg {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-  background: linear-gradient(135deg, #2a1f3d 0%, #1a1a2e 40%, #0d1b2a 100%);
+  background-color: #1a1a2e;
   background-size: cover; background-position: center;
 }
-#novel-bg img {
-  width: 100vw; height: 100vh; height: 100dvh;
-  object-fit: cover; object-position: center;
-  display: block;
-  opacity: 0; transition: opacity 0.3s ease;
-}
-#novel-bg img.loaded { opacity: 1; }
 #novel-bg-dim {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
   background: rgba(0,0,0,0.15);
@@ -2949,7 +2942,7 @@ body.is-mobile .quiz-next-btn { margin-bottom: 30px; font-size: 18px; padding: 1
      SECTION: NOVEL OVERLAY
      ============================================================ -->
 <div id="novel-overlay">
-  <div id="novel-bg"><img id="novel-bg-img" src="" alt=""><div id="novel-bg-dim"></div></div>
+  <div id="novel-bg"><div id="novel-bg-dim"></div></div>
   <div id="novel-chara-left" class="novel-chara hidden"></div>
   <div id="novel-chara-right" class="novel-chara hidden"></div>
   <div id="novel-controls">
@@ -4390,29 +4383,25 @@ var NovelEngine = {
     this.choicesEl.classList.remove('active');
     this.choicesEl.innerHTML = '';
 
-    // 背景設定 — ロード完了時にフェードイン表示
-    var bgImg = document.getElementById('novel-bg-img');
+    // 背景設定 — CSS background-imageで表示（<img>はモバイルSafariで非表示要素内ロード不可のため廃止）
+    var bgEl = document.getElementById('novel-bg');
     if (bg) {
-      var bgEl = document.getElementById('novel-bg');
-      // CSSフォールバック背景として先にセット（imgロード前のつなぎ）
-      if (NovelEngine._imageCache[bg] && NovelEngine._imageCache[bg].complete) {
+      var cached = NovelEngine._imageCache[bg];
+      if (cached && cached.complete && cached.naturalWidth > 0) {
+        // プリロード済み → 即表示
         bgEl.style.backgroundImage = 'url(' + bg + ')';
-      }
-      if (!bgImg.src || !bgImg.src.endsWith(bg)) {
-        bgImg.classList.remove('loaded');
-        bgImg.src = bg;
-      }
-      // 既にロード済みなら即表示、未ロードならonloadで表示
-      if (bgImg.complete && bgImg.naturalWidth > 0) {
-        bgImg.classList.add('loaded');
       } else {
-        bgImg.onload = function() { bgImg.classList.add('loaded'); };
+        // 未ロード → new Image()でロードし、完了後にセット
+        var loader = new Image();
+        loader.onload = function() {
+          bgEl.style.backgroundImage = 'url(' + bg + ')';
+          NovelEngine._imageCache[bg] = loader;
+        };
+        loader.src = bg;
+        if (!NovelEngine._imageCache[bg]) NovelEngine._imageCache[bg] = loader;
       }
-      bgImg.style.display = 'block';
     } else {
-      bgImg.src = '';
-      bgImg.classList.remove('loaded');
-      bgImg.style.display = 'none';
+      bgEl.style.backgroundImage = '';
     }
 
     // ブリーフィング画面が表示中なら非表示にする（ゲーム中のノベル挿入時は触らない）
@@ -4706,8 +4695,6 @@ var NovelEngine = {
     this.charaLeft.classList.add('hidden');
     this.charaRight.classList.add('hidden');
     // 背景画像をクリア
-    var bgImg = document.getElementById('novel-bg-img');
-    if (bgImg) { bgImg.src = ''; bgImg.classList.remove('loaded'); bgImg.onload = null; }
     var bgEl = document.getElementById('novel-bg');
     if (bgEl) bgEl.style.backgroundImage = '';
     if (this.onComplete) this.onComplete();
@@ -5898,10 +5885,6 @@ function showBriefing(stageNum) {
     var bgImg = new Image();
     bgImg.src = bgUrl;
     NovelEngine._imageCache[bgUrl] = bgImg;
-    // decode()で確実にデコード完了させる（対応ブラウザのみ）
-    if (bgImg.decode) {
-      bgImg.decode().catch(function() {});
-    }
   }
   // prologueのキャラ画像のみプリロード（帯域を圧迫しないよう最小限）
   var novelScript = NOVEL_SCRIPTS['stage' + stageNum];
@@ -5909,22 +5892,11 @@ function showBriefing(stageNum) {
     NovelEngine.preloadImages(novelScript.prologue, bgUrl);
   }
 
-  // ブリーフィング画面表示中に<img>のsrcを先行設定（visibility:hiddenでもロード開始される）
-  if (bgUrl) {
-    var preImg = document.getElementById('novel-bg-img');
-    if (preImg) {
-      preImg.classList.remove('loaded');
-      preImg.src = bgUrl;
-      preImg.style.display = 'block';
-      // ロード完了時にloadedクラスをセット
-      preImg.onload = function() { preImg.classList.add('loaded'); };
-      if (preImg.complete && preImg.naturalWidth > 0) {
-        preImg.classList.add('loaded');
-      }
-    }
-    // CSS background-imageのフォールバックもセット
-    var bgEl = document.getElementById('novel-bg');
-    if (bgEl) bgEl.style.backgroundImage = 'url(' + bgUrl + ')';
+  // ブリーフィング画面表示中にnew Image()で背景画像を先行ロード（DOMに依存しない）
+  if (bgUrl && !NovelEngine._imageCache[bgUrl]) {
+    var bgLoader = new Image();
+    bgLoader.src = bgUrl;
+    NovelEngine._imageCache[bgUrl] = bgLoader;
   }
 }
 
