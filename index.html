@@ -2075,7 +2075,7 @@ body.is-mobile .quiz-next-btn { margin-bottom: 30px; font-size: 18px; padding: 1
 .novel-chara {
   position: absolute; bottom: 0;
   height: 75%; width: 38%;
-  background-size: contain, contain, contain; background-repeat: no-repeat, no-repeat, no-repeat; background-position: bottom center, bottom center, bottom center;
+  background-size: contain; background-repeat: no-repeat; background-position: bottom center;
   transition: filter 0.15s ease;
   filter: brightness(0.6) drop-shadow(0 0 6px rgba(0,0,0,0.5));
 }
@@ -4485,10 +4485,8 @@ var NovelEngine = {
       }
     }
 
-    // 画像を3枚重ねにして半透明ピクセルのアルファを強化（Data URLの場合は1枚で十分）
-    var dblSrc = src.startsWith('data:')
-      ? 'url(' + src + ')'
-      : 'url(' + src + '), url(' + src + '), url(' + src + ')';
+    // 1枚のみ（3枚重ねはスマホで描画負荷が大きいため廃止）
+    var dblSrc = 'url(' + src + ')';
 
     // 即座にキャラ表示（decode()待ちしない — スマホ遅延防止）
     var charaEl = (info.pos === 'left') ? this.charaLeft : this.charaRight;
@@ -5841,7 +5839,27 @@ function _preloadAllNovelBgs() {
       var img = new Image();
       img.src = url;
       NovelEngine._imageCache[url] = img;
-      if (img.decode) img.decode().catch(function() {});
+    }
+  });
+  // キャラ画像も全ステージ分プリロード（ステージ選択時に開始）
+  var charaFiles = [
+    'characters/stage1/teacher_normal.png', 'characters/stage1/teacher_serious.png',
+    'characters/stage1/teacher_smile.png', 'characters/stage1/teacher_surprise.png',
+    'characters/stage1/teacher_relief.png',
+    'characters/stage1/student_a_normal.png', 'characters/stage1/student_a_smile.png',
+    'characters/stage1/student_a_surprise.png', 'characters/stage1/student_a_worry.png',
+    'characters/stage1/student_a_relief.png',
+    'characters/stage1/student_b_normal.png', 'characters/stage1/student_b_panic.png',
+    'characters/stage1/student_b_serious.png', 'characters/stage1/student_b_smile.png',
+    'characters/shared/bousai_normal.png', 'characters/shared/bousai_serious.png',
+    'characters/shared/bousai_smile.png', 'characters/shared/bousai_worry.png'
+  ];
+  charaFiles.forEach(function(url) {
+    if (!NovelEngine._imageCache[url]) {
+      var img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.src = url + CACHE_BUSTER;
+      NovelEngine._imageCache[url] = img;
     }
   });
 }
