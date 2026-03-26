@@ -6154,59 +6154,63 @@ function initEventListeners() {
       var prologueBgMap = { 1: 'backgrounds/stage1/bg_classroom.png', 2: 'backgrounds/stage2/bg_office.png', 3: 'backgrounds/stage3/bg_living_room.jpg' };
       var _novelBgUrl = prologueBgMap[stageNum] || prologueBgMap[1];
 
-      // LOADING画面を表示してから画像ロード完了を待ってノベル開始
-      var novelLoadEl = document.getElementById('novel-loading');
-      var novelLoadBar = document.getElementById('novel-loading-bar-fill');
-      novelLoadEl.classList.add('active');
-      // ブリーフィング非表示 → ノベルオーバーレイを表示（LOADING画面付き）
-      document.getElementById('briefing-screen').classList.remove('active');
-      NovelEngine.overlay.classList.add('active');
-
-      // ロードすべき画像リストを収集
       var prologueScript = NOVEL_SCRIPTS['stage' + stageNum].prologue;
-      var imagesToLoad = [];
-      // 背景
-      imagesToLoad.push(_novelBgUrl);
-      // プロローグで使うキャラ画像
-      var _seenChara = {};
-      prologueScript.forEach(function(line) {
-        if (line.speaker && line.expr) {
-          var folder = (line.speaker === 'bousai') ? 'characters/shared/' : 'characters/stage' + stageNum + '/';
-          var expr = NovelEngine._resolveExpr(line.speaker, line.expr);
-          var url = folder + line.speaker + '_' + expr + '.png';
-          if (!_seenChara[url]) { _seenChara[url] = true; imagesToLoad.push(url); }
-        }
-      });
 
-      var loaded = 0;
-      var total = imagesToLoad.length;
-      var allDone = false;
+      if (!GAME.isMobile) {
+        // PC: 即座にノベル開始（ロード待ち不要）
+        NovelEngine.start(prologueScript, _novelBgUrl, function() { initGame(stageNum); });
+        btnRef.disabled = false;
+      } else {
+        // スマホ: LOADING画面で画像ロード完了を待ってからノベル開始
+        var novelLoadEl = document.getElementById('novel-loading');
+        var novelLoadBar = document.getElementById('novel-loading-bar-fill');
+        novelLoadBar.style.width = '0%';
+        novelLoadEl.classList.add('active');
+        document.getElementById('briefing-screen').classList.remove('active');
+        NovelEngine.overlay.classList.add('active');
 
-      function onImageReady() {
-        loaded++;
-        if (novelLoadBar) novelLoadBar.style.width = Math.round((loaded / total) * 100) + '%';
-        if (loaded >= total && !allDone) {
-          allDone = true;
-          novelLoadEl.classList.remove('active');
-          NovelEngine.start(prologueScript, _novelBgUrl, function() { initGame(stageNum); });
-          btnRef.disabled = false;
+        // ロードすべき画像: 背景 + 最初のキャラのみ（最小限で高速化）
+        var imagesToLoad = [_novelBgUrl];
+        // 最初に登場するキャラ画像だけロード
+        for (var li = 0; li < prologueScript.length; li++) {
+          var line = prologueScript[li];
+          if (line.speaker && line.expr && line.speaker !== 'narrator') {
+            var folder = (line.speaker === 'bousai') ? 'characters/shared/' : 'characters/stage' + stageNum + '/';
+            var expr = NovelEngine._resolveExpr(line.speaker, line.expr);
+            imagesToLoad.push(folder + line.speaker + '_' + expr + '.png');
+            break; // 最初の1キャラのみ
+          }
         }
+
+        var loaded = 0;
+        var total = imagesToLoad.length;
+        var allDone = false;
+
+        function onImageReady() {
+          loaded++;
+          if (novelLoadBar) novelLoadBar.style.width = Math.round((loaded / total) * 100) + '%';
+          if (loaded >= total && !allDone) {
+            allDone = true;
+            novelLoadEl.classList.remove('active');
+            NovelEngine.start(prologueScript, _novelBgUrl, function() { initGame(stageNum); });
+            btnRef.disabled = false;
+          }
+        }
+
+        imagesToLoad.forEach(function(url) {
+          var cached = NovelEngine._imageCache[url];
+          if (cached && cached.complete && cached.naturalWidth > 0) {
+            onImageReady();
+          } else {
+            var img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = function() { NovelEngine._imageCache[url] = img; onImageReady(); };
+            img.onerror = function() { onImageReady(); };
+            img.src = (url.indexOf('characters/') === 0) ? url + CACHE_BUSTER : url;
+            if (!NovelEngine._imageCache[url]) NovelEngine._imageCache[url] = img;
+          }
+        });
       }
-
-      imagesToLoad.forEach(function(url) {
-        var cached = NovelEngine._imageCache[url];
-        if (cached && cached.complete && cached.naturalWidth > 0) {
-          onImageReady();
-        } else {
-          var img = new Image();
-          img.crossOrigin = 'anonymous';
-          img.onload = function() { NovelEngine._imageCache[url] = img; onImageReady(); };
-          img.onerror = function() { onImageReady(); }; // エラーでもブロックしない
-          // キャラ画像はCACHE_BUSTER付き
-          img.src = (url.indexOf('characters/') === 0) ? url + CACHE_BUSTER : url;
-          if (!NovelEngine._imageCache[url]) NovelEngine._imageCache[url] = img;
-        }
-      });
     } else {
       // ノベルなし → LOADING画面を先に表示してからinitGame
       showScreen('game-screen');
