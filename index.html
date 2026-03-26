@@ -2051,11 +2051,11 @@ body.is-mobile .quiz-next-btn { margin-bottom: 30px; font-size: 18px; padding: 1
    ============================================================ */
 #novel-overlay {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  z-index: -1; display: none; flex-direction: column;
+  z-index: -1; display: flex; flex-direction: column;
   justify-content: flex-end; pointer-events: none;
-  overflow: hidden;
+  overflow: hidden; visibility: hidden;
 }
-#novel-overlay.active { z-index: 500; display: flex; pointer-events: auto; }
+#novel-overlay.active { z-index: 500; visibility: visible; pointer-events: auto; }
 
 #novel-bg {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -5841,27 +5841,7 @@ function _preloadAllNovelBgs() {
       NovelEngine._imageCache[url] = img;
     }
   });
-  // キャラ画像も全ステージ分プリロード（ステージ選択時に開始）
-  var charaFiles = [
-    'characters/stage1/teacher_normal.png', 'characters/stage1/teacher_serious.png',
-    'characters/stage1/teacher_smile.png', 'characters/stage1/teacher_surprise.png',
-    'characters/stage1/teacher_relief.png',
-    'characters/stage1/student_a_normal.png', 'characters/stage1/student_a_smile.png',
-    'characters/stage1/student_a_surprise.png', 'characters/stage1/student_a_worry.png',
-    'characters/stage1/student_a_relief.png',
-    'characters/stage1/student_b_normal.png', 'characters/stage1/student_b_panic.png',
-    'characters/stage1/student_b_serious.png', 'characters/stage1/student_b_smile.png',
-    'characters/shared/bousai_normal.png', 'characters/shared/bousai_serious.png',
-    'characters/shared/bousai_smile.png', 'characters/shared/bousai_worry.png'
-  ];
-  charaFiles.forEach(function(url) {
-    if (!NovelEngine._imageCache[url]) {
-      var img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.src = url + CACHE_BUSTER;
-      NovelEngine._imageCache[url] = img;
-    }
-  });
+  // キャラ画像はブリーフィング画面のpreloadImagesで段階的にプリロード
 }
 
 function showBriefing(stageNum) {
@@ -5905,28 +5885,18 @@ function showBriefing(stageNum) {
       bgImg.decode().catch(function() {});
     }
   }
-  // キャラ画像もプリロード（全スクリプトフェーズ）
+  // prologueのキャラ画像のみプリロード（帯域を圧迫しないよう最小限）
   var novelScript = NOVEL_SCRIPTS['stage' + stageNum];
-  if (novelScript) {
-    var phases = ['prologue', 'earthquake', 'aftershake', 'epilogue_success', 'epilogue_fail'];
-    for (var pi = 0; pi < phases.length; pi++) {
-      if (novelScript[phases[pi]]) {
-        NovelEngine.preloadImages(novelScript[phases[pi]], bgUrl);
-      }
-    }
+  if (novelScript && novelScript.prologue) {
+    NovelEngine.preloadImages(novelScript.prologue, bgUrl);
   }
 
-  // ★ 重要: ブリーフィング画面表示中に<img>のsrcを先行設定
-  // object-fit:coverのレイアウト計算＋画像デコードを事前に完了させる
+  // ブリーフィング画面表示中に<img>のsrcを先行設定（visibility:hiddenでもロード・レイアウト計算される）
   if (bgUrl) {
     var preImg = document.getElementById('novel-bg-img');
     if (preImg) {
       preImg.src = bgUrl;
       preImg.style.display = 'block';
-      // DOM内のimg要素でdecode()を実行 → ブラウザが描画準備を完了する
-      if (preImg.decode) {
-        preImg.decode().catch(function() {});
-      }
     }
   }
 }
