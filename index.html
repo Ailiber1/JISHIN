@@ -2053,9 +2053,9 @@ body.is-mobile .quiz-next-btn { margin-bottom: 30px; font-size: 18px; padding: 1
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
   z-index: -1; display: flex; flex-direction: column;
   justify-content: flex-end; pointer-events: none;
-  overflow: hidden; visibility: hidden;
+  overflow: hidden; opacity: 0;
 }
-#novel-overlay.active { z-index: 500; visibility: visible; pointer-events: auto; }
+#novel-overlay.active { z-index: 500; opacity: 1; pointer-events: auto; }
 
 #novel-bg {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -15172,7 +15172,7 @@ function transitionPhase(newPhase) {
     GAME._novelEarthquakeDone = true;
     GAME.running = false; // 3Dを一時停止
     // ノベルシーンではカーソルが必要なのでPointer Lock強制解除
-    document.exitPointerLock();
+    if (document.pointerLockElement) document.exitPointerLock();
     // 地震ノベル: 教室ざわめき即時停止→地震BGM開始
     SoundManager.stopAmbient();
     SoundManager.playBGM('BGM/JISHIN_earthquake.mp3', 0.35, false);
