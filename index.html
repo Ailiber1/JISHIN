@@ -5902,13 +5902,37 @@ function showBriefing(stageNum) {
     bgImg.src = bgUrl;
     NovelEngine._imageCache[bgUrl] = bgImg;
   }
-  // prologueのキャラ画像のみプリロード（帯域を圧迫しないよう最小限）
-  var novelScript = NOVEL_SCRIPTS['stage' + stageNum];
-  if (novelScript && novelScript.prologue) {
-    NovelEngine.preloadImages(novelScript.prologue, bgUrl);
+  // キャラ画像プリロード: PCは全表情、スマホはprologueのみ
+  if (!GAME.isMobile) {
+    // PC: ステージの全キャラ表情をプリロード（帯域十分・スクリプト再生成に備える）
+    var _charaMap = {
+      1: ['teacher', 'student_a', 'student_b'],
+      2: ['boss', 'colleague_a', 'colleague_b'],
+      3: ['father', 'mother', 'sister']
+    };
+    var _exprList = ['normal', 'serious', 'smile', 'surprise', 'worry', 'relief', 'panic', 'cry'];
+    var _charas = _charaMap[stageNum] || [];
+    _charas.concat(['bousai']).forEach(function(speaker) {
+      var folder = (speaker === 'bousai') ? 'characters/shared/' : 'characters/stage' + stageNum + '/';
+      _exprList.forEach(function(expr) {
+        var url = folder + speaker + '_' + expr + '.png';
+        if (!NovelEngine._imageCache[url]) {
+          var img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.src = url + CACHE_BUSTER;
+          NovelEngine._imageCache[url] = img;
+        }
+      });
+    });
+  } else {
+    // スマホ: prologueのキャラのみ（帯域節約）
+    var novelScript = NOVEL_SCRIPTS['stage' + stageNum];
+    if (novelScript && novelScript.prologue) {
+      NovelEngine.preloadImages(novelScript.prologue, bgUrl);
+    }
   }
 
-  // ブリーフィング画面表示中にnew Image()で背景画像を先行ロード（DOMに依存しない）
+  // 背景画像を独立したnew Image()で先行ロード
   if (bgUrl && !NovelEngine._imageCache[bgUrl]) {
     var bgLoader = new Image();
     bgLoader.src = bgUrl;
