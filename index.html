@@ -4572,6 +4572,8 @@ var NovelEngine = {
 
   // 次へ進む
   advance: function() {
+    // 選択肢表示中は進めない（必ず回答させる）
+    if (this.choicesEl.classList.contains('active')) return;
     clearTimeout(this.autoTimer);
     if (this.isTyping) {
       // 即時全文表示
@@ -4596,6 +4598,8 @@ var NovelEngine = {
     this.textEl.textContent = resolveNovelText(line.text);
     this.speakerEl.textContent = '';
     this.nextIndicator.style.display = 'none';
+    // autoモードの自動進行を停止（選択肢は手動回答必須）
+    clearTimeout(this.autoTimer);
     this.choicesEl.innerHTML = '';
     this.choicesEl.classList.add('active');
 
