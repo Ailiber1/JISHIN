@@ -6188,31 +6188,59 @@ function initEventListeners() {
         document.getElementById('briefing-screen').classList.remove('active');
         NovelEngine.overlay.classList.add('active');
 
-        // 背景画像のロード完了を待つ（onloadセット→src設定の順で確実に検知）
+        // 背景 + 最初のキャラ画像のロード完了を待つ
         var novelBgImg = document.getElementById('novel-bg-img');
+        var loadedCount = 0;
+        var totalToLoad = 1; // 背景
         var allDone = false;
-        function startNovelAfterLoad() {
-          if (allDone) return;
-          allDone = true;
-          novelLoadBar.style.width = '100%';
-          // 2フレーム待って描画を確定させてからノベル開始
-          requestAnimationFrame(function() {
-            requestAnimationFrame(function() {
-              novelLoadEl.classList.remove('active');
-              NovelEngine.start(prologueScript, _novelBgUrl, function() { initGame(stageNum); });
-              btnRef.disabled = false;
-            });
-          });
+
+        // 最初に登場するキャラ画像URLを特定
+        var firstCharaUrl = null;
+        for (var li = 0; li < prologueScript.length; li++) {
+          var _line = prologueScript[li];
+          if (_line.speaker && _line.speaker !== 'narrator' && _line.expr) {
+            var _folder = (_line.speaker === 'bousai') ? 'characters/shared/' : 'characters/stage' + stageNum + '/';
+            var _expr = NovelEngine._resolveExpr(_line.speaker, _line.expr);
+            firstCharaUrl = _folder + _line.speaker + '_' + _expr + '.png';
+            totalToLoad = 2; // 背景 + キャラ
+            break;
+          }
         }
 
-        // onloadを先にセットしてからsrcを設定（順序重要）
-        novelBgImg.onload = function() { novelBgImg.onload = null; startNovelAfterLoad(); };
-        novelBgImg.onerror = function() { novelBgImg.onerror = null; startNovelAfterLoad(); };
+        function onAssetReady() {
+          loadedCount++;
+          novelLoadBar.style.width = Math.round((loadedCount / totalToLoad) * 100) + '%';
+          if (loadedCount >= totalToLoad && !allDone) {
+            allDone = true;
+            requestAnimationFrame(function() {
+              requestAnimationFrame(function() {
+                novelLoadEl.classList.remove('active');
+                NovelEngine.start(prologueScript, _novelBgUrl, function() { initGame(stageNum); });
+                btnRef.disabled = false;
+              });
+            });
+          }
+        }
+
+        // 背景画像ロード
+        novelBgImg.onload = function() { novelBgImg.onload = null; onAssetReady(); };
+        novelBgImg.onerror = function() { novelBgImg.onerror = null; onAssetReady(); };
         novelBgImg.src = _novelBgUrl;
         novelBgImg.style.display = 'block';
-        // srcセット後にcompleteがtrueならonloadが発火しないブラウザ対策
-        if (novelBgImg.complete && novelBgImg.naturalWidth > 0) {
-          startNovelAfterLoad();
+        if (novelBgImg.complete && novelBgImg.naturalWidth > 0) onAssetReady();
+
+        // 最初のキャラ画像ロード
+        if (firstCharaUrl) {
+          var cached = NovelEngine._imageCache[firstCharaUrl];
+          if (cached && cached.complete && cached.naturalWidth > 0) {
+            onAssetReady();
+          } else {
+            var charaImg = new Image();
+            charaImg.onload = function() { NovelEngine._imageCache[firstCharaUrl] = charaImg; onAssetReady(); };
+            charaImg.onerror = function() { onAssetReady(); };
+            charaImg.src = firstCharaUrl + CACHE_BUSTER;
+            if (!NovelEngine._imageCache[firstCharaUrl]) NovelEngine._imageCache[firstCharaUrl] = charaImg;
+          }
         }
       }
     } else {
