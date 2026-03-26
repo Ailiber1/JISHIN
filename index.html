@@ -2059,13 +2059,16 @@ body.is-mobile .quiz-next-btn { margin-bottom: 30px; font-size: 18px; padding: 1
 
 #novel-bg {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-  background-color: #1a1a2e;
+  background: linear-gradient(135deg, #2a1f3d 0%, #1a1a2e 40%, #0d1b2a 100%);
+  background-size: cover; background-position: center;
 }
 #novel-bg img {
   width: 100vw; height: 100vh; height: 100dvh;
   object-fit: cover; object-position: center;
   display: block;
+  opacity: 0; transition: opacity 0.3s ease;
 }
+#novel-bg img.loaded { opacity: 1; }
 #novel-bg-dim {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
   background: rgba(0,0,0,0.15);
@@ -4387,15 +4390,28 @@ var NovelEngine = {
     this.choicesEl.classList.remove('active');
     this.choicesEl.innerHTML = '';
 
-    // 背景設定 — ブリーフィングで先行セット済みならsrc変更しない
+    // 背景設定 — ロード完了時にフェードイン表示
     var bgImg = document.getElementById('novel-bg-img');
     if (bg) {
+      var bgEl = document.getElementById('novel-bg');
+      // CSSフォールバック背景として先にセット（imgロード前のつなぎ）
+      if (NovelEngine._imageCache[bg] && NovelEngine._imageCache[bg].complete) {
+        bgEl.style.backgroundImage = 'url(' + bg + ')';
+      }
       if (!bgImg.src || !bgImg.src.endsWith(bg)) {
+        bgImg.classList.remove('loaded');
         bgImg.src = bg;
+      }
+      // 既にロード済みなら即表示、未ロードならonloadで表示
+      if (bgImg.complete && bgImg.naturalWidth > 0) {
+        bgImg.classList.add('loaded');
+      } else {
+        bgImg.onload = function() { bgImg.classList.add('loaded'); };
       }
       bgImg.style.display = 'block';
     } else {
       bgImg.src = '';
+      bgImg.classList.remove('loaded');
       bgImg.style.display = 'none';
     }
 
@@ -4691,7 +4707,9 @@ var NovelEngine = {
     this.charaRight.classList.add('hidden');
     // 背景画像をクリア
     var bgImg = document.getElementById('novel-bg-img');
-    if (bgImg) bgImg.src = '';
+    if (bgImg) { bgImg.src = ''; bgImg.classList.remove('loaded'); bgImg.onload = null; }
+    var bgEl = document.getElementById('novel-bg');
+    if (bgEl) bgEl.style.backgroundImage = '';
     if (this.onComplete) this.onComplete();
   },
 };
@@ -5891,13 +5909,22 @@ function showBriefing(stageNum) {
     NovelEngine.preloadImages(novelScript.prologue, bgUrl);
   }
 
-  // ブリーフィング画面表示中に<img>のsrcを先行設定（visibility:hiddenでもロード・レイアウト計算される）
+  // ブリーフィング画面表示中に<img>のsrcを先行設定（visibility:hiddenでもロード開始される）
   if (bgUrl) {
     var preImg = document.getElementById('novel-bg-img');
     if (preImg) {
+      preImg.classList.remove('loaded');
       preImg.src = bgUrl;
       preImg.style.display = 'block';
+      // ロード完了時にloadedクラスをセット
+      preImg.onload = function() { preImg.classList.add('loaded'); };
+      if (preImg.complete && preImg.naturalWidth > 0) {
+        preImg.classList.add('loaded');
+      }
     }
+    // CSS background-imageのフォールバックもセット
+    var bgEl = document.getElementById('novel-bg');
+    if (bgEl) bgEl.style.backgroundImage = 'url(' + bgUrl + ')';
   }
 }
 
