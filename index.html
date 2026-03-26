@@ -2060,7 +2060,11 @@ body.is-mobile .quiz-next-btn { margin-bottom: 30px; font-size: 18px; padding: 1
 #novel-bg {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
   background-color: #1a1a2e;
-  background-size: cover; background-position: center;
+}
+#novel-bg img {
+  width: 100vw; height: 100vh; height: 100dvh;
+  object-fit: cover; object-position: center;
+  display: block;
 }
 #novel-loading {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -2954,7 +2958,7 @@ body.is-mobile .quiz-next-btn { margin-bottom: 30px; font-size: 18px; padding: 1
      SECTION: NOVEL OVERLAY
      ============================================================ -->
 <div id="novel-overlay">
-  <div id="novel-bg"><div id="novel-bg-dim"></div></div>
+  <div id="novel-bg"><img id="novel-bg-img" src="" alt=""><div id="novel-bg-dim"></div></div>
   <div id="novel-loading">
     <div id="novel-loading-text">LOADING...</div>
     <div id="novel-loading-bar-track"><div id="novel-loading-bar-fill"></div></div>
@@ -4399,25 +4403,16 @@ var NovelEngine = {
     this.choicesEl.classList.remove('active');
     this.choicesEl.innerHTML = '';
 
-    // 背景設定 — CSS background-imageで表示（<img>はモバイルSafariで非表示要素内ロード不可のため廃止）
-    var bgEl = document.getElementById('novel-bg');
+    // 背景設定 — <img>要素で表示
+    var bgImg = document.getElementById('novel-bg-img');
     if (bg) {
-      var cached = NovelEngine._imageCache[bg];
-      if (cached && cached.complete && cached.naturalWidth > 0) {
-        // プリロード済み → 即表示
-        bgEl.style.backgroundImage = 'url(' + bg + ')';
-      } else {
-        // 未ロード → new Image()でロードし、完了後にセット
-        var loader = new Image();
-        loader.onload = function() {
-          bgEl.style.backgroundImage = 'url(' + bg + ')';
-          NovelEngine._imageCache[bg] = loader;
-        };
-        loader.src = bg;
-        if (!NovelEngine._imageCache[bg]) NovelEngine._imageCache[bg] = loader;
+      if (!bgImg.src || !bgImg.src.endsWith(bg)) {
+        bgImg.src = bg;
       }
+      bgImg.style.display = 'block';
     } else {
-      bgEl.style.backgroundImage = '';
+      bgImg.src = '';
+      bgImg.style.display = 'none';
     }
 
     // ブリーフィング画面が表示中なら非表示にする（ゲーム中のノベル挿入時は触らない）
@@ -4711,8 +4706,8 @@ var NovelEngine = {
     this.charaLeft.classList.add('hidden');
     this.charaRight.classList.add('hidden');
     // 背景画像をクリア
-    var bgEl = document.getElementById('novel-bg');
-    if (bgEl) bgEl.style.backgroundImage = '';
+    var bgImg = document.getElementById('novel-bg-img');
+    if (bgImg) { bgImg.src = ''; bgImg.style.display = 'none'; }
     if (this.onComplete) this.onComplete();
   },
 };
@@ -6193,47 +6188,31 @@ function initEventListeners() {
         document.getElementById('briefing-screen').classList.remove('active');
         NovelEngine.overlay.classList.add('active');
 
-        // ロードすべき画像: 背景 + 最初のキャラのみ（最小限で高速化）
-        var imagesToLoad = [_novelBgUrl];
-        // 最初に登場するキャラ画像だけロード
-        for (var li = 0; li < prologueScript.length; li++) {
-          var line = prologueScript[li];
-          if (line.speaker && line.expr && line.speaker !== 'narrator') {
-            var folder = (line.speaker === 'bousai') ? 'characters/shared/' : 'characters/stage' + stageNum + '/';
-            var expr = NovelEngine._resolveExpr(line.speaker, line.expr);
-            imagesToLoad.push(folder + line.speaker + '_' + expr + '.png');
-            break; // 最初の1キャラのみ
-          }
-        }
+        // novel-overlayがvisible状態で<img>のsrcを直接セット → 確実にロードされる
+        var novelBgImg = document.getElementById('novel-bg-img');
+        novelBgImg.src = _novelBgUrl;
+        novelBgImg.style.display = 'block';
 
-        var loaded = 0;
-        var total = imagesToLoad.length;
+        // 背景画像のロード完了を待つ（<img>要素で直接ロード）
         var allDone = false;
-
-        function onImageReady() {
-          loaded++;
-          if (novelLoadBar) novelLoadBar.style.width = Math.round((loaded / total) * 100) + '%';
-          if (loaded >= total && !allDone) {
-            allDone = true;
+        function startNovelAfterLoad() {
+          if (allDone) return;
+          allDone = true;
+          novelLoadBar.style.width = '100%';
+          setTimeout(function() {
             novelLoadEl.classList.remove('active');
             NovelEngine.start(prologueScript, _novelBgUrl, function() { initGame(stageNum); });
             btnRef.disabled = false;
-          }
+          }, 100);
         }
 
-        imagesToLoad.forEach(function(url) {
-          var cached = NovelEngine._imageCache[url];
-          if (cached && cached.complete && cached.naturalWidth > 0) {
-            onImageReady();
-          } else {
-            var img = new Image();
-            img.crossOrigin = 'anonymous';
-            img.onload = function() { NovelEngine._imageCache[url] = img; onImageReady(); };
-            img.onerror = function() { onImageReady(); };
-            img.src = (url.indexOf('characters/') === 0) ? url + CACHE_BUSTER : url;
-            if (!NovelEngine._imageCache[url]) NovelEngine._imageCache[url] = img;
-          }
-        });
+        if (novelBgImg.complete && novelBgImg.naturalWidth > 0) {
+          startNovelAfterLoad();
+        } else {
+          novelLoadBar.style.width = '30%';
+          novelBgImg.onload = function() { novelBgImg.onload = null; startNovelAfterLoad(); };
+          novelBgImg.onerror = function() { novelBgImg.onerror = null; startNovelAfterLoad(); };
+        }
       }
     } else {
       // ノベルなし → LOADING画面を先に表示してからinitGame
