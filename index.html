@@ -2062,6 +2062,18 @@ body.is-mobile .quiz-next-btn { margin-bottom: 30px; font-size: 18px; padding: 1
   background-color: #1a1a2e;
   background-size: cover; background-position: center;
 }
+#novel-loading {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: #000; display: none; flex-direction: column;
+  align-items: center; justify-content: center; z-index: 30;
+}
+#novel-loading.active { display: flex; }
+#novel-loading-text {
+  font-family: 'Share Tech Mono', monospace; font-size: 16px;
+  color: var(--safety-orange); letter-spacing: 2px; margin-bottom: 16px;
+}
+#novel-loading-bar-track { width: 200px; height: 4px; background: rgba(255,107,0,0.2); }
+#novel-loading-bar-fill { width: 0%; height: 100%; background: var(--safety-orange); transition: width 0.3s; }
 #novel-bg-dim {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
   background: rgba(0,0,0,0.15);
@@ -2943,6 +2955,10 @@ body.is-mobile .quiz-next-btn { margin-bottom: 30px; font-size: 18px; padding: 1
      ============================================================ -->
 <div id="novel-overlay">
   <div id="novel-bg"><div id="novel-bg-dim"></div></div>
+  <div id="novel-loading">
+    <div id="novel-loading-text">LOADING...</div>
+    <div id="novel-loading-bar-track"><div id="novel-loading-bar-fill"></div></div>
+  </div>
   <div id="novel-chara-left" class="novel-chara hidden"></div>
   <div id="novel-chara-right" class="novel-chara hidden"></div>
   <div id="novel-controls">
@@ -6138,13 +6154,59 @@ function initEventListeners() {
       var prologueBgMap = { 1: 'backgrounds/stage1/bg_classroom.png', 2: 'backgrounds/stage2/bg_office.png', 3: 'backgrounds/stage3/bg_living_room.jpg' };
       var _novelBgUrl = prologueBgMap[stageNum] || prologueBgMap[1];
 
-      // 即座にノベル開始（decode()待ちしない — スマホでの遅延防止）
-      NovelEngine.start(
-        NOVEL_SCRIPTS['stage' + stageNum].prologue,
-        _novelBgUrl,
-        function() { initGame(stageNum); }
-      );
-      btnRef.disabled = false;
+      // LOADING画面を表示してから画像ロード完了を待ってノベル開始
+      var novelLoadEl = document.getElementById('novel-loading');
+      var novelLoadBar = document.getElementById('novel-loading-bar-fill');
+      novelLoadEl.classList.add('active');
+      // ブリーフィング非表示 → ノベルオーバーレイを表示（LOADING画面付き）
+      document.getElementById('briefing-screen').classList.remove('active');
+      NovelEngine.overlay.classList.add('active');
+
+      // ロードすべき画像リストを収集
+      var prologueScript = NOVEL_SCRIPTS['stage' + stageNum].prologue;
+      var imagesToLoad = [];
+      // 背景
+      imagesToLoad.push(_novelBgUrl);
+      // プロローグで使うキャラ画像
+      var _seenChara = {};
+      prologueScript.forEach(function(line) {
+        if (line.speaker && line.expr) {
+          var folder = (line.speaker === 'bousai') ? 'characters/shared/' : 'characters/stage' + stageNum + '/';
+          var expr = NovelEngine._resolveExpr(line.speaker, line.expr);
+          var url = folder + line.speaker + '_' + expr + '.png';
+          if (!_seenChara[url]) { _seenChara[url] = true; imagesToLoad.push(url); }
+        }
+      });
+
+      var loaded = 0;
+      var total = imagesToLoad.length;
+      var allDone = false;
+
+      function onImageReady() {
+        loaded++;
+        if (novelLoadBar) novelLoadBar.style.width = Math.round((loaded / total) * 100) + '%';
+        if (loaded >= total && !allDone) {
+          allDone = true;
+          novelLoadEl.classList.remove('active');
+          NovelEngine.start(prologueScript, _novelBgUrl, function() { initGame(stageNum); });
+          btnRef.disabled = false;
+        }
+      }
+
+      imagesToLoad.forEach(function(url) {
+        var cached = NovelEngine._imageCache[url];
+        if (cached && cached.complete && cached.naturalWidth > 0) {
+          onImageReady();
+        } else {
+          var img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = function() { NovelEngine._imageCache[url] = img; onImageReady(); };
+          img.onerror = function() { onImageReady(); }; // エラーでもブロックしない
+          // キャラ画像はCACHE_BUSTER付き
+          img.src = (url.indexOf('characters/') === 0) ? url + CACHE_BUSTER : url;
+          if (!NovelEngine._imageCache[url]) NovelEngine._imageCache[url] = img;
+        }
+      });
     } else {
       // ノベルなし → LOADING画面を先に表示してからinitGame
       showScreen('game-screen');
