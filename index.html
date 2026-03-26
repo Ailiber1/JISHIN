@@ -5841,12 +5841,12 @@ function _preloadAllNovelBgs() {
   if (_novelBgsPreloaded) return;
   _novelBgsPreloaded = true;
   var urls = [
-    'backgrounds/stage1/bg_classroom.png',
-    'backgrounds/stage1/bg_classroom_shake.png',
-    'backgrounds/stage1/bg_hallway.png',
-    'backgrounds/stage1/bg_schoolyard.png',
-    'backgrounds/stage2/bg_office.png',
-    'backgrounds/stage2/bg_office_shake.png',
+    'backgrounds/stage1/bg_classroom.jpg',
+    'backgrounds/stage1/bg_classroom_shake.jpg',
+    'backgrounds/stage1/bg_hallway.jpg',
+    'backgrounds/stage1/bg_schoolyard.jpg',
+    'backgrounds/stage2/bg_office.jpg',
+    'backgrounds/stage2/bg_office_shake.jpg',
     'backgrounds/stage3/bg_living_room.jpg',
     'backgrounds/stage3/bg_house_shake.jpg'
   ];
@@ -5890,7 +5890,7 @@ function showBriefing(stageNum) {
   applyI18N();
 
   // ブリーフィング表示時に背景＋キャラ画像を先行プリロード
-  var bgMap = { 1: 'backgrounds/stage1/bg_classroom.png', 2: 'backgrounds/stage2/bg_office.png', 3: 'backgrounds/stage3/bg_living_room.jpg' };
+  var bgMap = { 1: 'backgrounds/stage1/bg_classroom.jpg', 2: 'backgrounds/stage2/bg_office.jpg', 3: 'backgrounds/stage3/bg_living_room.jpg' };
   var bgUrl = bgMap[stageNum];
   if (bgUrl && !NovelEngine._imageCache[bgUrl]) {
     var bgImg = new Image();
@@ -6170,7 +6170,7 @@ function initEventListeners() {
       } else {
         SoundManager.startClassroomAmbient();
       }
-      var prologueBgMap = { 1: 'backgrounds/stage1/bg_classroom.png', 2: 'backgrounds/stage2/bg_office.png', 3: 'backgrounds/stage3/bg_living_room.jpg' };
+      var prologueBgMap = { 1: 'backgrounds/stage1/bg_classroom.jpg', 2: 'backgrounds/stage2/bg_office.jpg', 3: 'backgrounds/stage3/bg_living_room.jpg' };
       var _novelBgUrl = prologueBgMap[stageNum] || prologueBgMap[1];
 
       var prologueScript = NOVEL_SCRIPTS['stage' + stageNum].prologue;
@@ -6188,30 +6188,31 @@ function initEventListeners() {
         document.getElementById('briefing-screen').classList.remove('active');
         NovelEngine.overlay.classList.add('active');
 
-        // novel-overlayがvisible状態で<img>のsrcを直接セット → 確実にロードされる
+        // 背景画像のロード完了を待つ（onloadセット→src設定の順で確実に検知）
         var novelBgImg = document.getElementById('novel-bg-img');
-        novelBgImg.src = _novelBgUrl;
-        novelBgImg.style.display = 'block';
-
-        // 背景画像のロード完了を待つ（<img>要素で直接ロード）
         var allDone = false;
         function startNovelAfterLoad() {
           if (allDone) return;
           allDone = true;
           novelLoadBar.style.width = '100%';
-          setTimeout(function() {
-            novelLoadEl.classList.remove('active');
-            NovelEngine.start(prologueScript, _novelBgUrl, function() { initGame(stageNum); });
-            btnRef.disabled = false;
-          }, 100);
+          // 2フレーム待って描画を確定させてからノベル開始
+          requestAnimationFrame(function() {
+            requestAnimationFrame(function() {
+              novelLoadEl.classList.remove('active');
+              NovelEngine.start(prologueScript, _novelBgUrl, function() { initGame(stageNum); });
+              btnRef.disabled = false;
+            });
+          });
         }
 
+        // onloadを先にセットしてからsrcを設定（順序重要）
+        novelBgImg.onload = function() { novelBgImg.onload = null; startNovelAfterLoad(); };
+        novelBgImg.onerror = function() { novelBgImg.onerror = null; startNovelAfterLoad(); };
+        novelBgImg.src = _novelBgUrl;
+        novelBgImg.style.display = 'block';
+        // srcセット後にcompleteがtrueならonloadが発火しないブラウザ対策
         if (novelBgImg.complete && novelBgImg.naturalWidth > 0) {
           startNovelAfterLoad();
-        } else {
-          novelLoadBar.style.width = '30%';
-          novelBgImg.onload = function() { novelBgImg.onload = null; startNovelAfterLoad(); };
-          novelBgImg.onerror = function() { novelBgImg.onerror = null; startNovelAfterLoad(); };
         }
       }
     } else {
@@ -15148,7 +15149,7 @@ function transitionPhase(newPhase) {
     SoundManager.stopAmbient();
     SoundManager.playBGM('BGM/JISHIN_earthquake.mp3', 0.35, false);
     SoundManager.playEarthquakeAlarm(); // J-Alert風警報音（ピロンピロン）
-    var eqBg = GAME.stageNum === 2 ? 'backgrounds/stage2/bg_office_shake.png' : GAME.stageNum === 3 ? 'backgrounds/stage3/bg_house_shake.jpg' : 'backgrounds/stage1/bg_classroom_shake.png';
+    var eqBg = GAME.stageNum === 2 ? 'backgrounds/stage2/bg_office_shake.jpg' : GAME.stageNum === 3 ? 'backgrounds/stage3/bg_house_shake.jpg' : 'backgrounds/stage1/bg_classroom_shake.jpg';
     NovelEngine.start(
       novelScripts.earthquake,
       eqBg,
@@ -15169,7 +15170,7 @@ function transitionPhase(newPhase) {
     GAME._novelAftershakeDone = true;
     GAME.running = false;
     if (document.pointerLockElement) document.exitPointerLock();
-    var asBg = GAME.stageNum === 2 ? 'backgrounds/stage2/bg_office_shake.png' : GAME.stageNum === 3 ? 'backgrounds/stage3/bg_house_shake.jpg' : 'backgrounds/stage1/bg_classroom_shake.png';
+    var asBg = GAME.stageNum === 2 ? 'backgrounds/stage2/bg_office_shake.jpg' : GAME.stageNum === 3 ? 'backgrounds/stage3/bg_house_shake.jpg' : 'backgrounds/stage1/bg_classroom_shake.jpg';
     NovelEngine.start(
       novelScripts.aftershake,
       asBg,
@@ -15199,9 +15200,9 @@ function transitionPhase(newPhase) {
       if (GAME.stageNum === 3) {
         epilogueBg = (GAME.hitCount >= 3) ? 'backgrounds/stage3/bg_house_shake.jpg' : 'backgrounds/stage3/bg_evacuation_park.jpg';
       } else if (GAME.stageNum === 2) {
-        epilogueBg = (GAME.hitCount >= 3) ? 'backgrounds/stage2/bg_office_shake.png' : 'backgrounds/stage2/bg_building_plaza.png';
+        epilogueBg = (GAME.hitCount >= 3) ? 'backgrounds/stage2/bg_office_shake.jpg' : 'backgrounds/stage2/bg_building_plaza.jpg';
       } else {
-        epilogueBg = (GAME.hitCount >= 3) ? 'backgrounds/stage1/bg_classroom_shake.png' : 'backgrounds/stage1/bg_schoolyard.png';
+        epilogueBg = (GAME.hitCount >= 3) ? 'backgrounds/stage1/bg_classroom_shake.jpg' : 'backgrounds/stage1/bg_schoolyard.jpg';
       }
       NovelEngine.start(epilogueScript, epilogueBg, function() {
         _doTransitionPhase('result');
