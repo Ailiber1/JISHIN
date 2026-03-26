@@ -4300,7 +4300,7 @@ var NovelEngine = {
     if (bgUrl && !self._imageCache[bgUrl]) {
       var bgImg = new Image();
       bgImg.src = bgUrl;
-      if (bgImg.decode) bgImg.decode().catch(function() {});
+      // プリロードはsrcセットのみ（decode()はスマホで遅延の原因になるため不使用）
       self._imageCache[bgUrl] = bgImg;
     }
     script.forEach(function(line) {
@@ -4312,8 +4312,7 @@ var NovelEngine = {
           var img = new Image();
           img.crossOrigin = 'anonymous';
           img.src = src + CACHE_BUSTER;
-          // decode()で描画準備を事前完了（background-imageでの表示を高速化）
-          if (img.decode) img.decode().catch(function() {});
+          // プリロードはsrcセットのみ（ブラウザキャッシュに載せる）
           self._imageCache[src] = img;
           // Stage 3キャラ画像は背景除去が必要な場合がある（アイドル時に遅延実行）
           if ((GAME.stageNum || 1) >= 3 && line.speaker !== 'bousai') {
@@ -4491,32 +4490,18 @@ var NovelEngine = {
       ? 'url(' + src + ')'
       : 'url(' + src + '), url(' + src + '), url(' + src + ')';
 
-    // キャッシュ画像のデコード完了を確認してから表示（未完了なら即表示）
-    var cachedImg = this._imageCache[srcKey];
+    // 即座にキャラ表示（decode()待ちしない — スマホ遅延防止）
     var charaEl = (info.pos === 'left') ? this.charaLeft : this.charaRight;
     var otherEl = (info.pos === 'left') ? this.charaRight : this.charaLeft;
-    var self = this;
 
-    var showChara = function() {
-      charaEl.style.backgroundImage = dblSrc;
-      charaEl.classList.remove('hidden');
-      charaEl.classList.add('speaking');
-      if (line.speaker === 'bousai') charaEl.classList.add('chara-bousai');
-      if (info.pos === 'left') self._lastLeftSpeaker = line.speaker;
-      else self._lastRightSpeaker = line.speaker;
-      otherEl.classList.remove('speaking');
-      if (!oppositeSideNeeded) otherEl.classList.add('hidden');
-    };
-
-    // キャッシュ画像が完全にロード済みならそのまま即表示
-    if (cachedImg && cachedImg.complete && cachedImg.naturalWidth > 0) {
-      showChara();
-    } else if (cachedImg && cachedImg.decode) {
-      // decode()で描画準備完了を待ってから表示
-      cachedImg.decode().then(showChara).catch(showChara);
-    } else {
-      showChara();
-    }
+    charaEl.style.backgroundImage = dblSrc;
+    charaEl.classList.remove('hidden');
+    charaEl.classList.add('speaking');
+    if (line.speaker === 'bousai') charaEl.classList.add('chara-bousai');
+    if (info.pos === 'left') this._lastLeftSpeaker = line.speaker;
+    else this._lastRightSpeaker = line.speaker;
+    otherEl.classList.remove('speaking');
+    if (!oppositeSideNeeded) otherEl.classList.add('hidden');
   },
 
   // タイプライター演出
@@ -6166,33 +6151,13 @@ function initEventListeners() {
       var prologueBgMap = { 1: 'backgrounds/stage1/bg_classroom.png', 2: 'backgrounds/stage2/bg_office.png', 3: 'backgrounds/stage3/bg_living_room.jpg' };
       var _novelBgUrl = prologueBgMap[stageNum] || prologueBgMap[1];
 
-      // 背景画像のデコード完了を保証してからノベル開始（即表示）
-      var preImg = document.getElementById('novel-bg-img');
-      var startNovel = function() {
-        NovelEngine.start(
-          NOVEL_SCRIPTS['stage' + stageNum].prologue,
-          _novelBgUrl,
-          function() { initGame(stageNum); }
-        );
-        btnRef.disabled = false;
-      };
-      // ブリーフィング中に既にsrcセット済みの場合、decode()で描画準備完了を待つ
-      if (preImg && preImg.src && preImg.src.endsWith(_novelBgUrl) && preImg.decode) {
-        preImg.decode().then(startNovel).catch(startNovel);
-      } else {
-        // srcが未設定の場合は先にセットしてデコード
-        if (preImg) {
-          preImg.src = _novelBgUrl;
-          preImg.style.display = 'block';
-          if (preImg.decode) {
-            preImg.decode().then(startNovel).catch(startNovel);
-          } else {
-            startNovel();
-          }
-        } else {
-          startNovel();
-        }
-      }
+      // 即座にノベル開始（decode()待ちしない — スマホでの遅延防止）
+      NovelEngine.start(
+        NOVEL_SCRIPTS['stage' + stageNum].prologue,
+        _novelBgUrl,
+        function() { initGame(stageNum); }
+      );
+      btnRef.disabled = false;
     } else {
       // ノベルなし → LOADING画面を先に表示してからinitGame
       showScreen('game-screen');
